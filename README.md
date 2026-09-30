@@ -32,7 +32,8 @@ sisi server, tidak ada akun pengguna — sehingga hasil `next build` dapat
 ditempatkan sebagai situs statis.
 
 Rincian lengkap beserta alasan tiap pilihan ada di
-**[docs/md/technology-used.md](docs/md/technology-used.md)**.
+**[docs/md/technology-used.md](docs/md/technology-used.md)**, sedangkan rancangan
+cerita seluruh bagian ada di **[docs/md/storyboard.md](docs/md/storyboard.md)**.
 
 ---
 
