@@ -8,8 +8,10 @@ rancangan. Jangan mengasumsikan apa pun dari isi proyek sebelumnya.
 - Balasan ringkas. Baca berkas seperlunya, gabungkan panggilan alat yang tidak
   saling bergantung dalam satu giliran. Penghematan ini tidak boleh mengorbankan
   mutu kode maupun pengujian.
-- Proyek belum memakai git. Setiap penghapusan bersifat permanen, jadi periksa
-  sasaran lebih dulu dan buat cadangan bila berisiko.
+- Proyek memakai git sejak 30 September 2026. Sebelum mengubah banyak berkas,
+  pastikan pohon kerja bersih agar perubahan mudah ditinjau dan dibatalkan.
+- Dokumen skripsi, berkas administrasi, dan arsip pihak ketiga di dalam docs/
+  tidak diikutsertakan ke repositori. Jangan mendaftarkannya secara paksa.
 
 ## Bahasa
 
