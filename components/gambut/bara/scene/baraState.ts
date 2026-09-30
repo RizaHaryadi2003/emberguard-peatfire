@@ -1,0 +1,105 @@
+import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
+import { CELL_W, GRID_COLS, type SmolderSim } from "@/lib/smolder";
+import type { ViewMode } from "@/config/bara-content";
+
+// Ukuran diorama & arah matahari dipakai bersama dengan Modul 01 supaya
+// bongkahan gambut pada kedua modul benar-benar sama.
+export {
+  BLOCK_DEPTH,
+  BLOCK_WIDTH,
+  DIORAMA_Y,
+  QUALITY_PROFILE,
+  SUN_DIRECTION,
+  type Quality,
+} from "@/components/gambut/scene/dioramaConstants";
+
+/**
+ * Keadaan yang dibagi antara antarmuka (DOM) dan adegan 3D. Disimpan dalam ref
+ * dan dibaca tiap bingkai, sehingga menggeser pengatur tidak memicu render
+ * ulang seluruh kanvas.
+ */
+export type BaraState = {
+  /** Babak aktif (0–3). */
+  act: number;
+  /** Tampilan penampang: nyata atau citra termal. */
+  view: ViewMode;
+  /** Kecepatan waktu simulasi (jam simulasi per detik nyata). */
+  hoursPerSecond: number;
+  /** Muka air tanah yang dituju (m di bawah permukaan). */
+  waterM: number;
+  /** Pengguna meminta gerak dikurangi. */
+  reducedMotion: boolean;
+  /** Kekuatan nyala di permukaan saat penyulutan (0–1). */
+  flame: number;
+  /** Berapa cepat nyala itu surut tiap detik (1 / lama nyala). */
+  flameDecay: number;
+  /** Posisi sulutan pada lebar bongkahan (0–1). */
+  flameX: number;
+  /** Animasi semburan air ke permukaan (0–1). */
+  spray: number;
+  /** Nilai yang dihaluskan oleh adegan sendiri. */
+  thermal: number;
+  danger: number;
+};
+
+/** Keadaan awal modul. */
+export function createBaraState(waterM: number): BaraState {
+  return {
+    act: 0,
+    view: "permukaan",
+    hoursPerSecond: 0,
+    waterM,
+    reducedMotion: false,
+    flame: 0,
+    flameDecay: 1,
+    flameX: 0.5,
+    spray: 0,
+    thermal: 0,
+    danger: 0,
+  };
+}
+
+/** Penurunan permukaan per kolom, dihitung ulang berkala dari simulasi. */
+export type Subsidence = {
+  /** Penurunan permukaan (m) pada posisi x (meter, 0 di tengah bongkahan). */
+  fn: (x: number) => number;
+  /** Bertambah setiap kali nilainya berubah, agar geometri tahu harus dibentuk ulang. */
+  version: number;
+  /** Hitung ulang dari keadaan simulasi sekarang. */
+  refresh: () => void;
+};
+
+/**
+ * Pelacak penurunan permukaan. Nilai per kolom dihaluskan dengan rata-rata
+ * bergerak agar permukaan melesak mulus, bukan bergerigi mengikuti kisi.
+ */
+export function createSubsidence(sim: SmolderSim): Subsidence {
+  const raw = new Float32Array(GRID_COLS);
+  const smooth = new Float32Array(GRID_COLS);
+  const tracker: Subsidence = {
+    version: 0,
+    fn: (x: number) => {
+      const f = (x + BLOCK_WIDTH / 2) / CELL_W - 0.5;
+      const i = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(f)));
+      const j = Math.min(GRID_COLS - 1, i + 1);
+      const t = Math.max(0, Math.min(1, f - i));
+      return smooth[i] + (smooth[j] - smooth[i]) * t;
+    },
+    refresh: () => {
+      for (let col = 0; col < GRID_COLS; col++) raw[col] = sim.subsidenceAt(col);
+      const radius = 3;
+      for (let col = 0; col < GRID_COLS; col++) {
+        let sum = 0;
+        let n = 0;
+        for (let k = col - radius; k <= col + radius; k++) {
+          if (k < 0 || k >= GRID_COLS) continue;
+          sum += raw[k];
+          n++;
+        }
+        smooth[col] = sum / n;
+      }
+      tracker.version++;
+    },
+  };
+  return tracker;
+}

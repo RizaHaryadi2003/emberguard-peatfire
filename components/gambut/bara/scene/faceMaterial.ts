@@ -1,0 +1,319 @@
+import * as THREE from "three";
+import { PEAT_LAYERS, PROFILE_DEPTH } from "@/lib/peat";
+import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder";
+
+// Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul 02 ditentukan
+// di sini: strata gambut dari tekstur foto, gelap-terangnya gambut basah,
+// jaringan bara yang berpijar, rongga abu yang melesak ke dalam, sampai mode
+// termal. Semua dibaca dari satu tekstur data hasil simulasi `SmolderSim`
+// (R = abu, G = panas bara, B = kelembapan, A = hangus).
+//
+// Ditulis sebagai peneduh sendiri, bukan MeshStandardMaterial, karena yang
+// dibutuhkan bukan sekadar pewarnaan: rongga abu harus benar-benar masuk ke
+// dalam bongkahan (perpindahan titik), tepi baranya harus berpijar dan
+// berkedip, dan seluruh bidang harus bisa berganti menjadi citra termal.
+
+/** Kedalaman rongga abu ke dalam bongkahan (m) saat gambut habis terbakar. */
+const CAVITY_DEPTH = 0.16;
+
+const VERTEX = /* glsl */ `
+attribute float aDepth;
+
+uniform sampler2D uField;
+uniform float uCavity;
+
+varying vec2 vUv;
+varying float vDepth;
+varying vec3 vWorld;
+varying float vAsh;
+
+#include <fog_pars_vertex>
+
+void main() {
+  vUv = uv;
+  vDepth = aDepth;
+
+  vec4 field = texture2D(uField, uv);
+  vAsh = field.r;
+
+  // Gambut yang sudah menjadi abu ditarik masuk sehingga terbentuk rongga nyata.
+  vec3 p = position;
+  p.z -= vAsh * uCavity;
+
+  vec4 world = modelMatrix * vec4(p, 1.0);
+  vWorld = world.xyz;
+  vec4 mvPosition = viewMatrix * world;
+  gl_Position = projectionMatrix * mvPosition;
+
+  #include <fog_vertex>
+}
+`;
+
+const FRAGMENT = /* glsl */ `
+uniform sampler2D uColor0;
+uniform sampler2D uColor1;
+uniform sampler2D uColor2;
+uniform sampler2D uColor3;
+uniform sampler2D uNormal0;
+uniform sampler2D uNormal1;
+uniform sampler2D uNormal2;
+uniform sampler2D uNormal3;
+uniform sampler2D uField;
+
+uniform vec2 uTexel;
+uniform vec3 uBounds;      // kedalaman batas fibrik/hemik, hemik/saprik, saprik/mineral (m)
+uniform float uProfile;    // kedalaman seluruh profil (m)
+uniform float uUvScale;    // pengulangan tekstur per meter
+uniform float uTime;
+uniform vec3 uSunDir;
+uniform vec3 uSunColor;
+uniform float uSunIntensity;
+uniform vec3 uAmbient;
+uniform float uWaterDepth;  // muka air tanah (m di bawah permukaan)
+uniform float uDouse;       // sisa air siraman permukaan (0–1)
+uniform float uThermal;     // 0 = tampilan nyata, 1 = citra termal
+uniform float uCavity;
+uniform float uFlicker;     // 0 bila pengguna meminta gerak dikurangi
+uniform float uHotspot;     // kekuatan sulutan di permukaan (0–1)
+uniform float uHotspotX;    // posisi sulutan pada bidang potong (0–1)
+
+varying vec2 vUv;
+varying float vDepth;
+varying vec3 vWorld;
+varying float vAsh;
+
+// Bagian pemetaan nada & ruang warna sudah disisipkan three.js pada awal
+// peneduh, jadi di sini cukup bagian penerapannya di akhir fungsi utama.
+#include <fog_pars_fragment>
+
+/** Derau halus dua dimensi untuk bintik & kedipan. */
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+/** Bobot tiap lapisan pada kedalaman d, dengan peralihan yang lembut. */
+vec4 layerWeights(float d) {
+  float w = 0.09; // lebar peralihan antarlapisan (m)
+  float b0 = smoothstep(uBounds.x - w, uBounds.x + w, d);
+  float b1 = smoothstep(uBounds.y - w, uBounds.y + w, d);
+  float b2 = smoothstep(uBounds.z - w, uBounds.z + w, d);
+  return vec4(1.0 - b0, b0 - b1, b1 - b2, b2);
+}
+
+/** Skala warna tiap lapisan (sama dengan rona pada Modul 01). */
+vec3 tintFor(vec4 w) {
+  return w.x * vec3(1.0, 0.8, 0.62) + w.y * vec3(0.86, 0.72, 0.6) + w.z * vec3(0.46, 0.36, 0.28) + w.w * vec3(0.8, 0.82, 0.84);
+}
+
+/** Palet citra termal: biru tua (dingin & basah) sampai putih (bara). */
+vec3 thermalRamp(float v) {
+  vec3 c = mix(vec3(0.015, 0.03, 0.11), vec3(0.09, 0.05, 0.36), smoothstep(0.0, 0.28, v));
+  c = mix(c, vec3(0.52, 0.08, 0.36), smoothstep(0.28, 0.5, v));
+  c = mix(c, vec3(1.0, 0.36, 0.03), smoothstep(0.5, 0.74, v));
+  c = mix(c, vec3(1.0, 0.93, 0.72), smoothstep(0.74, 1.0, v));
+  return c;
+}
+
+void main() {
+  vec4 field = texture2D(uField, vUv);
+  float ash = field.r;
+  float heat = field.g;
+  float char = field.a;
+
+  // --- Kelembapan dihitung mulus dari muka air tanah (bukan dari tekstur,
+  // agar garis airnya tidak berbintik-bintik seperti kisi simulasi).
+  float above = uWaterDepth - vDepth;
+  float wet = above <= 0.0 ? 1.0 : clamp(1.0 - above / ${CAPILLARY_RISE.toFixed(3)}, 0.0, 1.0);
+  float doused = vDepth < ${DOUSE_DEPTH.toFixed(3)} ? uDouse * (1.0 - vDepth / ${DOUSE_DEPTH.toFixed(3)}) : 0.0;
+  float moisture = clamp(wet + doused, 0.0, 1.0);
+
+  // --- Warna dasar gambut: campuran empat tekstur lapisan menurut kedalaman.
+  vec2 uvT = vec2(vWorld.x, vWorld.y) * uUvScale;
+  vec4 w = layerWeights(vDepth);
+  vec3 albedo =
+    texture2D(uColor0, uvT).rgb * w.x +
+    texture2D(uColor1, uvT).rgb * w.y +
+    texture2D(uColor2, uvT).rgb * w.z +
+    texture2D(uColor3, uvT).rgb * w.w;
+  albedo *= tintFor(w);
+
+  // --- Normal permukaan: peta normal lapisan + lekuk tepi rongga abu.
+  vec3 nMap =
+    texture2D(uNormal0, uvT).rgb * w.x +
+    texture2D(uNormal1, uvT).rgb * w.y +
+    texture2D(uNormal2, uvT).rgb * w.z +
+    texture2D(uNormal3, uvT).rgb * w.w;
+  vec3 nPeat = normalize(vec3((nMap.xy * 2.0 - 1.0) * 1.3, nMap.z));
+
+  // Ragam skala besar agar tekstur foto tidak tampak berulang, ditambah
+  // guratan mendatar mengikuti arah pengendapan bahan organik. Guratan paling
+  // jelas di gambut fibrik yang seratnya masih utuh, dan hampir hilang di
+  // saprik yang sudah halus.
+  float mottle = noise(vec2(vWorld.x, vWorld.y) * 0.55) * 0.45 + noise(vec2(vWorld.x, vWorld.y) * 1.7) * 0.25;
+  float bedding = noise(vec2(vWorld.x * 0.8, vWorld.y * 19.0));
+  float fibrous = w.x * 1.0 + w.y * 0.6 + w.z * 0.25 + w.w * 0.15;
+  albedo *= 0.78 + mottle * 0.5;
+  albedo *= 1.0 + (bedding - 0.5) * 0.34 * fibrous;
+
+  float aL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).r;
+  float aR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).r;
+  float aU = texture2D(uField, vUv - vec2(0.0, uTexel.y)).r;
+  float aD = texture2D(uField, vUv + vec2(0.0, uTexel.y)).r;
+  vec3 nAsh = normalize(vec3((aL - aR) * uCavity * 26.0, (aD - aU) * uCavity * 26.0, 1.0));
+  vec3 N = normalize(mix(nPeat, nAsh, smoothstep(0.05, 0.6, ash)));
+
+  // --- Gambut basah: lebih gelap, sedikit kebiruan, dan berkilap. Peralihan
+  // kering→basah dibuat tidak rata agar garis airnya terlihat alami.
+  float wetEdge = clamp(moisture + (mottle - 0.35) * 0.18, 0.0, 1.0);
+  albedo = mix(albedo, albedo * vec3(0.5, 0.54, 0.6), wetEdge);
+
+  // --- Bekas terbakar: gambut hangus, lalu abu di dalam rongga.
+  albedo = mix(albedo, vec3(0.085, 0.062, 0.05), char * 0.85);
+  vec3 ashColor = mix(vec3(0.045, 0.04, 0.038), vec3(0.2, 0.19, 0.18), noise(uvT * 7.0));
+  albedo = mix(albedo, ashColor, smoothstep(0.1, 0.9, ash));
+
+  // --- Pencahayaan: matahari + cahaya langit, ditambah bayangan lembut di
+  // dalam rongga dan di bawah bibir permukaan.
+  vec3 L = normalize(uSunDir);
+  vec3 V = normalize(cameraPosition - vWorld);
+  float diff = max(dot(N, L), 0.0);
+  float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.72;
+  float lipShade = mix(0.55, 1.0, smoothstep(0.0, 0.16, vDepth));
+  float spec = pow(max(dot(N, normalize(L + V)), 0.0), 48.0) * moisture * 0.5;
+
+  // Cahaya matahari sengaja diberi porsi besar dibanding cahaya langit supaya
+  // relief peta normal terbaca dan penampang tidak tampak rata.
+  vec3 color = albedo * (uAmbient * 0.85 + uSunColor * uSunIntensity * diff * 0.5) * cavityShade * lipShade;
+  color += uSunColor * spec * uSunIntensity * 0.16;
+
+  // --- Bara: pijar yang menguat di tepi depan, berkedip halus.
+  float flick = 1.0 - uFlicker * 0.32 * (noise(vUv * 12.0 + uTime * 0.9) + noise(vUv * 31.0 - uTime * 1.7) - 1.0);
+  float glow = heat * flick;
+  // Pijar merembes sedikit ke gambut di sekelilingnya.
+  float halo = max(max(texture2D(uField, vUv + vec2(uTexel.x * 2.0, 0.0)).g,
+                       texture2D(uField, vUv - vec2(uTexel.x * 2.0, 0.0)).g),
+                   max(texture2D(uField, vUv + vec2(0.0, uTexel.y * 2.0)).g,
+                       texture2D(uField, vUv - vec2(0.0, uTexel.y * 2.0)).g));
+  vec3 emberColor = mix(vec3(0.75, 0.09, 0.01), vec3(1.0, 0.42, 0.06), smoothstep(0.2, 0.7, glow));
+  emberColor = mix(emberColor, vec3(1.0, 0.82, 0.45), smoothstep(0.75, 1.0, glow));
+  color += emberColor * (glow * 1.7 + halo * halo * 0.35);
+
+  // --- Titik sulutan di permukaan pada babak pertama.
+  float hotDist = length(vec2((vUv.x - uHotspotX) * 2.2, vDepth * 3.2));
+  color += vec3(1.0, 0.45, 0.12) * uHotspot * exp(-hotDist * 5.0) * 2.0;
+
+  // --- Garis muka air tanah.
+  float line = 1.0 - smoothstep(0.0, 0.016, abs(vDepth - uWaterDepth));
+  color += vec3(0.35, 0.72, 0.95) * line * 0.85;
+
+  // --- Citra termal: warna palsu menurut panas & kelembapan.
+  float tv = max(heat, max(0.3 * (1.0 - moisture), ash * 0.3));
+  vec3 thermal = thermalRamp(clamp(tv, 0.0, 1.0));
+  // Garis kedalaman tiap 0,5 m sebagai penggaris pada citra termal.
+  float ruler = 1.0 - smoothstep(0.0, 0.006, abs(fract(vDepth * 2.0) - 0.5) * 0.5);
+  thermal += vec3(0.16, 0.2, 0.26) * ruler;
+  thermal += vec3(0.2, 0.55, 0.8) * line;
+  color = mix(color, thermal, uThermal);
+
+  gl_FragColor = vec4(color, 1.0);
+
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}
+`;
+
+export type FaceUniforms = {
+  uField: { value: THREE.Texture };
+  uTime: { value: number };
+  uSunDir: { value: THREE.Vector3 };
+  uSunColor: { value: THREE.Color };
+  uSunIntensity: { value: number };
+  uAmbient: { value: THREE.Color };
+  uWaterDepth: { value: number };
+  uDouse: { value: number };
+  uThermal: { value: number };
+  uFlicker: { value: number };
+  uHotspot: { value: number };
+  uHotspotX: { value: number };
+};
+
+/**
+ * Buat material bidang potong. `colors` & `normals` berurutan sesuai
+ * `PEAT_LAYERS` (fibrik, hemik, saprik, mineral).
+ */
+export function createFaceMaterial(
+  colors: THREE.Texture[],
+  normals: THREE.Texture[],
+  field: THREE.Texture,
+  sunDir: THREE.Vector3,
+): THREE.ShaderMaterial {
+  const bounds = new THREE.Vector3(PEAT_LAYERS[0].bottom, PEAT_LAYERS[1].bottom, PEAT_LAYERS[2].bottom);
+  const material = new THREE.ShaderMaterial({
+    vertexShader: VERTEX,
+    fragmentShader: FRAGMENT,
+    fog: true,
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {
+        uColor0: { value: null },
+        uColor1: { value: null },
+        uColor2: { value: null },
+        uColor3: { value: null },
+        uNormal0: { value: null },
+        uNormal1: { value: null },
+        uNormal2: { value: null },
+        uNormal3: { value: null },
+        uField: { value: null },
+        uTexel: { value: new THREE.Vector2(1 / GRID_COLS, 1 / GRID_ROWS) },
+        uBounds: { value: bounds },
+        uProfile: { value: PROFILE_DEPTH },
+        uUvScale: { value: 0.75 },
+        uTime: { value: 0 },
+        uSunDir: { value: sunDir.clone() },
+        uSunColor: { value: new THREE.Color(1, 0.86, 0.68) },
+        uSunIntensity: { value: 3.6 },
+        uAmbient: { value: new THREE.Color(0.32, 0.34, 0.36) },
+        uWaterDepth: { value: 0.85 },
+        uDouse: { value: 0 },
+        uThermal: { value: 0 },
+        uCavity: { value: CAVITY_DEPTH },
+        uFlicker: { value: 1 },
+        uHotspot: { value: 0 },
+        uHotspotX: { value: 0.5 },
+      },
+    ]),
+  });
+  // `UniformsUtils.merge` menyalin nilainya, jadi tekstur dipasang setelahnya.
+  assignFaceTextures(material, colors, normals, field);
+  return material;
+}
+
+/** Pasang tekstur ke material (tekstur tidak boleh ikut disalin saat merge). */
+export function assignFaceTextures(
+  material: THREE.ShaderMaterial,
+  colors: THREE.Texture[],
+  normals: THREE.Texture[],
+  field: THREE.Texture,
+): void {
+  material.uniforms.uColor0.value = colors[0];
+  material.uniforms.uColor1.value = colors[1];
+  material.uniforms.uColor2.value = colors[2];
+  material.uniforms.uColor3.value = colors[3];
+  material.uniforms.uNormal0.value = normals[0];
+  material.uniforms.uNormal1.value = normals[1];
+  material.uniforms.uNormal2.value = normals[2];
+  material.uniforms.uNormal3.value = normals[3];
+  material.uniforms.uField.value = field;
+}

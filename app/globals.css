@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* ---------- Font ---------- */
+/* Variabel --font-inter & --font-playfair diisi next/font di app/layout.tsx. */
+* {
+  font-family: var(--font-inter), "Inter", sans-serif;
+}
+
+.font-playfair {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+}
+
+html,
+body {
+  background: #000;
+}
+
+/* ---------- Pengatur muka air (Modul Anatomi Gambut) ---------- */
+/* Trek bawaan disembunyikan; trek berwarna digambar oleh elemen di belakangnya. */
+.water-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.water-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+.water-slider::-moz-range-track {
+  height: 6px;
+  background: transparent;
+}
+.water-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.12), 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: box-shadow 0.2s;
+}
+.water-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.12), 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+.water-slider:hover::-webkit-slider-thumb,
+.water-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.16), 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+.water-slider:focus-visible {
+  outline: none;
+}
+
+/* ---------- Animasi pembuka hero ---------- */
+/* Judul: naik sambil memudar dari buram. */
+@keyframes heroReveal {
+  0% { opacity: 0; transform: translateY(28px); filter: blur(12px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Paragraf & tombol: naik sambil memudar. */
+@keyframes heroFadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Gambar dasar: zoom-out perlahan (efek Ken Burns). */
+@keyframes heroZoom {
+  0% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.hero-anim {
+  opacity: 0;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-reveal {
+  animation-name: heroReveal;
+  animation-duration: 1.1s;
+}
+
+.hero-fade {
+  animation-name: heroFadeUp;
+  animation-duration: 1s;
+}
+
+.hero-zoom {
+  animation: heroZoom 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hormati pengguna yang meminta gerak dikurangi. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-anim,
+  .hero-zoom {
+    animation: none;
+    opacity: 1;
+  }
+}

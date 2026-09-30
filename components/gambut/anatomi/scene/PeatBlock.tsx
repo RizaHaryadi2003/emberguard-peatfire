@@ -1,0 +1,324 @@
+"use client";
+
+import { useEffect, useMemo, useRef, type RefObject } from "react";
+import * as THREE from "three";
+import { useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
+import { createEmberTexture } from "@/components/gambut/scene/proceduralTextures";
+import { seeded } from "@/lib/random";
+import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab, wallPoint } from "@/components/gambut/scene/terrain";
+import { EXPLODE_GAP, EXPLODE_STEP, type SceneState } from "./sceneState";
+
+/** Rona pengali warna tekstur agar tiap lapisan tampak khas. */
+const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
+  fibrik: [1.0, 0.8, 0.62],
+  hemik: [0.86, 0.72, 0.6],
+  saprik: [0.46, 0.36, 0.28],
+  mineral: [0.8, 0.82, 0.84],
+};
+
+/** Gambut basah tampak lebih gelap dan berkilap. */
+const WET_DARKEN = 0.5;
+
+/** Seberapa jauh lapisan terpilih maju ke arah kamera, dan lapisan lain mundur (m). */
+const FOCUS_FORWARD = 1.0;
+const RECEDE_BACK = 0.45;
+
+const UP = new THREE.Vector3(0, 1, 0);
+
+type Props = {
+  stateRef: RefObject<SceneState>;
+  onHoverLayer: (id: PeatLayerId | null) => void;
+  onSelectLayer: (id: PeatLayerId | null) => void;
+};
+
+/** Salin mesh dari model glTF agar siap ditempatkan berulang (geometri & material dipakai bersama). */
+function modelParts(root: THREE.Object3D) {
+  const parts: THREE.Mesh[] = [];
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const clone = m.clone();
+    clone.position.set(0, 0, 0);
+    clone.castShadow = true;
+    clone.receiveShadow = true;
+    parts.push(clone);
+  });
+  return parts;
+}
+
+function maxSize(obj: THREE.Object3D) {
+  const s = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+  return Math.max(s.x, s.y, s.z);
+}
+
+/**
+ * Bongkahan penampang gambut yang berbentuk alami. Tiap lapisan dipotong
+ * oleh muka air tanah menjadi dua irisan: bagian kering (terang, kasar, bisa
+ * berpijar bara) dan bagian basah (gelap, berkilap). Pada tahap "Lapis demi
+ * lapis", lapisan yang diklik maju ke depan sementara lapisan lain mundur.
+ */
+export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Props) {
+  const urls = PEAT_LAYERS.flatMap((l) => [
+    `/textures/gambut/${l.id}_color.webp`,
+    `/textures/gambut/${l.id}_normal.webp`,
+  ]);
+  const textures = useLoader(THREE.TextureLoader, urls);
+  const [branchG, stoneG] = useLoader(GLTFLoader, ["/models/gambut/ranting.glb", "/models/gambut/batu.glb"]);
+  const emberTexture = useMemo(() => createEmberTexture(), []);
+  const camera = useThree((s) => s.camera);
+
+  const layers = useMemo(
+    () =>
+      PEAT_LAYERS.map((layer, i) => {
+        const map = textures[i * 2];
+        const normalMap = textures[i * 2 + 1];
+        map.colorSpace = THREE.SRGBColorSpace;
+        for (const t of [map, normalMap]) {
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+          t.anisotropy = 8;
+        }
+
+        const tint = new THREE.Color(...LAYER_TINT[layer.id]);
+        const dry = new THREE.MeshStandardMaterial({
+          map,
+          normalMap,
+          color: tint.clone(),
+          roughness: 0.96,
+          normalScale: new THREE.Vector2(1.4, 1.4),
+        });
+        // Hanya lapisan organik yang bisa berpijar; tanah mineral tidak terbakar.
+        if (layer.combustible) {
+          dry.emissive = new THREE.Color("#ff5a1f");
+          dry.emissiveMap = emberTexture;
+          dry.emissiveIntensity = 0;
+        }
+        const wet = new THREE.MeshStandardMaterial({
+          map,
+          normalMap,
+          color: tint.clone().multiplyScalar(WET_DARKEN),
+          roughness: 0.62,
+          envMapIntensity: 0.45,
+          normalScale: new THREE.Vector2(0.9, 0.9),
+        });
+
+        // Batas atas & bawah lapisan mengikuti gelombang batas antarlapisan.
+        const topFn = (x: number, z: number) => interfaceY(layer.top, x, z);
+        const bottomFn = (x: number, z: number) => interfaceY(layer.bottom, x, z);
+
+        return { layer, tint, dry, wet, topFn, bottomFn, dryGeom: createSlab(), wetGeom: createSlab() };
+      }),
+    [textures, emberTexture],
+  );
+
+  // Detail tanah: akar/ranting mencuat dari dinding fibrik & hemik, kerikil di tanah mineral.
+  const details = useMemo(() => {
+    const rand = seeded(5);
+    const branchParts = modelParts(branchG.scene);
+    const stoneParts = modelParts(stoneG.scene);
+    const byLayer: Record<PeatLayerId, THREE.Object3D[]> = { fibrik: [], hemik: [], saprik: [], mineral: [] };
+
+    const placeOnWall = (template: THREE.Mesh, size: number, theta: number, y: number, inset: number) => {
+      const inner = template.clone();
+      // Sejajarkan sumbu terpanjang model dengan sumbu x lokal, lalu pusatkan.
+      const box = new THREE.Box3().setFromObject(inner);
+      const dims = box.getSize(new THREE.Vector3());
+      if (dims.z > dims.x) inner.rotation.y = Math.PI / 2;
+      if (dims.y > Math.max(dims.x, dims.z)) inner.rotation.z = Math.PI / 2;
+      inner.updateMatrixWorld(true);
+      const center = new THREE.Box3().setFromObject(inner).getCenter(new THREE.Vector3());
+      inner.position.sub(center);
+
+      const obj = new THREE.Group();
+      obj.add(inner);
+      obj.scale.setScalar(size / Math.max(maxSize(template), 0.01));
+      obj.position.copy(wallPoint(theta, y, inset));
+      // Sumbu x lokal diarahkan keluar dari dinding, dengan sedikit kemiringan acak.
+      obj.rotation.set((rand() - 0.5) * 0.5, -theta + (rand() - 0.5) * 0.7, (rand() - 0.5) * 0.6);
+      return obj;
+    };
+
+    for (let i = 0; i < 11; i++) {
+      const theta = rand() * Math.PI * 2;
+      const deep = rand() < 0.35;
+      const y = deep ? -0.7 - rand() * 0.6 : -0.08 - rand() * 0.42;
+      const part = branchParts[Math.floor(rand() * branchParts.length)];
+      byLayer[deep ? "hemik" : "fibrik"].push(placeOnWall(part, 0.4 + rand() * 0.35, theta, y, 0.06));
+    }
+    for (let i = 0; i < 16; i++) {
+      const theta = rand() * Math.PI * 2;
+      const y = -2.9 - rand() * 0.4;
+      byLayer.mineral.push(placeOnWall(stoneParts[0], 0.07 + rand() * 0.1, theta, y, 0.03));
+    }
+    return byLayer;
+  }, [branchG, stoneG]);
+
+  // Bebaskan memori GPU saat komponen dilepas.
+  useEffect(
+    () => () => {
+      for (const l of layers) {
+        l.dry.dispose();
+        l.wet.dispose();
+        l.dryGeom.dispose();
+        l.wetGeom.dispose();
+      }
+      emberTexture.dispose();
+    },
+    [layers, emberTexture],
+  );
+
+  const groupRefs = useRef<(THREE.Group | null)[]>([]);
+  const dryMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const wetMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const rootRef = useRef<THREE.Group>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const ring = useMemo(
+    () => ({
+      geom: createRibbon(),
+      mat: new THREE.MeshBasicMaterial({
+        color: "#8fd8ff",
+        transparent: true,
+        opacity: 0.9,
+        toneMapped: false,
+        side: THREE.DoubleSide,
+      }),
+    }),
+    [],
+  );
+  useEffect(
+    () => () => {
+      ring.geom.dispose();
+      ring.mat.dispose();
+    },
+    [ring],
+  );
+
+  // Nilai yang dianimasikan menuju target secara halus.
+  const anim = useRef({
+    water: -1,
+    lastWater: -999, // nilai mustahil agar irisan pasti dibentuk pada bingkai pertama
+    highlight: PEAT_LAYERS.map(() => 0),
+    focus: PEAT_LAYERS.map(() => 0),
+    recede: PEAT_LAYERS.map(() => 0),
+  });
+  const dir = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame((state, delta) => {
+    const s = stateRef.current;
+    if (!s) return;
+    const a = anim.current;
+    const dt = Math.min(delta, 0.05);
+    const fast = s.reducedMotion;
+    const t = state.clock.elapsedTime;
+
+    const targetWater = s.waterCm / 100;
+    a.water = a.water < 0 ? targetWater : THREE.MathUtils.damp(a.water, targetWater, fast ? 30 : 3.2, dt);
+
+    // Bentuk ulang irisan kering/basah hanya bila muka air berubah.
+    const rebuild = Math.abs(a.water - a.lastWater) > 1e-4;
+    if (rebuild) a.lastWater = a.water;
+    const w = -a.water;
+
+    // Arah menuju kamera dalam koordinat lokal diorama (yang ikut berputar).
+    const parentRot = rootRef.current?.parent?.rotation.y ?? 0;
+    dir.set(camera.position.x, 0, camera.position.z).normalize().applyAxisAngle(UP, -parentRot);
+
+    const focusIdx = s.step === EXPLODE_STEP && s.focused ? PEAT_LAYERS.findIndex((l) => l.id === s.focused) : -1;
+
+    layers.forEach((l, i) => {
+      if (rebuild) {
+        const dryMesh = dryMeshRefs.current[i];
+        const wetMesh = wetMeshRefs.current[i];
+        if (dryMesh) {
+          const thick = updateSlab(l.dryGeom, (x, z) => Math.min(l.topFn(x, z), Math.max(l.bottomFn(x, z), w)), l.topFn);
+          dryMesh.visible = thick > 0.002;
+        }
+        if (wetMesh) {
+          const thick = updateSlab(l.wetGeom, l.bottomFn, (x, z) => Math.max(l.bottomFn(x, z), Math.min(l.topFn(x, z), w)));
+          wetMesh.visible = thick > 0.002;
+        }
+      }
+
+      // Fokus lapisan: yang dipilih maju & sedikit membesar, sisanya mundur & meredup.
+      a.focus[i] = THREE.MathUtils.damp(a.focus[i], i === focusIdx ? 1 : 0, fast ? 30 : 4, dt);
+      a.recede[i] = THREE.MathUtils.damp(a.recede[i], focusIdx >= 0 && i !== focusIdx ? 1 : 0, fast ? 30 : 4, dt);
+      const push = FOCUS_FORWARD * a.focus[i] - RECEDE_BACK * a.recede[i];
+
+      // Tampilan terurai: lapisan dasar tetap, lapisan di atasnya terangkat bertahap.
+      const group = groupRefs.current[i];
+      if (group) {
+        group.position.set(dir.x * push, (layers.length - 1 - i) * EXPLODE_GAP * s.explode, dir.z * push);
+        group.scale.setScalar(1 + 0.04 * a.focus[i]);
+      }
+
+      // Sorotan lapisan: warna dicerahkan saat disorot, diredupkan saat mundur.
+      a.highlight[i] = THREE.MathUtils.damp(a.highlight[i], s.hovered === l.layer.id ? 1 : 0, 8, dt);
+      const boost = (1 + a.highlight[i] * 0.45) * (1 - a.recede[i] * 0.6);
+      l.dry.color.copy(l.tint).multiplyScalar(boost);
+      l.wet.color.copy(l.tint).multiplyScalar(WET_DARKEN * boost);
+
+      // Pijar bara berdenyut pada gambut kering saat kondisi rawan.
+      if (l.layer.combustible) {
+        const flicker = fast ? 1 : 0.72 + 0.28 * Math.sin(t * 6.1 + i * 1.7) * Math.sin(t * 2.3 + i);
+        l.dry.emissiveIntensity = s.danger * 2.4 * flicker;
+      }
+    });
+
+    // Garis muka air tanah mengelilingi bongkahan; disembunyikan saat terurai.
+    if (ringRef.current) {
+      if (rebuild) updateRibbon(ring.geom, w);
+      ring.mat.opacity = 0.9 * (1 - s.explode);
+      ringRef.current.visible = ring.mat.opacity > 0.02;
+    }
+  });
+
+  const handlers = (id: PeatLayerId) => ({
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      onHoverLayer(id);
+      document.body.style.cursor = "pointer";
+    },
+    onPointerOut: () => {
+      onHoverLayer(null);
+      document.body.style.cursor = "";
+    },
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      // Klik lapisan hanya bermakna saat lapisan sedang terurai.
+      if (stateRef.current?.step !== EXPLODE_STEP) return;
+      e.stopPropagation();
+      onSelectLayer(stateRef.current.focused === id ? null : id);
+    },
+  });
+
+  return (
+    <group ref={rootRef}>
+      {layers.map((l, i) => (
+        <group key={l.layer.id} ref={(el) => void (groupRefs.current[i] = el)}>
+          <mesh
+            ref={(el) => void (dryMeshRefs.current[i] = el)}
+            geometry={l.dryGeom}
+            material={l.dry}
+            castShadow
+            receiveShadow
+            {...handlers(l.layer.id)}
+          />
+          <mesh
+            ref={(el) => void (wetMeshRefs.current[i] = el)}
+            geometry={l.wetGeom}
+            material={l.wet}
+            castShadow
+            receiveShadow
+            {...handlers(l.layer.id)}
+          />
+          {details[l.layer.id].map((obj) => (
+            <primitive key={obj.uuid} object={obj} />
+          ))}
+        </group>
+      ))}
+
+      {/* Pita garis muka air tanah */}
+      <mesh ref={ringRef} geometry={ring.geom} material={ring.mat} />
+    </group>
+  );
+}
