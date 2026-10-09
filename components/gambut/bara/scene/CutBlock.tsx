@@ -10,6 +10,7 @@ import { interfaceY } from "@/components/gambut/scene/terrain";
 import {
   createFaceGrid,
   createHalfBody,
+  surfaceRelief,
   updateFaceGrid,
   updateHalfBody,
   FACE_Z,
@@ -106,7 +107,10 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       updateHalfBody(
         geom,
         (x, z) => interfaceY(layer.bottom, x, z),
-        (x, z) => interfaceY(layer.top, x, z),
+        // Lapisan teratas memakai relief permukaan yang sama dengan bidang
+        // potong (`interfaceY(0, …)` bernilai nol), supaya tepi atas keduanya
+        // menyambung tanpa celah.
+        i === 0 ? (x, z) => surfaceRelief(x, z) : (x, z) => interfaceY(layer.top, x, z),
         // Hanya lapisan teratas yang permukaannya melesak.
         i === 0 ? drop : undefined,
       );
@@ -190,9 +194,14 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       />
 
       {/* Bidang gelap tepat di belakang penampang agar rongga abu tidak bolong
-          ke latar saat titiknya tertarik ke dalam. */}
-      <mesh position={[0, -PROFILE_DEPTH / 2 - 0.06, -0.3]}>
-        <planeGeometry args={[3.8, PROFILE_DEPTH]} />
+          ke latar saat titiknya tertarik ke dalam.
+          Lebarnya dinaikkan sedikit agar rongga di dekat tepi tetap tertutup,
+          tetapi tetap harus lebih sempit daripada bongkahan — bila melebihi
+          silhuet, bidang ini terlihat sebagai bingkai hitam di sekeliling
+          bongkahan. Pusatnya digeser karena tapak bongkahan tidak simetris:
+          tepi kanan berada lebih jauh daripada tepi kiri. */}
+      <mesh position={[0.13, -PROFILE_DEPTH / 2 - 0.06, -0.3]}>
+        <planeGeometry args={[4, PROFILE_DEPTH]} />
         <meshBasicMaterial color="#080604" />
       </mesh>
     </group>

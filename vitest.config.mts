@@ -9,8 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts"],
-    // Belum ada berkas uji pada tahap awal; jangan anggap itu kegagalan.
+    // Logika murni ada di lib/, tetapi sebagian bentuk geometri diorama masih
+    // berada di components/ bersama komponennya; keduanya diuji.
+    include: ["lib/**/*.test.ts", "components/**/*.test.ts"],
     passWithNoTests: true,
   },
 });

@@ -18,12 +18,14 @@ const CAVITY_DEPTH = 0.16;
 
 const VERTEX = /* glsl */ `
 attribute float aDepth;
+attribute float aEdge;
 
 uniform sampler2D uField;
 uniform float uCavity;
 
 varying vec2 vUv;
 varying float vDepth;
+varying float vEdge;
 varying vec3 vWorld;
 varying float vAsh;
 
@@ -32,6 +34,7 @@ varying float vAsh;
 void main() {
   vUv = uv;
   vDepth = aDepth;
+  vEdge = aEdge;
 
   vec4 field = texture2D(uField, uv);
   vAsh = field.r;
@@ -79,6 +82,7 @@ uniform float uHotspotX;    // posisi sulutan pada bidang potong (0–1)
 
 varying vec2 vUv;
 varying float vDepth;
+varying float vEdge;
 varying vec3 vWorld;
 varying float vAsh;
 
@@ -156,6 +160,16 @@ void main() {
     texture2D(uNormal3, uvT).rgb * w.w;
   vec3 nPeat = normalize(vec3((nMap.xy * 2.0 - 1.0) * 1.3, nMap.z));
 
+  // Ketidakrataan tanah berskala besar: normal dimiringkan mengikuti
+  // kemiringan derau halus. Tanpa ini bidang potong terbaca sebagai bidang
+  // rata yang diberi gambar, bukan tanah yang permukaannya memang tidak rata.
+  vec2 q = vec2(vWorld.x, vWorld.y) * 0.85;
+  vec2 ex = vec2(0.14, 0.0);
+  vec2 ey = vec2(0.0, 0.14);
+  float gx = noise(q + ex) - noise(q - ex);
+  float gy = noise(q + ey) - noise(q - ey);
+  nPeat = normalize(nPeat + vec3(-gx, -gy, 0.0) * 1.7);
+
   // Ragam skala besar agar tekstur foto tidak tampak berulang, ditambah
   // guratan mendatar mengikuti arah pengendapan bahan organik. Guratan paling
   // jelas di gambut fibrik yang seratnya masih utuh, dan hampir hilang di
@@ -165,6 +179,17 @@ void main() {
   float fibrous = w.x * 1.0 + w.y * 0.6 + w.z * 0.25 + w.w * 0.15;
   albedo *= 0.78 + mottle * 0.5;
   albedo *= 1.0 + (bedding - 0.5) * 0.34 * fibrous;
+
+  // --- Garis batas antarlapisan. Perpaduan warna antarlapisan saja terlalu
+  // halus untuk dibaca, sehingga susunan strata tidak terlihat. Garis ini
+  // tipis dan hanya menggelapkan sedikit; batasnya dibuat bergelombang
+  // mengikuti derau agar tidak tampak ditarik dengan penggaris.
+  float waver = (noise(vec2(vWorld.x * 0.65, 3.1)) - 0.5) * 0.08;
+  float seam =
+    (1.0 - smoothstep(0.0, 0.024, abs(vDepth - uBounds.x - waver))) * 0.8 +
+    (1.0 - smoothstep(0.0, 0.026, abs(vDepth - uBounds.y - waver))) * 0.9 +
+    (1.0 - smoothstep(0.0, 0.03, abs(vDepth - uBounds.z - waver)));
+  albedo *= 1.0 - seam * 0.3;
 
   float aL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).r;
   float aR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).r;
@@ -207,15 +232,38 @@ void main() {
                        texture2D(uField, vUv - vec2(0.0, uTexel.y * 2.0)).g));
   vec3 emberColor = mix(vec3(0.75, 0.09, 0.01), vec3(1.0, 0.42, 0.06), smoothstep(0.2, 0.7, glow));
   emberColor = mix(emberColor, vec3(1.0, 0.82, 0.45), smoothstep(0.75, 1.0, glow));
-  color += emberColor * (glow * 1.7 + halo * halo * 0.35);
+  color += emberColor * (glow * 2.0 + halo * halo * 0.5);
+
+  // --- Tepi depan bara. Inilah yang sebenarnya ingin dilihat pembaca: batas
+  // antara gambut yang sudah membara dan yang belum. Nilai panasnya saja
+  // terlalu merata untuk menunjukkannya, jadi tepinya ditebalkan memakai
+  // besar perubahan panas antar sel yang bersebelahan.
+  float hL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).g;
+  float hR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).g;
+  float hU = texture2D(uField, vUv - vec2(0.0, uTexel.y)).g;
+  float hD = texture2D(uField, vUv + vec2(0.0, uTexel.y)).g;
+  float front = clamp(length(vec2(hR - hL, hD - hU)) * 2.6, 0.0, 1.0);
+  color += vec3(1.0, 0.66, 0.26) * front * max(glow, halo) * 1.3;
 
   // --- Titik sulutan di permukaan pada babak pertama.
   float hotDist = length(vec2((vUv.x - uHotspotX) * 2.2, vDepth * 3.2));
   color += vec3(1.0, 0.45, 0.12) * uHotspot * exp(-hotDist * 5.0) * 2.0;
 
-  // --- Garis muka air tanah.
-  float line = 1.0 - smoothstep(0.0, 0.016, abs(vDepth - uWaterDepth));
-  color += vec3(0.35, 0.72, 0.95) * line * 0.85;
+  // --- Garis muka air tanah, dengan pias lembut di bawahnya supaya batas
+  // kering–basah terbaca sebagai bidang, bukan sekadar satu garis.
+  float line = 1.0 - smoothstep(0.0, 0.021, abs(vDepth - uWaterDepth));
+  float band = (1.0 - smoothstep(0.0, 0.16, abs(vDepth - uWaterDepth))) * step(uWaterDepth, vDepth);
+  color += vec3(0.33, 0.68, 0.93) * (line * 0.95 + band * 0.1);
+
+  // --- Penggaris kedalaman di tepi kiri: tanda tiap 0,5 m, lebih panjang
+  // tiap 1 m. Pembaca jadi dapat menyebut kedalaman baranya, bukan menebak
+  // dari tinggi gambar. Hanya tampil pada tampilan nyata karena citra termal
+  // sudah punya penggarisnya sendiri.
+  float near05 = abs(vDepth / 0.5 - floor(vDepth / 0.5 + 0.5)) * 0.5;
+  float near10 = abs(vDepth - floor(vDepth + 0.5));
+  float tickLen = near10 < 0.006 ? 0.085 : 0.05;
+  float tick = (1.0 - smoothstep(0.004, 0.009, near05)) * (1.0 - smoothstep(tickLen - 0.014, tickLen, vEdge));
+  color += vec3(0.68, 0.7, 0.74) * tick * 0.6 * (1.0 - uThermal);
 
   // --- Citra termal: warna palsu menurut panas & kelembapan.
   float tv = max(heat, max(0.3 * (1.0 - moisture), ash * 0.3));

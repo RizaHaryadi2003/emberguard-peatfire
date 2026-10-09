@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
-import { footprintRadius, interfaceY, radiusAt } from "@/components/gambut/scene/terrain";
+import { interfaceY, radiusAt } from "@/components/gambut/scene/terrain";
 
 // Bentuk bongkahan gambut Modul 02: bongkahan yang sama seperti Modul 01,
 // tetapi dipotong tepat di tengah (bidang z = 0) dan hanya separuh belakang
@@ -41,15 +41,65 @@ function thetaAt(i: number): number {
 }
 
 /**
- * Batas kiri & kanan bidang potong pada ketinggian y. Dipakai jari-jari tapak
- * (tanpa relief dinding) lalu disisipkan sedikit ke dalam, supaya tepi bidang
- * potong selalu berada di dalam badan bongkahan dan garis tepinya tenang.
+ * Relief permukaan gambut (m, bertanda) di titik (x, z). Permukaan gambut
+ * alami tidak rata melainkan bergundukan: tumpukan lumut dan akar membentuk
+ * gundukan rendah selebar satu sampai dua meter.
+ *
+ * Tanpa relief ini, tepi atas bidang potong menjadi garis lurus sempurna
+ * sepanjang 4,4 m — penyebab utama bongkahan tampak seperti kue yang
+ * dipotong, bukan tanah yang digali.
+ *
+ * Hanya dipakai Modul 02. `interfaceY` pada `terrain.ts` sengaja tidak diubah
+ * agar tampilan Modul 01 yang sudah jadi tidak bergeser.
+ */
+export function surfaceRelief(x: number, z: number): number {
+  return (
+    0.04 * Math.sin(x * 1.15 + 0.6) * Math.cos(z * 0.9 - 0.4) +
+    0.021 * Math.sin(x * 2.4 - z * 1.7 + 2.2) +
+    0.01 * Math.sin(x * 5.1 + 1.3) * Math.cos(z * 4.3 + 0.2)
+  );
+}
+
+/**
+ * Seberapa jauh tepi kiri/kanan bidang potong disisipkan ke dalam badan
+ * bongkahan (m). Nilainya selalu positif dan berubah terhadap ketinggian,
+ * sehingga garis tepi potongan berkelok seperti bekas galian — namun tidak
+ * pernah keluar dari badan bongkahan.
+ */
+function faceInset(y: number): number {
+  return 0.016 + 0.02 * (0.5 + 0.5 * Math.sin(y * 5.3 + 0.9)) + 0.011 * (0.5 + 0.5 * Math.sin(y * 11.7 - 2.1));
+}
+
+/**
+ * Batas kiri & kanan bidang potong pada ketinggian y.
+ *
+ * Diukur dari dinding badan bongkahan itu sendiri (`radiusAt`) lalu disisipkan
+ * ke dalam sebanyak `faceInset`. Dua akibat baiknya: tepi potongan dijamin
+ * tidak pernah menyembul keluar dari badan, dan garis tepinya ikut berkelok
+ * bersama relief dinding, bukan lurus sempurna.
  */
 export function faceBounds(y: number): { left: number; right: number } {
-  const depth = Math.min(1, Math.max(0, -y / PROFILE_DEPTH));
-  const r = footprintRadius(0) * (1 - 0.06 * depth * depth) - 0.012;
-  const l = footprintRadius(Math.PI) * (1 - 0.06 * depth * depth) - 0.012;
-  return { left: -l, right: r };
+  const inset = faceInset(y);
+  return { left: -(radiusAt(Math.PI, y) - inset), right: radiusAt(0, y) - inset };
+}
+
+/** Simpangan dasar profil (m) dari kedalaman nominal, di titik (x, z). */
+function floorOffset(x: number, z: number): number {
+  return interfaceY(PROFILE_DEPTH, x, z) + PROFILE_DEPTH;
+}
+
+/**
+ * Ketinggian titik bidang potong (y, m) pada kedalaman nominal `d`.
+ *
+ * Bagian tengah profil dibiarkan setia pada kedalaman nominal supaya garis
+ * muka air tanah tetap mendatar seperti kenyataannya. Yang dilengkungkan
+ * hanya kedua ujungnya: relief permukaan meluruh dalam 55 cm teratas, dan
+ * gelombang batas tanah mineral baru terasa setelah mendekati dasar.
+ */
+export function profileY(d: number, x: number, z = 0): number {
+  const top = Math.max(0, 1 - d / 0.55);
+  const bottom = Math.pow(Math.min(1, d / PROFILE_DEPTH), 2.5);
+  return -d + surfaceRelief(x, z) * top * top + floorOffset(x, z) * bottom;
 }
 
 /**
@@ -143,7 +193,12 @@ export function updateHalfBody(
       const t = k / CAP_RINGS;
       for (let i = 0; i < cols; i++) {
         const w = edge[i];
-        const lx = linePoint(SEGMENTS - i, w.y);
+        // Kolom dinding ke-i berpasangan dengan titik garis potong di ujung
+        // yang sama: `thetaAt(0)` = π berada di kiri, dan `linePoint(0)` juga
+        // di kiri. Memakai `SEGMENTS - i` memasangkannya dengan ujung yang
+        // berlawanan sehingga lembar tutup terpelintir dan bongkahan kehilangan
+        // bentuknya.
+        const lx = linePoint(i, w.y);
         const x = lx + (w.x - lx) * t;
         const z = w.z * t;
         const y = k === CAP_RINGS ? w.y : height(x, z) - (isTop ? drop(x) : 0);
@@ -167,7 +222,13 @@ export function updateHalfBody(
  * dari permukaan sampai dasar tanah mineral. Atributnya:
  * - `position`: titik dalam meter (x, y),
  * - `uv`: 0–1 pada bidang potong, dipakai untuk membaca tekstur simulasi,
- * - `aDepth`: kedalaman titik (m) agar peneduh tahu ia berada di lapisan mana.
+ * - `aDepth`: kedalaman titik (m) agar peneduh tahu ia berada di lapisan mana,
+ * - `aEdge`: kedudukan mendatar 0–1 diukur dari tepi kiri bidang potong.
+ *
+ * `aEdge` tidak sama dengan `uv.x`: `uv` mengikuti lebar penuh bongkahan agar
+ * cocok dengan kisi simulasi, sedangkan tepi bidang potong berada sedikit di
+ * dalamnya. Penggaris kedalaman memakai `aEdge` supaya benar-benar menempel
+ * pada tepi potongan, bukan terpotong di luar bidang.
  */
 export function createFaceGrid(): THREE.BufferGeometry {
   const cols = FACE_COLS + 1;
@@ -177,6 +238,7 @@ export function createFaceGrid(): THREE.BufferGeometry {
   geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
   geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
   geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
+  geom.setAttribute("aEdge", new THREE.BufferAttribute(new Float32Array(total), 1));
 
   const idx: number[] = [];
   for (let j = 0; j < FACE_ROWS; j++) {
@@ -194,28 +256,30 @@ export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DRO
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
+  const edge = geom.attributes.aEdge as THREE.BufferAttribute;
   const cols = FACE_COLS + 1;
 
   for (let j = 0; j <= FACE_ROWS; j++) {
     const d = (j / FACE_ROWS) * PROFILE_DEPTH;
-    const yBase = -d;
-    const { left, right } = faceBounds(yBase);
+    const { left, right } = faceBounds(-d);
     for (let i = 0; i <= FACE_COLS; i++) {
       const f = i / FACE_COLS;
       const x = left + (right - left) * f;
       // Baris paling atas mengikuti penurunan permukaan; makin dalam, makin
       // kecil pengaruhnya (rongga hanya menurunkan bagian di atasnya).
       const sink = drop(x) * Math.max(0, 1 - d / 0.35);
-      const y = yBase - sink;
+      const y = profileY(d, x) - sink;
       const k = j * cols + i;
       pos.setXYZ(k, x, y, 0);
       uv.setXY(k, (x + BLOCK_WIDTH / 2) / BLOCK_WIDTH, d / PROFILE_DEPTH);
       depth.setX(k, d);
+      edge.setX(k, f);
     }
   }
   pos.needsUpdate = true;
   uv.needsUpdate = true;
   depth.needsUpdate = true;
+  edge.needsUpdate = true;
   geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }
@@ -251,6 +315,8 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const cols = SURFACE_COLS + 1;
 
+  // Garis potong sama untuk semua baris, jadi cukup dihitung sekali.
+  const line = faceBounds(0);
   for (let j = 0; j <= SURFACE_ROWS; j++) {
     const t = j / SURFACE_ROWS;
     for (let i = 0; i <= SURFACE_COLS; i++) {
@@ -258,11 +324,13 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
       const r = radiusAt(theta, 0);
       const wx = Math.cos(theta) * r;
       const wz = Math.sin(theta) * r;
-      const lx = faceBounds(0).left + ((faceBounds(0).right - faceBounds(0).left) * i) / SURFACE_COLS;
+      // Pada i = 0 sudut θ bernilai 2π, yaitu tepi kanan, jadi titik garis
+      // potong yang berpasangan juga harus diambil dari kanan.
+      const lx = line.left + ((line.right - line.left) * (SURFACE_COLS - i)) / SURFACE_COLS;
       const x = lx + (wx - lx) * t;
       const z = wz * t;
       const k = j * cols + i;
-      pos.setXYZ(k, x, interfaceY(0, x, z) - drop(x), z);
+      pos.setXYZ(k, x, surfaceYAt(x, z, drop), z);
       uv.setXY(k, x * 0.55, z * 0.55);
     }
   }
@@ -274,5 +342,5 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
 
 /** Ketinggian permukaan (y) pada posisi x setelah melesak, untuk menaruh tumbuhan. */
 export function surfaceYAt(x: number, z: number, drop: DropFn = NO_DROP): number {
-  return interfaceY(0, x, z) - drop(x);
+  return interfaceY(0, x, z) + surfaceRelief(x, z) - drop(x);
 }
