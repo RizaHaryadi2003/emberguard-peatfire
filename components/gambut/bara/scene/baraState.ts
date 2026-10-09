@@ -37,8 +37,10 @@ export type BaraState = {
   flameX: number;
   /** Animasi semburan air ke permukaan (0–1). */
   spray: number;
-  /** Putaran diorama oleh seretan pembaca (radian). */
+  /** Putaran diorama ke kiri/kanan oleh seretan pembaca (radian). */
   rotation: number;
+  /** Jungkitan diorama ke atas/bawah oleh seretan pembaca (radian). */
+  tilt: number;
   /**
    * Jarak tempuh seretan terakhir dalam piksel. Dipakai untuk membedakan
    * seretan dari klik: tanpa ini, memutar bongkahan akan sekaligus menyulut
@@ -59,6 +61,18 @@ export type BaraState = {
  */
 export const BARA_MAX_ROTATION = 0.5;
 
+/**
+ * Batas jungkitan ke atas dan ke bawah (radian).
+ *
+ * Tidak simetris, karena kedua arah tidak sama gunanya. Menunduk sampai 0,55
+ * radian memperlihatkan permukaan tanah dari atas — justru itu yang dibahas
+ * babak 03: dari atas, kebakaran ini nyaris tidak terlihat. Menengadah hanya
+ * memperlihatkan dasar bongkahan yang tidak menyimpan apa pun, jadi cukup
+ * sedikit saja agar bentuknya tetap terasa tiga dimensi.
+ */
+export const BARA_MAX_TILT_DOWN = 0.55;
+export const BARA_MAX_TILT_UP = 0.18;
+
 /** Seretan dianggap putaran, bukan klik, setelah melewati jarak ini (piksel). */
 export const DRAG_THRESHOLD = 5;
 
@@ -75,6 +89,7 @@ export function createBaraState(waterM: number): BaraState {
     flameX: 0.5,
     spray: 0,
     rotation: 0,
+    tilt: 0,
     dragMoved: 0,
     thermal: 0,
     danger: 0,

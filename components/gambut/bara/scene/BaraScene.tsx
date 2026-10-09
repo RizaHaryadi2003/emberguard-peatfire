@@ -12,7 +12,16 @@ import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
-import { createSubsidence, BARA_MAX_ROTATION, DIORAMA_Y, QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
+import {
+  createSubsidence,
+  BARA_MAX_ROTATION,
+  BARA_MAX_TILT_DOWN,
+  BARA_MAX_TILT_UP,
+  DIORAMA_Y,
+  QUALITY_PROFILE,
+  type BaraState,
+  type Quality,
+} from "./baraState";
 
 // Kanvas 3D Modul 02. Kamera menghadap bidang potong hampir tegak lurus supaya
 // seluruh kejadian di bawah tanah terbaca, dengan sedikit sudut agar bongkahan
@@ -34,17 +43,32 @@ const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, nu
   { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.16 }, // 04: pembasahan
 ];
 
-/** Putar diorama mengikuti seretan pembaca, dengan perlambatan halus. */
+/**
+ * Putar diorama mengikuti seretan pembaca, dengan perlambatan halus.
+ *
+ * Dua kelompok bersarang, bukan satu: kelompok luar menjungkitkan diorama
+ * (sumbu x), kelompok dalam memutarnya (sumbu y). Urutan ini yang membuat
+ * seretan terasa wajar — menyeret mendatar selalu memutar pada poros tegak
+ * diorama, berapa pun jungkitannya, bukan mengayun miring.
+ */
 function Turntable({ stateRef, children }: { stateRef: RefObject<BaraState>; children: React.ReactNode }) {
-  const ref = useRef<THREE.Group>(null);
+  const pitch = useRef<THREE.Group>(null);
+  const yaw = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
     const s = stateRef.current;
-    const g = ref.current;
-    if (!s || !g) return;
-    const want = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, s.rotation));
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, want, s.reducedMotion ? 30 : 6, Math.min(delta, 0.05));
+    if (!s || !pitch.current || !yaw.current) return;
+    const dt = Math.min(delta, 0.05);
+    const k = s.reducedMotion ? 30 : 6;
+    const wantYaw = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, s.rotation));
+    const wantPitch = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, s.tilt));
+    yaw.current.rotation.y = THREE.MathUtils.damp(yaw.current.rotation.y, wantYaw, k, dt);
+    pitch.current.rotation.x = THREE.MathUtils.damp(pitch.current.rotation.x, wantPitch, k, dt);
   });
-  return <group ref={ref}>{children}</group>;
+  return (
+    <group ref={pitch}>
+      <group ref={yaw}>{children}</group>
+    </group>
+  );
 }
 
 function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {

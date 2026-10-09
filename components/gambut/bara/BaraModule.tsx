@@ -14,7 +14,14 @@ import ControlDock, { WATER_MAX_CM } from "./ControlDock";
 import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
-import { createBaraState, BARA_MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
+import {
+  createBaraState,
+  BARA_MAX_ROTATION,
+  BARA_MAX_TILT_DOWN,
+  BARA_MAX_TILT_UP,
+  type BaraState,
+  type Quality,
+} from "./scene/baraState";
 
 gsap.registerPlugin(useGSAP);
 
@@ -267,17 +274,21 @@ export default function BaraModule() {
 
   // Seret mendatar untuk memutar diorama. Jarak tempuhnya disimpan agar
   // penangan klik di dalam adegan dapat membedakan seretan dari ketukan.
-  const drag = useRef<{ x: number; start: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
   const handleDragStart = useCallback((e: React.PointerEvent) => {
     stateRef.current.dragMoved = 0;
-    drag.current = { x: e.clientX, start: stateRef.current.rotation };
+    drag.current = { x: e.clientX, y: e.clientY, yaw: stateRef.current.rotation, pitch: stateRef.current.tilt };
   }, []);
   const handleDragMove = useCallback((e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.x;
-    stateRef.current.dragMoved = Math.max(stateRef.current.dragMoved, Math.abs(dx));
-    stateRef.current.rotation = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, d.start + dx * 0.005));
+    const dy = e.clientY - d.y;
+    // Jarak tempuh diukur pada kedua arah; menyeret tegak pun bukan ketukan.
+    stateRef.current.dragMoved = Math.max(stateRef.current.dragMoved, Math.hypot(dx, dy));
+    stateRef.current.rotation = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, d.yaw + dx * 0.005));
+    // Menyeret ke bawah berarti ingin melihat dari atas, jadi tandanya dibalik.
+    stateRef.current.tilt = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, d.pitch + dy * 0.004));
   }, []);
   const handleDragEnd = useCallback(() => {
     drag.current = null;
