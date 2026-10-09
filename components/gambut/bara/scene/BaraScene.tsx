@@ -11,6 +11,7 @@ import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
+import SceneLabels from "./SceneLabels";
 import { createSubsidence, DIORAMA_Y, QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
 
 // Kanvas 3D Modul 02. Kamera menghadap bidang potong hampir tegak lurus supaya
@@ -248,6 +249,7 @@ export default function BaraScene({
           />
           <SmokePlumes sim={sim} stateRef={stateRef} />
           <WaterSpray stateRef={stateRef} subsidence={subsidence} />
+          <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
         </group>
         <ReadySignal onReady={onReady} />
       </Suspense>

@@ -1,7 +1,7 @@
 "use client";
 
-import { Droplets, FastForward, Pause, ShowerHead, Waves } from "lucide-react";
-import { SUPPRESSION_TEXT, TIME_SPEEDS } from "@/config/bara-content";
+import { Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
+import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/bara-content";
 import { formatDay, formatElapsed } from "@/lib/smolder";
 import { PROFILE_DEPTH } from "@/lib/peat";
 
@@ -22,6 +22,15 @@ type Props = {
   /** Tombol pembasahan: tampil pada babak 04. */
   showRewet: boolean;
   onRewet: () => void;
+  /** Sakelar tampilan nyata/termal; tampil bersama tombol pemadaman. */
+  view: ViewMode;
+  onView: (view: ViewMode) => void;
+  /**
+   * Tandai sakelar termal saat pembaca sudah menyiram tetapi belum membukanya.
+   * Inti babak 03 ada pada perbandingan itu: tanpa membuka termal, pembaca
+   * pergi dengan kesimpulan yang justru terbalik — mengira apinya padam.
+   */
+  urgeThermal: boolean;
 };
 
 /**
@@ -39,6 +48,9 @@ export default function ControlDock({
   dousing,
   showRewet,
   onRewet,
+  view,
+  onView,
+  urgeThermal,
 }: Props) {
   const valuePct = ((waterCm - WATER_MIN_CM) / (WATER_MAX_CM - WATER_MIN_CM)) * 100;
   const limitPct = ((40 - WATER_MIN_CM) / (WATER_MAX_CM - WATER_MIN_CM)) * 100;
@@ -116,9 +128,45 @@ export default function ControlDock({
         </div>
       </div>
 
+      {/* Sakelar tampilan.
+          Dahulu sakelar ini berada di panel angka pada sudut kanan atas,
+          sejauh mungkin dari tombol Siram di kiri bawah. Pembaca menyiram,
+          melihat asapnya hilang, lalu menyimpulkan apinya padam — dan tidak
+          pernah menemukan bantahannya. Tempatnya sekarang tepat di sebelah
+          tombol yang baru saja ia tekan. */}
+      {showDouse && (
+        <div className="mt-5 border-t border-white/10 pt-4">
+          <div className="flex gap-1 rounded-full border border-white/15 bg-black/30 p-1">
+            {(Object.keys(VIEW_TEXT) as ViewMode[]).map((mode) => {
+              const urge = urgeThermal && mode === "termal";
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => onView(mode)}
+                  aria-pressed={view === mode}
+                  title={VIEW_TEXT[mode].hint}
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    view === mode
+                      ? "bg-white text-black"
+                      : urge
+                        ? "animate-pulse bg-[#e8702a]/25 text-[#ffcfa8] ring-1 ring-[#e8702a]/60"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {mode === "permukaan" ? <Eye size={12} /> : <Thermometer size={12} />}
+                  {VIEW_TEXT[mode].label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[10px] leading-snug text-white/45">{VIEW_TEXT[view].hint}</p>
+        </div>
+      )}
+
       {/* Pemadaman */}
       {(showDouse || showRewet) && (
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           {showDouse && (
             <button
               type="button"

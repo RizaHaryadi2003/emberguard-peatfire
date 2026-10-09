@@ -357,13 +357,16 @@ export default function BaraModule() {
             dousing={stats.surfaceSmoke < 0.02 && dousedOnce && act === 2}
             showRewet={act >= 3}
             onRewet={handleRewet}
+            view={view}
+            onView={handleView}
+            urgeThermal={dousedOnce && !thermalSeen}
           />
         )}
       </div>
 
       {/* Angka hidup & keterangan warna (kanan) */}
       <div className="absolute right-5 top-32 hidden lg:block xl:right-10">
-        <StatsPanel stats={stats} view={view} onView={handleView} showToggle={act >= 2} />
+        <StatsPanel stats={stats} />
       </div>
 
       {/* Pesan kejadian (kanan bawah) */}
