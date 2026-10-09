@@ -16,7 +16,6 @@ import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
 import {
   createBaraState,
-  BARA_MAX_ROTATION,
   BARA_MAX_TILT_DOWN,
   BARA_MAX_TILT_UP,
   type BaraState,
@@ -286,7 +285,8 @@ export default function BaraModule() {
     const dy = e.clientY - d.y;
     // Jarak tempuh diukur pada kedua arah; menyeret tegak pun bukan ketukan.
     stateRef.current.dragMoved = Math.max(stateRef.current.dragMoved, Math.hypot(dx, dy));
-    stateRef.current.rotation = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, d.yaw + dx * 0.005));
+    // Tanpa batas: diorama boleh diputar berkali-kali penuh.
+    stateRef.current.rotation = d.yaw + dx * 0.005;
     // Menyeret ke bawah berarti ingin melihat dari atas, jadi tandanya dibalik.
     stateRef.current.tilt = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, d.pitch + dy * 0.004));
   }, []);

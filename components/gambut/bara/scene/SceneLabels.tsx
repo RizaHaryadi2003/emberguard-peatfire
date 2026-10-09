@@ -103,6 +103,9 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
   const signature = useRef("");
   const groupRef = useRef<THREE.Group>(null);
   const probe = useMemo(() => new THREE.Vector3(), []);
+  const faceNormal = useMemo(() => new THREE.Vector3(), []);
+  const toCamera = useMemo(() => new THREE.Vector3(), []);
+  const center = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
     const s = stateRef.current;
@@ -238,6 +241,22 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     const group = groupRef.current;
     if (!group) return;
     const { camera, size } = state;
+
+    // Diorama dapat diputar penuh. Begitu bidang potong berpaling dari kamera,
+    // keterangannya harus ikut hilang: label digambar sebagai elemen HTML di
+    // atas kanvas, jadi ia tidak tertutup oleh bongkahan dan akan tetap
+    // melayang di depan punggung bongkahan — menunjuk ke sesuatu yang justru
+    // sedang tidak terlihat.
+    group.getWorldPosition(center);
+    faceNormal.set(0, 0, 1).transformDirection(group.matrixWorld);
+    toCamera.copy(camera.position).sub(center).normalize();
+    if (faceNormal.dot(toCamera) < 0.25) {
+      if (signature.current !== "") {
+        signature.current = "";
+        setMarkers([]);
+      }
+      return;
+    }
 
     // Daerah aman berbeda menurut lebar layar. Di layar lebar, teks cerita
     // menempati kolom kiri dan panel angka kolom kanan. Di layar sempit

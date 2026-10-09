@@ -14,7 +14,6 @@ import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
 import {
   createSubsidence,
-  BARA_MAX_ROTATION,
   BARA_MAX_TILT_DOWN,
   BARA_MAX_TILT_UP,
   DIORAMA_Y,
@@ -30,17 +29,18 @@ import {
 /**
  * Posisi kamera, titik bidik, dan jarak pandang tiap babak.
  *
- * `frame` mengalikan jarak kamera ke titik bidik. Nilainya di atas satu karena
- * bongkahan sebelumnya memenuhi layar sampai pucuk pohon menembus bilah
- * navigasi di tepi atas. Diorama ini tinggi — dari dasar tanah mineral sampai
- * pucuk pohon tertinggi ± 6 m — jadi ia perlu ruang kosong di sekelilingnya
- * supaya terbaca sebagai satu benda utuh.
+ * `frame` mengalikan jarak kamera ke titik bidik. Nilainya dipilih agar
+ * bongkahan tampak sebesar bongkahan Modul 01, sehingga keduanya terasa satu
+ * rancangan: di sana kamera berjarak sekitar 14,2 m dengan bidang pandang 34°,
+ * dan di sini jaraknya disetarakan menjadi ± 13,5 m. Tanpa penyetaraan ini
+ * bongkahan Modul 02 terlihat jauh lebih besar meski ukurannya persis sama —
+ * keduanya memakai BLOCK_WIDTH dan BLOCK_DEPTH yang sama.
  */
 const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number]; frame: number }[] = [
-  { pos: [1.2, 4.1, 6.6], target: [0, -0.35, 0], frame: 1.34 }, // 01: permukaan tempat menyulut
-  { pos: [0.8, -0.5, 9.0], target: [0, -1.6, 0], frame: 1.16 }, // 02: seluruh penampang, hampir tegak lurus
-  { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0], frame: 1.24 }, // 03: permukaan & penampang bersama
-  { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.16 }, // 04: pembasahan
+  { pos: [1.2, 4.1, 6.6], target: [0, -0.35, 0], frame: 1.68 }, // 01: permukaan tempat menyulut
+  { pos: [0.8, -0.5, 9.0], target: [0, -1.6, 0], frame: 1.48 }, // 02: seluruh penampang, hampir tegak lurus
+  { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0], frame: 1.48 }, // 03: permukaan & penampang bersama
+  { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.52 }, // 04: pembasahan
 ];
 
 /**
@@ -59,7 +59,9 @@ function Turntable({ stateRef, children }: { stateRef: RefObject<BaraState>; chi
     if (!s || !pitch.current || !yaw.current) return;
     const dt = Math.min(delta, 0.05);
     const k = s.reducedMotion ? 30 : 6;
-    const wantYaw = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, s.rotation));
+    // Putaran kiri/kanan dibiarkan bebas; jungkitan tetap dibatasi supaya
+    // diorama tidak pernah terbalik dan langit tetap berada di atas.
+    const wantYaw = s.rotation;
     const wantPitch = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, s.tilt));
     yaw.current.rotation.y = THREE.MathUtils.damp(yaw.current.rotation.y, wantYaw, k, dt);
     pitch.current.rotation.x = THREE.MathUtils.damp(pitch.current.rotation.x, wantPitch, k, dt);

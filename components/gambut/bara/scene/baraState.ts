@@ -53,13 +53,15 @@ export type BaraState = {
 };
 
 /**
- * Batas putaran diorama ke kiri/kanan (radian).
+ * Putaran kiri/kanan tidak dibatasi: diorama dapat diputar penuh satu putaran.
  *
- * Lebih sempit daripada Modul 01 yang memakai 0,9. Bongkahan di sini sudah
- * dipotong separuh: diputar terlalu jauh, bidang potongnya terlihat dari
- * samping dan seluruh kejadian di bawah tanah justru hilang.
+ * Bongkahan ini dipotong separuh, jadi dari belakang yang terlihat hanya
+ * dinding tanah tanpa penampang. Itu bukan kerusakan — badannya tertutup
+ * rapat oleh dinding dan kedua tutupnya — melainkan sisi lain benda yang sama,
+ * dan memang berguna untuk memastikan bentuknya. Yang perlu diurus hanyalah
+ * keterangan: lihat SceneLabels, yang menyembunyikan dirinya begitu bidang
+ * potong berpaling dari kamera.
  */
-export const BARA_MAX_ROTATION = 0.5;
 
 /**
  * Batas jungkitan ke atas dan ke bawah (radian).
@@ -70,8 +72,8 @@ export const BARA_MAX_ROTATION = 0.5;
  * memperlihatkan dasar bongkahan yang tidak menyimpan apa pun, jadi cukup
  * sedikit saja agar bentuknya tetap terasa tiga dimensi.
  */
-export const BARA_MAX_TILT_DOWN = 0.55;
-export const BARA_MAX_TILT_UP = 0.18;
+export const BARA_MAX_TILT_DOWN = 0.7;
+export const BARA_MAX_TILT_UP = 0.35;
 
 /** Seretan dianggap putaran, bukan klik, setelah melewati jarak ini (piksel). */
 export const DRAG_THRESHOLD = 5;
