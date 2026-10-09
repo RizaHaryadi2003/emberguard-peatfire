@@ -87,7 +87,12 @@ export function createSubsidence(sim: SmolderSim): Subsidence {
     },
     refresh: () => {
       for (let col = 0; col < GRID_COLS; col++) raw[col] = sim.subsidenceAt(col);
-      const radius = 3;
+      // Jari-jari perataan. Tiga kolom hanya setara 14 cm pada bongkahan
+      // selebar 4,4 m, sehingga tepi kawah menjadi tebing hampir tegak dan
+      // hamparan permukaan di atasnya terlihat seperti papan tipis yang
+      // dilihat dari samping. Sebelas kolom (± 50 cm) membuat tanah di sekitar
+      // rongga melandai, seperti tanah yang ambles sungguhan.
+      const radius = 11;
       for (let col = 0; col < GRID_COLS; col++) {
         let sum = 0;
         let n = 0;

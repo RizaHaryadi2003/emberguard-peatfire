@@ -21,6 +21,7 @@ attribute float aDepth;
 attribute float aEdge;
 
 uniform sampler2D uField;
+uniform vec2 uTexel;
 uniform float uCavity;
 
 varying vec2 vUv;
@@ -36,8 +37,14 @@ void main() {
   vDepth = aDepth;
   vEdge = aEdge;
 
-  vec4 field = texture2D(uField, uv);
-  vAsh = field.r;
+  // Kedalaman rongga dirata-ratakan dengan sel tetangga. Dibaca per sel,
+  // permukaan rongga melangkah seperti anak tangga selebar 4,6 cm.
+  vAsh =
+    texture2D(uField, uv).r * 0.4 +
+    (texture2D(uField, uv + vec2(uTexel.x, 0.0)).r +
+     texture2D(uField, uv - vec2(uTexel.x, 0.0)).r +
+     texture2D(uField, uv + vec2(0.0, uTexel.y)).r +
+     texture2D(uField, uv - vec2(0.0, uTexel.y)).r) * 0.15;
 
   // Gambut yang sudah menjadi abu ditarik masuk sehingga terbentuk rongga nyata.
   vec3 p = position;
@@ -106,6 +113,27 @@ float noise(vec2 p) {
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+/**
+ * Baca hasil simulasi tanpa memperlihatkan kisinya.
+ *
+ * Kisi simulasi hanya 96 x 56 sel untuk bidang selebar 4,4 m, jadi satu sel
+ * berukuran sekitar 4,6 cm. Dibaca mentah, tiap sel muncul sebagai bujur
+ * sangkar membulat: gambut hangus terlihat sebagai deretan kotak yang
+ * berjajar rapi, bukan bercak yang tumbuh tak beraturan seperti kebakaran
+ * sebenarnya. Dua hal dikerjakan di sini — rata-rata 3 x 3 untuk melembutkan
+ * tepi, dan titik bacanya digeser oleh derau (lihat uWobble di main) supaya
+ * garis kisinya pecah.
+ */
+vec4 sampleField(vec2 uv) {
+  vec2 t = uTexel;
+  vec4 s = texture2D(uField, uv) * 4.0;
+  s += (texture2D(uField, uv + vec2(t.x, 0.0)) + texture2D(uField, uv - vec2(t.x, 0.0)) +
+        texture2D(uField, uv + vec2(0.0, t.y)) + texture2D(uField, uv - vec2(0.0, t.y))) * 2.0;
+  s += texture2D(uField, uv + t) + texture2D(uField, uv - t) +
+       texture2D(uField, uv + vec2(t.x, -t.y)) + texture2D(uField, uv + vec2(-t.x, t.y));
+  return s * 0.0625;
+}
+
 /** Bobot tiap lapisan pada kedalaman d, dengan peralihan yang lembut. */
 vec4 layerWeights(float d) {
   float w = 0.09; // lebar peralihan antarlapisan (m)
@@ -130,7 +158,13 @@ vec3 thermalRamp(float v) {
 }
 
 void main() {
-  vec4 field = texture2D(uField, vUv);
+  // Pergeseran acak sebesar ± 1 sel. Semua pembacaan simulasi memakai
+  // pergeseran yang sama, sehingga bara, abu, dan gambut hangus tetap saling
+  // bertepatan meski tepinya tidak lagi mengikuti kisi.
+  vec2 wob = vec2(noise(vWorld.xy * 11.0) - 0.5, noise(vWorld.xy * 11.0 + 7.7) - 0.5) * uTexel * 2.2;
+  vec2 fuv = vUv + wob;
+
+  vec4 field = sampleField(fuv);
   float ash = field.r;
   float heat = field.g;
   float char = field.a;
@@ -191,10 +225,10 @@ void main() {
     (1.0 - smoothstep(0.0, 0.03, abs(vDepth - uBounds.z - waver)));
   albedo *= 1.0 - seam * 0.38;
 
-  float aL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).r;
-  float aR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).r;
-  float aU = texture2D(uField, vUv - vec2(0.0, uTexel.y)).r;
-  float aD = texture2D(uField, vUv + vec2(0.0, uTexel.y)).r;
+  float aL = sampleField(fuv - vec2(uTexel.x, 0.0)).r;
+  float aR = sampleField(fuv + vec2(uTexel.x, 0.0)).r;
+  float aU = sampleField(fuv - vec2(0.0, uTexel.y)).r;
+  float aD = sampleField(fuv + vec2(0.0, uTexel.y)).r;
   vec3 nAsh = normalize(vec3((aL - aR) * uCavity * 26.0, (aD - aU) * uCavity * 26.0, 1.0));
   vec3 N = normalize(mix(nPeat, nAsh, smoothstep(0.05, 0.6, ash)));
 
@@ -208,11 +242,14 @@ void main() {
 
   // --- Bekas terbakar: gambut hangus, lalu abu di dalam rongga.
   albedo = mix(albedo, vec3(0.085, 0.062, 0.05), char * 0.85);
-  // Rongga abu dibuat kelabu terang. Sebelumnya warnanya hampir hitam dan
-  // bayangan rongganya menggelapkan lagi, sehingga seluruh bagian atas
-  // penampang melebur menjadi satu gumpalan gelap yang tidak terbaca —
-  // padahal keterangan warna di panel kanan menjanjikan abu berwarna kelabu.
-  vec3 ashColor = mix(vec3(0.17, 0.16, 0.152), vec3(0.4, 0.385, 0.36), noise(uvT * 7.0));
+  // Rongga abu: gelap seperti rongga sungguhan, tetapi tidak hitam pekat.
+  //
+  // Sempat dibuat kelabu terang agar sesuai keterangan warna di panel kanan,
+  // dan hasilnya justru lebih buruk: begitu hampir seluruh gambut habis,
+  // penampang berubah menjadi satu bidang pucat tanpa bentuk sama sekali.
+  // Bentuk cekung rongga sekarang dibaca dari bibirnya (lihat ashRim di
+  // bagian pencahayaan), bukan dari warna isinya.
+  vec3 ashColor = mix(vec3(0.075, 0.068, 0.062), vec3(0.21, 0.195, 0.18), noise(uvT * 7.0));
   albedo = mix(albedo, ashColor, smoothstep(0.1, 0.9, ash));
 
   // --- Pencahayaan: matahari + cahaya langit, ditambah bayangan lembut di
@@ -220,7 +257,7 @@ void main() {
   vec3 L = normalize(uSunDir);
   vec3 V = normalize(cameraPosition - vWorld);
   float diff = max(dot(N, L), 0.0);
-  float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.42;
+  float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.62;
   float lipShade = mix(0.55, 1.0, smoothstep(0.0, 0.16, vDepth));
   float spec = pow(max(dot(N, normalize(L + V)), 0.0), 48.0) * moisture * 0.5;
 
@@ -229,14 +266,19 @@ void main() {
   vec3 color = albedo * (uAmbient * 0.85 + uSunColor * uSunIntensity * diff * 0.5) * cavityShade * lipShade;
   color += uSunColor * spec * uSunIntensity * 0.16;
 
+  // Cahaya tipis di bibir rongga abu. Inilah yang memberi rongga bentuk:
+  // tanpanya, daerah yang sudah habis hanya bidang gelap tanpa batas.
+  float ashRim = clamp(length(vec2(aR - aL, aD - aU)) * 2.4, 0.0, 1.0) * smoothstep(0.08, 0.55, ash);
+  color += vec3(0.52, 0.48, 0.43) * ashRim * 0.4;
+
   // --- Bara: pijar yang menguat di tepi depan, berkedip halus.
   float flick = 1.0 - uFlicker * 0.32 * (noise(vUv * 12.0 + uTime * 0.9) + noise(vUv * 31.0 - uTime * 1.7) - 1.0);
   float glow = heat * flick;
   // Pijar merembes sedikit ke gambut di sekelilingnya.
-  float halo = max(max(texture2D(uField, vUv + vec2(uTexel.x * 2.0, 0.0)).g,
-                       texture2D(uField, vUv - vec2(uTexel.x * 2.0, 0.0)).g),
-                   max(texture2D(uField, vUv + vec2(0.0, uTexel.y * 2.0)).g,
-                       texture2D(uField, vUv - vec2(0.0, uTexel.y * 2.0)).g));
+  float halo = max(max(sampleField(fuv + vec2(uTexel.x * 2.0, 0.0)).g,
+                       sampleField(fuv - vec2(uTexel.x * 2.0, 0.0)).g),
+                   max(sampleField(fuv + vec2(0.0, uTexel.y * 2.0)).g,
+                       sampleField(fuv - vec2(0.0, uTexel.y * 2.0)).g));
   vec3 emberColor = mix(vec3(0.75, 0.09, 0.01), vec3(1.0, 0.42, 0.06), smoothstep(0.2, 0.7, glow));
   emberColor = mix(emberColor, vec3(1.0, 0.82, 0.45), smoothstep(0.75, 1.0, glow));
   color += emberColor * (glow * 2.0 + halo * halo * 0.5);
@@ -245,10 +287,10 @@ void main() {
   // antara gambut yang sudah membara dan yang belum. Nilai panasnya saja
   // terlalu merata untuk menunjukkannya, jadi tepinya ditebalkan memakai
   // besar perubahan panas antar sel yang bersebelahan.
-  float hL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).g;
-  float hR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).g;
-  float hU = texture2D(uField, vUv - vec2(0.0, uTexel.y)).g;
-  float hD = texture2D(uField, vUv + vec2(0.0, uTexel.y)).g;
+  float hL = sampleField(fuv - vec2(uTexel.x, 0.0)).g;
+  float hR = sampleField(fuv + vec2(uTexel.x, 0.0)).g;
+  float hU = sampleField(fuv - vec2(0.0, uTexel.y)).g;
+  float hD = sampleField(fuv + vec2(0.0, uTexel.y)).g;
   float front = clamp(length(vec2(hR - hL, hD - hU)) * 2.6, 0.0, 1.0);
   color += vec3(1.0, 0.66, 0.26) * front * max(glow, halo) * 1.3;
 

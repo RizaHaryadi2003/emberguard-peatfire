@@ -35,6 +35,32 @@ export type DropFn = (x: number) => number;
 
 const NO_DROP: DropFn = () => 0;
 
+/**
+ * Pergeseran turun (m) pada kedalaman nominal `d` akibat rongga abu di atasnya.
+ *
+ * Peluruhannya mengikuti sedalam apa gambut sudah habis, bukan angka tetap.
+ * Dahulu dipaku 35 cm: begitu permukaan turun 1,7 m, hanya baris paling atas
+ * yang ikut turun sementara baris 35 cm di bawahnya diam di tempat. Jarak
+ * sejauh itu ditempuh oleh beberapa baris titik saja, sehingga bongkahan
+ * tampak seperti kertas yang sobek dan terlipat, bukan tanah yang ambruk.
+ *
+ * Sekarang seluruh kolom di atas rongga ikut memampat secara merata, dan
+ * pergeserannya selalu mencapai nol sebelum dasar tanah mineral.
+ */
+/**
+ * Penurunan permukaan (m) yang sudah membuat tanah hangus sepenuhnya.
+ * Nilainya sama dengan SCORCH_FULL pada SurfaceCover, supaya lembar permukaan
+ * dan badan bongkahan menghitam pada saat yang sama.
+ */
+export const SCORCH_DEPTH = 0.16;
+
+export function sinkAt(d: number, x: number, drop: DropFn = NO_DROP): number {
+  const amount = drop(x);
+  if (amount <= 0) return 0;
+  const fall = Math.max(0.4, amount * 1.15 + 0.35);
+  return amount * Math.max(0, 1 - d / fall);
+}
+
 /** Sudut θ untuk kolom ke-i pada separuh belakang tapak (z ≤ 0). */
 function thetaAt(i: number): number {
   return Math.PI + (i / SEGMENTS) * Math.PI;
@@ -117,6 +143,9 @@ export function createHalfBody(): THREE.BufferGeometry {
   geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
   geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
   geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  // Warna per titik dipakai untuk menghanguskan badan bongkahan di atas rongga,
+  // sama seperti pada lembar permukaan.
+  geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(total * 3).fill(1), 3));
 
   const idx: number[] = [];
   for (let j = 0; j < WALL_RINGS; j++) {
@@ -144,8 +173,12 @@ export function createHalfBody(): THREE.BufferGeometry {
 type HeightFn = (x: number, z: number) => number;
 
 /**
- * Bentuk badan lapisan di antara dua permukaan. `drop` menurunkan permukaan
- * paling atas mengikuti rongga abu di bawahnya.
+ * Bentuk badan lapisan di antara dua permukaan.
+ *
+ * `drop` di sini **hanya** menentukan warna hangus per titik. Pergeseran
+ * bentuknya sudah dititipkan ke kedua fungsi batas oleh pemanggil, lewat
+ * `sinkAt`, sehingga semua lapisan memampat bersama. Menerapkannya sekali lagi
+ * di sini akan menurunkan permukaan dua kali lipat.
  */
 export function updateHalfBody(
   geom: THREE.BufferGeometry,
@@ -155,6 +188,18 @@ export function updateHalfBody(
 ): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const color = geom.attributes.color as THREE.BufferAttribute;
+
+  /**
+   * Warnai satu titik menurut seberapa jauh tanah di atasnya sudah melesak.
+   * Tanpa ini, tutup atas badan bongkahan tetap berona fibrik yang terang dan
+   * tersingkap sebagai papan pucat begitu lembar permukaan di atasnya ambruk.
+   */
+  const shade = (v: number, x: number, y: number) => {
+    const burn = Math.min(1, sinkAt(Math.max(0, -y), x, drop) / SCORCH_DEPTH);
+    const k = 1 - burn * 0.85;
+    color.setXYZ(v, k, k * 0.94, k * 0.9);
+  };
   const cols = SEGMENTS + 1;
   const wallCount = cols * (WALL_RINGS + 1);
   const capCount = cols * (CAP_RINGS + 1);
@@ -168,7 +213,7 @@ export function updateHalfBody(
     const x0 = Math.cos(theta) * r0;
     const z0 = Math.sin(theta) * r0;
     const yb = bottom(x0, z0);
-    const yt = Math.max(yb, top(x0, z0) - drop(x0));
+    const yt = Math.max(yb, top(x0, z0));
     const u = theta * 1.9 * UV_PER_METER;
     for (let j = 0; j <= WALL_RINGS; j++) {
       const y = yb + ((yt - yb) * j) / WALL_RINGS;
@@ -177,6 +222,7 @@ export function updateHalfBody(
       const z = Math.sin(theta) * r;
       pos.setXYZ(j * cols + i, x, y, z);
       uv.setXY(j * cols + i, u, y * UV_PER_METER);
+      shade(j * cols + i, x, y);
       if (j === 0) botEdge.push(new THREE.Vector3(x, y, z));
       if (j === WALL_RINGS) topEdge.push(new THREE.Vector3(x, y, z));
     }
@@ -188,7 +234,7 @@ export function updateHalfBody(
     return left + ((right - left) * i) / SEGMENTS;
   };
 
-  const fillCap = (start: number, edge: THREE.Vector3[], height: HeightFn, isTop: boolean) => {
+  const fillCap = (start: number, edge: THREE.Vector3[], height: HeightFn) => {
     for (let k = 0; k <= CAP_RINGS; k++) {
       const t = k / CAP_RINGS;
       for (let i = 0; i < cols; i++) {
@@ -201,18 +247,20 @@ export function updateHalfBody(
         const lx = linePoint(i, w.y);
         const x = lx + (w.x - lx) * t;
         const z = w.z * t;
-        const y = k === CAP_RINGS ? w.y : height(x, z) - (isTop ? drop(x) : 0);
+        const y = k === CAP_RINGS ? w.y : height(x, z);
         const v = start + k * cols + i;
         pos.setXYZ(v, x, y, z);
         uv.setXY(v, x * UV_PER_METER, z * UV_PER_METER);
+        shade(v, x, y);
       }
     }
   };
-  fillCap(wallCount, topEdge, top, true);
-  fillCap(wallCount + capCount, botEdge, bottom, false);
+  fillCap(wallCount, topEdge, top);
+  fillCap(wallCount + capCount, botEdge, bottom);
 
   pos.needsUpdate = true;
   uv.needsUpdate = true;
+  color.needsUpdate = true;
   geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }
@@ -267,8 +315,7 @@ export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DRO
       const x = left + (right - left) * f;
       // Baris paling atas mengikuti penurunan permukaan; makin dalam, makin
       // kecil pengaruhnya (rongga hanya menurunkan bagian di atasnya).
-      const sink = drop(x) * Math.max(0, 1 - d / 0.35);
-      const y = profileY(d, x) - sink;
+      const y = profileY(d, x) - sinkAt(d, x, drop);
       const k = j * cols + i;
       pos.setXYZ(k, x, y, 0);
       uv.setXY(k, (x + BLOCK_WIDTH / 2) / BLOCK_WIDTH, d / PROFILE_DEPTH);
@@ -342,5 +389,5 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
 
 /** Ketinggian permukaan (y) pada posisi x setelah melesak, untuk menaruh tumbuhan. */
 export function surfaceYAt(x: number, z: number, drop: DropFn = NO_DROP): number {
-  return interfaceY(0, x, z) + surfaceRelief(x, z) - drop(x);
+  return interfaceY(0, x, z) + surfaceRelief(x, z) - sinkAt(0, x, drop);
 }

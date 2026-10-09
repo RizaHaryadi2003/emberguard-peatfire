@@ -128,8 +128,12 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
 
     const geom = createSurfaceGrid();
     // Warna per titik dipakai untuk menghanguskan permukaan di atas rongga.
+    // Empat kanal, bukan tiga: kanal keempat melenyapkan hamparan permukaan di
+    // tempat gambut di bawahnya sudah habis. Tanpa itu, hamparan tetap utuh
+    // dan teregang menuruni dinding rongga sebagai lembaran pucat menggulung,
+    // padahal di alam lapisan itu ikut terbakar bersama gambutnya.
     const count = (SURFACE_COLS + 1) * (SURFACE_ROWS + 1);
-    geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(count * 3).fill(1), 3));
+    geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(count * 4).fill(1), 4));
 
     return {
       geom,
@@ -137,8 +141,14 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         map: groundColor,
         normalMap: groundNormal,
         color: "#b9c2a4",
-        roughness: 0.9,
+        // Benar-benar pudar, bukan mengilap: permukaan yang hangus tidak
+        // memantulkan cahaya, dan tanpa ini hamparan yang ambruk terlihat
+        // seperti cokelat leleh.
+        roughness: 1,
+        metalness: 0,
+        envMapIntensity: 0.15,
         vertexColors: true,
+        transparent: true,
       }),
       dry: new THREE.MeshStandardMaterial({
         map: dryColor,
@@ -148,6 +158,7 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         opacity: 0,
         depthWrite: false,
         vertexColors: true,
+        envMapIntensity: 0.15,
         polygonOffset: true,
         polygonOffsetFactor: -1,
       }),
@@ -227,9 +238,16 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
     const pos = res.geom.attributes.position as THREE.BufferAttribute;
     const color = res.geom.attributes.color as THREE.BufferAttribute;
     for (let i = 0; i < pos.count; i++) {
-      const burn = Math.min(1, subsidence.fn(pos.getX(i)) / SCORCH_FULL);
-      const k = 1 - burn * 0.88;
-      color.setXYZ(i, k, k * 0.94, k * 0.9);
+      const drop = subsidence.fn(pos.getX(i));
+      const burn = Math.min(1, drop / SCORCH_FULL);
+      // Hampir hitam, bukan sekadar gelap. Pada 0,88 hamparan yang ambruk
+      // masih memantulkan cahaya dan terbaca sebagai pita mengilap yang
+      // berlipat-lipat, bukan tanah yang hangus.
+      const k = 1 - burn * 0.96;
+      // Hamparan mulai koyak setelah permukaan turun 45 cm dan hilang sama
+      // sekali pada 95 cm; di bawahnya yang terlihat adalah dinding rongga.
+      const alpha = 1 - Math.min(1, Math.max(0, (drop - 0.45) / 0.5));
+      color.setXYZW(i, k, k * 0.94, k * 0.9, alpha);
     }
     color.needsUpdate = true;
     built.current = subsidence.version;

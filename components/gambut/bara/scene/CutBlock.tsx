@@ -10,6 +10,7 @@ import { interfaceY } from "@/components/gambut/scene/terrain";
 import {
   createFaceGrid,
   createHalfBody,
+  sinkAt,
   surfaceRelief,
   updateFaceGrid,
   updateHalfBody,
@@ -99,6 +100,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
         color: new THREE.Color(...LAYER_TINT[layer.id]).multiplyScalar(layer.id === "mineral" ? 0.4 : 0.6),
         roughness: 0.95,
         normalScale: new THREE.Vector2(1.2, 1.2),
+        vertexColors: true,
       }),
     }));
 
@@ -133,15 +135,20 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
   const rebuild = () => {
     const drop = subsidence.fn;
     res.bodies.forEach(({ layer, geom }, i) => {
+      // Penurunan dititipkan langsung ke kedua batas lapisan, bukan diberikan
+      // sebagai argumen terpisah. Dahulu hanya lapisan teratas yang melesak,
+      // sehingga badan bongkahan masih memperlihatkan gambut utuh di tempat
+      // yang pada bidang potong sudah menjadi rongga.
       updateHalfBody(
         geom,
-        (x, z) => interfaceY(layer.bottom, x, z),
+        (x, z) => interfaceY(layer.bottom, x, z) - sinkAt(layer.bottom, x, drop),
         // Lapisan teratas memakai relief permukaan yang sama dengan bidang
-        // potong (`interfaceY(0, …)` bernilai nol), supaya tepi atas keduanya
+        // potong (interfaceY(0, …) bernilai nol), supaya tepi atas keduanya
         // menyambung tanpa celah.
-        i === 0 ? (x, z) => surfaceRelief(x, z) : (x, z) => interfaceY(layer.top, x, z),
-        // Hanya lapisan teratas yang permukaannya melesak.
-        i === 0 ? drop : undefined,
+        (x, z) => (i === 0 ? surfaceRelief(x, z) : interfaceY(layer.top, x, z)) - sinkAt(layer.top, x, drop),
+        // Dipakai untuk warna hangus per titik, bukan untuk menggeser bentuk:
+        // pergeserannya sudah dititipkan ke kedua batas lapisan di atas.
+        drop,
       );
     });
     updateFaceGrid(res.faceGeom, drop);
