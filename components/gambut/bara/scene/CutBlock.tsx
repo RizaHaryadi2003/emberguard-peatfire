@@ -51,8 +51,8 @@ const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
  * cahaya langit karena itu ditahan di ambang ini, dan warna matahari ditarik
  * separuh kembali ke netral agar penampang tidak menguning seluruhnya.
  */
-const READABLE_SUN = 2.9;
-const READABLE_AMBIENT = 0.26;
+const READABLE_SUN = 3.5;
+const READABLE_AMBIENT = 0.38;
 const NEUTRAL_SUN: [number, number, number] = [1, 0.86, 0.68];
 
 type Props = {
@@ -97,7 +97,10 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       material: new THREE.MeshStandardMaterial({
         map: colors[i],
         normalMap: normals[i],
-        color: new THREE.Color(...LAYER_TINT[layer.id]).multiplyScalar(layer.id === "mineral" ? 0.4 : 0.6),
+        // Badan bongkahan diredupkan terhadap bidang potong supaya penampang
+        // tetap menjadi pusat perhatian — tetapi tidak sampai menghilang ke
+        // dalam gelap seperti sebelumnya.
+        color: new THREE.Color(...LAYER_TINT[layer.id]).multiplyScalar(layer.id === "mineral" ? 0.62 : 0.82),
         roughness: 0.95,
         normalScale: new THREE.Vector2(1.2, 1.2),
         vertexColors: true,
@@ -199,7 +202,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       const tint = LAYER_TINT[layer.id];
       material.color
         .setRGB(tint[0], tint[1], tint[2])
-        .multiplyScalar(layer.id === "mineral" ? 0.4 : 0.6)
+        .multiplyScalar(layer.id === "mineral" ? 0.62 : 0.82)
         .lerp(slate, s.thermal);
     });
   });

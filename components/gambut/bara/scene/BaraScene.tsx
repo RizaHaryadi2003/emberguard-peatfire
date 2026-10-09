@@ -245,7 +245,9 @@ export default function BaraScene({
       gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.9;
+        // Dinaikkan dari 0,9: seluruh adegan terbaca terlalu gelap, dan yang
+        // paling dirugikan justru penampang — bagian yang harus dibaca.
+        gl.toneMappingExposure = 1.12;
       }}
       fallback={
         <p className="p-6 text-sm text-white/70">
@@ -254,7 +256,9 @@ export default function BaraScene({
       }
     >
       <SkyLighting stateRef={stateRef} quality={quality} />
-      <hemisphereLight args={["#cfdcec", "#2a2116", 0.12]} />
+      {/* Cahaya langit-tanah yang lembut, menaikkan dasar kegelapan supaya
+          sisi yang tidak kena matahari tidak jatuh ke hitam pekat. */}
+      <hemisphereLight args={["#cfdcec", "#3a2e20", 0.3]} />
       <CameraRig stateRef={stateRef} />
       <PerformanceGuard maxDpr={maxDpr} />
       <Simulation

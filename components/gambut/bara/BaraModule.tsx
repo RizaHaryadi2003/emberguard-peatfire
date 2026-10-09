@@ -342,12 +342,14 @@ export default function BaraModule() {
           diorama; tanpa peredup ini angka kunci dan keterangannya jatuh tepat
           di atas dedaunan dan tidak terbaca. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[46%] bg-gradient-to-b from-black/85 via-black/55 to-transparent md:hidden" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[30%] bg-gradient-to-l from-black/70 via-black/20 to-transparent lg:block" />
-      {/* Tepi bawah dibuat hitam penuh supaya adegan menyatu dengan footer hitam
-          di bawahnya. Sebelumnya berhenti di 80% sehingga tersisa beda terang
-          yang terbaca sebagai garis mendatar, dan footer tampak seperti balok
-          hitam yang ditempel. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black via-black/55 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[30%] bg-gradient-to-l from-black/55 via-black/12 to-transparent lg:block" />
+      {/* Peredup tepi bawah, secukupnya agar panel kendali dan navigasi babak
+          tetap terbaca di atas diorama.
+          Dahulu pekat sampai hitam penuh setinggi 40% layar, karena di
+          bawahnya ada footer hitam yang harus disambung. Footer itu sudah
+          tidak ada sejak halaman dikunci setinggi layar, sehingga peredup
+          sepekat itu hanya menggelapkan bagian bawah bongkahan tanpa guna. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/70 to-transparent" />
 
       {/* Panel cerita babak (kiri atas) */}
       <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[404px]">
