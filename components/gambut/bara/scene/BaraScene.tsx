@@ -12,7 +12,6 @@ import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
-import ScaleFigure from "./ScaleFigure";
 import {
   createSubsidence,
   BARA_MAX_TILT_DOWN,
@@ -294,7 +293,6 @@ export default function BaraScene({
           />
           <SmokePlumes sim={sim} stateRef={stateRef} />
           <WaterSpray stateRef={stateRef} subsidence={subsidence} />
-          <ScaleFigure subsidence={subsidence} />
           <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
           </Turntable>
         </group>

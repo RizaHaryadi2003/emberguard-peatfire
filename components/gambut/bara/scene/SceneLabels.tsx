@@ -7,8 +7,7 @@ import { Html } from "@react-three/drei";
 import { PROFILE_DEPTH } from "@/lib/peat";
 import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
-import { FIGURE_X, FIGURE_Z } from "./ScaleFigure";
-import type { BaraState, Subsidence } from "./baraState";
+import { BLOCK_WIDTH, type BaraState, type Subsidence } from "./baraState";
 
 // Keterangan yang menempel pada bendanya di dalam adegan.
 //
@@ -50,7 +49,7 @@ const NEAR_X = 1.4;
  * saling didorong, yang di bawah dalam daftar inilah yang disembunyikan —
  * lebih baik satu keterangan hilang daripada dua-duanya tidak terbaca.
  */
-const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan", "orang", "d1", "d2", "d3"];
+const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan", "lebar", "d1", "d2", "d3"];
 
 /**
  * Kedalaman yang diberi angka pada penggaris di tepi kiri (m).
@@ -231,14 +230,13 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       });
     }
 
-    // Tinggi sosok patokan, supaya ukurannya tidak hanya terasa tetapi juga
-    // dapat disebut.
+    // Lebar bongkahan, menemani batang ukur di bawahnya.
     if (!narrow) {
       list.push({
-        id: "orang",
-        x: FIGURE_X,
-        y: surfaceRelief(FIGURE_X, FIGURE_Z) + 1.95,
-        text: "1,7 m",
+        id: "lebar",
+        x: (bounds.left + bounds.right) / 2,
+        y: -PROFILE_DEPTH - 0.62,
+        text: `${BLOCK_WIDTH.toLocaleString("id-ID")} m`,
         tone: "depth",
         pinned: true,
       });
@@ -339,6 +337,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
   return (
     <group ref={groupRef}>
       <OriginalSurfaceLine subsidence={subsidence} />
+      <WidthScaleBar />
       {markers.map((m) => (
         <Html
           key={m.id}
@@ -363,6 +362,49 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       ))}
     </group>
   );
+}
+
+/**
+ * Batang ukur lebar bongkahan.
+ *
+ * Menggantikan siluet orang yang sempat dipakai sebagai patokan ukuran.
+ * Sosok itu janggal di sini: bongkahannya melayang di ruang kosong, sehingga
+ * orang yang berdiri di sebelahnya ikut melayang tanpa tanah yang dipijak.
+ * Batang ukur sebahasa dengan penggaris kedalaman yang sudah ada di tepi
+ * kiri, jadi keduanya terbaca sebagai satu sistem penandaan.
+ */
+function WidthScaleBar() {
+  const res = useMemo(() => {
+    const { left, right } = faceBounds(0);
+    const y = -PROFILE_DEPTH - 0.45;
+    const cap = 0.11;
+    // Satu garis mendatar ditambah dua kaki tegak di ujungnya.
+    const points = [
+      left, y, LABEL_Z, right, y, LABEL_Z,
+      left, y - cap, LABEL_Z, left, y + cap, LABEL_Z,
+      right, y - cap, LABEL_Z, right, y + cap, LABEL_Z,
+    ];
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
+    const material = new THREE.LineBasicMaterial({
+      color: "#cfd3d8",
+      transparent: true,
+      opacity: 0.4,
+      toneMapped: false,
+      depthTest: false,
+    });
+    return { geometry, material };
+  }, []);
+
+  useEffect(
+    () => () => {
+      res.geometry.dispose();
+      res.material.dispose();
+    },
+    [res],
+  );
+
+  return <lineSegments geometry={res.geometry} material={res.material} frustumCulled={false} />;
 }
 
 /** Banyaknya ruas garis putus-putus sepanjang bongkahan. */
