@@ -7,6 +7,7 @@ import { Html } from "@react-three/drei";
 import { PROFILE_DEPTH } from "@/lib/peat";
 import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
+import { FIGURE_X, FIGURE_Z } from "./ScaleFigure";
 import type { BaraState, Subsidence } from "./baraState";
 
 // Keterangan yang menempel pada bendanya di dalam adegan.
@@ -26,7 +27,7 @@ const LABEL_Z = FACE_Z + 0.08;
 /** Jeda penyegaran letak label (detik). Mata tidak membutuhkan lebih cepat. */
 const REFRESH = 0.3;
 
-type Tone = "ember" | "ash" | "water" | "plain";
+type Tone = "ember" | "ash" | "water" | "plain" | "depth";
 
 type Marker = {
   id: string;
@@ -49,7 +50,16 @@ const NEAR_X = 1.4;
  * saling didorong, yang di bawah dalam daftar inilah yang disembunyikan —
  * lebih baik satu keterangan hilang daripada dua-duanya tidak terbaca.
  */
-const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan"];
+const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan", "orang", "d1", "d2", "d3"];
+
+/**
+ * Kedalaman yang diberi angka pada penggaris di tepi kiri (m).
+ *
+ * Penggaris itu sudah ada sejak awal berupa goresan tiap 0,5 m, tetapi tanpa
+ * angka ia hanya deretan garis kecil tanpa arti. Dengan angka, pembaca dapat
+ * menyebut sendiri kedalaman baranya alih-alih menebak dari tinggi gambar.
+ */
+const DEPTH_MARKS = [1, 2, 3];
 
 /** Perkiraan ukuran satu label di layar (piksel). */
 const CHAR_WIDTH = 5.9;
@@ -81,6 +91,7 @@ const TONE_CLASS: Record<Tone, string> = {
   ash: "border-white/20 bg-black/75 text-white/80",
   water: "border-sky-300/40 bg-[#07202e]/85 text-sky-100",
   plain: "border-white/20 bg-black/75 text-white/85",
+  depth: "",
 };
 
 const DOT_CLASS: Record<Tone, string> = {
@@ -88,6 +99,7 @@ const DOT_CLASS: Record<Tone, string> = {
   ash: "bg-[#6b6257]",
   water: "bg-[#6fc7f0]",
   plain: "bg-white/70",
+  depth: "",
 };
 
 type Props = {
@@ -219,6 +231,35 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       });
     }
 
+    // Tinggi sosok patokan, supaya ukurannya tidak hanya terasa tetapi juga
+    // dapat disebut.
+    if (!narrow) {
+      list.push({
+        id: "orang",
+        x: FIGURE_X,
+        y: surfaceRelief(FIGURE_X, FIGURE_Z) + 1.95,
+        text: "1,7 m",
+        tone: "depth",
+        pinned: true,
+      });
+    }
+
+    // Angka pada penggaris kedalaman. Disembunyikan di layar sempit, tempat
+    // satu label pun sudah sulit muat.
+    if (!narrow) {
+      for (const metre of DEPTH_MARKS) {
+        const x = faceBounds(-metre).left + 0.46;
+        list.push({
+          id: `d${metre}`,
+          x,
+          y: yAt(metre, x),
+          text: `${metre} m`,
+          tone: "depth",
+          pinned: true,
+        });
+      }
+    }
+
     if (stats.extinguished) {
       list.push({
         id: "padam",
@@ -278,7 +319,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       probe.project(camera);
       // Titik di belakang kamera diproyeksikan ke tempat yang menyesatkan.
       if (probe.z > 1) continue;
-      const half = (m.text.length * CHAR_WIDTH + PADDING) / 2;
+      const half = m.tone === "depth" ? 14 : (m.text.length * CHAR_WIDTH + PADDING) / 2;
       const cx = (probe.x * 0.5 + 0.5) * size.width;
       const cy = (-probe.y * 0.5 + 0.5) * size.height;
       const box = { l: cx - half, r: cx + half, t: cy - LABEL_HEIGHT / 2, b: cy + LABEL_HEIGHT / 2 };
@@ -306,12 +347,18 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
           zIndexRange={[20, 0]}
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
-          <div
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-md ${TONE_CLASS[m.tone]}`}
-          >
-            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[m.tone]}`} aria-hidden="true" />
-            {m.text}
-          </div>
+          {m.tone === "depth" ? (
+            // Angka penggaris ditulis polos tanpa kapsul: ia menemani goresan
+            // di tepi, bukan menamai benda, jadi tidak boleh ikut ramai.
+            <span className="whitespace-nowrap text-[10px] font-medium tabular-nums text-white/55">{m.text}</span>
+          ) : (
+            <div
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-md ${TONE_CLASS[m.tone]}`}
+            >
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[m.tone]}`} aria-hidden="true" />
+              {m.text}
+            </div>
+          )}
         </Html>
       ))}
     </group>

@@ -271,17 +271,34 @@ void main() {
   float ashRim = clamp(length(vec2(aR - aL, aD - aU)) * 2.4, 0.0, 1.0) * smoothstep(0.08, 0.55, ash);
   color += vec3(0.52, 0.48, 0.43) * ashRim * 0.4;
 
-  // --- Bara: pijar yang menguat di tepi depan, berkedip halus.
-  float flick = 1.0 - uFlicker * 0.32 * (noise(vUv * 12.0 + uTime * 0.9) + noise(vUv * 31.0 - uTime * 1.7) - 1.0);
-  float glow = heat * flick;
-  // Pijar merembes sedikit ke gambut di sekelilingnya.
-  float halo = max(max(sampleField(fuv + vec2(uTexel.x * 2.0, 0.0)).g,
-                       sampleField(fuv - vec2(uTexel.x * 2.0, 0.0)).g),
-                   max(sampleField(fuv + vec2(0.0, uTexel.y * 2.0)).g,
-                       sampleField(fuv - vec2(0.0, uTexel.y * 2.0)).g));
-  vec3 emberColor = mix(vec3(0.75, 0.09, 0.01), vec3(1.0, 0.42, 0.06), smoothstep(0.2, 0.7, glow));
-  emberColor = mix(emberColor, vec3(1.0, 0.82, 0.45), smoothstep(0.75, 1.0, glow));
-  color += emberColor * (glow * 2.0 + halo * halo * 0.5);
+  // --- Bara.
+  //
+  // Bara gambut tidak bernyala. Ia membara pelan seperti arang: berdenyut
+  // dalam hitungan detik, bukan berkedip-kedip seperti lidah api. Tiga hal
+  // di bawah ini yang dahulu membuatnya terbaca sebagai api, dan ketiganya
+  // membantah kalimat modul ini sendiri — "api tanpa nyala".
+  //
+  // Pertama, kedipannya. Derau berfrekuensi tinggi (12 dan 31) yang bergerak
+  // cepat (0,9 dan 1,7) menghasilkan kerlip seperti kobaran. Sekarang
+  // frekuensinya rendah dan geraknya lambat, sehingga yang terlihat adalah
+  // tarikan napas bara, bukan jilatan api.
+  float breathe = 1.0 - uFlicker * 0.17 * (noise(vUv * 3.2 + uTime * 0.22) + noise(vUv * 6.5 - uTime * 0.41) - 1.0);
+  float glow = heat * breathe;
+
+  // Kedua, rembesan panasnya. Diperlebar dari dua sel ke tiga, dan bobotnya
+  // dinaikkan: daerah membara harus terbaca sebagai zona panas yang meluas
+  // ke gambut sekitarnya, bukan sebagai garis api bertepi tajam.
+  float halo = max(max(sampleField(fuv + vec2(uTexel.x * 3.0, 0.0)).g,
+                       sampleField(fuv - vec2(uTexel.x * 3.0, 0.0)).g),
+                   max(sampleField(fuv + vec2(0.0, uTexel.y * 3.0)).g,
+                       sampleField(fuv - vec2(0.0, uTexel.y * 3.0)).g));
+
+  // Ketiga, warnanya. Puncaknya dahulu nyaris putih kekuningan — warna nyala,
+  // bukan warna bara. Sekarang berhenti di jingga, dengan dasar merah tua
+  // seperti arang yang menyala di dalam abu.
+  vec3 emberColor = mix(vec3(0.42, 0.045, 0.006), vec3(0.95, 0.3, 0.03), smoothstep(0.15, 0.62, glow));
+  emberColor = mix(emberColor, vec3(1.0, 0.54, 0.14), smoothstep(0.7, 1.0, glow));
+  color += emberColor * (glow * 1.9 + halo * halo * 0.8);
 
   // --- Tepi depan bara. Inilah yang sebenarnya ingin dilihat pembaca: batas
   // antara gambut yang sudah membara dan yang belum. Nilai panasnya saja
@@ -291,8 +308,10 @@ void main() {
   float hR = sampleField(fuv + vec2(uTexel.x, 0.0)).g;
   float hU = sampleField(fuv - vec2(0.0, uTexel.y)).g;
   float hD = sampleField(fuv + vec2(0.0, uTexel.y)).g;
-  float front = clamp(length(vec2(hR - hL, hD - hU)) * 2.6, 0.0, 1.0);
-  color += vec3(1.0, 0.66, 0.26) * front * max(glow, halo) * 1.3;
+  float front = clamp(length(vec2(hR - hL, hD - hU)) * 2.0, 0.0, 1.0);
+  // Dilunakkan dari 1,3 ke 0,55 dan warnanya diturunkan ke jingga: tepi yang
+  // terlalu terang dan bergerigi itulah yang dahulu terbaca sebagai lidah api.
+  color += vec3(1.0, 0.45, 0.12) * front * max(glow, halo) * 0.55;
 
   // --- Titik sulutan di permukaan pada babak pertama.
   float hotDist = length(vec2((vUv.x - uHotspotX) * 2.2, vDepth * 3.2));
