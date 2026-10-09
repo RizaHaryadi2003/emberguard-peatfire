@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, type ThreeEvent } from "@react-three/fiber";
-import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
+import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
 import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { getAtmosphere } from "@/lib/atmosphere";
 import { interfaceY } from "@/components/gambut/scene/terrain";
@@ -16,20 +16,43 @@ import {
   FACE_Z,
   UV_PER_METER,
 } from "./crossSection";
-import { createFaceMaterial } from "./faceMaterial";
+import { CAVITY_DEPTH, createFaceMaterial } from "./faceMaterial";
 import { SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
 
 // Bongkahan gambut yang sudah dipotong: badan lapisan di belakang (terlihat di
 // tepi silhuet) dan satu bidang potong di depan yang menampilkan seluruh
 // kejadian di bawah tanah lewat peneduhnya sendiri.
 
-/** Rona pengali warna tekstur tiap lapisan (sama dengan Modul 01). */
+/**
+ * Rona pengali warna tekstur tiap lapisan.
+ *
+ * Jaraknya dibuat lebih lebar daripada Modul 01. Di sana tiap lapisan dipisah
+ * oleh jarak fisik saat bongkahan terurai, jadi beda warna tipis sudah cukup.
+ * Di sini keempatnya bersinggungan langsung pada satu bidang, dan rona fibrik
+ * dengan hemik yang hampir sama membuat profilnya terbaca sebagai satu massa
+ * coklat. Urutannya kini jelas menurun: terang di atas, paling gelap di
+ * saprik, lalu kelabu terang di tanah mineral.
+ */
 const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
-  fibrik: [1.0, 0.8, 0.62],
-  hemik: [0.86, 0.72, 0.6],
-  saprik: [0.46, 0.36, 0.28],
-  mineral: [0.8, 0.82, 0.84],
+  fibrik: [1.06, 0.84, 0.62],
+  hemik: [0.72, 0.56, 0.42],
+  saprik: [0.34, 0.26, 0.21],
+  mineral: [0.86, 0.86, 0.87],
 };
+
+/**
+ * Batas bawah pencahayaan bidang potong.
+ *
+ * Langit boleh meredup dan menguning saat asap menebal — itu bagian dari
+ * pesannya. Tetapi bidang potong adalah bagan yang harus tetap terbaca: bila
+ * ia ikut meredup, justru pada saat kebakaran paling parah pembaca kehilangan
+ * kemampuan membedakan bara, abu, dan lapisan gambut. Nilai matahari dan
+ * cahaya langit karena itu ditahan di ambang ini, dan warna matahari ditarik
+ * separuh kembali ke netral agar penampang tidak menguning seluruhnya.
+ */
+const READABLE_SUN = 2.9;
+const READABLE_AMBIENT = 0.26;
+const NEUTRAL_SUN: [number, number, number] = [1, 0.86, 0.68];
 
 type Props = {
   sim: SmolderSim;
@@ -83,7 +106,12 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
     const faceMaterial = createFaceMaterial(colors, normals, field, sunDir);
     faceMaterial.uniforms.uUvScale.value = UV_PER_METER;
 
-    return { colors, normals, bodies, faceGeom, faceMaterial };
+    // Lapisan penutup gelap di belakang bidang potong. Memakai geometri bidang
+    // potong yang sama, jadi bentuk, lekuk tepi, dan permukaan yang melesak
+    // selalu persis sama — ia tidak akan pernah menyembul keluar dari siluet.
+    const backingMaterial = new THREE.MeshBasicMaterial({ color: "#080604" });
+
+    return { colors, normals, bodies, faceGeom, faceMaterial, backingMaterial };
   }, [textures, field, sunDir]);
 
   useEffect(
@@ -94,6 +122,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       });
       res.faceGeom.dispose();
       res.faceMaterial.dispose();
+      res.backingMaterial.dispose();
     },
     [res],
   );
@@ -146,10 +175,16 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
     u.uFlicker.value = s.reducedMotion ? 0 : 1;
     u.uHotspot.value = s.flame;
     u.uHotspotX.value = s.flameX;
-    u.uSunColor.value.setRGB(...atm.sunColor, THREE.SRGBColorSpace);
-    u.uSunIntensity.value = atm.sunIntensity;
-    // Cahaya langit meredup saat asap menebal, sama seperti pada Modul 01.
-    const ambient = 0.3 * (0.35 + atm.environmentIntensity * 2.2);
+
+    // Suasana tetap diikuti, tetapi tidak sampai menenggelamkan penampang.
+    u.uSunColor.value.setRGB(
+      (atm.sunColor[0] + NEUTRAL_SUN[0]) / 2,
+      (atm.sunColor[1] + NEUTRAL_SUN[1]) / 2,
+      (atm.sunColor[2] + NEUTRAL_SUN[2]) / 2,
+      THREE.SRGBColorSpace,
+    );
+    u.uSunIntensity.value = Math.max(atm.sunIntensity, READABLE_SUN);
+    const ambient = Math.max(0.3 * (0.35 + atm.environmentIntensity * 2.2), READABLE_AMBIENT);
     u.uAmbient.value.setRGB(ambient * 0.95, ambient, ambient * 1.05);
 
     // Badan lapisan diredupkan pada tampilan termal agar penampang menonjol.
@@ -193,17 +228,16 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
         onPointerOut={() => void (document.body.style.cursor = "")}
       />
 
-      {/* Bidang gelap tepat di belakang penampang agar rongga abu tidak bolong
-          ke latar saat titiknya tertarik ke dalam.
-          Lebarnya dinaikkan sedikit agar rongga di dekat tepi tetap tertutup,
-          tetapi tetap harus lebih sempit daripada bongkahan — bila melebihi
-          silhuet, bidang ini terlihat sebagai bingkai hitam di sekeliling
-          bongkahan. Pusatnya digeser karena tapak bongkahan tidak simetris:
-          tepi kanan berada lebih jauh daripada tepi kiri. */}
-      <mesh position={[0.13, -PROFILE_DEPTH / 2 - 0.06, -0.3]}>
-        <planeGeometry args={[4, PROFILE_DEPTH]} />
-        <meshBasicMaterial color="#080604" />
-      </mesh>
+      {/* Penutup gelap di belakang penampang, supaya rongga abu tidak bolong ke
+          latar saat titik-titiknya tertarik masuk ke dalam bongkahan.
+
+          Dahulu ini sebuah bidang datar berukuran tetap. Bentuknya tidak ikut
+          melesak bersama permukaan, sehingga begitu permukaan turun setengah
+          meter, bidang itu muncul di atasnya sebagai balok hitam melintang di
+          tengah bongkahan. Sekarang penutupnya memakai geometri bidang potong
+          itu sendiri, digeser ke belakang sedikit lebih jauh daripada rongga
+          terdalam: siluetnya selalu sama persis dengan penampang. */}
+      <mesh geometry={res.faceGeom} material={res.backingMaterial} position-z={FACE_Z - CAVITY_DEPTH - 0.06} />
     </group>
   );
 }

@@ -14,7 +14,7 @@ import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder
 // berkedip, dan seluruh bidang harus bisa berganti menjadi citra termal.
 
 /** Kedalaman rongga abu ke dalam bongkahan (m) saat gambut habis terbakar. */
-const CAVITY_DEPTH = 0.16;
+export const CAVITY_DEPTH = 0.16;
 
 const VERTEX = /* glsl */ `
 attribute float aDepth;
@@ -115,9 +115,9 @@ vec4 layerWeights(float d) {
   return vec4(1.0 - b0, b0 - b1, b1 - b2, b2);
 }
 
-/** Skala warna tiap lapisan (sama dengan rona pada Modul 01). */
+/** Skala warna tiap lapisan; nilainya sama dengan LAYER_TINT di CutBlock. */
 vec3 tintFor(vec4 w) {
-  return w.x * vec3(1.0, 0.8, 0.62) + w.y * vec3(0.86, 0.72, 0.6) + w.z * vec3(0.46, 0.36, 0.28) + w.w * vec3(0.8, 0.82, 0.84);
+  return w.x * vec3(1.06, 0.84, 0.62) + w.y * vec3(0.72, 0.56, 0.42) + w.z * vec3(0.34, 0.26, 0.21) + w.w * vec3(0.86, 0.86, 0.87);
 }
 
 /** Palet citra termal: biru tua (dingin & basah) sampai putih (bara). */
@@ -189,7 +189,7 @@ void main() {
     (1.0 - smoothstep(0.0, 0.024, abs(vDepth - uBounds.x - waver))) * 0.8 +
     (1.0 - smoothstep(0.0, 0.026, abs(vDepth - uBounds.y - waver))) * 0.9 +
     (1.0 - smoothstep(0.0, 0.03, abs(vDepth - uBounds.z - waver)));
-  albedo *= 1.0 - seam * 0.3;
+  albedo *= 1.0 - seam * 0.38;
 
   float aL = texture2D(uField, vUv - vec2(uTexel.x, 0.0)).r;
   float aR = texture2D(uField, vUv + vec2(uTexel.x, 0.0)).r;
@@ -201,11 +201,18 @@ void main() {
   // --- Gambut basah: lebih gelap, sedikit kebiruan, dan berkilap. Peralihan
   // kering→basah dibuat tidak rata agar garis airnya terlihat alami.
   float wetEdge = clamp(moisture + (mottle - 0.35) * 0.18, 0.0, 1.0);
-  albedo = mix(albedo, albedo * vec3(0.5, 0.54, 0.6), wetEdge);
+  // Gambut jenuh air dibuat jelas lebih gelap dan kebiruan daripada gambut
+  // kering di atasnya: batas inilah yang menentukan sampai sedalam apa bara
+  // dapat turun, jadi ia harus terbaca sekali lihat.
+  albedo = mix(albedo, albedo * vec3(0.34, 0.4, 0.5), wetEdge);
 
   // --- Bekas terbakar: gambut hangus, lalu abu di dalam rongga.
   albedo = mix(albedo, vec3(0.085, 0.062, 0.05), char * 0.85);
-  vec3 ashColor = mix(vec3(0.045, 0.04, 0.038), vec3(0.2, 0.19, 0.18), noise(uvT * 7.0));
+  // Rongga abu dibuat kelabu terang. Sebelumnya warnanya hampir hitam dan
+  // bayangan rongganya menggelapkan lagi, sehingga seluruh bagian atas
+  // penampang melebur menjadi satu gumpalan gelap yang tidak terbaca —
+  // padahal keterangan warna di panel kanan menjanjikan abu berwarna kelabu.
+  vec3 ashColor = mix(vec3(0.17, 0.16, 0.152), vec3(0.4, 0.385, 0.36), noise(uvT * 7.0));
   albedo = mix(albedo, ashColor, smoothstep(0.1, 0.9, ash));
 
   // --- Pencahayaan: matahari + cahaya langit, ditambah bayangan lembut di
@@ -213,7 +220,7 @@ void main() {
   vec3 L = normalize(uSunDir);
   vec3 V = normalize(cameraPosition - vWorld);
   float diff = max(dot(N, L), 0.0);
-  float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.72;
+  float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.42;
   float lipShade = mix(0.55, 1.0, smoothstep(0.0, 0.16, vDepth));
   float spec = pow(max(dot(N, normalize(L + V)), 0.0), 48.0) * moisture * 0.5;
 
@@ -265,13 +272,28 @@ void main() {
   float tick = (1.0 - smoothstep(0.004, 0.009, near05)) * (1.0 - smoothstep(tickLen - 0.014, tickLen, vEdge));
   color += vec3(0.68, 0.7, 0.74) * tick * 0.6 * (1.0 - uThermal);
 
-  // --- Citra termal: warna palsu menurut panas & kelembapan.
-  float tv = max(heat, max(0.3 * (1.0 - moisture), ash * 0.3));
-  vec3 thermal = thermalRamp(clamp(tv, 0.0, 1.0));
-  // Garis kedalaman tiap 0,5 m sebagai penggaris pada citra termal.
-  float ruler = 1.0 - smoothstep(0.0, 0.006, abs(fract(vDepth * 2.0) - 0.5) * 0.5);
-  thermal += vec3(0.16, 0.2, 0.26) * ruler;
-  thermal += vec3(0.2, 0.55, 0.8) * line;
+  // --- Citra termal.
+  //
+  // Nilainya dahulu hanya diambil dari kelembapan dan panas, sehingga seluruh
+  // gambut kering menjadi satu bidang ungu yang rata dan seluruh gambut jenuh
+  // air menjadi satu bidang biru tua yang rata. Hasilnya terbaca sebagai
+  // gambar vektor, bukan citra kamera.
+  //
+  // Sekarang suhu semunya disusun dari tiga hal yang memang menentukannya di
+  // lapangan: permukaan yang hangat oleh matahari, suhu yang meluruh terhadap
+  // kedalaman, dan air yang mendinginkan. Ditambah butiran halus menyerupai
+  // derau sensor inframerah supaya bidangnya tidak pernah benar-benar rata.
+  float warmth = exp(-vDepth * 0.5);
+  float grain =
+    (noise(vUv * vec2(260.0, 180.0)) - 0.5) * 0.05 +
+    (noise(vec2(vWorld.x, vWorld.y) * 3.1) - 0.5) * 0.06;
+  float tv = clamp(0.1 + 0.34 * warmth * (1.0 - moisture * 0.72) + grain + heat * 0.92 + ash * 0.05, 0.0, 1.0);
+  vec3 thermal = thermalRamp(tv);
+  // Penggaris kedalaman memakai tanda tepi yang sama dengan tampilan nyata.
+  // Sebelumnya berupa garis mendatar selebar penampang, yang justru menambah
+  // kesan bidang datar yang dibagi-bagi.
+  thermal += vec3(0.45, 0.52, 0.6) * tick * 0.45;
+  thermal += vec3(0.2, 0.55, 0.8) * line * 0.8;
   color = mix(color, thermal, uThermal);
 
   gl_FragColor = vec4(color, 1.0);

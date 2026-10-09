@@ -300,8 +300,17 @@ export default function BaraModule() {
       {/* Gradasi agar teks tetap terbaca di atas model */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/80 via-black/35 to-transparent md:w-[60%]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/55 to-transparent" />
+      {/* Peredup tambahan khusus layar sempit. Di layar lebar teks cerita duduk
+          di kolom kirinya sendiri, tetapi di ponsel ia melebar sampai ke atas
+          diorama; tanpa peredup ini angka kunci dan keterangannya jatuh tepat
+          di atas dedaunan dan tidak terbaca. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[46%] bg-gradient-to-b from-black/85 via-black/55 to-transparent md:hidden" />
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[30%] bg-gradient-to-l from-black/70 via-black/20 to-transparent lg:block" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 to-transparent" />
+      {/* Tepi bawah dibuat hitam penuh supaya adegan menyatu dengan footer hitam
+          di bawahnya. Sebelumnya berhenti di 80% sehingga tersisa beda terang
+          yang terbaca sebagai garis mendatar, dan footer tampak seperti balok
+          hitam yang ditempel. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black via-black/55 to-transparent" />
 
       {/* Panel cerita babak (kiri atas) */}
       <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[404px]">

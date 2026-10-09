@@ -10,18 +10,27 @@ import { GRID_COLS, GRID_ROWS, type SmolderSim, type SmolderStats } from "@/lib/
 import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
+import WaterSpray from "./WaterSpray";
 import { createSubsidence, DIORAMA_Y, QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
 
 // Kanvas 3D Modul 02. Kamera menghadap bidang potong hampir tegak lurus supaya
 // seluruh kejadian di bawah tanah terbaca, dengan sedikit sudut agar bongkahan
 // tetap terasa berdimensi tiga.
 
-/** Posisi kamera & titik bidik tiap babak. */
-const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number] }[] = [
-  { pos: [1.2, 4.1, 6.6], target: [0, -0.35, 0] }, // 01: permukaan tempat menyulut
-  { pos: [0.8, -0.5, 9.0], target: [0, -1.6, 0] }, // 02: seluruh penampang, hampir tegak lurus
-  { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0] }, // 03: permukaan & penampang bersama
-  { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0] }, // 04: pembasahan
+/**
+ * Posisi kamera, titik bidik, dan jarak pandang tiap babak.
+ *
+ * `frame` mengalikan jarak kamera ke titik bidik. Nilainya di atas satu karena
+ * bongkahan sebelumnya memenuhi layar sampai pucuk pohon menembus bilah
+ * navigasi di tepi atas. Diorama ini tinggi — dari dasar tanah mineral sampai
+ * pucuk pohon tertinggi ± 6 m — jadi ia perlu ruang kosong di sekelilingnya
+ * supaya terbaca sebagai satu benda utuh.
+ */
+const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number]; frame: number }[] = [
+  { pos: [1.2, 4.1, 6.6], target: [0, -0.35, 0], frame: 1.34 }, // 01: permukaan tempat menyulut
+  { pos: [0.8, -0.5, 9.0], target: [0, -1.6, 0], frame: 1.16 }, // 02: seluruh penampang, hampir tegak lurus
+  { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0], frame: 1.24 }, // 03: permukaan & penampang bersama
+  { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.16 }, // 04: pembasahan
 ];
 
 function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
@@ -45,7 +54,7 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     wantPos
       .set(...pose.pos)
       .sub(wantTarget)
-      .multiplyScalar(zoom)
+      .multiplyScalar(zoom * pose.frame)
       .add(wantTarget);
     wantPos.x += state.pointer.x * 0.3 * parallax;
     wantPos.y += state.pointer.y * 0.18 * parallax;
@@ -238,6 +247,7 @@ export default function BaraScene({
             onSurfaceClick={onSurfaceClick}
           />
           <SmokePlumes sim={sim} stateRef={stateRef} />
+          <WaterSpray stateRef={stateRef} subsidence={subsidence} />
         </group>
         <ReadySignal onReady={onReady} />
       </Suspense>

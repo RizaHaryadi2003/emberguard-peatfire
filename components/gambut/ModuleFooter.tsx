@@ -8,7 +8,7 @@ export default function ModuleFooter({ current }: { current: string }) {
   const next = GAMBUT_MODULES[index + 1];
 
   return (
-    <footer className="border-t border-white/10 bg-black px-5 py-14 text-white sm:px-10">
+    <footer className="bg-black px-5 py-14 text-white sm:px-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/gambut"
