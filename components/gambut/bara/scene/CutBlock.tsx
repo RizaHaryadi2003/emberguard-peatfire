@@ -18,7 +18,7 @@ import {
   UV_PER_METER,
 } from "./crossSection";
 import { CAVITY_DEPTH, createFaceMaterial } from "./faceMaterial";
-import { SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
+import { DRAG_THRESHOLD, SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
 
 // Bongkahan gambut yang sudah dipotong: badan lapisan di belakang (terlihat di
 // tepi silhuet) dan satu bidang potong di depan yang menampilkan seluruh
@@ -208,6 +208,8 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
   // pada babak lain berarti memeriksa keadaan sel yang diklik.
   const handleProbe = (e: ThreeEvent<MouseEvent>) => {
     if (!e.uv) return;
+    // Seretan untuk memutar bongkahan tidak boleh ikut menyulut atau memeriksa.
+    if ((stateRef.current?.dragMoved ?? 0) > DRAG_THRESHOLD) return;
     e.stopPropagation();
     if (stateRef.current?.act === 0) {
       onIgnite(e.uv.x);

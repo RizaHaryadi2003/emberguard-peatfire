@@ -12,7 +12,7 @@ import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
-import { createSubsidence, DIORAMA_Y, QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
+import { createSubsidence, BARA_MAX_ROTATION, DIORAMA_Y, QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
 
 // Kanvas 3D Modul 02. Kamera menghadap bidang potong hampir tegak lurus supaya
 // seluruh kejadian di bawah tanah terbaca, dengan sedikit sudut agar bongkahan
@@ -33,6 +33,19 @@ const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, nu
   { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0], frame: 1.24 }, // 03: permukaan & penampang bersama
   { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.16 }, // 04: pembasahan
 ];
+
+/** Putar diorama mengikuti seretan pembaca, dengan perlambatan halus. */
+function Turntable({ stateRef, children }: { stateRef: RefObject<BaraState>; children: React.ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((_, delta) => {
+    const s = stateRef.current;
+    const g = ref.current;
+    if (!s || !g) return;
+    const want = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, s.rotation));
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, want, s.reducedMotion ? 30 : 6, Math.min(delta, 0.05));
+  });
+  return <group ref={ref}>{children}</group>;
+}
 
 function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
   const camera = useThree((s) => s.camera);
@@ -231,6 +244,7 @@ export default function BaraScene({
       <Suspense fallback={null}>
         <Backdrop />
         <group position={[0, DIORAMA_Y, 0]}>
+          <Turntable stateRef={stateRef}>
           <CutBlock
             sim={sim}
             stateRef={stateRef}
@@ -250,6 +264,7 @@ export default function BaraScene({
           <SmokePlumes sim={sim} stateRef={stateRef} />
           <WaterSpray stateRef={stateRef} subsidence={subsidence} />
           <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
+          </Turntable>
         </group>
         <ReadySignal onReady={onReady} />
       </Suspense>

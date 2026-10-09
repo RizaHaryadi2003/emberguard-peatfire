@@ -37,10 +37,30 @@ export type BaraState = {
   flameX: number;
   /** Animasi semburan air ke permukaan (0–1). */
   spray: number;
+  /** Putaran diorama oleh seretan pembaca (radian). */
+  rotation: number;
+  /**
+   * Jarak tempuh seretan terakhir dalam piksel. Dipakai untuk membedakan
+   * seretan dari klik: tanpa ini, memutar bongkahan akan sekaligus menyulut
+   * atau memeriksa titik yang kebetulan berada di bawah kursor saat dilepas.
+   */
+  dragMoved: number;
   /** Nilai yang dihaluskan oleh adegan sendiri. */
   thermal: number;
   danger: number;
 };
+
+/**
+ * Batas putaran diorama ke kiri/kanan (radian).
+ *
+ * Lebih sempit daripada Modul 01 yang memakai 0,9. Bongkahan di sini sudah
+ * dipotong separuh: diputar terlalu jauh, bidang potongnya terlihat dari
+ * samping dan seluruh kejadian di bawah tanah justru hilang.
+ */
+export const BARA_MAX_ROTATION = 0.5;
+
+/** Seretan dianggap putaran, bukan klik, setelah melewati jarak ini (piksel). */
+export const DRAG_THRESHOLD = 5;
 
 /** Keadaan awal modul. */
 export function createBaraState(waterM: number): BaraState {
@@ -54,6 +74,8 @@ export function createBaraState(waterM: number): BaraState {
     flameDecay: 1,
     flameX: 0.5,
     spray: 0,
+    rotation: 0,
+    dragMoved: 0,
     thermal: 0,
     danger: 0,
   };

@@ -14,7 +14,7 @@ import ControlDock, { WATER_MAX_CM } from "./ControlDock";
 import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
-import { createBaraState, type BaraState, type Quality } from "./scene/baraState";
+import { createBaraState, BARA_MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 
 gsap.registerPlugin(useGSAP);
 
@@ -265,13 +265,39 @@ export default function BaraModule() {
     if (next === 2) setView("permukaan");
   };
 
+  // Seret mendatar untuk memutar diorama. Jarak tempuhnya disimpan agar
+  // penangan klik di dalam adegan dapat membedakan seretan dari ketukan.
+  const drag = useRef<{ x: number; start: number } | null>(null);
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    stateRef.current.dragMoved = 0;
+    drag.current = { x: e.clientX, start: stateRef.current.rotation };
+  }, []);
+  const handleDragMove = useCallback((e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    stateRef.current.dragMoved = Math.max(stateRef.current.dragMoved, Math.abs(dx));
+    stateRef.current.rotation = Math.max(-BARA_MAX_ROTATION, Math.min(BARA_MAX_ROTATION, d.start + dx * 0.005));
+  }, []);
+  const handleDragEnd = useCallback(() => {
+    drag.current = null;
+  }, []);
+
   const handleStats = useCallback((next: SmolderStats) => setStats(next), []);
   const handleReady = useCallback(() => setReady(true), []);
 
   return (
     <div ref={rootRef} id="modul-bara" className="relative h-[100dvh] w-full overflow-hidden bg-[#050505]">
-      {/* Lapisan 3D */}
-      <div className="absolute inset-0">
+      {/* Lapisan 3D. Seretan mendatar memutar diorama; sentuhan ikut dilayani
+          karena halaman ini tidak dapat digulir, jadi tidak ada yang direbut. */}
+      <div
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onPointerLeave={handleDragEnd}
+      >
         {mounted && (
           <BaraScene
             sim={sim}
@@ -420,6 +446,7 @@ export default function BaraModule() {
       <div className="absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:right-10">
         <span className="hidden lg:inline">
           {act === 0 ? "Klik permukaan untuk menyulut" : "Klik penampang untuk memeriksa satu titik"}
+          <span className="text-white/35"> · seret untuk memutar</span>
         </span>
         <button
           type="button"

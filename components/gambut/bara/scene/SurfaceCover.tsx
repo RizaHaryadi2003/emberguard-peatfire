@@ -14,7 +14,7 @@ import {
   surfaceYAt,
   updateSurfaceGrid,
 } from "./crossSection";
-import { BLOCK_WIDTH, QUALITY_PROFILE, type BaraState, type Quality, type Subsidence } from "./baraState";
+import { BLOCK_WIDTH, DRAG_THRESHOLD, QUALITY_PROFILE, type BaraState, type Quality, type Subsidence } from "./baraState";
 
 // Permukaan hutan rawa di atas bongkahan yang dipotong. Tumbuhan memakai model
 // pindaian yang sama dengan Modul 01 (Poly Haven, CC0 — lihat
@@ -310,9 +310,13 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         receiveShadow
         onClick={(e) => {
           if (!e.point) return;
+          // Seretan untuk memutar bongkahan tidak boleh ikut menyulut.
+          if ((stateRef.current?.dragMoved ?? 0) > DRAG_THRESHOLD) return;
           e.stopPropagation();
-          // Ubah titik yang diklik menjadi posisi 0–1 pada lebar bongkahan.
-          onSurfaceClick((e.point.x + BLOCK_WIDTH / 2) / BLOCK_WIDTH);
+          // Titik tumbukan berada di koordinat dunia; harus dikembalikan ke
+          // koordinat bongkahan dulu, sebab diorama dapat diputar.
+          const local = e.object.worldToLocal(e.point.clone());
+          onSurfaceClick((local.x + BLOCK_WIDTH / 2) / BLOCK_WIDTH);
         }}
         onPointerOver={() => void (document.body.style.cursor = "pointer")}
         onPointerOut={() => void (document.body.style.cursor = "")}

@@ -45,6 +45,18 @@ const MIN_GAP = 0.36;
 const NEAR_X = 1.4;
 
 /**
+ * Urutan kepentingan. Bila dua keterangan tetap bertabrakan di layar setelah
+ * saling didorong, yang di bawah dalam daftar inilah yang disembunyikan —
+ * lebih baik satu keterangan hilang daripada dua-duanya tidak terbaca.
+ */
+const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan"];
+
+/** Perkiraan ukuran satu label di layar (piksel). */
+const CHAR_WIDTH = 5.9;
+const PADDING = 36;
+const LABEL_HEIGHT = 26;
+
+/**
  * Dorong label yang saling menutupi ke bawah.
  *
  * Titik berat bara dan titik berat rongga abu hampir selalu berdekatan —
@@ -89,14 +101,21 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
   const timer = useRef(0);
   /** Ringkasan isi label terakhir, agar tidak memicu render ulang sia-sia. */
   const signature = useRef("");
+  const groupRef = useRef<THREE.Group>(null);
+  const probe = useMemo(() => new THREE.Vector3(), []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const s = stateRef.current;
     if (!s) return;
     timer.current -= Math.min(delta, 0.05);
     if (timer.current > 0) return;
     timer.current = REFRESH;
 
+    // Layar sempit perlu diperlakukan berbeda sejak label disusun, bukan hanya
+    // saat disaring: pil selebar 260 piksel tidak muat pada layar 390 piksel,
+    // sehingga teksnya diringkas dan label muka air dipindah ke dalam
+    // bongkahan — di luar tepi kanan sudah tidak ada ruang tersisa.
+    const narrow = state.size.width < 768;
     const stats = sim.stats;
     const drop = subsidence.fn;
     /** Ketinggian sebenarnya satu titik penampang, setelah tanahnya melesak. */
@@ -133,8 +152,8 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       list.push({
         id: "permukaan",
         x: bounds.left + (bounds.right - bounds.left) * 0.32,
-        y: surfaceRelief(0, 0) + 0.34,
-        text: "Permukaan gambut — klik untuk menyulut",
+        y: surfaceRelief(0, 0) + (narrow ? 0.16 : 0.34),
+        text: narrow ? "Klik untuk menyulut" : "Permukaan gambut — klik untuk menyulut",
         tone: "plain",
       });
     }
@@ -146,9 +165,9 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         // Diletakkan di luar tepi kanan bongkahan supaya tidak menutupi
         // penampang yang justru sedang dijelaskannya.
         id: "air",
-        x: bounds.right + 0.75,
+        x: narrow ? bounds.right - 0.15 : bounds.right + 0.75,
         y: -water,
-        text: `Muka air tanah −${Math.round(water * 100)} cm`,
+        text: narrow ? `Muka air −${Math.round(water * 100)} cm` : `Muka air tanah −${Math.round(water * 100)} cm`,
         tone: "water",
         pinned: true,
       });
@@ -162,7 +181,9 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         x,
         // Sedikit di bawah titik beratnya, supaya tidak menutupi pijarnya.
         y: yAt(d, x) - 0.2,
-        text: `Bara ±500 °C · sedalam ${Math.round(stats.frontDepth * 100)} cm`,
+        text: narrow
+          ? `Bara ${Math.round(stats.frontDepth * 100)} cm`
+          : `Bara ±500 °C · sedalam ${Math.round(stats.frontDepth * 100)} cm`,
         tone: "ember",
       });
     }
@@ -176,7 +197,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         x,
         // Sedikit di atas titik beratnya, menjauh dari label bara di bawahnya.
         y: yAt(d, x) + 0.24,
-        text: "Rongga abu — gambut sudah habis",
+        text: narrow ? "Rongga abu" : "Rongga abu — gambut sudah habis",
         tone: "ash",
       });
     }
@@ -188,7 +209,9 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         id: "siram",
         x,
         y: yAt(DOUSE_DEPTH, x),
-        text: `Air hanya meresap ±${Math.round(DOUSE_DEPTH * 100)} cm`,
+        text: narrow
+          ? `Air meresap ${Math.round(DOUSE_DEPTH * 100)} cm`
+          : `Air hanya meresap ±${Math.round(DOUSE_DEPTH * 100)} cm`,
         tone: "water",
       });
     }
@@ -198,21 +221,63 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         id: "padam",
         x: 0,
         y: yAt(Math.max(0.3, stats.frontDepth), 0),
-        text: "Bara padam — gambut di sekelilingnya jenuh air",
+        text: narrow ? "Bara padam" : "Bara padam — gambut di sekelilingnya jenuh air",
         tone: "water",
       });
     }
 
     spread(list);
-    const next = list.map((m) => `${m.id}|${m.text}|${m.x.toFixed(2)}|${m.y.toFixed(2)}`).join("//");
+
+    // Penyaringan di ruang layar.
+    //
+    // Mendorong label di ruang tiga dimensi saja tidak cukup: jaraknya di
+    // layar berubah mengikuti sudut pandang dan putaran bongkahan, dan di
+    // tepi kiri maupun kanan ada panel teks yang menutupinya. Di sini tiap
+    // label diproyeksikan dulu ke piksel, lalu yang keluar dari daerah aman
+    // atau masih bertabrakan dengan label yang lebih penting dibuang.
+    const group = groupRef.current;
+    if (!group) return;
+    const { camera, size } = state;
+
+    // Daerah aman berbeda menurut lebar layar. Di layar lebar, teks cerita
+    // menempati kolom kiri dan panel angka kolom kanan. Di layar sempit
+    // keduanya melebar ke seluruh lebar, dan yang tersisa hanyalah pita
+    // mendatar di antara teks pengantar dan panel kendali — kira-kira sejajar
+    // badan bongkahan.
+    const minX = size.width * (narrow ? 0.04 : 0.27);
+    const maxX = size.width * (narrow ? 0.96 : 0.82);
+    const minY = size.height * (narrow ? 0.38 : 0.1);
+    const maxY = size.height * (narrow ? 0.62 : 0.84);
+
+    const taken: { l: number; r: number; t: number; b: number }[] = [];
+    const visible: Marker[] = [];
+    const ranked = [...list].sort((a, b) => PRIORITY.indexOf(a.id) - PRIORITY.indexOf(b.id));
+
+    for (const m of ranked) {
+      probe.set(m.x, m.y, LABEL_Z);
+      group.localToWorld(probe);
+      probe.project(camera);
+      // Titik di belakang kamera diproyeksikan ke tempat yang menyesatkan.
+      if (probe.z > 1) continue;
+      const half = (m.text.length * CHAR_WIDTH + PADDING) / 2;
+      const cx = (probe.x * 0.5 + 0.5) * size.width;
+      const cy = (-probe.y * 0.5 + 0.5) * size.height;
+      const box = { l: cx - half, r: cx + half, t: cy - LABEL_HEIGHT / 2, b: cy + LABEL_HEIGHT / 2 };
+      if (box.l < minX || box.r > maxX || box.t < minY || box.b > maxY) continue;
+      if (taken.some((o) => box.l < o.r + 6 && box.r > o.l - 6 && box.t < o.b + 6 && box.b > o.t - 6)) continue;
+      taken.push(box);
+      visible.push(m);
+    }
+
+    const next = visible.map((m) => `${m.id}|${m.text}|${m.x.toFixed(2)}|${m.y.toFixed(2)}`).join("//");
     if (next !== signature.current) {
       signature.current = next;
-      setMarkers(list);
+      setMarkers(visible);
     }
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       <OriginalSurfaceLine subsidence={subsidence} />
       {markers.map((m) => (
         <Html
