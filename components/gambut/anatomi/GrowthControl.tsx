@@ -44,12 +44,14 @@ export default function GrowthControl({ years, onChange, onInteract }: Props) {
   const valuePct = (years / PEAT_MAX_YEARS) * 100;
   const limitPct = (PEAT_MIN_YEARS / PEAT_MAX_YEARS) * 100;
 
+  // Di layar pendek panel ini berdiri tepat di bawah teks cerita, jadi tiap
+  // piksel tingginya diperebutkan dengan paragraf di atasnya.
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/45 p-5 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-6">
+    <div className="rounded-3xl border border-white/10 bg-black/45 p-5 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-6 [@media(max-height:800px)]:p-4">
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Umur timbunan</p>
-          <p className="mt-1 whitespace-nowrap font-playfair text-4xl italic leading-none text-white tabular-nums sm:text-5xl">
+          <p className="mt-1 whitespace-nowrap font-playfair text-4xl italic leading-none text-white tabular-nums sm:text-5xl [@media(max-height:800px)]:text-3xl">
             {formatYears(years)}
             <span className="ml-1.5 font-sans text-base not-italic text-white/50">tahun</span>
           </p>
@@ -63,7 +65,7 @@ export default function GrowthControl({ years, onChange, onInteract }: Props) {
         </span>
       </div>
 
-      <div className="relative mt-5">
+      <div className="relative mt-5 [@media(max-height:800px)]:mt-3">
         {/* Trek: terisi dari kiri mengikuti umur, dengan penanda tetap pada
             ambang 50 cm — batas saat lahan ini sah disebut gambut. */}
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
@@ -99,7 +101,7 @@ export default function GrowthControl({ years, onChange, onInteract }: Props) {
       </div>
 
       {/* Tebal dan kematangan: dua akibat yang berubah bersama umur. */}
-      <div className="mt-4 flex flex-wrap items-baseline gap-4 border-t border-white/10 pt-3 text-xs">
+      <div className="mt-4 flex flex-wrap items-baseline gap-4 border-t border-white/10 pt-3 text-xs [@media(max-height:800px)]:mt-3">
         <span className="whitespace-nowrap text-white/45">
           Tebal{" "}
           <span className="font-medium tabular-nums text-white/85">{Math.round(thickness * 100)} cm</span>
@@ -112,7 +114,12 @@ export default function GrowthControl({ years, onChange, onInteract }: Props) {
         </span>
       </div>
 
-      <p className="mt-3 min-h-[3.5em] text-sm leading-relaxed text-white/75">{text.message}</p>
+      {/* Keterangan panjang dilepas di layar pendek: lencana keadaan dan penanda
+          50 cm pada trek sudah menyampaikan intinya, sedangkan paragraf ini
+          yang membuat panel menutupi teks cerita di atasnya. */}
+      <p className="mt-3 min-h-[3.5em] text-sm leading-relaxed text-white/75 [@media(max-height:800px)]:hidden">
+        {text.message}
+      </p>
     </div>
   );
 }

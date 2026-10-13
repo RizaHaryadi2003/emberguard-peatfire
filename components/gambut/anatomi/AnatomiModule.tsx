@@ -326,15 +326,20 @@ export default function AnatomiModule() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
         {/* Panel cerita (kiri atas) */}
-        <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[400px]">
+        <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[400px] [@media(max-height:880px)]:top-16 [@media(max-height:880px)]:sm:top-16">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
             Modul {MODULE.number} · {MODULE.title}
           </p>
           <div ref={textRef} key={step} aria-live="polite">
-            <h3 className="step-anim mt-4 font-playfair text-4xl italic leading-[1.02] text-white sm:text-5xl md:text-6xl" style={{ letterSpacing: "-0.03em" }}>
+            <h3
+              className="step-anim mt-4 font-playfair text-4xl italic leading-[1.02] text-white sm:text-5xl md:text-6xl [@media(max-height:880px)]:mt-2 [@media(max-height:880px)]:!text-4xl"
+              style={{ letterSpacing: "-0.03em" }}
+            >
               {current.title}
             </h3>
-            <p className="step-anim mt-4 text-sm leading-relaxed text-white/75 sm:text-[15px]">{current.body}</p>
+            <p className="step-anim mt-4 text-sm leading-relaxed text-white/75 sm:text-[15px] [@media(max-height:880px)]:mt-3">
+              {current.body}
+            </p>
             <div
               className={`step-anim mt-6 hidden items-baseline gap-4 border-t border-white/10 pt-5 sm:flex ${
                 // Di layar pendek, fakta disembunyikan saat panel pengatur tampil agar tidak bertumpuk.

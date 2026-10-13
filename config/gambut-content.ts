@@ -38,7 +38,7 @@ export type AnatomiStep = {
 export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   {
     title: "Hutan di atas spons",
-    body: "Gambut terbentuk dari batang, akar, dan daun yang tertimbun di rawa yang selalu tergenang. Karena kekurangan oksigen, sisa tumbuhan itu tidak membusuk sempurna, melainkan menumpuk — hanya sekitar satu milimeter setiap tahun. Seret pengatur waktu di bawah untuk menumbuhkannya sendiri.",
+    body: "Gambut terbentuk dari batang, akar, dan daun yang tertimbun di rawa yang selalu tergenang. Karena kekurangan oksigen, sisa tumbuhan itu tidak membusuk sempurna, melainkan menumpuk sedikit demi sedikit. Seret pengatur waktu di bawah untuk menumbuhkannya sendiri.",
     fact: { value: "≥ 50 cm", caption: "Ketebalan minimum bahan organik agar suatu lahan disebut gambut (PP 71/2014)" },
   },
   {
