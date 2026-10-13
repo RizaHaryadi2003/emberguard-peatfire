@@ -4,7 +4,7 @@
  * ============================================================================
  */
 
-import type { WaterStatus } from "@/lib/peat";
+import type { GrowthStatus, WaterStatus } from "@/lib/peat";
 
 export const GAMBUT_INTRO = {
   eyebrow: "Bagian 01",
@@ -38,7 +38,7 @@ export type AnatomiStep = {
 export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   {
     title: "Hutan di atas spons",
-    body: "Gambut terbentuk dari batang, akar, dan daun yang tertimbun di rawa yang selalu tergenang. Karena kekurangan oksigen, sisa tumbuhan itu tidak membusuk sempurna dan terus menumpuk selama ribuan tahun.",
+    body: "Gambut terbentuk dari batang, akar, dan daun yang tertimbun di rawa yang selalu tergenang. Karena kekurangan oksigen, sisa tumbuhan itu tidak membusuk sempurna, melainkan menumpuk — hanya sekitar satu milimeter setiap tahun. Seret pengatur waktu di bawah untuk menumbuhkannya sendiri.",
     fact: { value: "≥ 50 cm", caption: "Ketebalan minimum bahan organik agar suatu lahan disebut gambut (PP 71/2014)" },
   },
   {
@@ -70,5 +70,20 @@ export const WATER_STATUS_TEXT: Record<WaterStatus, { label: string; message: st
   rawan: {
     label: "Rawan terbakar",
     message: "Melewati batas 40 cm. Gambut kering di atas muka air mudah terbakar, dan baranya dapat merambat di bawah permukaan.",
+  },
+};
+
+export const GROWTH_STATUS_TEXT: Record<GrowthStatus, { label: string; message: string }> = {
+  kosong: {
+    label: "Tanah mineral",
+    message: "Belum ada gambut. Yang ada baru dasar lempung atau pasir tempat sisa tumbuhan nanti menumpuk.",
+  },
+  belum: {
+    label: "Belum disebut gambut",
+    message: "Bahan organik sudah menumpuk, tetapi belum mencapai 50 cm. Menurut PP 71/2014, lahan ini belum tergolong lahan gambut.",
+  },
+  gambut: {
+    label: "Lahan gambut",
+    message: "Timbunan sudah melewati 50 cm. Semakin ke bawah, bahan yang lebih dulu tertimbun menjadi semakin hancur dan semakin matang.",
   },
 };

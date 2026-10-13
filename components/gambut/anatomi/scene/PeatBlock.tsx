@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
+import { PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
 import { createEmberTexture } from "@/components/gambut/scene/proceduralTextures";
 import { seeded } from "@/lib/random";
 import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab, wallPoint } from "@/components/gambut/scene/terrain";
@@ -26,6 +26,22 @@ const FOCUS_FORWARD = 1.0;
 const RECEDE_BACK = 0.45;
 
 const UP = new THREE.Vector3(0, 1, 0);
+
+/**
+ * Ketinggian batas lapisan gambut pada kedalaman nominal `d`, saat timbunan
+ * baru setebal `h` meter.
+ *
+ * Seluruh kolom gambut turun sebanyak kekurangan tebalnya, sehingga
+ * permukaannya (d = 0) duduk tepat di atas timbunan yang sudah ada. Batas yang
+ * lebih dalam daripada timbunan itu sendiri dijepit ke batas atas tanah
+ * mineral — dengan gelombang milik tanah mineral, bukan gelombang kedalaman
+ * lain — supaya dasar gambut dan permukaan mineral selalu bertemu rapat tanpa
+ * celah berapa pun tebalnya.
+ */
+function grownInterfaceY(d: number, h: number, x: number, z: number): number {
+  if (d >= h) return interfaceY(PEAT_THICKNESS, x, z);
+  return h - PEAT_THICKNESS + interfaceY(d, x, z);
+}
 
 type Props = {
   stateRef: RefObject<SceneState>;
@@ -169,6 +185,9 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
   );
 
   const groupRefs = useRef<(THREE.Group | null)[]>([]);
+  // Akar, ranting, dan kerikil ditempelkan pada kedalaman tetap, jadi ia harus
+  // ikut turun bersama kolom gambut saat timbunannya belum penuh.
+  const detailRefs = useRef<(THREE.Group | null)[]>([]);
   const dryMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
   const wetMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
   const rootRef = useRef<THREE.Group>(null);
@@ -198,6 +217,7 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
   const anim = useRef({
     water: -1,
     lastWater: -999, // nilai mustahil agar irisan pasti dibentuk pada bingkai pertama
+    lastPeat: -999,
     highlight: PEAT_LAYERS.map(() => 0),
     focus: PEAT_LAYERS.map(() => 0),
     recede: PEAT_LAYERS.map(() => 0),
@@ -215,10 +235,19 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
     const targetWater = s.waterCm / 100;
     a.water = a.water < 0 ? targetWater : THREE.MathUtils.damp(a.water, targetWater, fast ? 30 : 3.2, dt);
 
-    // Bentuk ulang irisan kering/basah hanya bila muka air berubah.
-    const rebuild = Math.abs(a.water - a.lastWater) > 1e-4;
-    if (rebuild) a.lastWater = a.water;
-    const w = -a.water;
+    // Tebal timbunan sekarang (dihaluskan oleh adegan) dan selisihnya terhadap
+    // profil penuh. Selisih ini nol pada tahap selain pertumbuhan.
+    const peat = s.peat;
+    const sunk = peat - PEAT_THICKNESS;
+
+    // Bentuk ulang irisan kering/basah bila muka air atau tebal timbunan berubah.
+    const rebuild = Math.abs(a.water - a.lastWater) > 1e-4 || Math.abs(peat - a.lastPeat) > 1e-4;
+    if (rebuild) {
+      a.lastWater = a.water;
+      a.lastPeat = peat;
+    }
+    // Muka air diukur dari permukaan timbunan, jadi ia ikut naik bersamanya.
+    const w = sunk - a.water;
 
     // Arah menuju kamera dalam koordinat lokal diorama (yang ikut berputar).
     const parentRot = rootRef.current?.parent?.rotation.y ?? 0;
@@ -227,16 +256,28 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
     const focusIdx = s.step === EXPLODE_STEP && s.focused ? PEAT_LAYERS.findIndex((l) => l.id === s.focused) : -1;
 
     layers.forEach((l, i) => {
+      // Lapisan gambut mengikuti timbunan yang sudah terbentuk; tanah mineral
+      // adalah dasar yang sudah ada sejak semula, jadi ia tidak ikut bergerak.
+      const organic = l.layer.combustible;
+      const topFn = organic ? (x: number, z: number) => grownInterfaceY(l.layer.top, peat, x, z) : l.topFn;
+      const bottomFn = organic ? (x: number, z: number) => grownInterfaceY(l.layer.bottom, peat, x, z) : l.bottomFn;
+      const exists = !organic || peat > l.layer.top + 0.002;
+
       if (rebuild) {
         const dryMesh = dryMeshRefs.current[i];
         const wetMesh = wetMeshRefs.current[i];
         if (dryMesh) {
-          const thick = updateSlab(l.dryGeom, (x, z) => Math.min(l.topFn(x, z), Math.max(l.bottomFn(x, z), w)), l.topFn);
+          const thick = updateSlab(l.dryGeom, (x, z) => Math.min(topFn(x, z), Math.max(bottomFn(x, z), w)), topFn);
           dryMesh.visible = thick > 0.002;
         }
         if (wetMesh) {
-          const thick = updateSlab(l.wetGeom, l.bottomFn, (x, z) => Math.max(l.bottomFn(x, z), Math.min(l.topFn(x, z), w)));
+          const thick = updateSlab(l.wetGeom, bottomFn, (x, z) => Math.max(bottomFn(x, z), Math.min(topFn(x, z), w)));
           wetMesh.visible = thick > 0.002;
+        }
+        const detail = detailRefs.current[i];
+        if (detail) {
+          detail.position.y = organic ? sunk : 0;
+          detail.visible = exists;
         }
       }
 
@@ -265,10 +306,11 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
       }
     });
 
-    // Garis muka air tanah mengelilingi bongkahan; disembunyikan saat terurai.
+    // Garis muka air tanah mengelilingi bongkahan; disembunyikan saat terurai,
+    // dan juga selama belum ada gambut yang menahan airnya.
     if (ringRef.current) {
       if (rebuild) updateRibbon(ring.geom, w);
-      ring.mat.opacity = 0.9 * (1 - s.explode);
+      ring.mat.opacity = 0.9 * (1 - s.explode) * Math.min(1, Math.max(0, peat / 0.25));
       ringRef.current.visible = ring.mat.opacity > 0.02;
     }
   });
@@ -311,9 +353,11 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
             receiveShadow
             {...handlers(l.layer.id)}
           />
-          {details[l.layer.id].map((obj) => (
-            <primitive key={obj.uuid} object={obj} />
-          ))}
+          <group ref={(el) => void (detailRefs.current[i] = el)}>
+            {details[l.layer.id].map((obj) => (
+              <primitive key={obj.uuid} object={obj} />
+            ))}
+          </group>
         </group>
       ))}
 

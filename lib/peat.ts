@@ -151,3 +151,78 @@ export function formatWaterDepth(cm: number): string {
 export function getDryThickness(layer: PeatLayer, waterDepthM: number): number {
   return Math.max(0, Math.min(layer.bottom, waterDepthM) - layer.top);
 }
+
+// --- Penumpukan gambut dari waktu ke waktu ----------------------------------
+//
+// Tahap pertama modul ini semula berjalan sendiri mengikuti gulir: pembaca
+// hanya menonton. Padahal justru di sinilah satu fakta terpenting gambut
+// berada — ia tidak dibentuk oleh peristiwa, melainkan oleh waktu yang sangat
+// panjang. Angka "ribuan tahun" pada teks tidak terasa apa-apa sampai pembaca
+// sendiri yang menyeret waktunya dan melihat bongkahan itu tumbuh semilimeter
+// demi semilimeter.
+
+/** Tebal seluruh lapisan gambut, yaitu sampai batas atas tanah mineral (m). */
+export const PEAT_THICKNESS = PEAT_LAYERS.find((l) => l.id === "mineral")!.top;
+
+/**
+ * Laju penumpukan gambut (mm/tahun).
+ *
+ * Di gambut tropis laju ini berkisar 0,5–2 mm/tahun. Dipakai angka bulat 1
+ * mm/tahun agar pembaca dapat menghitungnya sendiri di kepala: satu meter
+ * gambut berarti seribu tahun.
+ */
+export const PEAT_GROWTH_MM_PER_YEAR = 1;
+
+/** Umur yang dibutuhkan sampai profil gambut penuh (tahun). */
+export const PEAT_MAX_YEARS = Math.round((PEAT_THICKNESS * 1000) / PEAT_GROWTH_MM_PER_YEAR);
+
+/**
+ * Tebal minimum bahan organik agar suatu lahan disebut gambut (cm),
+ * menurut PP No. 71 Tahun 2014.
+ */
+export const PEAT_MIN_THICKNESS_CM = 50;
+
+/** Umur saat timbunan mencapai tebal minimum tersebut (tahun). */
+export const PEAT_MIN_YEARS = Math.round((PEAT_MIN_THICKNESS_CM * 10) / PEAT_GROWTH_MM_PER_YEAR);
+
+/** Tebal timbunan gambut (m) pada umur tertentu (tahun). */
+export function getPeatThickness(years: number): number {
+  const m = (Math.max(0, years) * PEAT_GROWTH_MM_PER_YEAR) / 1000;
+  return Math.min(PEAT_THICKNESS, m);
+}
+
+export type GrowthStatus = "kosong" | "belum" | "gambut";
+
+/**
+ * Keadaan timbunan: tanah kosong, bahan organik yang belum cukup tebal, atau
+ * sudah sah disebut gambut. Batas 50 cm itu bukan sekadar angka di naskah
+ * peraturan — pembaca melewatinya sendiri saat menyeret waktu.
+ */
+export function getGrowthStatus(thicknessM: number): GrowthStatus {
+  if (thicknessM <= 0.001) return "kosong";
+  return isPeatland(thicknessM) ? "gambut" : "belum";
+}
+
+/** Sudah cukup tebal untuk disebut gambut? */
+export function isPeatland(thicknessM: number): boolean {
+  return thicknessM * 100 >= PEAT_MIN_THICKNESS_CM;
+}
+
+/**
+ * Lapisan paling matang yang sudah terbentuk pada tebal tertentu.
+ *
+ * Kematangan gambut ditentukan oleh kedalaman timbunan di atasnya: bahan di
+ * dasar lebih lama tertimbun sehingga lebih hancur. Karena itu selama
+ * timbunannya masih tipis, seluruhnya masih fibrik; saprik baru muncul
+ * setelah timbunan melewati batas bawah lapisan hemik.
+ */
+export function getDeepestLayer(thicknessM: number): PeatLayer | undefined {
+  if (thicknessM <= 0) return undefined;
+  const organic = PEAT_LAYERS.filter((l) => l.combustible);
+  return organic.find((l) => thicknessM <= l.bottom) ?? organic[organic.length - 1];
+}
+
+/** Format umur dengan pemisah ribuan Indonesia, mis. 2800 → "2.800". */
+export function formatYears(years: number): string {
+  return Math.round(years).toLocaleString("id-ID");
+}

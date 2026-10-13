@@ -22,6 +22,8 @@ export type SceneState = {
   step: number;
   /** Kedalaman muka air tanah yang dituju (cm di bawah permukaan). */
   waterCm: number;
+  /** Umur gambut yang dituju (tahun); menentukan tebal timbunan pada tahap 01. */
+  years: number;
   /** Lapisan yang sedang disorot (dari kursor di 3D atau di legenda). */
   hovered: PeatLayerId | null;
   /** Lapisan yang dipilih (diklik) pada tahap lapisan terurai; maju ke depan kamera. */
@@ -36,10 +38,19 @@ export type SceneState = {
    */
   explode: number;
   danger: number;
+  /**
+   * Tebal timbunan gambut (m) yang sudah dihaluskan. Dihitung sekali tiap
+   * bingkai oleh adegan, lalu dipakai bersama oleh bongkahan dan tumbuhan di
+   * atasnya supaya keduanya naik serempak saat gambut tumbuh.
+   */
+  peat: number;
 };
 
 /** Jarak renggang antarlapisan saat tampilan "diurai" (m). */
 export const EXPLODE_GAP = 0.34;
+
+/** Tahap tempat pengguna menyeret waktu dan melihat gambut menumpuk. */
+export const GROWTH_STEP = 0;
 
 /** Tahap yang memakai tampilan lapisan terurai. */
 export const EXPLODE_STEP = 1;

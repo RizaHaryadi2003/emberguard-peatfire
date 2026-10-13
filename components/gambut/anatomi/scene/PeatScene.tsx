@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { getFireDanger, PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
+import { getFireDanger, getPeatThickness, PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
 import PeatBlock from "./PeatBlock";
 import Vegetation from "./Vegetation";
 import Embers from "./Embers";
@@ -14,6 +14,8 @@ import {
   DIORAMA_Y,
   EXPLODE_GAP,
   EXPLODE_STEP,
+  GROWTH_STEP,
+  INTERACTIVE_STEP,
   QUALITY_PROFILE,
   type Quality,
   type SceneState,
@@ -75,11 +77,22 @@ function CameraRig({ stateRef }: { stateRef: RefObject<SceneState> }) {
     // tertutup panel teks di kiri.
     const cam = camera as THREE.PerspectiveCamera;
     const { width, height } = state.size;
-    const shift = aspect > 1.3 ? -width * 0.035 : 0;
+    const shiftX = aspect > 1.3 ? -width * 0.035 : 0;
+    // Di layar sempit, panel pengatur duduk di tepi bawah dan menutupi badan
+    // bongkahan. Pada tahap yang memakai panel, gambar diangkat sedikit supaya
+    // yang berubah karena pengatur itu — timbunan yang tumbuh, muka air yang
+    // turun — tetap terlihat oleh orang yang sedang menggesernya.
+    const panelStep = s.step === GROWTH_STEP || s.step === INTERACTIVE_STEP;
+    const shiftY = aspect < 0.8 && panelStep ? height * 0.12 : 0;
     const current = cam.view?.enabled ? cam.view : null;
-    if (shift && (current?.offsetX !== shift || current.fullHeight !== height)) {
-      cam.setViewOffset(width, height, shift, 0, width, height);
-    } else if (!shift && current) {
+    if (shiftX || shiftY) {
+      const same =
+        current?.offsetX === shiftX &&
+        current?.offsetY === shiftY &&
+        current?.fullWidth === width &&
+        current?.fullHeight === height;
+      if (!same) cam.setViewOffset(width, height, shiftX, shiftY, width, height);
+    } else if (current) {
       cam.clearViewOffset();
     }
   });
@@ -116,13 +129,20 @@ function Diorama({
     const dt = Math.min(delta, 0.05);
     const fast = s.reducedMotion;
     s.explode = THREE.MathUtils.damp(s.explode, s.step === EXPLODE_STEP ? 1 : 0, fast ? 30 : 2.4, dt);
+    // Tebal timbunan dihaluskan di sini, satu kali untuk seluruh adegan, agar
+    // bongkahan dan tumbuhan di atasnya naik dengan nilai yang sama persis.
+    s.peat = THREE.MathUtils.damp(s.peat, getPeatThickness(s.years), fast ? 30 : 6, dt);
     s.danger = THREE.MathUtils.damp(s.danger, getFireDanger(s.waterCm), fast ? 30 : 1.6, dt);
 
     const idle = fast ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.06;
     g.rotation.y = THREE.MathUtils.damp(g.rotation.y, -0.18 + s.rotation + idle, 4, dt);
 
-    // Permukaan (rumput, pohon, bara) ikut naik bersama lapisan teratas.
-    if (surfaceRef.current) surfaceRef.current.position.y = (PEAT_LAYERS.length - 1) * EXPLODE_GAP * s.explode;
+    // Permukaan (rumput, pohon, bara) ikut naik bersama lapisan teratas, dan
+    // ikut turun saat timbunan gambut belum setebal profil penuh.
+    if (surfaceRef.current) {
+      surfaceRef.current.position.y =
+        (PEAT_LAYERS.length - 1) * EXPLODE_GAP * s.explode + (s.peat - PEAT_THICKNESS);
+    }
   });
 
   return (
@@ -151,7 +171,7 @@ export default function PeatScene({ stateRef, active, quality, onHoverLayer, onS
   const maxDpr = profile.maxDpr;
   return (
     <Canvas
-      shadows={profile.softShadow ? "percentage" : true}
+      shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
       // Klik di ruang kosong melepaskan lapisan yang sedang dipilih.
       onPointerMissed={() => onSelectLayer(null)}

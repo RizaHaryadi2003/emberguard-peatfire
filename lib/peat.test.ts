@@ -2,12 +2,20 @@ import { describe, expect, it } from "vitest";
 import {
   formatMeters,
   formatWaterDepth,
+  formatYears,
+  getDeepestLayer,
+  getGrowthStatus,
   getDryThickness,
   getFireDanger,
   getLayerAtDepth,
+  getPeatThickness,
   getSurfaceDryness,
   getWaterStatus,
+  isPeatland,
   PEAT_LAYERS,
+  PEAT_MAX_YEARS,
+  PEAT_MIN_YEARS,
+  PEAT_THICKNESS,
   PROFILE_DEPTH,
 } from "./peat";
 
@@ -116,5 +124,61 @@ describe("getDryThickness", () => {
   it("seluruh lapisan kering bila air di bawahnya", () => {
     expect(getDryThickness(fibrik, 1)).toBeCloseTo(0.6);
     expect(getDryThickness(hemik, 1)).toBeCloseTo(0.4);
+  });
+});
+
+describe("penumpukan gambut", () => {
+  it("menumpuk 1 mm tiap tahun", () => {
+    expect(getPeatThickness(1000)).toBeCloseTo(1);
+    expect(getPeatThickness(500)).toBeCloseTo(0.5);
+  });
+
+  it("mulai dari tanah kosong dan berhenti di batas tanah mineral", () => {
+    expect(getPeatThickness(0)).toBe(0);
+    expect(getPeatThickness(-50)).toBe(0);
+    expect(getPeatThickness(PEAT_MAX_YEARS)).toBeCloseTo(PEAT_THICKNESS);
+    // Lebih lama dari itu tidak menambah tebal: profilnya memang sedalam itu.
+    expect(getPeatThickness(PEAT_MAX_YEARS * 2)).toBeCloseTo(PEAT_THICKNESS);
+  });
+
+  it("umur penuh sama dengan tebal profil dibagi lajunya", () => {
+    expect(PEAT_MAX_YEARS).toBe(2800);
+    expect(PEAT_THICKNESS).toBeCloseTo(2.8);
+  });
+
+  it("baru disebut gambut setelah melewati 50 cm", () => {
+    expect(isPeatland(getPeatThickness(PEAT_MIN_YEARS - 1))).toBe(false);
+    expect(isPeatland(getPeatThickness(PEAT_MIN_YEARS))).toBe(true);
+    expect(PEAT_MIN_YEARS).toBe(500);
+  });
+
+  it("kematangan menyusul tebalnya, bukan muncul sekaligus", () => {
+    // Timbunan tipis seluruhnya masih mentah.
+    expect(getDeepestLayer(0.3)?.id).toBe("fibrik");
+    // Setelah melewati batas bawah fibrik, dasarnya menjadi hemik.
+    expect(getDeepestLayer(1.0)?.id).toBe("hemik");
+    // Saprik baru ada setelah timbunan melewati batas bawah hemik.
+    expect(getDeepestLayer(1.5)?.id).toBe("hemik");
+    expect(getDeepestLayer(2.0)?.id).toBe("saprik");
+    expect(getDeepestLayer(PEAT_THICKNESS)?.id).toBe("saprik");
+  });
+
+  it("tanah kosong belum punya lapisan apa pun", () => {
+    expect(getDeepestLayer(0)).toBeUndefined();
+  });
+
+  it("menulis umur dengan pemisah ribuan Indonesia", () => {
+    expect(formatYears(2800)).toBe("2.800");
+    expect(formatYears(500)).toBe("500");
+  });
+});
+
+describe("getGrowthStatus", () => {
+  it("membedakan tanah kosong, belum cukup tebal, dan sudah gambut", () => {
+    expect(getGrowthStatus(0)).toBe("kosong");
+    expect(getGrowthStatus(0.2)).toBe("belum");
+    expect(getGrowthStatus(0.49)).toBe("belum");
+    expect(getGrowthStatus(0.5)).toBe("gambut");
+    expect(getGrowthStatus(PEAT_THICKNESS)).toBe("gambut");
   });
 });

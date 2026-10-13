@@ -238,7 +238,7 @@ export default function BaraScene({
 
   return (
     <Canvas
-      shadows={profile.softShadow ? "percentage" : true}
+      shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
       frameloop={active ? "always" : "never"}
       camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}

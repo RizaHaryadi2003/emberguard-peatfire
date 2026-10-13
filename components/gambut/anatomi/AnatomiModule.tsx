@@ -7,12 +7,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { ANATOMI_STEPS, GAMBUT_MODULES } from "@/config/gambut-content";
-import { getFireDanger, PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
+import { getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
+import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
 import WaterControl from "./WaterControl";
-import { EXPLODE_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
+import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -27,6 +28,16 @@ const STEP_WATER_CM = [15, 15, 4];
 /** Nilai awal pengatur & sasaran demo otomatis pada tahap interaktif. */
 const DEFAULT_WATER_CM = 15;
 const DEMO_WATER_CM = 62;
+
+/**
+ * Sasaran demo otomatis pada tahap pertumbuhan (tahun).
+ *
+ * Sengaja berhenti jauh sebelum penuh. Demo hanya bertugas memperlihatkan
+ * bahwa waktu dapat digeser dan bongkahannya memang tumbuh; sisa perjalanan
+ * sampai 2.800 tahun ditinggalkan untuk pembaca, karena babak ini tidak boleh
+ * tetap bermakna bila aksinya dihapus.
+ */
+const DEMO_YEARS = 620;
 
 const MODULE = GAMBUT_MODULES[0];
 
@@ -44,6 +55,7 @@ export default function AnatomiModule() {
 
   const [step, setStep] = useState(0);
   const [userWaterCm, setUserWaterCm] = useState(DEFAULT_WATER_CM);
+  const [userYears, setUserYears] = useState(0);
   const [hovered, setHovered] = useState<PeatLayerId | null>(null);
   const [focused, setFocused] = useState<PeatLayerId | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -54,10 +66,16 @@ export default function AnatomiModule() {
   const [soundOn, setSoundOn] = useState(false);
 
   const waterCm = step === INTERACTIVE_STEP ? userWaterCm : STEP_WATER_CM[step];
+  // Di luar tahap pertumbuhan, gambut selalu ditampilkan utuh.
+  const years = step === GROWTH_STEP ? userYears : PEAT_MAX_YEARS;
+  /** Tahap yang memunculkan panel pengatur di sudut kiri bawah. */
+  const hasPanel = step === GROWTH_STEP || step === INTERACTIVE_STEP;
 
   const sceneState = useRef<SceneState>({
     step: 0,
     waterCm: STEP_WATER_CM[0],
+    years: 0,
+    peat: 0,
     hovered: null,
     focused: null,
     reducedMotion: false,
@@ -68,8 +86,8 @@ export default function AnatomiModule() {
 
   // Salurkan keadaan antarmuka ke adegan 3D (dibaca tiap bingkai).
   useEffect(() => {
-    Object.assign(sceneState.current, { step, waterCm, hovered, focused, reducedMotion });
-  }, [step, waterCm, hovered, focused, reducedMotion]);
+    Object.assign(sceneState.current, { step, waterCm, years, hovered, focused, reducedMotion });
+  }, [step, waterCm, years, hovered, focused, reducedMotion]);
 
   // Tombol Esc melepaskan lapisan yang sedang dipilih.
   useEffect(() => {
@@ -198,6 +216,38 @@ export default function AnatomiModule() {
     };
   }, [step, reducedMotion]);
 
+  // Demo pertumbuhan: setelah adegan siap, waktu berjalan sendiri sebentar
+  // agar pembaca melihat bahwa bongkahan itu memang tumbuh, lalu berhenti jauh
+  // sebelum penuh supaya sisanya ia seret sendiri.
+  const growthDemoPlayed = useRef(false);
+  const growthTween = useRef<gsap.core.Tween | null>(null);
+
+  useEffect(() => {
+    if (step !== GROWTH_STEP || !ready || growthDemoPlayed.current) return;
+    growthDemoPlayed.current = true;
+    // Bila gerak dikurangi, demo tidak dijalankan: timbunan langsung tampil
+    // utuh supaya pembaca tidak disambut tanah kosong.
+    const target = reducedMotion ? PEAT_MAX_YEARS : DEMO_YEARS;
+    const proxy = { v: 0 };
+    const tween = gsap.to(proxy, {
+      v: target,
+      duration: reducedMotion ? 0 : 2.8,
+      delay: reducedMotion ? 0 : 0.5,
+      ease: "power2.out",
+      onUpdate: () => setUserYears(Math.round(proxy.v)),
+      onComplete: () => setUserYears(target),
+    });
+    growthTween.current = tween;
+    return () => {
+      tween.kill();
+    };
+  }, [step, ready, reducedMotion]);
+
+  const stopGrowthDemo = useCallback(() => {
+    growthTween.current?.kill();
+    growthTween.current = null;
+  }, []);
+
   const stopDemo = useCallback(() => {
     demoTween.current?.kill();
     demoTween.current = null;
@@ -288,8 +338,8 @@ export default function AnatomiModule() {
             <div
               className={`step-anim mt-6 hidden items-baseline gap-4 border-t border-white/10 pt-5 sm:flex ${
                 // Di layar pendek, fakta disembunyikan saat panel pengatur tampil agar tidak bertumpuk.
-                step === INTERACTIVE_STEP ? "[@media(max-height:820px)]:!hidden" : ""
-              } ${focusedLayer ? "!hidden" : ""}`}
+                hasPanel ? "[@media(max-height:820px)]:!hidden" : ""
+              } ${step === GROWTH_STEP ? "!hidden" : ""} ${focusedLayer ? "!hidden" : ""}`}
             >
               <span className="shrink-0 font-playfair text-3xl italic text-[#f0a060] md:text-4xl">{current.fact.value}</span>
               <span className="text-xs leading-relaxed text-white/55">{current.fact.caption}</span>
@@ -325,7 +375,12 @@ export default function AnatomiModule() {
         </nav>
 
         {/* Penggaris kedalaman (kanan) */}
-        <div className="absolute bottom-[18%] right-10 top-[22%] hidden lg:block xl:right-14">
+        <div
+          className={`absolute bottom-[18%] right-10 top-[22%] hidden transition-opacity duration-700 lg:block xl:right-14 ${
+            step === GROWTH_STEP ? "pointer-events-none opacity-0" : "opacity-100"
+          }`}
+          inert={step === GROWTH_STEP}
+        >
           <DepthLegend
             waterCm={waterCm}
             hovered={hovered}
@@ -342,6 +397,16 @@ export default function AnatomiModule() {
             <p className="mt-1 text-xs leading-relaxed text-white/70">{hoveredLayer.summary}</p>
           </div>
         )}
+
+        {/* Pengatur umur timbunan (tahap pertumbuhan) */}
+        <div
+          className={`absolute bottom-6 left-1/2 w-[min(560px,calc(100%-2.5rem))] -translate-x-1/2 md:bottom-20 md:left-14 md:w-[400px] md:translate-x-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step === GROWTH_STEP ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"
+          }`}
+          inert={step !== GROWTH_STEP}
+        >
+          <GrowthControl years={userYears} onChange={setUserYears} onInteract={stopGrowthDemo} />
+        </div>
 
         {/* Pengatur muka air (tahap interaktif) */}
         <div
@@ -361,7 +426,7 @@ export default function AnatomiModule() {
         <div className="absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14">
           <div
             className={`pointer-events-none hidden items-center gap-4 transition-opacity duration-500 lg:flex ${
-              step === INTERACTIVE_STEP ? "opacity-0" : "opacity-100"
+              hasPanel ? "opacity-0" : "opacity-100"
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
@@ -379,7 +444,7 @@ export default function AnatomiModule() {
               soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
             } ${
               // Di layar kecil tombol disembunyikan saat panel pengatur tampil agar tidak bertumpuk.
-              step === INTERACTIVE_STEP ? "hidden md:inline-flex" : "inline-flex"
+              hasPanel ? "hidden md:inline-flex" : "inline-flex"
             }`}
           >
             {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
