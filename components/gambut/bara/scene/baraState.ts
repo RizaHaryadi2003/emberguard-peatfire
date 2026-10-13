@@ -147,3 +147,45 @@ export function createSubsidence(sim: SmolderSim): Subsidence {
   };
   return tracker;
 }
+
+/**
+ * Simpangan pandang yang masih dianggap "menghadap penampang" (radian).
+ *
+ * Putaran dibatasi lebih ketat daripada jungkitan karena keduanya tidak sama
+ * akibatnya: memutar sedikit saja sudah memiringkan bidang potong sehingga
+ * kedalaman tidak lagi terbaca jujur, sedangkan menunduk justru dianjurkan
+ * pada babak 03 — dari atas, kebakaran ini nyaris tidak terlihat.
+ */
+export const FACING_YAW_TOLERANCE = 0.18;
+export const FACING_TILT_TOLERANCE = 0.3;
+
+const TAU = Math.PI * 2;
+
+/**
+ * Benarkah diorama sudah dipalingkan jauh dari hadapan penampang?
+ *
+ * Dipakai untuk memunculkan tombol "Kembali ke penampang". Tanpa tombol itu
+ * pembaca yang memutar bongkahan sampai melihat punggungnya harus menyeret
+ * balik dengan jarak yang sama persis untuk menemukan penampangnya lagi —
+ * dan karena putaran tidak dibatasi, ia bisa tersesat beberapa putaran jauhnya.
+ */
+export function isTurnedAway(s: BaraState): boolean {
+  return Math.abs(signedYaw(s.rotation)) > FACING_YAW_TOLERANCE || Math.abs(s.tilt) > FACING_TILT_TOLERANCE;
+}
+
+/**
+ * Putaran terdekat yang menghadapkan penampang kembali ke kamera.
+ *
+ * Putaran penuh bukan simpangan: pada 2π penampang sudah menghadap kamera
+ * lagi. Yang dicari karena itu bukan nol, melainkan kelipatan 2π terdekat,
+ * supaya diorama berputar balik lewat jalan terpendek alih-alih memutar
+ * mundur sebanyak putaran yang sudah ditempuh pembaca.
+ */
+export function nearestFacing(rotation: number): number {
+  return Math.round(rotation / TAU) * TAU;
+}
+
+/** Sisa putaran terhadap kelipatan 2π terdekat, dalam rentang −π…π. */
+function signedYaw(rotation: number): number {
+  return rotation - nearestFacing(rotation);
+}

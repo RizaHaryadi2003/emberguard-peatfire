@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { ArrowRight, MousePointerClick, Volume2, VolumeX } from "lucide-react";
+import { ArrowRight, MousePointerClick, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
 import { SmolderSim, type SmolderStats } from "@/lib/smolder";
@@ -16,6 +16,8 @@ import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
 import {
   createBaraState,
+  isTurnedAway,
+  nearestFacing,
   BARA_MAX_TILT_DOWN,
   BARA_MAX_TILT_UP,
   type BaraState,
@@ -82,6 +84,15 @@ export default function BaraModule() {
   const [ready, setReady] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
   const [soundOn, setSoundOn] = useState(false);
+  /**
+   * Diorama sudah dipalingkan jauh dari penampang.
+   *
+   * Putaran sendiri disimpan dalam stateRef supaya menyeret tidak merender
+   * ulang kanvas; yang masuk ke keadaan React hanyalah jawaban ya/tidak ini,
+   * jadi render ulang terjadi paling banyak dua kali per seretan — saat batas
+   * dilewati dan saat pandangan kembali.
+   */
+  const [turnedAway, setTurnedAway] = useState(false);
 
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
 
@@ -253,6 +264,7 @@ export default function BaraModule() {
     setThermalSeen(false);
     setRewetOnce(false);
     setCollapsed(false);
+    setTurnedAway(false);
     Object.assign(stateRef.current, createBaraState(START_WATER_CM / 100));
   }, [sim]);
 
@@ -289,9 +301,24 @@ export default function BaraModule() {
     stateRef.current.rotation = d.yaw + dx * 0.005;
     // Menyeret ke bawah berarti ingin melihat dari atas, jadi tandanya dibalik.
     stateRef.current.tilt = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, d.pitch + dy * 0.004));
+    setTurnedAway(isTurnedAway(stateRef.current));
   }, []);
   const handleDragEnd = useCallback(() => {
     drag.current = null;
+  }, []);
+
+  /**
+   * Hadapkan penampang kembali ke kamera.
+   *
+   * Nilainya cukup diubah pada sasaran, bukan langsung pada diorama: Turntable
+   * melunakkan sendiri perjalanannya, sehingga bongkahan berputar balik
+   * dengan mulus dan pembaca tetap melihat sisi mana yang berpindah ke mana.
+   */
+  const handleFaceSection = useCallback(() => {
+    const s = stateRef.current;
+    s.rotation = nearestFacing(s.rotation);
+    s.tilt = 0;
+    setTurnedAway(false);
   }, []);
 
   const handleStats = useCallback((next: SmolderStats) => setStats(next), []);
@@ -456,11 +483,27 @@ export default function BaraModule() {
       </nav>
 
       {/* Kanan bawah: petunjuk & tombol suara */}
-      <div className="absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:right-10">
+      {/* Di layar sempit gugus ini ditumpuk, bukan dibariskan: dengan tombol
+          "Kembali ke penampang" ikut tampil, satu baris akan bertabrakan
+          dengan navigasi babak di tepi kiri pada lebar 390 px. */}
+      <div className="absolute bottom-6 right-5 flex flex-col items-end gap-2 text-[11px] text-white/60 sm:right-10 sm:flex-row sm:items-center sm:gap-4">
         <span className="hidden lg:inline">
           {act === 0 ? "Klik permukaan untuk menyulut" : "Klik penampang untuk memeriksa satu titik"}
           <span className="text-white/35"> · seret untuk memutar</span>
         </span>
+        {/* Jalan pulang setelah diorama diputar jauh. Hanya muncul saat
+            dibutuhkan: selama penampang masih menghadap pembaca, tombol ini
+            cuma menambah ramai tanpa ada yang bisa dikerjakannya. */}
+        {turnedAway && (
+          <button
+            type="button"
+            onClick={handleFaceSection}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#f0a060]/35 bg-[#2a1405]/60 px-3 py-1.5 font-medium text-[#ffd9b0] backdrop-blur-md transition-colors hover:bg-[#2a1405]/85"
+          >
+            <RotateCcw size={14} />
+            Kembali ke penampang
+          </button>
+        )}
         <button
           type="button"
           onClick={toggleSound}
