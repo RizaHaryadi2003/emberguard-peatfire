@@ -162,6 +162,43 @@ describe("pemadaman", () => {
     expect(sim.stats.active).toBe(0);
   });
 
+  it("lama menyala berhenti bertambah setelah bara padam", () => {
+    // Pada babak 04 pembaca memadamkan baranya lalu membiarkan waktu
+    // berjalan untuk memastikan ia tidak hidup lagi. Kartu penutup dahulu
+    // menampilkan waktu simulasi di bawah label "Lama menyala", sehingga
+    // angka itu terus bertambah padahal tidak ada lagi yang menyala.
+    const { sim } = ignited();
+    jalan(sim, 5);
+    expect(sim.stats.burningHours).toBeGreaterThan(0);
+    // Selama masih menyala, keduanya berjalan bersama.
+    expect(sim.stats.burningHours).toBeCloseTo(sim.stats.hours, 1);
+
+    sim.setWaterTable(0);
+    jalan(sim, 0.5);
+    expect(sim.stats.extinguished).toBe(true);
+    const menyala = sim.stats.burningHours;
+    const berjalan = sim.stats.hours;
+
+    jalan(sim, 20);
+    expect(sim.stats.hours).toBeGreaterThan(berjalan + 400);
+    expect(sim.stats.burningHours).toBe(menyala);
+  });
+
+  it("laju rambat tidak merosot sendiri setelah bara padam", () => {
+    // Lebar daerah terbakar berhenti tumbuh begitu bara padam, jadi bila
+    // pembaginya lama waktu berjalan, angkanya akan terus turun sesudahnya.
+    const { sim } = ignited();
+    jalan(sim, 5);
+    sim.setWaterTable(0);
+    jalan(sim, 0.5);
+    expect(sim.stats.extinguished).toBe(true);
+    const laju = sim.stats.spreadCmPerDay;
+    expect(laju).toBeGreaterThan(0);
+
+    jalan(sim, 20);
+    expect(sim.stats.spreadCmPerDay).toBeCloseTo(laju, 6);
+  });
+
   it("pembasahan setengah hanya memadamkan bara di bawah muka air baru", () => {
     const { sim } = ignited(2.2);
     jalan(sim, 10);

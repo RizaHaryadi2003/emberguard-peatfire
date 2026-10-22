@@ -105,6 +105,18 @@ export const VISIBLE_SMOKE_DEPTH = 0.55;
 export type SmolderStats = {
   /** Waktu simulasi yang sudah berjalan (jam). */
   hours: number;
+  /**
+   * Lama gambut benar-benar membara (jam): hanya jam-jam yang pada awalnya
+   * masih ada sel membara yang dihitung.
+   *
+   * Dipisahkan dari `hours` karena keduanya berbeda arti. Waktu simulasi terus
+   * berjalan selama pengatur kecepatan tidak dihentikan, juga setelah bara
+   * padam — dan pada babak 04 pembaca justru memadamkannya lalu membiarkan
+   * waktu berjalan untuk memastikan baranya tidak hidup lagi. Kartu penutup
+   * dahulu menampilkan `hours` di bawah label "Lama menyala", sehingga angka
+   * itu terus bertambah padahal tidak ada lagi yang menyala.
+   */
+  burningHours: number;
   /** Jumlah sel yang sedang membara. */
   active: number;
   /** Kedalaman bara terdalam (m); 0 bila tidak ada bara. */
@@ -130,6 +142,7 @@ export type SmolderStats = {
 function emptyStats(): SmolderStats {
   return {
     hours: 0,
+    burningHours: 0,
     active: 0,
     frontDepth: 0,
     meanDepth: 0,
@@ -348,11 +361,15 @@ export class SmolderSim {
     // baru menyala pada langkah ini tidak langsung ikut merambat.
     const spreaders = this.spreaders;
     let count = 0;
+    // Sel yang membara pada awal langkah ini. Ikut dihitung pula sel yang
+    // justru padam di langkah ini: jam itu ia memang masih menyala.
+    let burning = 0;
     for (let row = 0; row < GRID_ROWS; row++) {
       const burn = LAYER_BURN[this.rowLayer[row]];
       for (let col = 0; col < GRID_COLS; col++) {
         const i = this.index(col, row);
         if (this.state[i] !== CELL_SMOLDER) continue;
+        burning++;
         const m = this.moisture[i];
 
         // Terlalu lembap: bara mendingin, lalu padam menjadi gambut hangus.
@@ -391,6 +408,7 @@ export class SmolderSim {
     }
 
     this.stats.hours += dt;
+    if (burning > 0) this.stats.burningHours += dt;
   }
 
   /**
@@ -447,7 +465,11 @@ export class SmolderSim {
       }
     }
 
-    const days = this.stats.hours / 24;
+    // Dibagi lama menyala, bukan lama waktu berjalan. Lebar daerah terbakar
+    // berhenti tumbuh begitu bara padam, jadi dengan pembagi yang terus
+    // membesar angka ini akan merosot sendiri sesudahnya — padahal yang
+    // dimaksud labelnya adalah secepat apa bara merambat selama ia menyala.
+    const days = this.stats.burningHours / 24;
     const width = maxCol >= minCol ? (maxCol - minCol + 1) * CELL_W : 0;
     // Laju rambat diukur dari lebar daerah terbakar, dibagi dua karena bara
     // merambat ke kiri dan ke kanan dari titik sulut.
@@ -455,6 +477,7 @@ export class SmolderSim {
 
     this.stats = {
       hours: this.stats.hours,
+      burningHours: this.stats.burningHours,
       active,
       frontDepth: deepest,
       meanDepth: active > 0 ? depthSum / active : 0,

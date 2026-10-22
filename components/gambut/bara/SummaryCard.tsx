@@ -8,7 +8,9 @@ import { formatElapsed, type SmolderStats } from "@/lib/smolder";
 /** Kartu penutup: jejak yang ditinggalkan bara setelah berhasil dipadamkan. */
 export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; onReset: () => void }) {
   const rows: [string, string][] = [
-    ["Lama menyala", formatElapsed(stats.hours)],
+    // `burningHours`, bukan `hours`: pembaca baru saja memadamkan baranya dan
+    // boleh membiarkan waktu berjalan untuk memastikan ia tidak hidup lagi.
+    ["Lama menyala", formatElapsed(stats.burningHours)],
     ["Gambut habis terbakar", `${(stats.consumed * 100).toFixed(1)} %`],
     ["Kedalaman terdalam", `${(stats.frontDepth * 100).toFixed(0)} cm`],
     ["Permukaan turun", `${(stats.maxSubsidence * 100).toFixed(0)} cm`],
