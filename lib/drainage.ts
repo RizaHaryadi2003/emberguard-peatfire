@@ -126,16 +126,6 @@ export const PROFILE_DEPTH_M = PROFILE_DEPTH;
  */
 export const COLUMNS = 200;
 
-/**
- * Pembesaran tegak gambar penampang.
- *
- * Penampang 1.000 m x 3,4 m; digambar sebenar-benarnya ia hanya sebilah garis.
- * Diagram hidrologi gambut memang selalu dibesarkan tegaknya, dan angkanya
- * wajib ditulis pada gambar — tanpa itu pembaca akan mengira kubah gambut
- * berbentuk bukit, padahal kemiringannya tidak sampai satu derajat.
- */
-export const VERTICAL_EXAGGERATION = Math.round(TRANSECT_LENGTH_M / PROFILE_DEPTH / 10) * 10;
-
 /** Jarak dari kanal untuk kolom ke-i (m, di pusat kolomnya). */
 export function distanceOfColumn(col: number): number {
   return ((col + 0.5) / COLUMNS) * TRANSECT_LENGTH_M;
@@ -451,6 +441,25 @@ export class DrainageSim {
       this.emitted += (emissionPerYear(water) * dt) / COLUMNS;
     }
     this.years += dt;
+  }
+
+  /**
+   * Salin keadaan tiap kolom ke penyangga tekstur data yang dibaca peneduh.
+   * Satu piksel per kolom: R = penurunan permukaan, G = kedalaman muka air,
+   * B = melewati batas 40 cm, A = belum dipakai. Keduanya dinyatakan sebagai
+   * bagian dari kedalaman profil, supaya peneduh tidak perlu tahu meternya.
+   */
+  writeField(target: Uint8Array): void {
+    const depth = this.effectiveCanalDepth();
+    for (let col = 0; col < COLUMNS; col++) {
+      const drop = this.drop[col];
+      const water = waterDepthAt(distanceOfColumn(col), depth, drop);
+      const o = col * 4;
+      target[o] = Math.round(Math.min(1, drop / PROFILE_DEPTH_M) * 255);
+      target[o + 1] = Math.round(Math.min(1, water / PROFILE_DEPTH_M) * 255);
+      target[o + 2] = water > WATER_LIMIT_M ? 255 : 0;
+      target[o + 3] = 255;
+    }
   }
 
   /** Hitung ulang ringkasan untuk antarmuka. */
