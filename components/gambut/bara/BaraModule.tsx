@@ -432,11 +432,24 @@ export default function BaraModule() {
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
           </p>
-          {/* Angka kunci: ikut dilepas sebelum paragraf, karena ia pelengkap
-              sedangkan paragraf yang menjelaskan babaknya. */}
+          {/* Angka kunci, hanya untuk lebar di bawah lg.
+              Mulai lg ia tampil di panel angka sebelah kanan, yang punya
+              ruang tegaknya sendiri — di sanalah ia sekarang benar-benar
+              terbaca pada babak 03 dan 04. Di bawah lg panel kanan tidak ada,
+              jadi angkanya tetap disediakan di sini selama layarnya cukup
+              tinggi.
+
+              Ambang babak padat sengaja dibiarkan setinggi 1011 px, yang
+              artinya pada babak 03 dan 04 di bawah lg angkanya praktis tidak
+              tampil. Diukur: pada layar selebar itu, paragraf pengantar dan
+              angka kunci tidak pernah muat bersama panel kendali yang
+              menjulang — ambang 821 px sempat dicoba dan justru menindih
+              15–24 px di rentang 861–900 px, tempat paragrafnya ikut muncul.
+              Yang dipertahankan paragrafnya, sama seperti keputusan di atas:
+              ia yang menjelaskan babaknya. */}
           <div
             className={`act-anim mt-3 hidden items-baseline gap-4 border-t border-white/10 pt-3 [@media(min-height:901px)]:mt-4 [@media(min-height:901px)]:pt-4 ${
-              dense ? "[@media(min-height:1011px)]:flex" : "[@media(min-height:760px)]:flex"
+              dense ? "[@media(min-height:1011px)]:max-lg:flex" : "[@media(min-height:760px)]:max-lg:flex"
             }`}
           >
             <span className="shrink-0 font-playfair text-2xl italic text-[#f0a060]">{current.fact.value}</span>
@@ -475,17 +488,21 @@ export default function BaraModule() {
         )}
       </div>
 
-      {/* Angka hidup & keterangan warna (kanan) */}
-      <div className="absolute right-5 top-32 hidden lg:block xl:right-10">
-        <StatsPanel stats={stats} />
+      {/* Kolom kanan: angka hidup, keterangan warna, dan pesan kejadian.
+          Satu tumpukan yang ditambatkan ke tepi atas, bukan dua kotak yang
+          masing-masing ditambatkan ke tepi berlawanan. Dahulu pesan kejadian
+          duduk di tepi bawah, sehingga pada layar pendek ia bertemu panel
+          angka di tengah — pada 1280×600 keduanya bertindih 136 px. Dengan
+          satu tumpukan, keduanya tidak mungkin lagi saling menindih, dan
+          pesannya pun kini muncul berdampingan dengan angka yang dibahasnya. */}
+      <div className="absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10">
+        <StatsPanel stats={stats} fact={current.fact} />
+        {message && (
+          <div className="pointer-events-none rounded-2xl border border-[#e8702a]/30 bg-black/60 p-3.5 backdrop-blur-xl">
+            <p className="text-xs leading-relaxed text-white/85">{message}</p>
+          </div>
+        )}
       </div>
-
-      {/* Pesan kejadian (kanan bawah) */}
-      {message && (
-        <div className="pointer-events-none absolute bottom-20 right-5 hidden w-[300px] rounded-2xl border border-[#e8702a]/30 bg-black/60 p-4 backdrop-blur-xl lg:block xl:right-10">
-          <p className="text-xs leading-relaxed text-white/85">{message}</p>
-        </div>
-      )}
 
       {/* Navigasi babak (bawah) */}
       <nav aria-label="Babak modul" className="absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14">
