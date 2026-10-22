@@ -123,7 +123,7 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
     for (const t of [groundColor, dryColor]) t.colorSpace = THREE.SRGBColorSpace;
     for (const t of [groundColor, groundNormal, dryColor, dryNormal]) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.anisotropy = 8;
+      t.anisotropy = profile.anisotropy;
     }
 
     const geom = createSurfaceGrid();
@@ -163,7 +163,7 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         polygonOffsetFactor: -1,
       }),
     };
-  }, [groundColor, groundNormal, dryColor, dryNormal]);
+  }, [groundColor, groundNormal, dryColor, dryNormal, profile.anisotropy]);
 
   // Tempatkan tumbuhan; tiap tumbuhan mendapat salinan materialnya sendiri
   // supaya bisa menghangus tanpa mempengaruhi tumbuhan lain.

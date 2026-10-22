@@ -5,13 +5,13 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createSmokeTexture, createSparkTexture } from "@/components/gambut/scene/proceduralTextures";
 import { CELL_SMOLDER, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
-import type { BaraState } from "./baraState";
+import { QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
 
 // Asap, percikan, dan cahaya bara. Semuanya mengikuti keadaan simulasi: asap
 // hanya keluar dari kolom yang baranya masih dekat permukaan, dan berubah
 // menjadi uap putih saat gambutnya dibasahi.
 
-const SMOKE_COUNT = 30;
+/** Jumlah kepulan asap diambil dari anggaran mutu (lihat QUALITY_PROFILE). */
 const SPARK_COUNT = 90;
 
 /** Bara yang lebih dalam dari ini asapnya tidak lagi sampai ke permukaan (m). */
@@ -21,7 +21,16 @@ type Hot = { x: number; depth: number };
 
 type Particle = { x: number; z: number; y: number; vy: number; life: number; maxLife: number; seed: number };
 
-export default function SmokePlumes({ sim, stateRef }: { sim: SmolderSim; stateRef: RefObject<BaraState> }) {
+export default function SmokePlumes({
+  sim,
+  stateRef,
+  quality,
+}: {
+  sim: SmolderSim;
+  stateRef: RefObject<BaraState>;
+  quality: Quality;
+}) {
+  const smokeCount = QUALITY_PROFILE[quality].smoke;
   const res = useMemo(() => {
     const smokeTex = createSmokeTexture();
     const sparkTex = createSparkTexture();
@@ -42,11 +51,11 @@ export default function SmokePlumes({ sim, stateRef }: { sim: SmolderSim; stateR
         toneMapped: false,
       }),
       smokeMats: Array.from(
-        { length: SMOKE_COUNT },
+        { length: smokeCount },
         () => new THREE.SpriteMaterial({ map: smokeTex, color: "#8d837a", transparent: true, opacity: 0, depthWrite: false }),
       ),
     };
-  }, []);
+  }, [smokeCount]);
 
   useEffect(
     () => () => {
@@ -62,8 +71,8 @@ export default function SmokePlumes({ sim, stateRef }: { sim: SmolderSim; stateR
   // Partikel dimulai "mati" (maxLife habis) supaya masing-masing lahir di
   // tempat yang benar pada bingkai pertama, bukan diacak saat render.
   const smokes = useMemo<Particle[]>(
-    () => Array.from({ length: SMOKE_COUNT }, (_, i) => ({ x: 0, z: -0.3, y: 0, vy: 0, life: 1, maxLife: 0, seed: i * 7.13 })),
-    [],
+    () => Array.from({ length: smokeCount }, (_, i) => ({ x: 0, z: -0.3, y: 0, vy: 0, life: 1, maxLife: 0, seed: i * 7.13 })),
+    [smokeCount],
   );
   const sparks = useMemo<Particle[]>(
     () => Array.from({ length: SPARK_COUNT }, (_, i) => ({ x: 0, z: -0.2, y: 0, vy: 0, life: 1, maxLife: 0, seed: i * 3.71 })),
@@ -194,13 +203,35 @@ export default function SmokePlumes({ sim, stateRef }: { sim: SmolderSim; stateR
         light.intensity = 0;
         return;
       }
-      const half = list.filter((h) => (i === 0 ? h.x <= 0 : h.x > 0));
-      const source = half.length > 0 ? half : list;
-      const x = source.length > 0 ? source.reduce((a, h) => a + h.x, 0) / source.length : (s.flameX - 0.5) * 4.4;
-      const depth = source.length > 0 ? source.reduce((a, h) => a + h.depth, 0) / source.length : 0.05;
+      // Rerata separuh kiri (i = 0) atau kanan (i = 1) dijumlahkan dalam satu
+      // lintasan. Dahulu dikerjakan dengan `filter` lalu dua `reduce`, yang
+      // membuat tiga senarai baru per lampu per bingkai — enam senarai tiap
+      // bingkai sepanjang kebakaran berlangsung, hanya untuk dua bilangan.
+      let n = 0;
+      let sumX = 0;
+      let sumDepth = 0;
+      for (const h of list) {
+        if (i === 0 ? h.x > 0 : h.x <= 0) continue;
+        n++;
+        sumX += h.x;
+        sumDepth += h.depth;
+      }
+      // Bila separuh itu kosong, pakai seluruh daftar supaya lampunya tetap
+      // mengikuti bara yang ada, seperti sebelumnya.
+      if (n === 0 && list.length > 0) {
+        n = list.length;
+        sumX = 0;
+        sumDepth = 0;
+        for (const h of list) {
+          sumX += h.x;
+          sumDepth += h.depth;
+        }
+      }
+      const x = n > 0 ? sumX / n : (s.flameX - 0.5) * 4.4;
+      const depth = n > 0 ? sumDepth / n : 0.05;
       const flicker = s.reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(t * 8.3 + i) * Math.sin(t * 3.1);
       light.position.set(x, -depth + 0.1, 0.35);
-      light.intensity = (Math.min(1, source.length / 30) * 4 + s.flame * 6) * flicker * (1 - steam * 0.7);
+      light.intensity = (Math.min(1, n / 30) * 4 + s.flame * 6) * flicker * (1 - steam * 0.7);
     });
   });
 

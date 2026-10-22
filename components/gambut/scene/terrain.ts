@@ -45,8 +45,12 @@ function wallRelief(theta: number, y: number): number {
  * sudah diketahui. Dipisah dari `radiusAt` karena `footprintRadius` memakai
  * tiga pemangkatan: saat satu irisan dibentuk, nilainya cukup dihitung sekali
  * per kolom, bukan sekali per titik.
+ *
+ * Diekspor agar Modul 02 dapat memakai penghematan yang sama: bidang potong
+ * dan badan separuhnya dibentuk ulang tiap kali permukaan melesak, dan di
+ * sana pun bentuk tapaknya tetap.
  */
-function radiusFrom(r0: number, theta: number, y: number): number {
+export function radiusFrom(r0: number, theta: number, y: number): number {
   const depth = Math.min(1, Math.max(0, -y / PROFILE_DEPTH));
   return r0 * (1 - 0.06 * depth * depth) + wallRelief(theta, y);
 }

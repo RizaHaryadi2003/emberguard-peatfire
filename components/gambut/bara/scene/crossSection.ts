@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
-import { interfaceY, radiusAt } from "@/components/gambut/scene/terrain";
+import { footprintRadius, interfaceY, radiusAt, radiusFrom } from "@/components/gambut/scene/terrain";
 
 // Bentuk bongkahan gambut Modul 02: bongkahan yang sama seperti Modul 01,
 // tetapi dipotong tepat di tengah (bidang z = 0) dan hanya separuh belakang
@@ -67,6 +67,45 @@ function thetaAt(i: number): number {
 }
 
 /**
+ * Tabel kolom separuh tapak: sudut, kosinus, sinus, jari-jari tapak, dan
+ * jari-jari dinding di permukaan.
+ *
+ * Alasannya sama dengan `COLUMNS` pada `terrain.ts`: `footprintRadius` memakai
+ * tiga pemangkatan, sedangkan bentuk tapaknya tetap sepanjang modul hidup.
+ * Badan bongkahan dibentuk ulang tiap kali permukaan melesak — dahulu itu
+ * berarti empat ribu pemangkatan tiga kali per pembentukan, padahal nilainya
+ * selalu sama.
+ */
+const HALF_COLUMNS = Array.from({ length: SEGMENTS + 1 }, (_, i) => {
+  const theta = thetaAt(i);
+  const fr = footprintRadius(theta);
+  return {
+    theta,
+    cos: Math.cos(theta),
+    sin: Math.sin(theta),
+    fr,
+    /** Jari-jari dinding tepat di permukaan (y = 0), tempat titik (x0, z0) diambil. */
+    rSurface: radiusFrom(fr, theta, 0),
+  };
+});
+
+/**
+ * Penampung tepi atas & bawah dinding, dipakai ulang agar pembentukan ulang
+ * badan bongkahan tidak menyisakan sampah memori.
+ *
+ * Dahulu dua senarai `THREE.Vector3` yang dibuat baru setiap kali: empat
+ * lapisan × dua tepi × 97 kolom = 776 objek per pembentukan, dan pembentukan
+ * terjadi tiap setengah detik selama gambut terbakar. Pola ini sama dengan
+ * TOP_EDGE/BOT_EDGE pada `terrain.ts`.
+ */
+const TOP_EDGE = new Float32Array((SEGMENTS + 1) * 3);
+const BOT_EDGE = new Float32Array((SEGMENTS + 1) * 3);
+
+/** Jari-jari tapak di kedua ujung bidang potong; dipakai oleh `faceBounds`. */
+const FOOTPRINT_LEFT = footprintRadius(Math.PI);
+const FOOTPRINT_RIGHT = footprintRadius(0);
+
+/**
  * Relief permukaan gambut (m, bertanda) di titik (x, z). Permukaan gambut
  * alami tidak rata melainkan bergundukan: tumpukan lumut dan akar membentuk
  * gundukan rendah selebar satu sampai dua meter.
@@ -113,7 +152,10 @@ function faceInset(y: number): number {
  */
 export function faceBounds(y: number): { left: number; right: number } {
   const inset = faceInset(y);
-  return { left: -(radiusAt(Math.PI, y) - inset), right: radiusAt(0, y) - inset };
+  return {
+    left: -(radiusFrom(FOOTPRINT_LEFT, Math.PI, y) - inset),
+    right: radiusFrom(FOOTPRINT_RIGHT, 0, y) - inset,
+  };
 }
 
 /** Simpangan dasar profil (m) dari kedalaman nominal, di titik (x, z). */
@@ -196,6 +238,13 @@ export function updateHalfBody(
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const color = geom.attributes.color as THREE.BufferAttribute;
+  // Ditulis lewat penyangganya langsung, bukan lewat setXYZ/setXY: tiga
+  // atribut × 2.231 titik × empat lapisan adalah hampir 27.000 panggilan
+  // metode tiap pembentukan ulang, untuk pekerjaan yang isinya hanya menaruh
+  // bilangan ke dalam larik. Pola ini sama dengan `updateSlab` di `terrain.ts`.
+  const posArr = pos.array as Float32Array;
+  const uvArr = uv.array as Float32Array;
+  const colorArr = color.array as Float32Array;
 
   /**
    * Warnai satu titik menurut seberapa jauh tanah di atasnya sudah melesak.
@@ -205,65 +254,81 @@ export function updateHalfBody(
   const shade = (v: number, x: number, y: number) => {
     const burn = Math.min(1, sinkAt(Math.max(0, -y), x, drop) / SCORCH_DEPTH);
     const k = 1 - burn * 0.85;
-    color.setXYZ(v, k, k * 0.94, k * 0.9);
+    colorArr[v * 3] = k;
+    colorArr[v * 3 + 1] = k * 0.94;
+    colorArr[v * 3 + 2] = k * 0.9;
   };
   const cols = SEGMENTS + 1;
   const wallCount = cols * (WALL_RINGS + 1);
   const capCount = cols * (CAP_RINGS + 1);
 
-  const topEdge: THREE.Vector3[] = [];
-  const botEdge: THREE.Vector3[] = [];
-
   for (let i = 0; i < cols; i++) {
-    const theta = thetaAt(i);
-    const r0 = radiusAt(theta, 0);
-    const x0 = Math.cos(theta) * r0;
-    const z0 = Math.sin(theta) * r0;
+    const { theta, cos, sin, fr, rSurface } = HALF_COLUMNS[i];
+    const x0 = cos * rSurface;
+    const z0 = sin * rSurface;
     const yb = bottom(x0, z0);
     const yt = Math.max(yb, top(x0, z0));
     const u = theta * 1.9 * UV_PER_METER;
     for (let j = 0; j <= WALL_RINGS; j++) {
       const y = yb + ((yt - yb) * j) / WALL_RINGS;
-      const r = radiusAt(theta, y);
-      const x = Math.cos(theta) * r;
-      const z = Math.sin(theta) * r;
-      pos.setXYZ(j * cols + i, x, y, z);
-      uv.setXY(j * cols + i, u, y * UV_PER_METER);
-      shade(j * cols + i, x, y);
-      if (j === 0) botEdge.push(new THREE.Vector3(x, y, z));
-      if (j === WALL_RINGS) topEdge.push(new THREE.Vector3(x, y, z));
+      const r = radiusFrom(fr, theta, y);
+      const x = cos * r;
+      const z = sin * r;
+      const v = j * cols + i;
+      posArr[v * 3] = x;
+      posArr[v * 3 + 1] = y;
+      posArr[v * 3 + 2] = z;
+      uvArr[v * 2] = u;
+      uvArr[v * 2 + 1] = y * UV_PER_METER;
+      shade(v, x, y);
+      // Titik tepi atas & bawah dinding dipakai lagi oleh lembar tutup.
+      if (j === 0 || j === WALL_RINGS) {
+        const edge = j === 0 ? BOT_EDGE : TOP_EDGE;
+        edge[i * 3] = x;
+        edge[i * 3 + 1] = y;
+        edge[i * 3 + 2] = z;
+      }
     }
   }
 
-  // Titik pada garis potong (z = 0) yang berpasangan dengan kolom ke-i.
-  const linePoint = (i: number, y: number) => {
-    const { left, right } = faceBounds(y);
-    return left + ((right - left) * i) / SEGMENTS;
-  };
-
-  const fillCap = (start: number, edge: THREE.Vector3[], height: HeightFn) => {
-    for (let k = 0; k <= CAP_RINGS; k++) {
-      const t = k / CAP_RINGS;
-      for (let i = 0; i < cols; i++) {
-        const w = edge[i];
-        // Kolom dinding ke-i berpasangan dengan titik garis potong di ujung
-        // yang sama: `thetaAt(0)` = π berada di kiri, dan `linePoint(0)` juga
-        // di kiri. Memakai `SEGMENTS - i` memasangkannya dengan ujung yang
-        // berlawanan sehingga lembar tutup terpelintir dan bongkahan kehilangan
-        // bentuknya.
-        const lx = linePoint(i, w.y);
-        const x = lx + (w.x - lx) * t;
-        const z = w.z * t;
-        const y = k === CAP_RINGS ? w.y : height(x, z);
+  /**
+   * Lembar tutup: kisi antara garis potong (t = 0) dan tepi dinding (t = 1).
+   *
+   * Kolom di perulangan luar, cincin di dalam. Titik garis potong hanya
+   * bergantung pada ketinggian tepi dinding kolom itu, yang sama untuk seluruh
+   * cincin — jadi `faceBounds` cukup dipanggil sekali per kolom, bukan sekali
+   * per titik. Urutan yang dahulu memanggilnya 582 kali per tutup untuk 97
+   * jawaban yang berbeda.
+   */
+  const fillCap = (start: number, edge: Float32Array, height: HeightFn) => {
+    for (let i = 0; i < cols; i++) {
+      const wx = edge[i * 3];
+      const wy = edge[i * 3 + 1];
+      const wz = edge[i * 3 + 2];
+      // Kolom dinding ke-i berpasangan dengan titik garis potong di ujung
+      // yang sama: `thetaAt(0)` = π berada di kiri, dan batas kiri juga di
+      // kiri. Memakai `SEGMENTS - i` memasangkannya dengan ujung yang
+      // berlawanan sehingga lembar tutup terpelintir dan bongkahan kehilangan
+      // bentuknya.
+      const { left, right } = faceBounds(wy);
+      const lx = left + ((right - left) * i) / SEGMENTS;
+      for (let k = 0; k <= CAP_RINGS; k++) {
+        const t = k / CAP_RINGS;
+        const x = lx + (wx - lx) * t;
+        const z = wz * t;
+        const y = k === CAP_RINGS ? wy : height(x, z);
         const v = start + k * cols + i;
-        pos.setXYZ(v, x, y, z);
-        uv.setXY(v, x * UV_PER_METER, z * UV_PER_METER);
+        posArr[v * 3] = x;
+        posArr[v * 3 + 1] = y;
+        posArr[v * 3 + 2] = z;
+        uvArr[v * 2] = x * UV_PER_METER;
+        uvArr[v * 2 + 1] = z * UV_PER_METER;
         shade(v, x, y);
       }
     }
   };
-  fillCap(wallCount, topEdge, top);
-  fillCap(wallCount + capCount, botEdge, bottom);
+  fillCap(wallCount, TOP_EDGE, top);
+  fillCap(wallCount + capCount, BOT_EDGE, bottom);
 
   pos.needsUpdate = true;
   uv.needsUpdate = true;
@@ -285,15 +350,74 @@ export function updateHalfBody(
  * dalamnya. Penggaris kedalaman memakai `aEdge` supaya benar-benar menempel
  * pada tepi potongan, bukan terpotong di luar bidang.
  */
+/**
+ * Tabel baris bidang potong: kedalaman, batas kiri & kanan, serta kedua faktor
+ * lengkung yang dipakai `profileY`.
+ *
+ * Tepi dihitung pada ketinggian titiknya yang sebenarnya, bukan pada kedalaman
+ * nominal −d. Dinding bongkahan berelief, jadi jari-jarinya berubah terhadap
+ * y; dekat permukaan dan dekat dasar, y menyimpang dari −d sampai belasan
+ * sentimeter. Dengan −d, tepi bidang potong meleset sejauh itu dari dinding,
+ * dan di sanalah badan bongkahan menganga — tidak terlihat bila dipandang
+ * tegak lurus, tetapi menjadi celah gelap bergerigi setinggi bongkahan begitu
+ * kamera berdiri serong. Badan bongkahan sendiri sudah memakai ketinggian
+ * sebenarnya (lihat `linePoint`), jadi perhitungan ini mempertemukan keduanya.
+ *
+ * Tak satu pun nilainya bergantung pada penurunan permukaan, jadi semuanya
+ * dihitung sekali saat berkas dimuat.
+ */
+const FACE_ROW_TABLE = Array.from({ length: FACE_ROWS + 1 }, (_, j) => {
+  const d = (j / FACE_ROWS) * PROFILE_DEPTH;
+  const guess = faceBounds(-d);
+  const top = Math.max(0, 1 - d / 0.55);
+  return {
+    d,
+    left: faceBounds(profileY(d, guess.left)).left,
+    right: faceBounds(profileY(d, guess.right)).right,
+    topFactor: top * top,
+    bottomFactor: Math.pow(Math.min(1, d / PROFILE_DEPTH), 2.5),
+  };
+});
+
 export function createFaceGrid(): THREE.BufferGeometry {
   const cols = FACE_COLS + 1;
   const rows = FACE_ROWS + 1;
   const total = cols * rows;
   const geom = new THREE.BufferGeometry();
-  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
-  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
-  geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
-  geom.setAttribute("aEdge", new THREE.BufferAttribute(new Float32Array(total), 1));
+  const position = new THREE.BufferAttribute(new Float32Array(total * 3), 3);
+  const uv = new THREE.BufferAttribute(new Float32Array(total * 2), 2);
+  const depth = new THREE.BufferAttribute(new Float32Array(total), 1);
+  const edge = new THREE.BufferAttribute(new Float32Array(total), 1);
+  geom.setAttribute("position", position);
+  geom.setAttribute("uv", uv);
+  geom.setAttribute("aDepth", depth);
+  geom.setAttribute("aEdge", edge);
+
+  // Semua yang tidak bergantung pada penurunan permukaan diisi di sini, sekali
+  // saja: kedudukan mendatar titik, uv, kedalaman, dan jaraknya dari tepi.
+  //
+  // Hanya ketinggian (y) yang berubah saat permukaan melesak. Dahulu keempat
+  // atribut diisi ulang seluruhnya tiap pembentukan ulang dan ditandai
+  // `needsUpdate`, jadi tiga penyangga yang nilainya tidak pernah bergeser
+  // ikut diunggah ulang ke pengolah grafis tiap setengah detik.
+  const posArr = position.array as Float32Array;
+  const uvArr = uv.array as Float32Array;
+  const depthArr = depth.array as Float32Array;
+  const edgeArr = edge.array as Float32Array;
+  for (let j = 0; j < rows; j++) {
+    const { d, left, right } = FACE_ROW_TABLE[j];
+    for (let i = 0; i < cols; i++) {
+      const f = i / FACE_COLS;
+      const x = left + (right - left) * f;
+      const k = j * cols + i;
+      posArr[k * 3] = x;
+      posArr[k * 3 + 2] = 0;
+      uvArr[k * 2] = (x + BLOCK_WIDTH / 2) / BLOCK_WIDTH;
+      uvArr[k * 2 + 1] = d / PROFILE_DEPTH;
+      depthArr[k] = d;
+      edgeArr[k] = f;
+    }
+  }
 
   const idx: number[] = [];
   for (let j = 0; j < FACE_ROWS; j++) {
@@ -306,50 +430,68 @@ export function createFaceGrid(): THREE.BufferGeometry {
   return geom;
 }
 
-/** Isi (atau perbarui) titik-titik bidang potong; `drop` menurunkan baris teratas. */
+/**
+ * Perbarui ketinggian titik-titik bidang potong; `drop` menurunkan baris atas.
+ *
+ * Hanya sumbu y yang ditulis. Kedudukan mendatar, uv, kedalaman, dan jarak
+ * dari tepi sudah diisi `createFaceGrid` dan tidak bergantung pada penurunan
+ * permukaan sama sekali.
+ */
 export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DROP): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
-  const uv = geom.attributes.uv as THREE.BufferAttribute;
-  const depth = geom.attributes.aDepth as THREE.BufferAttribute;
-  const edge = geom.attributes.aEdge as THREE.BufferAttribute;
+  const posArr = pos.array as Float32Array;
   const cols = FACE_COLS + 1;
 
   for (let j = 0; j <= FACE_ROWS; j++) {
-    const d = (j / FACE_ROWS) * PROFILE_DEPTH;
-    // Tepi dihitung pada ketinggian titiknya yang sebenarnya, bukan pada
-    // kedalaman nominal −d.
-    //
-    // Dinding bongkahan berelief, jadi jari-jarinya berubah terhadap y; dekat
-    // permukaan dan dekat dasar, y menyimpang dari −d sampai belasan
-    // sentimeter. Dengan −d, tepi bidang potong meleset sejauh itu dari
-    // dinding, dan di sanalah badan bongkahan menganga — tidak terlihat bila
-    // dipandang tegak lurus, tetapi menjadi celah gelap bergerigi setinggi
-    // bongkahan begitu kamera berdiri serong. Badan bongkahan sendiri sudah
-    // memakai ketinggian sebenarnya (lihat `linePoint`), jadi perbaikan ini
-    // sekaligus mempertemukan keduanya.
-    const guess = faceBounds(-d);
-    const left = faceBounds(profileY(d, guess.left)).left;
-    const right = faceBounds(profileY(d, guess.right)).right;
+    // Faktor lengkung kedua ujung profil hanya bergantung pada kedalaman, dan
+    // yang bawah memakai pemangkatan 2,5. Dihitung di dalam perulangan dalam,
+    // itu berarti 12.513 pemangkatan padahal 97 nilai sudah cukup.
+    const { d, topFactor, bottomFactor } = FACE_ROW_TABLE[j];
     for (let i = 0; i <= FACE_COLS; i++) {
-      const f = i / FACE_COLS;
-      const x = left + (right - left) * f;
+      const k = j * cols + i;
+      const x = posArr[k * 3];
       // Baris paling atas mengikuti penurunan permukaan; makin dalam, makin
       // kecil pengaruhnya (rongga hanya menurunkan bagian di atasnya).
-      const y = profileY(d, x) - sinkAt(d, x, drop);
-      const k = j * cols + i;
-      pos.setXYZ(k, x, y, 0);
-      uv.setXY(k, (x + BLOCK_WIDTH / 2) / BLOCK_WIDTH, d / PROFILE_DEPTH);
-      depth.setX(k, d);
-      edge.setX(k, f);
+      posArr[k * 3 + 1] =
+        -d + surfaceRelief(x, 0) * topFactor + floorOffset(x, 0) * bottomFactor - sinkAt(d, x, drop);
     }
   }
   pos.needsUpdate = true;
-  uv.needsUpdate = true;
-  depth.needsUpdate = true;
-  edge.needsUpdate = true;
-  geom.computeVertexNormals();
+  // Normal titik sengaja tidak dihitung. Peneduh bidang potong
+  // (`faceMaterial.ts`) tidak membaca atribut `normal` sama sekali: ia
+  // menyusun normalnya sendiri dari peta normal lapisan dan kemiringan rongga
+  // abu. Dahulu `computeVertexNormals` dipanggil di sini, sehingga tiap
+  // pembentukan ulang membuat dan mengunggah 12.513 normal untuk 24.576
+  // segitiga yang tidak pernah dipakai — dan pembentukan ulang terjadi tiap
+  // setengah detik selama gambut terbakar.
   geom.computeBoundingSphere();
 }
+
+/**
+ * Tabel kolom kisi permukaan: tepi belakang tapak (wx, wz) dan titik garis
+ * potong yang berpasangan dengannya (lx).
+ *
+ * Ketiganya hanya bergantung pada nomor kolom, bukan pada baris maupun pada
+ * seberapa jauh permukaan sudah melesak. Dahulu dihitung di dalam kedua
+ * perulangan, yaitu 2.117 kali `radiusAt` tiap kali permukaan dibentuk ulang,
+ * padahal 73 nilai yang berbeda sudah cukup untuk selamanya.
+ *
+ * Pada i = 0 sudut θ bernilai 2π, yaitu tepi kanan, jadi titik garis potong
+ * yang berpasangan juga diambil dari kanan.
+ */
+const SURFACE_COLUMNS = (() => {
+  const line = faceBounds(0);
+  return Array.from({ length: SURFACE_COLS + 1 }, (_, i) => {
+    const mirrored = SURFACE_COLS - i;
+    const theta = Math.PI + (mirrored / SURFACE_COLS) * Math.PI;
+    const r = radiusAt(theta, 0);
+    return {
+      wx: Math.cos(theta) * r,
+      wz: Math.sin(theta) * r,
+      lx: line.left + ((line.right - line.left) * mirrored) / SURFACE_COLS,
+    };
+  });
+})();
 
 /** Kisi permukaan tanah pada separuh tapak (z ≤ 0), agar bisa ikut melesak. */
 export function createSurfaceGrid(): THREE.BufferGeometry {
@@ -382,18 +524,10 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const cols = SURFACE_COLS + 1;
 
-  // Garis potong sama untuk semua baris, jadi cukup dihitung sekali.
-  const line = faceBounds(0);
   for (let j = 0; j <= SURFACE_ROWS; j++) {
     const t = j / SURFACE_ROWS;
     for (let i = 0; i <= SURFACE_COLS; i++) {
-      const theta = Math.PI + ((SURFACE_COLS - i) / SURFACE_COLS) * Math.PI;
-      const r = radiusAt(theta, 0);
-      const wx = Math.cos(theta) * r;
-      const wz = Math.sin(theta) * r;
-      // Pada i = 0 sudut θ bernilai 2π, yaitu tepi kanan, jadi titik garis
-      // potong yang berpasangan juga harus diambil dari kanan.
-      const lx = line.left + ((line.right - line.left) * (SURFACE_COLS - i)) / SURFACE_COLS;
+      const { wx, wz, lx } = SURFACE_COLUMNS[i];
       const x = lx + (wx - lx) * t;
       const z = wz * t;
       const k = j * cols + i;

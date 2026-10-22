@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, type ThreeEvent } from "@react-three/fiber";
-import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
+import { PEAT_LAYERS } from "@/lib/peat";
 import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { getAtmosphere } from "@/lib/atmosphere";
 import { interfaceY } from "@/components/gambut/scene/terrain";
@@ -18,7 +18,15 @@ import {
   UV_PER_METER,
 } from "./crossSection";
 import { CAVITY_DEPTH, createFaceMaterial } from "./faceMaterial";
-import { DRAG_THRESHOLD, PEAT_LAYER_TINT, SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
+import {
+  DRAG_THRESHOLD,
+  PEAT_LAYER_TINT,
+  QUALITY_PROFILE,
+  SUN_DIRECTION,
+  type BaraState,
+  type Quality,
+  type Subsidence,
+} from "./baraState";
 
 // Bongkahan gambut yang sudah dipotong: badan lapisan di belakang (terlihat di
 // tepi silhuet) dan satu bidang potong di depan yang menampilkan seluruh
@@ -60,9 +68,11 @@ type Props = {
   onProbe: (col: number, row: number) => void;
   /** Dipanggil bila klik terjadi pada babak penyulutan (dianggap menyulut). */
   onIgnite: (xFraction: number) => void;
+  quality: Quality;
 };
 
-export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, onIgnite }: Props) {
+export default function CutBlock({ sim, stateRef, field, subsidence, quality, onProbe, onIgnite }: Props) {
+  const anisotropy = QUALITY_PROFILE[quality].anisotropy;
   const urls = PEAT_LAYERS.flatMap((l) => [
     `/textures/gambut/${l.id}_color.webp`,
     `/textures/gambut/${l.id}_normal.webp`,
@@ -79,7 +89,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       map.colorSpace = THREE.SRGBColorSpace;
       for (const t of [map, normalMap]) {
         t.wrapS = t.wrapT = THREE.RepeatWrapping;
-        t.anisotropy = 8;
+        t.anisotropy = anisotropy;
       }
       colors.push(map);
       normals.push(normalMap);
@@ -117,7 +127,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
     const backingMaterial = new THREE.MeshBasicMaterial({ color: "#1d150f" });
 
     return { colors, normals, bodies, faceGeom, faceMaterial, backingMaterial };
-  }, [textures, field, sunDir]);
+  }, [textures, field, sunDir, anisotropy]);
 
   useEffect(
     () => () => {

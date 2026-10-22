@@ -60,11 +60,13 @@ export type AtmosphereState = { danger: number };
  * - `shadowSize` : sisi peta bayangan; 2048² terlalu mahal untuk ponsel.
  * - `softShadow` : bayangan lunak (PCSS) hanya untuk perangkat kuat.
  * - `antialias`  : penghalusan tepi MSAA; di ponsel biayanya tidak sebanding.
+ * - `anisotropy` : penyaringan anisotropik tekstur tanah (1 = mati).
  * - `envHz`      : frekuensi maksimum pembuatan ulang peta lingkungan langit.
  * - `simSteps`   : batas langkah simulasi per bingkai (mencegah bingkai macet).
  * - `fieldHz`    : frekuensi penyalinan hasil simulasi ke tekstur penampang.
  * - `subsideSec` : jeda minimum antar pembentukan ulang geometri permukaan.
  * - `understory` : jumlah tumbuhan bawah yang ditanam di permukaan.
+ * - `smoke`      : jumlah kepulan asap (tiap kepulan satu panggilan gambar).
  */
 export const QUALITY_PROFILE = {
   high: {
@@ -72,21 +74,30 @@ export const QUALITY_PROFILE = {
     shadowSize: 1024,
     softShadow: true,
     antialias: true,
+    anisotropy: 8,
     envHz: 4,
     simSteps: 24,
     fieldHz: 30,
     subsideSec: 0.5,
     understory: 10,
+    smoke: 30,
   },
   low: {
     maxDpr: 1,
     shadowSize: 512,
     softShadow: false,
     antialias: false,
+    // Penyaringan 8× pada dua belas tekstur tanah adalah biaya yang nyata di
+    // pengolah grafis ponsel, sementara di sana diorama tampil kecil sehingga
+    // perbedaannya hampir tidak terlihat.
+    anisotropy: 2,
     envHz: 1.5,
     simSteps: 8,
     fieldHz: 15,
     subsideSec: 1.2,
     understory: 5,
+    // Tiap kepulan asap adalah satu sprite dengan materialnya sendiri, jadi
+    // satu panggilan gambar; jumlahnya dipotong hampir separuh di ponsel.
+    smoke: 14,
   },
 } as const satisfies Record<Quality, Record<string, number | boolean>>;

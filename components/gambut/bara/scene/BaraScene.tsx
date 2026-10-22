@@ -307,25 +307,37 @@ export default function BaraScene({
         <Backdrop />
         <group position={[0, DIORAMA_Y, 0]}>
           <Turntable stateRef={stateRef}>
-          <CutBlock
-            sim={sim}
-            stateRef={stateRef}
-            field={field}
-            subsidence={subsidence}
-            onProbe={onProbe}
-            onIgnite={onSurfaceClick}
-          />
-          <SurfaceCover
-            sim={sim}
-            stateRef={stateRef}
-            subsidence={subsidence}
-            quality={quality}
-            onCollapse={onCollapse}
-            onSurfaceClick={onSurfaceClick}
-          />
-          <SmokePlumes sim={sim} stateRef={stateRef} />
-          <WaterSpray stateRef={stateRef} subsidence={subsidence} />
-          <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
+            <CutBlock
+              sim={sim}
+              stateRef={stateRef}
+              field={field}
+              subsidence={subsidence}
+              quality={quality}
+              onProbe={onProbe}
+              onIgnite={onSurfaceClick}
+            />
+            {/* Tumbuhan menunggu di batas Suspense-nya sendiri.
+                Keempat modelnya berjumlah 3,2 MB — dua pertiga seluruh aset
+                modul ini — sedangkan yang harus dilihat pembaca lebih dahulu
+                adalah bidang potongnya, yang cukup dengan 1,3 MB tekstur
+                tanah. Dengan satu batas bersama seperti dahulu, tirai
+                pemuatan baru terangkat setelah pohon selesai diunduh, jadi
+                penampang yang sudah siap tetap tersembunyi di belakang layar
+                hitam. Sekarang penampangnya tampil dulu dan tumbuhannya
+                menyusul; menyulut pun sudah bisa lewat bidang potong. */}
+            <Suspense fallback={null}>
+              <SurfaceCover
+                sim={sim}
+                stateRef={stateRef}
+                subsidence={subsidence}
+                quality={quality}
+                onCollapse={onCollapse}
+                onSurfaceClick={onSurfaceClick}
+              />
+            </Suspense>
+            <SmokePlumes sim={sim} stateRef={stateRef} quality={quality} />
+            <WaterSpray stateRef={stateRef} subsidence={subsidence} />
+            <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
           </Turntable>
         </group>
         <ReadySignal onReady={onReady} />

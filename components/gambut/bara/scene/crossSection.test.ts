@@ -4,11 +4,13 @@ import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
 import { interfaceY, radiusAt } from "@/components/gambut/scene/terrain";
 import {
+  createFaceGrid,
   createSurfaceGrid,
   faceBounds,
   profileY,
   surfaceRelief,
   surfaceYAt,
+  updateFaceGrid,
   updateSurfaceGrid,
   SURFACE_COLS,
   SURFACE_ROWS,
@@ -38,6 +40,64 @@ describe("faceBounds", () => {
   it("membuat garis tepi berkelok, bukan lurus sempurna", () => {
     const rights = depths.map((d) => faceBounds(-d).right);
     expect(Math.max(...rights) - Math.min(...rights)).toBeGreaterThan(0.02);
+  });
+
+  it("masih diukur dari dinding bongkahan, bukan dari jari-jari tapak saja", () => {
+    // `faceBounds` tidak lagi memanggil `radiusAt`, melainkan `radiusFrom`
+    // dengan jari-jari tapak kedua ujung yang dihitung sekali saat berkas
+    // dimuat — `footprintRadius` memakai tiga pemangkatan dan dipanggil
+    // ribuan kali tiap kali permukaan dibentuk ulang.
+    //
+    // Yang dijaga di sini: kedua tepi tetap disisipkan sedalam yang sama dari
+    // dinding bongkahan. Lupa menyertakan relief dinding, atau memakai
+    // jari-jari ujung yang keliru, akan membuat kedua sisipan ini berbeda —
+    // dan di situlah dahulu muncul celah hitam setinggi bongkahan.
+    for (const d of depths) {
+      const y = -d;
+      const { left, right } = faceBounds(y);
+      const insetRight = radiusAt(0, y) - right;
+      const insetLeft = radiusAt(Math.PI, y) + left;
+      expect(insetLeft).toBeCloseTo(insetRight, 12);
+      // Sisipannya beberapa milimeter saja: cukup untuk jaminan di atas,
+      // tetapi tidak sampai menganga bila kamera berdiri serong.
+      expect(insetRight).toBeGreaterThan(0.002);
+      expect(insetRight).toBeLessThan(0.012);
+    }
+  });
+});
+
+describe("updateFaceGrid", () => {
+  it("tidak menyimpan normal titik, karena peneduhnya tidak membacanya", () => {
+    // Peneduh bidang potong menyusun normalnya sendiri dari peta normal
+    // lapisan dan kemiringan rongga abu. Bila `computeVertexNormals` kembali
+    // dipanggil di sini, tiap pembentukan ulang — tiap setengah detik selama
+    // gambut terbakar — menghitung dan mengunggah 12.513 normal yang tidak
+    // pernah dipakai.
+    const geom = createFaceGrid();
+    updateFaceGrid(geom);
+    expect(geom.attributes.normal).toBeUndefined();
+    expect(geom.boundingSphere).not.toBeNull();
+    geom.dispose();
+  });
+
+  it("menurunkan baris teratas saat permukaan melesak, dan membiarkan dasarnya", () => {
+    const drop = (x: number) => (Math.abs(x) < 1 ? 0.4 : 0);
+    const flat = createFaceGrid();
+    const sunk = createFaceGrid();
+    updateFaceGrid(flat);
+    updateFaceGrid(sunk, drop);
+    const a = flat.attributes.position as THREE.BufferAttribute;
+    const b = sunk.attributes.position as THREE.BufferAttribute;
+
+    // Titik tengah baris teratas berada di atas rongga, jadi harus turun;
+    // titik tengah baris terbawah sudah di tanah mineral, jadi harus diam.
+    const mid = Math.floor(121 / 2);
+    expect(b.getY(mid)).toBeLessThan(a.getY(mid) - 0.3);
+    const lastRow = a.count - 121 + mid;
+    expect(b.getY(lastRow)).toBeCloseTo(a.getY(lastRow), 10);
+
+    flat.dispose();
+    sunk.dispose();
   });
 });
 
