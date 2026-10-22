@@ -36,6 +36,12 @@ type Props = {
 /**
  * Panel kendali utama: kecepatan waktu, muka air tanah, dan tombol pemadaman.
  * Semua kendali di sini langsung mengubah jalannya simulasi.
+ *
+ * Pada layar pendek panel ini berdiri tepat di bawah teks cerita, jadi tiap
+ * piksel tingginya diperebutkan dengan paragraf di atasnya. Yang diperkecil
+ * hanya jarak antarbagian dan angka waktu; kendali yang harus disentuh —
+ * tombol kecepatan, penggeser muka air, tombol siram dan basahi — dibiarkan
+ * seukurannya, sebab mengecilkannya hanya memindahkan masalah.
  */
 export default function ControlDock({
   hours,
@@ -56,12 +62,12 @@ export default function ControlDock({
   const limitPct = ((40 - WATER_MIN_CM) / (WATER_MAX_CM - WATER_MIN_CM)) * 100;
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-5">
+    <div className="rounded-3xl border border-white/10 bg-black/45 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:651px)]:p-3.5 [@media(min-height:901px)]:p-4 [@media(min-height:901px)]:sm:p-5">
       {/* Waktu */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Waktu berjalan</p>
-          <p className="mt-1 whitespace-nowrap font-playfair text-2xl italic leading-none text-white">
+          <p className="mt-1 whitespace-nowrap font-playfair text-xl italic leading-none text-white [@media(min-height:901px)]:text-2xl">
             {formatDay(hours)}
             <span className="ml-2 font-sans text-[11px] not-italic text-white/50">{formatElapsed(hours)}</span>
           </p>
@@ -86,7 +92,7 @@ export default function ControlDock({
       </div>
 
       {/* Muka air tanah */}
-      <div className="relative mt-5">
+      <div className="relative mt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:901px)]:mt-5">
         <div className="flex items-baseline justify-between">
           <label htmlFor="bara-water" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
             Muka air tanah
@@ -135,7 +141,7 @@ export default function ControlDock({
           pernah menemukan bantahannya. Tempatnya sekarang tepat di sebelah
           tombol yang baru saja ia tekan. */}
       {showDouse && (
-        <div className="mt-5 border-t border-white/10 pt-4">
+        <div className="mt-2 border-t border-white/10 pt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:651px)]:pt-3 [@media(min-height:901px)]:mt-5 [@media(min-height:901px)]:pt-4">
           <div className="flex gap-1 rounded-full border border-white/15 bg-black/30 p-1">
             {(Object.keys(VIEW_TEXT) as ViewMode[]).map((mode) => {
               const urge = urgeThermal && mode === "termal";
@@ -160,13 +166,18 @@ export default function ControlDock({
               );
             })}
           </div>
-          <p className="mt-2 text-[10px] leading-snug text-white/45">{VIEW_TEXT[view].hint}</p>
+          {/* Keterangan tampilan dilepas pada layar sangat pendek; bunyinya
+              sama dengan atribut title kedua tombol di atasnya, jadi masih
+              terbaca saat kursor berhenti di sana. */}
+          <p className="mt-2 hidden text-[10px] leading-snug text-white/45 [@media(min-height:701px)]:block">
+            {VIEW_TEXT[view].hint}
+          </p>
         </div>
       )}
 
       {/* Pemadaman */}
       {(showDouse || showRewet) && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-2 [@media(min-height:651px)]:mt-2.5 [@media(min-height:901px)]:mt-4">
           {showDouse && (
             <button
               type="button"

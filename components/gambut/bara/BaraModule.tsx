@@ -270,6 +270,23 @@ export default function BaraModule() {
 
   // --- Syarat lanjut tiap babak --------------------------------------------
 
+  /**
+   * Panel kendali ikut tumbuh tiap babak: mulai babak 03 sakelar tampilan dan
+   * tombol pemadaman ikut tampil, jadi panel yang ditambatkan ke tepi bawah
+   * menjulang 403 px — hampir dua kali tinggi panel babak 02.
+   *
+   * Teks cerita ditambatkan ke tepi atas, panel ke tepi bawah, sehingga pada
+   * layar pendek keduanya bertemu di tengah. Diukur sebelum diperbaiki: pada
+   * 1600×900 babak 03 tertindih 43 px dan babak 04 tertindih 110 px; pada
+   * 1366×768 — ukuran laptop yang paling umum — tindihnya 53, 175, dan 242 px.
+   * Ponsel justru aman, karena di sana paragraf pengantar memang sudah
+   * disembunyikan.
+   *
+   * Bendera ini yang memberi tahu teks seberapa sempit ruangnya: ambang tinggi
+   * layarnya sendiri tidak tahu babak mana yang sedang tampil.
+   */
+  const dense = act >= 2;
+
   const actDone = [ignited, ignited && stats.hours >= 48, dousedOnce && thermalSeen, stats.extinguished && rewetOnce];
   const canAdvance = actDone[act] && act < BARA_ACTS.length - 1;
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
@@ -379,24 +396,49 @@ export default function BaraModule() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/70 to-transparent" />
 
       {/* Panel cerita babak (kiri atas) */}
-      <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[404px]">
+      {/* Panel cerita babak (kiri atas).
+          Ambang tingginya memakai min-height, bukan max-height: yang ditulis
+          adalah "tampilkan bila layarnya cukup tinggi", sehingga keadaan
+          sempit menjadi keadaan dasar dan tidak ada rentang tinggi yang
+          terlewat tanpa penanganan. */}
+      <div className="pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24">
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
         <div ref={textRef} key={act} aria-live="polite">
-          <p className="act-anim mt-3 text-[11px] uppercase tracking-[0.2em] text-[#f0a060]">Babak {current.number}</p>
+          <p className="act-anim mt-2 text-[11px] uppercase tracking-[0.2em] text-[#f0a060] [@media(min-height:901px)]:mt-3">
+            Babak {current.number}
+          </p>
           <h1
-            className="act-anim mt-1 font-playfair text-4xl italic leading-[1.02] text-white sm:text-5xl"
+            className="act-anim mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl [@media(min-height:901px)]:sm:text-5xl"
             style={{ letterSpacing: "-0.03em" }}
           >
             {current.title}
           </h1>
-          <p className="act-anim mt-3 hidden text-sm leading-relaxed text-white/75 sm:block">{current.body}</p>
-          <p className="act-anim mt-3 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90">
+          {/* Paragraf pengantar adalah balok tertinggi di panel ini (± 120 px).
+              Di ponsel ia memang sudah tidak pernah tampil, dan judul, tugas,
+              serta angka kunci sudah menyampaikan isi babaknya — jadi pada
+              layar pendek yang panelnya menjulang, inilah yang dilepas lebih
+              dulu. Ambangnya lebih longgar untuk babak 02 yang panelnya masih
+              pendek. */}
+          <p
+            className={`act-anim mt-2 hidden text-sm leading-snug text-white/75 [@media(min-height:901px)]:mt-3 [@media(min-height:901px)]:leading-relaxed ${
+              dense ? "[@media(min-height:861px)]:sm:block" : "[@media(min-height:701px)]:sm:block"
+            }`}
+          >
+            {current.body}
+          </p>
+          <p className="act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3">
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
           </p>
-          <div className="act-anim mt-4 hidden items-baseline gap-4 border-t border-white/10 pt-4 [@media(min-height:760px)]:flex">
+          {/* Angka kunci: ikut dilepas sebelum paragraf, karena ia pelengkap
+              sedangkan paragraf yang menjelaskan babaknya. */}
+          <div
+            className={`act-anim mt-3 hidden items-baseline gap-4 border-t border-white/10 pt-3 [@media(min-height:901px)]:mt-4 [@media(min-height:901px)]:pt-4 ${
+              dense ? "[@media(min-height:1011px)]:flex" : "[@media(min-height:760px)]:flex"
+            }`}
+          >
             <span className="shrink-0 font-playfair text-2xl italic text-[#f0a060]">{current.fact.value}</span>
             <span className="text-[11px] leading-relaxed text-white/55">{current.fact.caption}</span>
           </div>
@@ -404,7 +446,10 @@ export default function BaraModule() {
       </div>
 
       {/* Panel kendali (kiri bawah) */}
-      <div className="absolute bottom-20 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px]">
+      {/* Pada layar sangat pendek panel merapat ke tepi bawah. Navigasi babak
+          berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
+          menindih. */}
+      <div className="absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20">
         {finished ? (
           <SummaryCard stats={stats} onReset={handleReset} />
         ) : probe ? (
