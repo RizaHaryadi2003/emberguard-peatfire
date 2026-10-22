@@ -27,7 +27,6 @@ attribute float aDepth;
 attribute float aEdge;
 
 uniform sampler2D uField;
-uniform vec2 uTexel;
 uniform float uCavity;
 
 varying vec2 vUv;
@@ -43,14 +42,16 @@ void main() {
   vDepth = aDepth;
   vEdge = aEdge;
 
-  // Kedalaman rongga dirata-ratakan dengan sel tetangga. Dibaca per sel,
-  // permukaan rongga melangkah seperti anak tangga selebar 4,6 cm.
-  vAsh =
-    texture2D(uField, uv).r * 0.4 +
-    (texture2D(uField, uv + vec2(uTexel.x, 0.0)).r +
-     texture2D(uField, uv - vec2(uTexel.x, 0.0)).r +
-     texture2D(uField, uv + vec2(0.0, uTexel.y)).r +
-     texture2D(uField, uv - vec2(0.0, uTexel.y)).r) * 0.15;
+  // Kedalaman rongga: dibaca per sel, permukaan rongga melangkah seperti anak
+  // tangga selebar 4,6 cm, jadi nilainya harus dirata-ratakan dengan sel
+  // tetangga. Perataannya sekarang sudah dikerjakan di smoothField() pada CPU,
+  // jadi di sini cukup satu pembacaan.
+  //
+  // Dahulu lima pembacaan dengan kernel silang (0,4 pusat + 0,15 di keempat
+  // sisi), berbeda dari kernel 3 × 3 yang dipakai peneduh fragmen. Keduanya
+  // kini memakai perataan yang sama, sehingga bentuk rongga dan peneduhannya
+  // benar-benar sepakat — dahulu keduanya berselisih sedikit.
+  vAsh = texture2D(uField, uv).r;
 
   // Gambut yang sudah menjadi abu ditarik masuk sehingga terbentuk rongga nyata.
   vec3 p = position;
@@ -97,7 +98,6 @@ varying vec2 vUv;
 varying float vDepth;
 varying float vEdge;
 varying vec3 vWorld;
-varying float vAsh;
 
 // Bagian pemetaan nada & ruang warna sudah disisipkan three.js pada awal
 // peneduh, jadi di sini cukup bagian penerapannya di akhir fungsi utama.
@@ -126,18 +126,21 @@ float noise(vec2 p) {
  * berukuran sekitar 4,6 cm. Dibaca mentah, tiap sel muncul sebagai bujur
  * sangkar membulat: gambut hangus terlihat sebagai deretan kotak yang
  * berjajar rapi, bukan bercak yang tumbuh tak beraturan seperti kebakaran
- * sebenarnya. Dua hal dikerjakan di sini — rata-rata 3 x 3 untuk melembutkan
- * tepi, dan titik bacanya digeser oleh derau (lihat uWobble di main) supaya
- * garis kisinya pecah.
+ * sebenarnya. Dua hal yang memecah kisinya — rata-rata 3 x 3, dan titik
+ * bacanya digeser oleh derau (lihat wob di main).
+ *
+ * Rata-rata 3 x 3 itu dahulu dikerjakan di sini, sembilan pembacaan tekstur
+ * tiap pemanggilan. Fungsi ini dipanggil tiga belas kali, jadi 117 pembacaan
+ * tiap fragmen di seluruh layar tiap bingkai. Sekarang kisinya sudah datang
+ * dalam keadaan rata dari smoothField() di CPU, dan nilainya sama persis
+ * (lihat alasannya di sana), sehingga di sini cukup satu pembacaan.
+ *
+ * Fungsinya tetap ada, bukan dihapus: ketiga belas tempat pemanggil itu
+ * memang bermaksud "baca kisi yang sudah diratakan", dan bila suatu saat
+ * perataannya perlu diubah kembali, satu tempat ini yang disunting.
  */
 vec4 sampleField(vec2 uv) {
-  vec2 t = uTexel;
-  vec4 s = texture2D(uField, uv) * 4.0;
-  s += (texture2D(uField, uv + vec2(t.x, 0.0)) + texture2D(uField, uv - vec2(t.x, 0.0)) +
-        texture2D(uField, uv + vec2(0.0, t.y)) + texture2D(uField, uv - vec2(0.0, t.y))) * 2.0;
-  s += texture2D(uField, uv + t) + texture2D(uField, uv - t) +
-       texture2D(uField, uv + vec2(t.x, -t.y)) + texture2D(uField, uv + vec2(-t.x, t.y));
-  return s * 0.0625;
+  return texture2D(uField, uv);
 }
 
 /** Bobot tiap lapisan pada kedalaman d, dengan peralihan yang lembut. */

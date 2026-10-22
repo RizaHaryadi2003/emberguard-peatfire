@@ -566,6 +566,49 @@ export class SmolderSim {
 }
 
 /** Ubah jam simulasi menjadi label hari, mis. 30 → "Hari ke-2". */
+/**
+ * Ratakan kisi hasil `writeField` dengan kernel 3 × 3 [1,2,1] ⊗ [1,2,1] / 16.
+ *
+ * Kisi simulasi hanya 96 × 56 sel untuk bidang selebar 4,4 m, jadi satu sel
+ * berukuran sekitar 4,6 cm. Dibaca mentah, tiap sel muncul sebagai bujur
+ * sangkar membulat. Perataan inilah yang memecah garis kisinya.
+ *
+ * Dahulu dikerjakan di dalam peneduh: tiap pembacaan kisi adalah sembilan
+ * pembacaan tekstur, dan peneduh membacanya tiga belas kali — 117 pembacaan
+ * tiap fragmen, di seluruh layar, tiap bingkai. Dikerjakan di sini, biayanya
+ * 5.376 sel dikali empat kanal, beberapa puluh kali per detik saja.
+ *
+ * Hasilnya sama persis, bukan hampiran. Perataan kotak dan interpolasi
+ * bilinear keduanya operasi linear, dan titik-titik kernelnya berjarak tepat
+ * satu texel — menggeser titik baca sejauh satu texel sama artinya dengan
+ * menggeser indeks selnya satu. Jadi "ratakan lalu interpolasi" dan
+ * "interpolasi lalu ratakan" memberi nilai yang sama; yang berbeda hanya
+ * pembulatan ke 8 bit, yaitu paling jauh setengah dari 1/255.
+ *
+ * Tepi kisi dijepit ke sel terluar, sama dengan `ClampToEdge` pada teksturnya.
+ */
+export function smoothField(src: Uint8Array, dst: Uint8Array): void {
+  const stride = GRID_COLS * 4;
+  for (let row = 0; row < GRID_ROWS; row++) {
+    const up = (row > 0 ? row - 1 : 0) * stride;
+    const mid = row * stride;
+    const down = (row < GRID_ROWS - 1 ? row + 1 : GRID_ROWS - 1) * stride;
+    for (let col = 0; col < GRID_COLS; col++) {
+      const left = (col > 0 ? col - 1 : 0) * 4;
+      const self = col * 4;
+      const right = (col < GRID_COLS - 1 ? col + 1 : GRID_COLS - 1) * 4;
+      const o = mid + self;
+      for (let ch = 0; ch < 4; ch++) {
+        const top = src[up + left + ch] + 2 * src[up + self + ch] + src[up + right + ch];
+        const center = src[mid + left + ch] + 2 * src[mid + self + ch] + src[mid + right + ch];
+        const bottom = src[down + left + ch] + 2 * src[down + self + ch] + src[down + right + ch];
+        // +8 lalu bagi 16: pembulatan ke bilangan bulat terdekat.
+        dst[o + ch] = (top + 2 * center + bottom + 8) >> 4;
+      }
+    }
+  }
+}
+
 export function formatDay(hours: number): string {
   return `Hari ke-${Math.floor(hours / 24) + 1}`;
 }

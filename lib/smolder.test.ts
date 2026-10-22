@@ -11,6 +11,7 @@ import {
   GRID_COLS,
   GRID_ROWS,
   MOISTURE_LIMIT,
+  smoothField,
   SmolderSim,
 } from "./smolder";
 
@@ -233,6 +234,180 @@ describe("tekstur data untuk peneduh", () => {
     }
     expect(adaPanas).toBe(true);
     expect(adaRongga).toBe(true);
+  });
+});
+
+describe("perataan kisi untuk peneduh", () => {
+  const buat = () => new Uint8Array(GRID_COLS * GRID_ROWS * 4);
+  const di = (col: number, row: number) => (row * GRID_COLS + col) * 4;
+
+  it("tidak mengubah kisi yang nilainya seragam, termasuk di tepi", () => {
+    // Bobot kernelnya berjumlah tepat satu, dan tepinya dijepit ke sel
+    // terluar seperti ClampToEdge pada teksturnya. Kalau salah satu dari dua
+    // hal itu keliru, tepi penampang akan meredup sendiri.
+    const src = buat();
+    src.fill(200);
+    const dst = buat();
+    smoothField(src, dst);
+    expect([...dst].every((v) => v === 200)).toBe(true);
+  });
+
+  it("menyebar satu sel panas ke tetangganya dengan bobot 4-2-1 per 16", () => {
+    const src = buat();
+    const dst = buat();
+    src[di(40, 20) + 1] = 160;
+    smoothField(src, dst);
+    // Pusat 4/16, sisi 2/16, sudut 1/16 (dibulatkan ke bilangan terdekat).
+    expect(dst[di(40, 20) + 1]).toBe(Math.round((160 * 4) / 16));
+    expect(dst[di(41, 20) + 1]).toBe(Math.round((160 * 2) / 16));
+    expect(dst[di(40, 21) + 1]).toBe(Math.round((160 * 2) / 16));
+    expect(dst[di(41, 21) + 1]).toBe(Math.round((160 * 1) / 16));
+    // Dua sel jauhnya sudah tidak tersentuh.
+    expect(dst[di(42, 20) + 1]).toBe(0);
+  });
+
+  it("tidak mencampur antarkanal", () => {
+    const src = buat();
+    const dst = buat();
+    // Hanya kanal abu (R) yang diisi; kanal lain harus tetap nol.
+    for (let i = 0; i < GRID_COLS * GRID_ROWS; i++) src[i * 4] = 255;
+    smoothField(src, dst);
+    for (let i = 0; i < GRID_COLS * GRID_ROWS; i++) {
+      expect(dst[i * 4]).toBe(255);
+      expect(dst[i * 4 + 1]).toBe(0);
+      expect(dst[i * 4 + 2]).toBe(0);
+      expect(dst[i * 4 + 3]).toBe(0);
+    }
+  });
+
+  it("melembutkan tepi rongga abu, bukan membiarkannya melangkah", () => {
+    const { sim } = ignited();
+    jalan(sim, 4);
+    const raw = buat();
+    const rata = buat();
+    sim.writeField(raw);
+    smoothField(raw, rata);
+
+    // Di kisi mentah, kanal abu hanya bernilai beberapa nilai yang berjauhan;
+    // setelah diratakan muncul nilai-nilai peralihan di antaranya. Itulah
+    // yang memecah garis kisi pada penampang.
+    const nilaiMentah = new Set<number>();
+    const nilaiRata = new Set<number>();
+    for (let i = 0; i < GRID_COLS * GRID_ROWS; i++) {
+      nilaiMentah.add(raw[i * 4]);
+      nilaiRata.add(rata[i * 4]);
+    }
+    expect(nilaiRata.size).toBeGreaterThan(nilaiMentah.size);
+  });
+});
+
+/**
+ * Pembacaan tekstur seperti yang dilakukan WebGL: penyaringan linear dengan
+ * pusat texel di (i + 0,5) / ukuran, dan tepi dijepit (ClampToEdge).
+ */
+function bacaBilinear(src: Uint8Array, u: number, v: number, ch: number): number {
+  const jepit = (i: number, n: number) => (i < 0 ? 0 : i > n - 1 ? n - 1 : i);
+  const tx = u * GRID_COLS - 0.5;
+  const ty = v * GRID_ROWS - 0.5;
+  const i0 = Math.floor(tx);
+  const j0 = Math.floor(ty);
+  const fx = tx - i0;
+  const fy = ty - j0;
+  const at = (i: number, j: number) =>
+    src[(jepit(j, GRID_ROWS) * GRID_COLS + jepit(i, GRID_COLS)) * 4 + ch];
+  const atas = at(i0, j0) * (1 - fx) + at(i0 + 1, j0) * fx;
+  const bawah = at(i0, j0 + 1) * (1 - fx) + at(i0 + 1, j0 + 1) * fx;
+  return atas * (1 - fy) + bawah * fy;
+}
+
+/** Rata-rata 3 x 3 seperti yang dahulu dikerjakan di dalam peneduh fragmen. */
+function rataDiPeneduh(src: Uint8Array, u: number, v: number, ch: number): number {
+  const tu = 1 / GRID_COLS;
+  const tv = 1 / GRID_ROWS;
+  let jumlah = 0;
+  for (let dj = -1; dj <= 1; dj++) {
+    for (let di = -1; di <= 1; di++) {
+      const bobot = (di === 0 ? 2 : 1) * (dj === 0 ? 2 : 1);
+      jumlah += bobot * bacaBilinear(src, u + di * tu, v + dj * tv, ch);
+    }
+  }
+  return jumlah / 16;
+}
+
+describe("perataan di CPU sama dengan perataan di peneduh", () => {
+  // Inti penghematannya: peneduh dahulu membaca kisi sembilan kali tiap
+  // pemanggilan, dan memanggilnya tiga belas kali — 117 pembacaan tekstur
+  // tiap fragmen. Sekarang kisinya datang sudah rata, jadi cukup sekali.
+  // Yang harus dijaga: rupanya tidak berubah.
+  const sim = new SmolderSim();
+  sim.setWaterTable(2.2);
+  sim.ignite(0.5);
+  jalan(sim, 6);
+  const raw = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
+  const rata = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
+  sim.writeField(raw);
+  smoothField(raw, rata);
+
+  /** Titik baca uji, termasuk yang jatuh di tengah-tengah antar sel. */
+  const titik: [number, number][] = [];
+  for (let a = 3; a < 40; a++) {
+    for (let b = 3; b < 24; b++) titik.push([(a + 0.37) / 40, (b + 0.73) / 24]);
+  }
+
+  it("memberi nilai yang sama di bagian dalam kisi, bukan hampiran", () => {
+    // Perataan kotak dan interpolasi bilinear keduanya linear, dan titik
+    // kernelnya berjarak tepat satu texel — jadi urutannya boleh ditukar.
+    // Selisih yang tersisa hanya pembulatan ke 8 bit saat kisi rata disimpan,
+    // yaitu paling jauh setengah satuan.
+    let terburuk = 0;
+    for (const [u, v] of titik) {
+      for (let ch = 0; ch < 4; ch++) {
+        const lama = rataDiPeneduh(raw, u, v, ch);
+        const baru = bacaBilinear(rata, u, v, ch);
+        terburuk = Math.max(terburuk, Math.abs(lama - baru));
+      }
+    }
+    // Dalam satuan 0–255. Setengah satuan di sini sama dengan 0,2% warna.
+    // Dalam satuan 0–255; terukur 0,40. Setengah satuan di sini sama dengan
+    // 0,2% warna, jadi tidak ada bedanya yang dapat dilihat.
+    expect(terburuk).toBeLessThanOrEqual(0.5);
+  });
+
+  it("di tepi hanya menyimpang bila ada tepian tajam tepat di kolom terluar", () => {
+    // Penjepitan terjadi pada tahap yang berbeda: peneduh lama menjepit titik
+    // bacanya, sedangkan sekarang perataannya yang dijepit. Jadi di pita
+    // setebal satu sel (4,6 cm) pada tepi kiri dan kanan penampang, kesamaan
+    // di atas tidak berlaku lagi.
+    //
+    // Pada kebakaran sungguhan simpangannya 0,17 satuan — sama saja dengan
+    // tidak ada. Yang membuatnya berarti hanyalah keadaan buatan: kolom
+    // terluar penuh sementara kolom sebelahnya nol. Di situ selisihnya 32
+    // satuan, atau 13% kecerahan, dan hanya pada pita 4,6 cm itu.
+    let terburuk = 0;
+    for (let j = 0; j < GRID_ROWS; j++) {
+      for (const u of [0.001, 0.999]) {
+        for (let ch = 0; ch < 4; ch++) {
+          const v = (j + 0.5) / GRID_ROWS;
+          terburuk = Math.max(terburuk, Math.abs(rataDiPeneduh(raw, u, v, ch) - bacaBilinear(rata, u, v, ch)));
+        }
+      }
+    }
+    expect(terburuk).toBeLessThan(1);
+
+    const tajam = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
+    for (let j = 0; j < GRID_ROWS; j++) tajam[j * GRID_COLS * 4] = 255;
+    const tajamRata = new Uint8Array(tajam.length);
+    smoothField(tajam, tajamRata);
+    let buatan = 0;
+    for (let j = 2; j < GRID_ROWS - 2; j++) {
+      for (let k = 0; k <= 20; k++) {
+        const u = (k / 20) / GRID_COLS;
+        const v = (j + 0.5) / GRID_ROWS;
+        buatan = Math.max(buatan, Math.abs(rataDiPeneduh(tajam, u, v, 0) - bacaBilinear(tajamRata, u, v, 0)));
+      }
+    }
+    expect(buatan).toBeGreaterThan(20);
+    expect(buatan).toBeLessThan(40);
   });
 });
 

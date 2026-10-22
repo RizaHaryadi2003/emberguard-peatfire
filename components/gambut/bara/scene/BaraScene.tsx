@@ -6,7 +6,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
-import { GRID_COLS, GRID_ROWS, type SmolderSim, type SmolderStats } from "@/lib/smolder";
+import { GRID_COLS, GRID_ROWS, smoothField, type SmolderSim, type SmolderStats } from "@/lib/smolder";
 import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
 import SmokePlumes from "./SmokePlumes";
@@ -162,6 +162,7 @@ function Simulation({
   stateRef,
   field,
   data,
+  raw,
   quality,
   onStats,
   onSubsidence,
@@ -170,6 +171,7 @@ function Simulation({
   stateRef: RefObject<BaraState>;
   field: THREE.DataTexture;
   data: Uint8Array;
+  raw: Uint8Array;
   quality: Quality;
   onStats: (stats: SmolderStats) => void;
   onSubsidence: () => void;
@@ -191,7 +193,11 @@ function Simulation({
     c.field -= dt;
     if (stepped && c.field <= 0) {
       c.field = 1 / profile.fieldHz;
-      sim.writeField(data);
+      sim.writeField(raw);
+      // Perataan 3 × 3 dikerjakan di sini, bukan di dalam peneduh: biayanya
+      // 5.376 sel beberapa puluh kali per detik, bukan 117 pembacaan tekstur
+      // tiap fragmen tiap bingkai.
+      smoothField(raw, data);
       field.needsUpdate = true;
     }
 
@@ -251,14 +257,18 @@ export default function BaraScene({
   onCollapse,
   onReady,
 }: Props) {
-  // Tekstur data hasil simulasi: satu piksel per sel penampang.
-  const { field, data } = useMemo(() => {
+  // Tekstur data hasil simulasi: satu piksel per sel penampang. Dua penyangga,
+  // karena perataan 3 × 3 tidak dapat dikerjakan di tempat — `raw` menampung
+  // keadaan sel apa adanya, `data` yang sudah diratakan dan diunggah ke GPU.
+  const { field, data, raw } = useMemo(() => {
     const bytes = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
     const texture = new THREE.DataTexture(bytes, GRID_COLS, GRID_ROWS, THREE.RGBAFormat);
     texture.minFilter = texture.magFilter = THREE.LinearFilter;
+    // Dijepit, bukan diulang: perataan di `smoothField` menjepit tepinya
+    // dengan cara yang sama, dan kesamaan hasilnya bergantung pada itu.
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;
-    return { field: texture, data: bytes };
+    return { field: texture, data: bytes, raw: new Uint8Array(bytes.length) };
   }, []);
 
   const subsidence = useMemo(() => createSubsidence(sim), [sim]);
@@ -298,6 +308,7 @@ export default function BaraScene({
         stateRef={stateRef}
         field={field}
         data={data}
+        raw={raw}
         quality={quality}
         onStats={onStats}
         onSubsidence={subsidence.refresh}
