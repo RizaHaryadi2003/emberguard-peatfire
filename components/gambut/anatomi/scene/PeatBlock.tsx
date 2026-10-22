@@ -8,18 +8,8 @@ import { PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
 import { createEmberTexture } from "@/components/gambut/scene/proceduralTextures";
 import { seeded } from "@/lib/random";
 import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab, wallPoint } from "@/components/gambut/scene/terrain";
+import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaConstants";
 import { EXPLODE_GAP, EXPLODE_STEP, type SceneState } from "./sceneState";
-
-/** Rona pengali warna tekstur agar tiap lapisan tampak khas. */
-const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
-  fibrik: [1.0, 0.8, 0.62],
-  hemik: [0.86, 0.72, 0.6],
-  saprik: [0.46, 0.36, 0.28],
-  mineral: [0.8, 0.82, 0.84],
-};
-
-/** Gambut basah tampak lebih gelap dan berkilap. */
-const WET_DARKEN = 0.5;
 
 /** Seberapa jauh lapisan terpilih maju ke arah kamera, dan lapisan lain mundur (m). */
 const FOCUS_FORWARD = 1.0;
@@ -28,20 +18,24 @@ const RECEDE_BACK = 0.45;
 const UP = new THREE.Vector3(0, 1, 0);
 
 /**
- * Ketinggian batas lapisan gambut pada kedalaman nominal `d`, saat timbunan
- * baru setebal `h` meter.
+ * Koordinat kolom gambut saat timbunannya belum penuh.
  *
  * Seluruh kolom gambut turun sebanyak kekurangan tebalnya, sehingga
- * permukaannya (d = 0) duduk tepat di atas timbunan yang sudah ada. Batas yang
- * lebih dalam daripada timbunan itu sendiri dijepit ke batas atas tanah
- * mineral — dengan gelombang milik tanah mineral, bukan gelombang kedalaman
- * lain — supaya dasar gambut dan permukaan mineral selalu bertemu rapat tanpa
- * celah berapa pun tebalnya.
+ * permukaannya duduk tepat di atas timbunan yang sudah ada. Turunnya seragam
+ * untuk semua titik, jadi geometri lapisan dibentuk pada kedalaman nominalnya
+ * lalu digeser lewat posisi grup lapisan — bukan dihitung ulang titik demi
+ * titik setiap bingkai.
+ *
+ * Yang benar-benar berubah bentuk hanyalah satu lapisan terbawah yang sedang
+ * tumbuh: dasarnya tetap menempel pada tanah mineral sementara punggungnya
+ * naik, jadi ia menebal, bukan turun. Tiga keadaan itu dibedakan di sini.
  */
-function grownInterfaceY(d: number, h: number, x: number, z: number): number {
-  if (d >= h) return interfaceY(PEAT_THICKNESS, x, z);
-  return h - PEAT_THICKNESS + interfaceY(d, x, z);
-}
+const LAYER_ABSENT = -1;
+const LAYER_GROWING = 1;
+const LAYER_FULL = 0;
+
+/** Selisih ketinggian terbesar yang mungkin ditimbulkan gelombang batas lapisan (m). */
+const INTERFACE_WOBBLE = 0.15;
 
 type Props = {
   stateRef: RefObject<SceneState>;
@@ -96,7 +90,7 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
           t.anisotropy = 8;
         }
 
-        const tint = new THREE.Color(...LAYER_TINT[layer.id]);
+        const tint = new THREE.Color(...PEAT_LAYER_TINT[layer.id]);
         const dry = new THREE.MeshStandardMaterial({
           map,
           normalMap,
@@ -185,8 +179,9 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
   );
 
   const groupRefs = useRef<(THREE.Group | null)[]>([]);
-  // Akar, ranting, dan kerikil ditempelkan pada kedalaman tetap, jadi ia harus
-  // ikut turun bersama kolom gambut saat timbunannya belum penuh.
+  // Akar, ranting, dan kerikil ditempelkan pada kedalaman tetap di dinding;
+  // keduanya ikut turun sendiri bersama grup lapisannya, dan hanya perlu
+  // disembunyikan selama lapisan itu belum terbentuk.
   const detailRefs = useRef<(THREE.Group | null)[]>([]);
   const dryMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
   const wetMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -216,12 +211,25 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
   // Nilai yang dianimasikan menuju target secara halus.
   const anim = useRef({
     water: -1,
-    lastWater: -999, // nilai mustahil agar irisan pasti dibentuk pada bingkai pertama
-    lastPeat: -999,
+    lastRibbon: -999, // nilai mustahil agar pita pasti dibentuk pada bingkai pertama
     highlight: PEAT_LAYERS.map(() => 0),
     focus: PEAT_LAYERS.map(() => 0),
     recede: PEAT_LAYERS.map(() => 0),
   });
+
+  /**
+   * Catatan bentuk irisan yang terakhir kali dibuat, satu per lapisan.
+   *
+   * Membentuk ulang satu irisan berarti menghitung ribuan titik beserta
+   * normalnya, dan sebelumnya kedelapan irisan dibentuk ulang bersamaan setiap
+   * kali ada yang bergerak. Dengan catatan ini, irisan yang bentuknya tidak
+   * berubah tidak disentuh: saat muka air digeser hanya lapisan yang dipotong
+   * muka air yang dibentuk ulang, dan saat waktu digeser hanya lapisan yang
+   * sedang tumbuh.
+   */
+  const built = useRef(
+    PEAT_LAYERS.map(() => ({ mode: -2, water: Number.NaN, sunk: Number.NaN, dry: false, wet: false })),
+  );
   const dir = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
@@ -240,13 +248,11 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
     const peat = s.peat;
     const sunk = peat - PEAT_THICKNESS;
 
-    // Bentuk ulang irisan kering/basah bila muka air atau tebal timbunan berubah.
-    const rebuild = Math.abs(a.water - a.lastWater) > 1e-4 || Math.abs(peat - a.lastPeat) > 1e-4;
-    if (rebuild) {
-      a.lastWater = a.water;
-      a.lastPeat = peat;
-    }
-    // Muka air diukur dari permukaan timbunan, jadi ia ikut naik bersamanya.
+    // Muka air diukur dari permukaan timbunan, jadi di dalam koordinat kolom
+    // gambut letaknya tidak bergantung pada umur. Yang ikut turun bersama
+    // timbunan hanyalah letaknya di dalam diorama, yang dipakai oleh pita
+    // garis muka air di dinding bongkahan.
+    const waterLocal = -a.water;
     const w = sunk - a.water;
 
     // Arah menuju kamera dalam koordinat lokal diorama (yang ikut berputar).
@@ -257,39 +263,72 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
 
     layers.forEach((l, i) => {
       // Lapisan gambut mengikuti timbunan yang sudah terbentuk; tanah mineral
-      // adalah dasar yang sudah ada sejak semula, jadi ia tidak ikut bergerak.
+      // adalah dasar yang sudah ada sejak semula, jadi ia selalu utuh.
       const organic = l.layer.combustible;
-      const topFn = organic ? (x: number, z: number) => grownInterfaceY(l.layer.top, peat, x, z) : l.topFn;
-      const bottomFn = organic ? (x: number, z: number) => grownInterfaceY(l.layer.bottom, peat, x, z) : l.bottomFn;
-      const exists = !organic || peat > l.layer.top + 0.002;
+      const mode = !organic
+        ? LAYER_FULL
+        : peat <= l.layer.top + 0.002
+          ? LAYER_ABSENT
+          : peat <= l.layer.bottom
+            ? LAYER_GROWING
+            : LAYER_FULL;
+      const exists = mode !== LAYER_ABSENT;
+      const b = built.current[i];
+
+      // Muka air hanya mengubah bentuk irisan bila ia memotong lapisan ini.
+      // Di luar rentang itu nilainya dijepit menjadi tetap, sehingga
+      // menggesernya tidak membentuk ulang lapisan yang tidak terdampak.
+      const clipped = Math.min(
+        Math.max(waterLocal, -l.layer.bottom - INTERFACE_WOBBLE),
+        -l.layer.top + INTERFACE_WOBBLE,
+      );
+      const rebuild =
+        exists &&
+        (mode !== b.mode ||
+          Math.abs(clipped - b.water) > 1e-4 ||
+          (mode === LAYER_GROWING && Math.abs(sunk - b.sunk) > 1e-4));
 
       if (rebuild) {
-        const dryMesh = dryMeshRefs.current[i];
-        const wetMesh = wetMeshRefs.current[i];
-        if (dryMesh) {
-          const thick = updateSlab(l.dryGeom, (x, z) => Math.min(topFn(x, z), Math.max(bottomFn(x, z), w)), topFn);
-          dryMesh.visible = thick > 0.002;
-        }
-        if (wetMesh) {
-          const thick = updateSlab(l.wetGeom, bottomFn, (x, z) => Math.max(bottomFn(x, z), Math.min(topFn(x, z), w)));
-          wetMesh.visible = thick > 0.002;
-        }
-        const detail = detailRefs.current[i];
-        if (detail) {
-          detail.position.y = organic ? sunk : 0;
-          detail.visible = exists;
-        }
+        b.mode = mode;
+        b.water = clipped;
+        b.sunk = sunk;
+        const topFn = l.topFn;
+        // Lapisan yang sedang tumbuh: dasarnya dijepit pada permukaan tanah
+        // mineral — dengan gelombang milik tanah mineral, bukan gelombang
+        // kedalaman lain — supaya keduanya selalu bertemu rapat tanpa celah.
+        const bottomFn =
+          mode === LAYER_GROWING
+            ? (x: number, z: number) => interfaceY(PEAT_THICKNESS, x, z) - sunk
+            : l.bottomFn;
+        b.dry =
+          updateSlab(l.dryGeom, (x, z) => Math.min(topFn(x, z), Math.max(bottomFn(x, z), waterLocal)), topFn) > 0.002;
+        b.wet =
+          updateSlab(l.wetGeom, bottomFn, (x, z) => Math.max(bottomFn(x, z), Math.min(topFn(x, z), waterLocal))) >
+          0.002;
       }
+
+      const dryMesh = dryMeshRefs.current[i];
+      const wetMesh = wetMeshRefs.current[i];
+      if (dryMesh) dryMesh.visible = exists && b.dry;
+      if (wetMesh) wetMesh.visible = exists && b.wet;
+      const detail = detailRefs.current[i];
+      if (detail) detail.visible = exists;
 
       // Fokus lapisan: yang dipilih maju & sedikit membesar, sisanya mundur & meredup.
       a.focus[i] = THREE.MathUtils.damp(a.focus[i], i === focusIdx ? 1 : 0, fast ? 30 : 4, dt);
       a.recede[i] = THREE.MathUtils.damp(a.recede[i], focusIdx >= 0 && i !== focusIdx ? 1 : 0, fast ? 30 : 4, dt);
       const push = FOCUS_FORWARD * a.focus[i] - RECEDE_BACK * a.recede[i];
 
-      // Tampilan terurai: lapisan dasar tetap, lapisan di atasnya terangkat bertahap.
+      // Tampilan terurai: lapisan dasar tetap, lapisan di atasnya terangkat
+      // bertahap. Pada sumbu tegak inilah kolom gambut diturunkan sebanyak
+      // kekurangan tebal timbunannya.
       const group = groupRefs.current[i];
       if (group) {
-        group.position.set(dir.x * push, (layers.length - 1 - i) * EXPLODE_GAP * s.explode, dir.z * push);
+        group.position.set(
+          dir.x * push,
+          (layers.length - 1 - i) * EXPLODE_GAP * s.explode + (organic ? sunk : 0),
+          dir.z * push,
+        );
         group.scale.setScalar(1 + 0.04 * a.focus[i]);
       }
 
@@ -309,7 +348,10 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
     // Garis muka air tanah mengelilingi bongkahan; disembunyikan saat terurai,
     // dan juga selama belum ada gambut yang menahan airnya.
     if (ringRef.current) {
-      if (rebuild) updateRibbon(ring.geom, w);
+      if (Math.abs(w - a.lastRibbon) > 1e-4) {
+        a.lastRibbon = w;
+        updateRibbon(ring.geom, w);
+      }
       ring.mat.opacity = 0.9 * (1 - s.explode) * Math.min(1, Math.max(0, peat / 0.25));
       ringRef.current.visible = ring.mat.opacity > 0.02;
     }

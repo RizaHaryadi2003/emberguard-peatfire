@@ -1,6 +1,8 @@
-// Ukuran dan penempatan diorama gambut yang dipakai bersama oleh semua modul
-// section Gambut, sehingga bongkahan tanah pada Modul 01 dan Modul 02 benar-benar
-// berukuran sama dan dapat dibandingkan langsung oleh pembaca.
+// Ukuran, rupa, dan penempatan diorama gambut yang dipakai bersama oleh semua
+// modul section Gambut, sehingga bongkahan tanah pada Modul 01 dan Modul 02
+// benar-benar sama dan dapat dibandingkan langsung oleh pembaca.
+
+import type { PeatLayerId } from "@/lib/peat";
 
 /** Mutu grafis: "low" untuk ponsel/perangkat lemah (resolusi & bayangan lebih rendah). */
 export type Quality = "high" | "low";
@@ -14,6 +16,27 @@ export const DIORAMA_Y = 0.2;
 
 /** Batas putaran balok ke kiri/kanan oleh seretan pengguna (radian). */
 export const MAX_ROTATION = 0.9;
+
+/**
+ * Rona pengali warna tekstur tiap lapisan.
+ *
+ * Satu daftar untuk semua modul. Modul 02 dahulu memakai daftarnya sendiri
+ * yang lebih gelap — hemik dan terutama saprik diturunkan agar strata terbaca
+ * pada satu bidang datar. Akibatnya bongkahan yang seharusnya sama justru
+ * tampak sebagai dua tanah yang berbeda, dan separuh bawah penampang jatuh ke
+ * hampir hitam. Pemisah antarlapisan di Modul 02 sekarang dikerjakan oleh
+ * garis batas dan guratan pengendapan pada peneduhnya, bukan dengan
+ * menggelapkan tanahnya.
+ */
+export const PEAT_LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
+  fibrik: [1.0, 0.8, 0.62],
+  hemik: [0.86, 0.72, 0.6],
+  saprik: [0.46, 0.36, 0.28],
+  mineral: [0.8, 0.82, 0.84],
+};
+
+/** Gambut basah tampak lebih gelap dan berkilap daripada gambut kering. */
+export const WET_DARKEN = 0.5;
 
 /**
  * Arah datangnya sinar matahari (dinormalkan saat dipakai): rendah dari sisi

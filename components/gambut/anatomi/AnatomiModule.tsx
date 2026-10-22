@@ -7,11 +7,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { ANATOMI_STEPS, GAMBUT_MODULES } from "@/config/gambut-content";
-import { getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
+import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
+import StepAdvance from "./StepAdvance";
 import WaterControl from "./WaterControl";
 import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
 
@@ -41,6 +42,24 @@ const DEMO_YEARS = 620;
 
 const MODULE = GAMBUT_MODULES[0];
 
+/** Modul sesudah ini; menjadi tujuan panah pada tahap terakhir. */
+const NEXT_MODULE = GAMBUT_MODULES[1];
+
+/**
+ * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
+ * berikutnya terbuka. Tahap "Menyimpan air" tidak menuntut apa pun, jadi
+ * arahannya kosong dan panahnya langsung dapat diklik.
+ */
+const STEP_HINT = [
+  `Seret pengatur umur sampai ${formatYears(PEAT_MAX_YEARS)} tahun untuk melanjutkan.`,
+  "Klik salah satu lapisan untuk melihatnya lebih dekat.",
+  "",
+  "",
+];
+
+/** Tahap yang tidak menuntut tindakan apa pun; panahnya terbuka begitu tiba. */
+const STEP_FREE = [false, false, true, true];
+
 /**
  * Modul 01 — Anatomi Gambut.
  * Bagian ini "menempel" di layar selama empat layar gulir; tiap seperempat
@@ -54,6 +73,15 @@ export default function AnatomiModule() {
   const triggerRef = useRef<ScrollTrigger | null>(null);
 
   const [step, setStep] = useState(0);
+  /** Tahap terjauh yang sudah terbuka; bertambah setelah syarat tahap ini tuntas. */
+  const [unlocked, setUnlocked] = useState(0);
+  /** Pembaca mencoba melanjutkan padahal syaratnya belum tuntas (arahan disorot sebentar). */
+  const [urgent, setUrgent] = useState(false);
+  /** Tahap terjauh yang terbuka, dibaca di dalam penangan gulir yang dibuat sekali. */
+  const unlockedRef = useRef(0);
+  useEffect(() => {
+    unlockedRef.current = unlocked;
+  }, [unlocked]);
   const [userWaterCm, setUserWaterCm] = useState(DEFAULT_WATER_CM);
   const [userYears, setUserYears] = useState(0);
   const [hovered, setHovered] = useState<PeatLayerId | null>(null);
@@ -64,6 +92,15 @@ export default function AnatomiModule() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
   const [soundOn, setSoundOn] = useState(false);
+
+  /**
+   * Buka tahap sesudah `i`. Sekali terbuka tetap terbuka: pembaca yang
+   * menarik kembali pengatur umurnya tidak kehilangan tahap yang sudah ia
+   * lewati.
+   */
+  const unlockAfter = useCallback((i: number) => {
+    setUnlocked((u) => Math.max(u, Math.min(i + 1, STEP_COUNT - 1)));
+  }, []);
 
   const waterCm = step === INTERACTIVE_STEP ? userWaterCm : STEP_WATER_CM[step];
   // Di luar tahap pertumbuhan, gambut selalu ditampilkan utuh.
@@ -88,6 +125,18 @@ export default function AnatomiModule() {
   useEffect(() => {
     Object.assign(sceneState.current, { step, waterCm, years, hovered, focused, reducedMotion });
   }, [step, waterCm, years, hovered, focused, reducedMotion]);
+
+  /**
+   * Semua perubahan umur lewat sini — baik dari pengatur maupun dari demo
+   * otomatis — supaya syarat tahap pertama dinilai di satu tempat saja.
+   */
+  const applyYears = useCallback(
+    (years: number) => {
+      setUserYears(years);
+      if (years >= PEAT_MAX_YEARS) unlockAfter(GROWTH_STEP);
+    },
+    [unlockAfter],
+  );
 
   // Tombol Esc melepaskan lapisan yang sedang dipilih.
   useEffect(() => {
@@ -145,21 +194,34 @@ export default function AnatomiModule() {
     };
   }, []);
 
-  // Gulir → tahap cerita, dengan tambatan (snap) ke tiap tahap.
+  // Gulir → tahap cerita, dengan tambatan (snap) ke tiap tahap. Gulirannya
+  // ditahan pada tahap terjauh yang sudah terbuka: selama syarat tahap ini
+  // belum tuntas, halaman tidak dapat dibawa lewat batasnya, sehingga panah
+  // lanjut yang terkunci itu benar-benar berarti.
   useGSAP(
     () => {
+      const limit = () => unlockedRef.current / (STEP_COUNT - 1);
       const st = ScrollTrigger.create({
         trigger: rootRef.current,
         start: "top top",
         end: "bottom bottom",
         snap: {
-          snapTo: 1 / (STEP_COUNT - 1),
+          snapTo: (value) => Math.min(Math.round(value * (STEP_COUNT - 1)) / (STEP_COUNT - 1), limit()),
           duration: { min: 0.25, max: 0.7 },
           delay: 0.08,
           ease: "power2.inOut",
         },
         onUpdate: (self) => {
+          const max = limit();
+          if (self.progress > max + 0.002) {
+            // Ditahan di batas tahap yang terbuka, lalu arahannya disorot
+            // supaya pembaca tahu mengapa halamannya tidak mau bergerak.
+            window.scrollTo({ top: self.start + (self.end - self.start) * max, behavior: "auto" });
+            setUrgent(true);
+            return;
+          }
           const next = Math.round(self.progress * (STEP_COUNT - 1));
+          if (STEP_FREE[next]) setUnlocked((u) => Math.max(u, Math.min(next + 1, STEP_COUNT - 1)));
           setStep((prev) => {
             // Sorotan & pilihan lapisan dari tahap sebelumnya tidak dibawa ke tahap baru.
             if (prev !== next) {
@@ -234,14 +296,14 @@ export default function AnatomiModule() {
       duration: reducedMotion ? 0 : 2.8,
       delay: reducedMotion ? 0 : 0.5,
       ease: "power2.out",
-      onUpdate: () => setUserYears(Math.round(proxy.v)),
-      onComplete: () => setUserYears(target),
+      onUpdate: () => applyYears(Math.round(proxy.v)),
+      onComplete: () => applyYears(target),
     });
     growthTween.current = tween;
     return () => {
       tween.kill();
     };
-  }, [step, ready, reducedMotion]);
+  }, [step, ready, reducedMotion, applyYears]);
 
   const stopGrowthDemo = useCallback(() => {
     growthTween.current?.kill();
@@ -270,15 +332,48 @@ export default function AnatomiModule() {
 
   const goToStep = (i: number) => {
     const st = triggerRef.current;
-    if (!st) return;
+    if (!st || i > unlocked) return;
     const y = st.start + ((st.end - st.start) * i) / (STEP_COUNT - 1);
     window.scrollTo({ top: y, behavior: reducedMotion ? "auto" : "smooth" });
   };
 
+  // --- Syarat lanjut tiap tahap ---------------------------------------------
+  //
+  // Tiap tahap meminta satu tindakan sebelum tahap berikutnya terbuka, supaya
+  // pembaca tidak sekadar menggulir melewatinya: angka "2.800 tahun" baru
+  // terasa setelah ia sendiri yang menyeretnya sampai ke sana. Tindakan itu
+  // dinilai di tempatnya masing-masing (`applyYears`, `selectLayer`), yang
+  // memanggil `unlockAfter`; di sini tinggal dibaca hasilnya.
+  const lastStep = step === STEP_COUNT - 1;
+  const locked = unlocked <= step;
+
+  // Sorotan arahan padam sendiri setelah sempat terbaca.
+  useEffect(() => {
+    if (!urgent) return;
+    const id = window.setTimeout(() => setUrgent(false), 1800);
+    return () => window.clearTimeout(id);
+  }, [urgent]);
+
+  /** Panah tahap terakhir: tidak ada tahap lagi, jadi ia menuju modul berikutnya. */
+  const toNextModule = lastStep && NEXT_MODULE.available && NEXT_MODULE.href ? NEXT_MODULE : null;
+
+  const advance = useCallback(() => {
+    const st = triggerRef.current;
+    if (!st) return;
+    const y = st.start + ((st.end - st.start) * (step + 1)) / (STEP_COUNT - 1);
+    window.scrollTo({ top: y, behavior: reducedMotion ? "auto" : "smooth" });
+  }, [step, reducedMotion]);
+
   const current = ANATOMI_STEPS[step];
   const hoveredLayer = PEAT_LAYERS.find((l) => l.id === hovered);
   const focusedLayer = step === EXPLODE_STEP ? PEAT_LAYERS.find((l) => l.id === focused) : undefined;
-  const selectLayer = useCallback((id: PeatLayerId | null) => setFocused(id), []);
+  const selectLayer = useCallback(
+    (id: PeatLayerId | null) => {
+      setFocused(id);
+      if (id) unlockAfter(EXPLODE_STEP);
+    },
+    [unlockAfter],
+  );
   const handleReady = useCallback(() => setReady(true), []);
 
   return (
@@ -363,20 +458,29 @@ export default function AnatomiModule() {
           aria-label="Tahap modul"
           className="absolute bottom-8 left-5 hidden gap-2 sm:left-10 md:left-14 md:flex"
         >
-          {ANATOMI_STEPS.map((s, i) => (
-            <button
-              key={s.title}
-              type="button"
-              onClick={() => goToStep(i)}
-              aria-current={i === step ? "step" : undefined}
-              className="group flex cursor-pointer flex-col items-start gap-2 text-left"
-            >
-              <span className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${i === step ? "bg-white" : "bg-white/20 group-hover:bg-white/50"}`} />
-              <span className={`text-[11px] tabular-nums transition-colors ${i === step ? "text-white" : "text-white/40"}`}>
-                0{i + 1}
-              </span>
-            </button>
-          ))}
+          {ANATOMI_STEPS.map((s, i) => {
+            const shut = i > unlocked;
+            return (
+              <button
+                key={s.title}
+                type="button"
+                onClick={() => goToStep(i)}
+                disabled={shut}
+                aria-current={i === step ? "step" : undefined}
+                title={shut ? STEP_HINT[step] : s.title}
+                className={`group flex flex-col items-start gap-2 text-left ${shut ? "cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <span
+                  className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${
+                    i === step ? "bg-white" : shut ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
+                  }`}
+                />
+                <span className={`text-[11px] tabular-nums transition-colors ${i === step ? "text-white" : "text-white/40"}`}>
+                  0{i + 1}
+                </span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Penggaris kedalaman (kanan) */}
@@ -410,7 +514,20 @@ export default function AnatomiModule() {
           }`}
           inert={step !== GROWTH_STEP}
         >
-          <GrowthControl years={userYears} onChange={setUserYears} onInteract={stopGrowthDemo} />
+          {/* Di layar sempit panel ini menempati seluruh tepi bawah, jadi panah
+              lanjut duduk tepat di atasnya; di layar lebar panahnya ada di
+              gugus kanan bawah bersama tombol suara. */}
+          <div className="absolute bottom-full right-0 mb-3 md:hidden">
+            <StepAdvance
+              nextTitle={ANATOMI_STEPS[1].title}
+              label="Tahap berikutnya"
+              hint={STEP_HINT[0]}
+              locked={locked}
+              urgent={urgent}
+              onAdvance={advance}
+            />
+          </div>
+          <GrowthControl years={userYears} onChange={applyYears} onInteract={stopGrowthDemo} />
         </div>
 
         {/* Pengatur muka air (tahap interaktif) */}
@@ -420,6 +537,16 @@ export default function AnatomiModule() {
           }`}
           inert={step !== INTERACTIVE_STEP}
         >
+          {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
+          {toNextModule && (
+            <div className="absolute bottom-full right-0 mb-3 md:hidden">
+              <StepAdvance
+                nextTitle={`Modul ${toNextModule.number} · ${toNextModule.title}`}
+                label="Modul berikutnya"
+                href={toNextModule.href ?? undefined}
+              />
+            </div>
+          )}
           <WaterControl
             waterCm={userWaterCm}
             onChange={setUserWaterCm}
@@ -427,10 +554,10 @@ export default function AnatomiModule() {
           />
         </div>
 
-        {/* Kanan bawah: petunjuk interaksi + tombol suara */}
-        <div className="absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14">
+        {/* Kanan bawah: petunjuk interaksi, tombol suara, dan panah lanjut */}
+        <div className="absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14">
           <div
-            className={`pointer-events-none hidden items-center gap-4 transition-opacity duration-500 lg:flex ${
+            className={`pointer-events-none hidden items-center gap-4 pb-2 transition-opacity duration-500 lg:flex ${
               hasPanel ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -455,6 +582,28 @@ export default function AnatomiModule() {
             {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
             Suara alam
           </button>
+
+          {/* Panah lanjut: ke tahap berikutnya, lalu ke modul berikutnya pada
+              tahap terakhir. Di layar sempit panah ini pindah ke atas panel
+              pengatur, jadi di sini ia disembunyikan. */}
+          {!lastStep ? (
+            <StepAdvance
+              nextTitle={ANATOMI_STEPS[step + 1].title}
+              label="Tahap berikutnya"
+              hint={STEP_HINT[step]}
+              locked={locked}
+              urgent={urgent}
+              onAdvance={advance}
+              className={hasPanel ? "hidden md:flex" : "flex"}
+            />
+          ) : toNextModule ? (
+            <StepAdvance
+              nextTitle={`Modul ${toNextModule.number} · ${toNextModule.title}`}
+              label="Modul berikutnya"
+              href={toNextModule.href ?? undefined}
+              className={hasPanel ? "hidden md:flex" : "flex"}
+            />
+          ) : null}
         </div>
       </div>
     </div>

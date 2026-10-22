@@ -27,21 +27,50 @@ import {
 // tetap terasa berdimensi tiga.
 
 /**
- * Posisi kamera, titik bidik, dan jarak pandang tiap babak.
+ * Pose kamera tiap babak: arah pandang (derajat) dan jarak (m) ke titik bidik.
  *
- * `frame` mengalikan jarak kamera ke titik bidik. Nilainya dipilih agar
- * bongkahan tampak sebesar bongkahan Modul 01, sehingga keduanya terasa satu
- * rancangan: di sana kamera berjarak sekitar 14,2 m dengan bidang pandang 34°,
- * dan di sini jaraknya disetarakan menjadi ± 13,5 m. Tanpa penyetaraan ini
- * bongkahan Modul 02 terlihat jauh lebih besar meski ukurannya persis sama —
- * keduanya memakai BLOCK_WIDTH dan BLOCK_DEPTH yang sama.
+ * Ditulis sebagai sudut, bukan koordinat, karena yang harus sama dengan Modul
+ * 01 memang sudut dan jaraknya — di sana kamera berdiri pada azimut 33–39°,
+ * ketinggian 8–16°, dan jarak 12,3–14,3 m dengan bidang pandang 34°.
+ * Bongkahannya pun sama (BLOCK_WIDTH, BLOCK_DEPTH, dan bentuk tapak yang
+ * sama), jadi dengan pose yang setara ia tampak persis sebesar dan sekokoh
+ * bongkahan Modul 01.
+ *
+ * Dahulu modul ini memandang bidang potong hampir tegak lurus (azimut 10–15°).
+ * Kedalaman memang terbaca paling jujur dari sana, tetapi bongkahannya
+ * terbaca sebagai lembaran datar, bukan bongkahan tanah yang sama dengan
+ * modul sebelumnya. Dengan azimut Modul 01, dinding sampingnya ikut terlihat
+ * sehingga tebalnya terasa — sementara bidang potong hanya memendek 19%,
+ * jauh dari cukup untuk menyembunyikan bara di dalamnya.
  */
-const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number]; frame: number }[] = [
-  { pos: [1.2, 4.1, 6.6], target: [0, -0.35, 0], frame: 1.68 }, // 01: permukaan tempat menyulut
-  { pos: [0.8, -0.5, 9.0], target: [0, -1.6, 0], frame: 1.48 }, // 02: seluruh penampang, hampir tegak lurus
-  { pos: [2.3, 1.6, 8.4], target: [0, -1.1, 0], frame: 1.48 }, // 03: permukaan & penampang bersama
-  { pos: [0.6, -0.8, 8.8], target: [0, -1.65, 0], frame: 1.52 }, // 04: pembasahan
+type CameraPose = {
+  /** Sudut datang kamera terhadap sumbu z, searah sumbu x positif (derajat). */
+  azimuth: number;
+  /** Ketinggian kamera di atas bidang datar (derajat). */
+  elevation: number;
+  distance: number;
+  target: [number, number, number];
+};
+
+const CAMERA_POSES: CameraPose[] = [
+  { azimuth: 38, elevation: 26, distance: 13.0, target: [0, -0.35, 0] }, // 01: permukaan tempat menyulut
+  { azimuth: 34, elevation: 9, distance: 13.4, target: [0, -1.5, 0] }, // 02: seluruh penampang
+  { azimuth: 38, elevation: 20, distance: 13.0, target: [0, -1.0, 0] }, // 03: permukaan & penampang bersama
+  { azimuth: 35, elevation: 12, distance: 13.2, target: [0, -1.55, 0] }, // 04: pembasahan
 ];
+
+/** Letak kamera suatu pose, relatif terhadap titik bidiknya. */
+function poseOffset(out: THREE.Vector3, pose: CameraPose): THREE.Vector3 {
+  const az = THREE.MathUtils.degToRad(pose.azimuth);
+  const el = THREE.MathUtils.degToRad(pose.elevation);
+  const flat = Math.cos(el) * pose.distance;
+  return out.set(Math.sin(az) * flat, Math.sin(el) * pose.distance, Math.cos(az) * flat);
+}
+
+/** Letak kamera saat kanvas pertama dibuat. */
+const INITIAL_POS = poseOffset(new THREE.Vector3(), CAMERA_POSES[0])
+  .add(new THREE.Vector3(...CAMERA_POSES[0].target))
+  .toArray() as [number, number, number];
 
 /**
  * Putar diorama mengikuti seretan pembaca, dengan perlambatan halus.
@@ -54,14 +83,20 @@ const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, nu
 function Turntable({ stateRef, children }: { stateRef: RefObject<BaraState>; children: React.ReactNode }) {
   const pitch = useRef<THREE.Group>(null);
   const yaw = useRef<THREE.Group>(null);
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const s = stateRef.current;
     if (!s || !pitch.current || !yaw.current) return;
     const dt = Math.min(delta, 0.05);
-    const k = s.reducedMotion ? 30 : 6;
+    // Perlambatan sama dengan Modul 01 (4, bukan 6) supaya seretan di kedua
+    // modul terasa seberat yang sama.
+    const k = s.reducedMotion ? 30 : 4;
+    // Ayunan diam yang sama pula: saat tidak disentuh, diorama bergoyang
+    // sangat pelan sejauh ± 0,06 radian, jauh di dalam ambang "menghadap
+    // penampang" sehingga tombol kembali tidak ikut terpicu.
+    const idle = s.reducedMotion ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.06;
     // Putaran kiri/kanan dibiarkan bebas; jungkitan tetap dibatasi supaya
     // diorama tidak pernah terbalik dan langit tetap berada di atas.
-    const wantYaw = s.rotation;
+    const wantYaw = s.rotation + idle;
     const wantPitch = Math.max(-BARA_MAX_TILT_UP, Math.min(BARA_MAX_TILT_DOWN, s.tilt));
     yaw.current.rotation.y = THREE.MathUtils.damp(yaw.current.rotation.y, wantYaw, k, dt);
     pitch.current.rotation.x = THREE.MathUtils.damp(pitch.current.rotation.x, wantPitch, k, dt);
@@ -86,20 +121,17 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     const pose = CAMERA_POSES[s.act] ?? CAMERA_POSES[0];
 
     // Layar sempit butuh kamera lebih jauh agar penampang utuh terlihat.
+    // Angkanya sama dengan Modul 01, begitu pula paralaks kursornya.
     const aspect = state.size.width / Math.max(1, state.size.height);
-    const zoom = aspect < 0.8 ? 1.65 : aspect < 1.3 ? 1.22 : 1;
+    const zoom = aspect < 0.8 ? 1.7 : aspect < 1.3 ? 1.25 : 1;
     const parallax = s.reducedMotion ? 0 : 1;
 
     wantTarget.set(...pose.target);
-    wantPos
-      .set(...pose.pos)
-      .sub(wantTarget)
-      .multiplyScalar(zoom * pose.frame)
-      .add(wantTarget);
-    wantPos.x += state.pointer.x * 0.3 * parallax;
-    wantPos.y += state.pointer.y * 0.18 * parallax;
+    poseOffset(wantPos, pose).multiplyScalar(zoom).add(wantTarget);
+    wantPos.x += state.pointer.x * 0.35 * parallax;
+    wantPos.y += state.pointer.y * 0.2 * parallax;
 
-    const k = s.reducedMotion ? 30 : 2.1;
+    const k = s.reducedMotion ? 30 : 2.2;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, wantPos.x, k, dt);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, wantPos.y, k, dt);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, wantPos.z, k, dt);
@@ -109,7 +141,7 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     // Di layar lebar, gambar digeser ke kanan agar tidak tertutup panel teks.
     const cam = camera as THREE.PerspectiveCamera;
     const { width, height } = state.size;
-    const shift = aspect > 1.3 ? -width * 0.045 : 0;
+    const shift = aspect > 1.3 ? -width * 0.035 : 0;
     const current = cam.view?.enabled ? cam.view : null;
     if (shift && (current?.offsetX !== shift || current.fullHeight !== height)) {
       cam.setViewOffset(width, height, shift, 0, width, height);
@@ -241,7 +273,7 @@ export default function BaraScene({
       shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
       frameloop={active ? "always" : "never"}
-      camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
+      camera={{ fov: 34, near: 0.1, far: 400, position: INITIAL_POS }}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;

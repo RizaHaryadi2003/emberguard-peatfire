@@ -8,8 +8,10 @@ export {
   BLOCK_DEPTH,
   BLOCK_WIDTH,
   DIORAMA_Y,
+  PEAT_LAYER_TINT,
   QUALITY_PROFILE,
   SUN_DIRECTION,
+  WET_DARKEN,
   type Quality,
 } from "@/components/gambut/scene/dioramaConstants";
 

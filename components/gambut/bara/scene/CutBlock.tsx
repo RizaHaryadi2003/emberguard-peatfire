@@ -18,28 +18,14 @@ import {
   UV_PER_METER,
 } from "./crossSection";
 import { CAVITY_DEPTH, createFaceMaterial } from "./faceMaterial";
-import { DRAG_THRESHOLD, SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
+import { DRAG_THRESHOLD, PEAT_LAYER_TINT, SUN_DIRECTION, type BaraState, type Subsidence } from "./baraState";
 
 // Bongkahan gambut yang sudah dipotong: badan lapisan di belakang (terlihat di
 // tepi silhuet) dan satu bidang potong di depan yang menampilkan seluruh
 // kejadian di bawah tanah lewat peneduhnya sendiri.
 
-/**
- * Rona pengali warna tekstur tiap lapisan.
- *
- * Jaraknya dibuat lebih lebar daripada Modul 01. Di sana tiap lapisan dipisah
- * oleh jarak fisik saat bongkahan terurai, jadi beda warna tipis sudah cukup.
- * Di sini keempatnya bersinggungan langsung pada satu bidang, dan rona fibrik
- * dengan hemik yang hampir sama membuat profilnya terbaca sebagai satu massa
- * coklat. Urutannya kini jelas menurun: terang di atas, paling gelap di
- * saprik, lalu kelabu terang di tanah mineral.
- */
-const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
-  fibrik: [1.06, 0.84, 0.62],
-  hemik: [0.72, 0.56, 0.42],
-  saprik: [0.34, 0.26, 0.21],
-  mineral: [0.86, 0.86, 0.87],
-};
+/** Rona lapisan: daftar yang sama persis dengan Modul 01. */
+const LAYER_TINT = PEAT_LAYER_TINT;
 
 /**
  * Batas bawah pencahayaan bidang potong.
@@ -51,6 +37,15 @@ const LAYER_TINT: Record<PeatLayerId, [number, number, number]> = {
  * cahaya langit karena itu ditahan di ambang ini, dan warna matahari ditarik
  * separuh kembali ke netral agar penampang tidak menguning seluruhnya.
  */
+/**
+ * Penyusutan lapisan penutup di belakang bidang potong, dihitung terhadap
+ * titik tengah profil. Cukup untuk menyembunyikan tepinya di balik dinding
+ * bongkahan, tetapi tidak sampai membuka celah di belakang rongga abu.
+ */
+const BACKING_SCALE_X = 0.985;
+const BACKING_SCALE_Y = 0.97;
+const BACKING_CENTER_Y = -1.7;
+
 const READABLE_SUN = 3.5;
 const READABLE_AMBIENT = 0.38;
 const NEUTRAL_SUN: [number, number, number] = [1, 0.86, 0.68];
@@ -97,10 +92,12 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
       material: new THREE.MeshStandardMaterial({
         map: colors[i],
         normalMap: normals[i],
-        // Badan bongkahan diredupkan terhadap bidang potong supaya penampang
-        // tetap menjadi pusat perhatian — tetapi tidak sampai menghilang ke
-        // dalam gelap seperti sebelumnya.
-        color: new THREE.Color(...LAYER_TINT[layer.id]).multiplyScalar(layer.id === "mineral" ? 0.62 : 0.82),
+        // Tanpa peredupan: badan bongkahan ini adalah bongkahan Modul 01 yang
+        // dipotong, jadi tanahnya harus terbaca sebagai tanah yang sama.
+        // Bidang potong tetap menjadi pusat perhatian karena ia menghadap
+        // matahari dan menyimpan seluruh kejadiannya, bukan karena tanah di
+        // sekitarnya digelapkan.
+        color: new THREE.Color(...LAYER_TINT[layer.id]),
         roughness: 0.95,
         normalScale: new THREE.Vector2(1.2, 1.2),
         vertexColors: true,
@@ -114,7 +111,10 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
     // Lapisan penutup gelap di belakang bidang potong. Memakai geometri bidang
     // potong yang sama, jadi bentuk, lekuk tepi, dan permukaan yang melesak
     // selalu persis sama — ia tidak akan pernah menyembul keluar dari siluet.
-    const backingMaterial = new THREE.MeshBasicMaterial({ color: "#080604" });
+    // Warnanya tanah yang sangat teduh, bukan hitam: lapisan ini juga yang
+    // terlihat dari sela tipis antara tepi potongan dan dinding bongkahan,
+    // dan sela itu harus terbaca sebagai bayangan di dalam tanah.
+    const backingMaterial = new THREE.MeshBasicMaterial({ color: "#1d150f" });
 
     return { colors, normals, bodies, faceGeom, faceMaterial, backingMaterial };
   }, [textures, field, sunDir]);
@@ -249,7 +249,18 @@ export default function CutBlock({ sim, stateRef, field, subsidence, onProbe, on
           tengah bongkahan. Sekarang penutupnya memakai geometri bidang potong
           itu sendiri, digeser ke belakang sedikit lebih jauh daripada rongga
           terdalam: siluetnya selalu sama persis dengan penampang. */}
-      <mesh geometry={res.faceGeom} material={res.backingMaterial} position-z={FACE_Z - CAVITY_DEPTH - 0.06} />
+      {/* Dikecilkan sedikit terhadap pusat bongkahan. Siluetnya sama persis
+          dengan penampang, padahal badan bongkahan menyempit ke belakang —
+          jadi pada kedudukan yang mundur 22 cm, tepinya menyembul beberapa
+          milimeter keluar dari dinding. Dilihat tegak lurus itu tidak tampak;
+          dilihat serong seperti sekarang, tonjolan setipis itu terbaca
+          sebagai celah gelap setinggi bongkahan. */}
+      <mesh
+        geometry={res.faceGeom}
+        material={res.backingMaterial}
+        position={[0, BACKING_CENTER_Y * (1 - BACKING_SCALE_Y), FACE_Z - CAVITY_DEPTH - 0.06]}
+        scale={[BACKING_SCALE_X, BACKING_SCALE_Y, 1]}
+      />
     </group>
   );
 }

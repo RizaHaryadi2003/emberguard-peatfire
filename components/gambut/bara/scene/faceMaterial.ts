@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { PEAT_LAYERS, PROFILE_DEPTH } from "@/lib/peat";
+import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
+import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaConstants";
 import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder";
 
 // Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul 02 ditentukan
@@ -15,6 +16,11 @@ import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder
 
 /** Kedalaman rongga abu ke dalam bongkahan (m) saat gambut habis terbakar. */
 export const CAVITY_DEPTH = 0.16;
+
+/** Rona satu lapisan sebagai tetapan GLSL, dibaca dari daftar bersama. */
+function tintGlsl(id: PeatLayerId): string {
+  return PEAT_LAYER_TINT[id].map((v) => v.toFixed(3)).join(", ");
+}
 
 const VERTEX = /* glsl */ `
 attribute float aDepth;
@@ -143,9 +149,10 @@ vec4 layerWeights(float d) {
   return vec4(1.0 - b0, b0 - b1, b1 - b2, b2);
 }
 
-/** Skala warna tiap lapisan; nilainya sama dengan LAYER_TINT di CutBlock. */
+/** Skala warna tiap lapisan; angkanya dari PEAT_LAYER_TINT, sama dengan Modul 01. */
 vec3 tintFor(vec4 w) {
-  return w.x * vec3(1.06, 0.84, 0.62) + w.y * vec3(0.72, 0.56, 0.42) + w.z * vec3(0.34, 0.26, 0.21) + w.w * vec3(0.86, 0.86, 0.87);
+  return w.x * vec3(${tintGlsl("fibrik")}) + w.y * vec3(${tintGlsl("hemik")}) +
+         w.z * vec3(${tintGlsl("saprik")}) + w.w * vec3(${tintGlsl("mineral")});
 }
 
 /** Palet citra termal: biru tua (dingin & basah) sampai putih (bara). */
@@ -235,10 +242,13 @@ void main() {
   // --- Gambut basah: lebih gelap, sedikit kebiruan, dan berkilap. Peralihan
   // kering→basah dibuat tidak rata agar garis airnya terlihat alami.
   float wetEdge = clamp(moisture + (mottle - 0.35) * 0.18, 0.0, 1.0);
-  // Gambut jenuh air dibuat jelas lebih gelap dan kebiruan daripada gambut
-  // kering di atasnya: batas inilah yang menentukan sampai sedalam apa bara
-  // dapat turun, jadi ia harus terbaca sekali lihat.
-  albedo = mix(albedo, albedo * vec3(0.34, 0.4, 0.5), wetEdge);
+  // Gambut jenuh air lebih gelap dan sedikit kebiruan daripada gambut kering
+  // di atasnya: batas inilah yang menentukan sampai sedalam apa bara dapat
+  // turun, jadi ia harus terbaca sekali lihat. Besarnya peredupan sama dengan
+  // Modul 01 (WET_DARKEN); yang ditambahkan di sini hanya condong ke biru,
+  // karena sebelumnya separuh bawah penampang — yang memang selalu basah —
+  // jatuh ke hampir hitam dan tidak bisa dibaca lagi.
+  albedo = mix(albedo, albedo * vec3(${(WET_DARKEN * 1.04).toFixed(3)}, ${(WET_DARKEN * 1.12).toFixed(3)}, ${(WET_DARKEN * 1.26).toFixed(3)}), wetEdge);
 
   // --- Bekas terbakar: gambut hangus, lalu abu di dalam rongga.
   albedo = mix(albedo, vec3(0.085, 0.062, 0.05), char * 0.85);
@@ -259,11 +269,17 @@ void main() {
   float diff = max(dot(N, L), 0.0);
   float cavityShade = 1.0 - smoothstep(0.15, 1.0, ash) * 0.62;
   float lipShade = mix(0.55, 1.0, smoothstep(0.0, 0.16, vDepth));
-  float spec = pow(max(dot(N, normalize(L + V)), 0.0), 48.0) * moisture * 0.5;
+  float spec = pow(max(dot(N, normalize(L + V)), 0.0), 48.0) * moisture * 0.7;
 
   // Cahaya matahari sengaja diberi porsi besar dibanding cahaya langit supaya
   // relief peta normal terbaca dan penampang tidak tampak rata.
-  vec3 color = albedo * (uAmbient * 0.85 + uSunColor * uSunIntensity * diff * 0.5) * cavityShade * lipShade;
+  //
+  // Kedua porsinya dinaikkan dari 0,85 dan 0,50. Bidang potong ini memakai
+  // peneduhnya sendiri, jadi ia tidak menerima pantulan lingkungan seperti
+  // bongkahan Modul 01 — tanpa tambahan itu, separuh bawah penampang yang
+  // selalu jenuh air terbaca sebagai bidang hitam, padahal di situlah bara
+  // nanti berhenti dan justru harus terlihat.
+  vec3 color = albedo * (uAmbient * 1.15 + uSunColor * uSunIntensity * diff * 0.56) * cavityShade * lipShade;
   color += uSunColor * spec * uSunIntensity * 0.16;
 
   // Cahaya tipis di bibir rongga abu. Inilah yang memberi rongga bentuk:

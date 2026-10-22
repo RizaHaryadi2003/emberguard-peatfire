@@ -235,7 +235,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       list.push({
         id: "lebar",
         x: (bounds.left + bounds.right) / 2,
-        y: -PROFILE_DEPTH - 0.62,
+        y: -PROFILE_DEPTH - 0.4,
         text: `${BLOCK_WIDTH.toLocaleString("id-ID")} m`,
         tone: "depth",
         pinned: true,
@@ -376,7 +376,11 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
 function WidthScaleBar() {
   const res = useMemo(() => {
     const { left, right } = faceBounds(0);
-    const y = -PROFILE_DEPTH - 0.45;
+    // Didekatkan dari 45 cm ke 22 cm di bawah dasar bongkahan. Dengan kamera
+    // yang kini memandang serong, batang ini ikut miring mengikuti bidang
+    // potong; berdiri sejauh itu dari bongkahannya, ia terbaca sebagai garis
+    // yang melayang entah mengukur apa.
+    const y = -PROFILE_DEPTH - 0.22;
     const cap = 0.11;
     // Satu garis mendatar ditambah dua kaki tegak di ujungnya.
     const points = [

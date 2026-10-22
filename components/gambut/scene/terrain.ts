@@ -40,11 +40,35 @@ function wallRelief(theta: number, y: number): number {
   );
 }
 
+/**
+ * Jari-jari dinding pada sudut θ dan ketinggian y, bila jari-jari tapaknya
+ * sudah diketahui. Dipisah dari `radiusAt` karena `footprintRadius` memakai
+ * tiga pemangkatan: saat satu irisan dibentuk, nilainya cukup dihitung sekali
+ * per kolom, bukan sekali per titik.
+ */
+function radiusFrom(r0: number, theta: number, y: number): number {
+  const depth = Math.min(1, Math.max(0, -y / PROFILE_DEPTH));
+  return r0 * (1 - 0.06 * depth * depth) + wallRelief(theta, y);
+}
+
 /** Jari-jari dinding pada sudut θ dan ketinggian y (sedikit menyempit ke bawah). */
 export function radiusAt(theta: number, y: number): number {
-  const depth = Math.min(1, Math.max(0, -y / PROFILE_DEPTH));
-  return footprintRadius(theta) * (1 - 0.06 * depth * depth) + wallRelief(theta, y);
+  return radiusFrom(footprintRadius(theta), theta, y);
 }
+
+/**
+ * Tabel kolom: sudut, kosinus, sinus, dan jari-jari tapak untuk tiap titik
+ * keliling. Bentuk tapaknya tetap, jadi nilai-nilai ini dihitung sekali saat
+ * berkas dimuat dan dipakai ulang setiap kali irisan dibentuk kembali.
+ */
+const COLUMNS = Array.from({ length: SEGMENTS + 1 }, (_, i) => {
+  const theta = (i / SEGMENTS) * Math.PI * 2;
+  return { theta, cos: Math.cos(theta), sin: Math.sin(theta), r0: footprintRadius(theta) };
+});
+
+/** Penampung tepi atas & bawah dinding, dipakai ulang agar tidak ada sampah memori per bingkai. */
+const TOP_EDGE = new Float32Array(SEGMENTS * 3);
+const BOT_EDGE = new Float32Array(SEGMENTS * 3);
 
 /**
  * Ketinggian batas lapisan pada kedalaman nominal `d` (m) di titik (x, z).
@@ -132,50 +156,57 @@ export function createSlab(): THREE.BufferGeometry {
 export function updateSlab(geom: THREE.BufferGeometry, bottom: HeightFn, top: HeightFn): number {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const posArr = pos.array as Float32Array;
+  const uvArr = uv.array as Float32Array;
   const cols = SEGMENTS + 1;
   const wallCount = cols * (WALL_RINGS + 1);
   const capCount = SEGMENTS * CAP_RINGS + 1;
   let maxThickness = 0;
 
-  // Titik tepi atas & bawah dinding dipakai lagi oleh cincin terluar tutup.
-  const topEdge: [number, number, number][] = [];
-  const botEdge: [number, number, number][] = [];
-
   for (let i = 0; i < cols; i++) {
-    const theta = (i / SEGMENTS) * Math.PI * 2;
-    const r0 = footprintRadius(theta);
-    const x0 = Math.cos(theta) * r0;
-    const z0 = Math.sin(theta) * r0;
+    const { theta, cos, sin, r0 } = COLUMNS[i];
+    const x0 = cos * r0;
+    const z0 = sin * r0;
     const yb = bottom(x0, z0);
     const yt = Math.max(yb, top(x0, z0));
-    maxThickness = Math.max(maxThickness, yt - yb);
+    if (yt - yb > maxThickness) maxThickness = yt - yb;
     // Koordinat u mengikuti keliling agar tekstur tidak meregang di dinding.
     const u = theta * 1.9 * UV_PER_METER;
     for (let j = 0; j <= WALL_RINGS; j++) {
       const y = yb + ((yt - yb) * j) / WALL_RINGS;
-      const r = radiusAt(theta, y);
+      const r = radiusFrom(r0, theta, y);
       const k = j * cols + i;
-      const x = Math.cos(theta) * r;
-      const z = Math.sin(theta) * r;
-      pos.setXYZ(k, x, y, z);
-      uv.setXY(k, u, y * UV_PER_METER);
-      if (i < SEGMENTS && j === 0) botEdge.push([x, y, z]);
-      if (i < SEGMENTS && j === WALL_RINGS) topEdge.push([x, y, z]);
+      const x = cos * r;
+      const z = sin * r;
+      posArr[k * 3] = x;
+      posArr[k * 3 + 1] = y;
+      posArr[k * 3 + 2] = z;
+      uvArr[k * 2] = u;
+      uvArr[k * 2 + 1] = y * UV_PER_METER;
+      // Titik tepi atas & bawah dinding dipakai lagi oleh cincin terluar tutup.
+      if (i < SEGMENTS && (j === 0 || j === WALL_RINGS)) {
+        const edge = j === 0 ? BOT_EDGE : TOP_EDGE;
+        edge[i * 3] = x;
+        edge[i * 3 + 1] = y;
+        edge[i * 3 + 2] = z;
+      }
     }
   }
 
-  const fillCap = (start: number, edge: [number, number, number][], heightFn: HeightFn, other: HeightFn, isTop: boolean) => {
+  const fillCap = (start: number, edge: Float32Array, heightFn: HeightFn, other: HeightFn, isTop: boolean) => {
     const hc = heightFn(0, 0);
     const oc = other(0, 0);
-    pos.setXYZ(start, 0, isTop ? Math.max(hc, oc) : Math.min(hc, oc), 0);
-    uv.setXY(start, 0, 0);
+    posArr[start * 3] = 0;
+    posArr[start * 3 + 1] = isTop ? Math.max(hc, oc) : Math.min(hc, oc);
+    posArr[start * 3 + 2] = 0;
+    uvArr[start * 2] = 0;
+    uvArr[start * 2 + 1] = 0;
     for (let k = 1; k <= CAP_RINGS; k++) {
       const f = k / CAP_RINGS;
       for (let i = 0; i < SEGMENTS; i++) {
-        const [ex, ey, ez] = edge[i];
-        const x = ex * f;
-        const z = ez * f;
-        let y = ey;
+        const x = edge[i * 3] * f;
+        const z = edge[i * 3 + 2] * f;
+        let y = edge[i * 3 + 1];
         if (k < CAP_RINGS) {
           // Titik di dalam tutup mengikuti gelombang batas lapisan.
           const h = heightFn(x, z);
@@ -183,13 +214,16 @@ export function updateSlab(geom: THREE.BufferGeometry, bottom: HeightFn, top: He
           y = isTop ? Math.max(h, o) : Math.min(h, o);
         }
         const v = start + 1 + (k - 1) * SEGMENTS + i;
-        pos.setXYZ(v, x, y, z);
-        uv.setXY(v, x * UV_PER_METER, z * UV_PER_METER);
+        posArr[v * 3] = x;
+        posArr[v * 3 + 1] = y;
+        posArr[v * 3 + 2] = z;
+        uvArr[v * 2] = x * UV_PER_METER;
+        uvArr[v * 2 + 1] = z * UV_PER_METER;
       }
     }
   };
-  fillCap(wallCount, topEdge, top, bottom, true);
-  fillCap(wallCount + capCount, botEdge, bottom, top, false);
+  fillCap(wallCount, TOP_EDGE, top, bottom, true);
+  fillCap(wallCount + capCount, BOT_EDGE, bottom, top, false);
 
   pos.needsUpdate = true;
   uv.needsUpdate = true;
@@ -215,10 +249,10 @@ export function createRibbon(): THREE.BufferGeometry {
 export function updateRibbon(geom: THREE.BufferGeometry, y: number, halfHeight = 0.008): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i <= SEGMENTS; i++) {
-    const theta = (i / SEGMENTS) * Math.PI * 2;
-    const r = radiusAt(theta, y) + 0.012;
-    const x = Math.cos(theta) * r;
-    const z = Math.sin(theta) * r;
+    const { theta, cos, sin, r0 } = COLUMNS[i];
+    const r = radiusFrom(r0, theta, y) + 0.012;
+    const x = cos * r;
+    const z = sin * r;
     pos.setXYZ(i * 2, x, y - halfHeight, z);
     pos.setXYZ(i * 2 + 1, x, y + halfHeight, z);
   }
@@ -230,11 +264,11 @@ export function updateRibbon(geom: THREE.BufferGeometry, y: number, halfHeight =
 export function createSurfaceGeometry(): THREE.BufferGeometry {
   const shape = new THREE.Shape();
   for (let i = 0; i <= SEGMENTS; i++) {
-    const theta = (i / SEGMENTS) * Math.PI * 2;
-    const r = radiusAt(theta, 0);
+    const { theta, cos, sin, r0 } = COLUMNS[i];
+    const r = radiusFrom(r0, theta, 0);
     // Bentuk dibuat di bidang XY lalu diputar ke XZ: sumbu y bentuk = −z dunia.
-    const x = Math.cos(theta) * r;
-    const y = -Math.sin(theta) * r;
+    const x = cos * r;
+    const y = -sin * r;
     if (i === 0) shape.moveTo(x, y);
     else shape.lineTo(x, y);
   }

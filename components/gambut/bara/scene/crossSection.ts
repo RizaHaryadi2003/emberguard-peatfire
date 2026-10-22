@@ -88,12 +88,19 @@ export function surfaceRelief(x: number, z: number): number {
 
 /**
  * Seberapa jauh tepi kiri/kanan bidang potong disisipkan ke dalam badan
- * bongkahan (m). Nilainya selalu positif dan berubah terhadap ketinggian,
- * sehingga garis tepi potongan berkelok seperti bekas galian — namun tidak
- * pernah keluar dari badan bongkahan.
+ * bongkahan (m). Nilainya selalu positif agar tepi potongan tidak pernah
+ * menyembul keluar dari badan bongkahan.
+ *
+ * Dahulu sampai 4,7 cm. Selama kamera memandang bidang potong hampir tegak
+ * lurus, sisipan itu tidak terlihat. Begitu kamera berdiri serong seperti
+ * Modul 01, ia menganga menjadi celah hitam setinggi bongkahan — karena di
+ * sanalah badan bongkahan memang berlubang, dan yang terlihat dari celah itu
+ * adalah lapisan penutup gelap di belakang bidang potong. Sekarang sisipannya
+ * tinggal beberapa milimeter, cukup untuk jaminan tadi, dan lekuk tepinya
+ * tetap ada karena dinding bongkahan sendiri sudah berelief (`radiusAt`).
  */
 function faceInset(y: number): number {
-  return 0.016 + 0.02 * (0.5 + 0.5 * Math.sin(y * 5.3 + 0.9)) + 0.011 * (0.5 + 0.5 * Math.sin(y * 11.7 - 2.1));
+  return 0.003 + 0.004 * (0.5 + 0.5 * Math.sin(y * 5.3 + 0.9)) + 0.002 * (0.5 + 0.5 * Math.sin(y * 11.7 - 2.1));
 }
 
 /**
@@ -309,7 +316,20 @@ export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DRO
 
   for (let j = 0; j <= FACE_ROWS; j++) {
     const d = (j / FACE_ROWS) * PROFILE_DEPTH;
-    const { left, right } = faceBounds(-d);
+    // Tepi dihitung pada ketinggian titiknya yang sebenarnya, bukan pada
+    // kedalaman nominal −d.
+    //
+    // Dinding bongkahan berelief, jadi jari-jarinya berubah terhadap y; dekat
+    // permukaan dan dekat dasar, y menyimpang dari −d sampai belasan
+    // sentimeter. Dengan −d, tepi bidang potong meleset sejauh itu dari
+    // dinding, dan di sanalah badan bongkahan menganga — tidak terlihat bila
+    // dipandang tegak lurus, tetapi menjadi celah gelap bergerigi setinggi
+    // bongkahan begitu kamera berdiri serong. Badan bongkahan sendiri sudah
+    // memakai ketinggian sebenarnya (lihat `linePoint`), jadi perbaikan ini
+    // sekaligus mempertemukan keduanya.
+    const guess = faceBounds(-d);
+    const left = faceBounds(profileY(d, guess.left)).left;
+    const right = faceBounds(profileY(d, guess.right)).right;
     for (let i = 0; i <= FACE_COLS; i++) {
       const f = i / FACE_COLS;
       const x = left + (right - left) * f;
