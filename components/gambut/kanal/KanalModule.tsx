@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { FastForward, MousePointerClick, Pause, RotateCcw, Waves } from "lucide-react";
+import { Check, FastForward, MousePointerClick, Pause, RotateCcw, Waves } from "lucide-react";
 import { CANAL_TEXT, KANAL_ACTS, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
 import {
@@ -17,6 +17,7 @@ import {
 } from "@/lib/drainage";
 import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
 import WaterTableChart from "./WaterTableChart";
+import { judgeProbe, probeSolved } from "./probe";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -24,8 +25,33 @@ const KanalScene = dynamic(() => import("./scene/KanalScene"), { ssr: false });
 
 const MODULE = GAMBUT_MODULES[2];
 
-/** Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS). */
-const ACT_SPEED = [0, 0, 2, 0];
+/**
+ * Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS). Nol di mana-mana.
+ *
+ * Semula babak 03 dimulai pada kecepatan "Sedang", sehingga tahun-tahunnya
+ * berjalan sendiri begitu babak itu dibuka dan syaratnya terpenuhi tanpa
+ * pembaca menyentuh apa pun. Yang dipelajarinya dari situ bukan "gambut
+ * kering melesak bertahun-tahun", melainkan "tunggu sebentar". Sekarang
+ * waktunya berhenti sampai ia sendiri yang menjalankannya.
+ */
+const ACT_SPEED = [0, 0, 0, 0];
+
+/**
+ * Babak paling awal yang sudah menampilkan tiap alat.
+ *
+ * Mengikuti pola Modul 02 (`showDouse={act >= 2}`, `showRewet={act >= 3}`):
+ * alat sebuah babak baru muncul ketika babaknya tiba. Sebelum ini ketiganya
+ * tersedia sejak babak 01, sehingga pembaca dapat memasang sekat — pekerjaan
+ * babak 04 — sebelum ia sempat tahu bahwa ada empat babak, dan keempat
+ * gerbangnya hijau sebelum satu pun babak selesai dibaca.
+ */
+const TOOL_FROM = { depth: 0, time: 2, weir: 3 } as const;
+
+/** Penurunan permukaan yang harus dicapai babak 03 (m). */
+const ACT3_SUBSIDENCE_M = 0.5;
+
+/** Kedalaman kanal yang harus dicapai babak 01 (cm). */
+const ACT1_DEPTH_CM = 100;
 
 /**
  * Modul 03 — Kanal & Pengeringan.
@@ -45,6 +71,8 @@ export default function KanalModule() {
   const [canalDepthCm, setCanalDepthCm] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
   const [blocked, setBlocked] = useState(false);
+  /** Jarak yang ditandai pembaca pada grafik (m) — tugas babak 02. */
+  const [probeM, setProbeM] = useState<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -104,22 +132,60 @@ export default function KanalModule() {
     setCanalDepthCm(0);
     setSpeedIndex(0);
     setBlocked(false);
+    setProbeM(null);
     Object.assign(stateRef.current, createKanalState());
   }, [sim]);
 
   // --- Syarat lulus tiap babak ---------------------------------------------
+  //
+  // Tiap syarat harus berupa pekerjaan yang benar-benar dikerjakan pembaca di
+  // babak itu, bukan keadaan yang kebetulan sudah benar. Yang paling salah
+  // sebelumnya babak 02: syaratnya "jangkauan rawan sudah melewati 100 m",
+  // padahal kanal sedalam satu meter — yang sudah diminta babak 01 — membuat
+  // jangkauan itu 209 m. Jadi babak 02 lulus sebelum pembaca selesai membaca
+  // tugasnya, dan tombol "Babak berikutnya" sudah menyala ketika babaknya
+  // baru dibuka.
+  const probeVerdict = judgeProbe(probeM, stats.riskReachM);
+  const probeFound = probeSolved(probeVerdict);
+
   const actDone = [
-    canalDepthCm >= 100,
-    stats.riskReachM >= 100,
-    stats.years >= 10,
+    canalDepthCm >= ACT1_DEPTH_CM,
+    probeFound,
+    stats.maxSubsidenceM >= ACT3_SUBSIDENCE_M,
     blocked && stats.maxSubsidenceM > 0.1,
   ];
+
+  /**
+   * Sisa pekerjaan babak ini, satu baris.
+   *
+   * Modul 02 hanya menyimpan petunjuknya di atribut `title` penanda babak,
+   * yang hanya terlihat kalau pembaca kebetulan menunda tetikusnya di sana.
+   * Di sini syaratnya ditulis terus-menerus dan angkanya hidup, sehingga
+   * pembaca tahu seberapa jauh ia dari selesai — bukan hanya bahwa ia belum.
+   */
+  const progress: string = [
+    canalDepthCm >= ACT1_DEPTH_CM
+      ? `Kanal sedalam ${canalDepthCm} cm`
+      : `Kanal baru ${canalDepthCm} cm dari ${ACT1_DEPTH_CM} cm`,
+    probeFound
+      ? "Tepi daerah rawan sudah ditandai"
+      : probeM === null
+        ? "Penanda pada grafik belum digeser"
+        : `Penanda di ${Math.round(probeM)} m — belum di tepinya`,
+    stats.maxSubsidenceM >= ACT3_SUBSIDENCE_M
+      ? `Permukaan turun ${formatDrop(stats.maxSubsidenceM)}`
+      : `Permukaan baru turun ${formatDrop(stats.maxSubsidenceM)} dari ${ACT3_SUBSIDENCE_M * 100} cm`,
+    blocked ? "Sekat terpasang" : "Sekat belum terpasang",
+  ][act];
   const canAdvance = actDone[act] && act < KANAL_ACTS.length - 1;
 
   const goToAct = (next: number) => {
     if (next > act && !actDone[act]) return;
     setAct(next);
     setSpeedIndex(ACT_SPEED[next]);
+    // Penanda hanya berarti di babak 02. Dibiarkan menyala di babak lain, ia
+    // menjadi garis tegak tanpa keterangan di tengah grafik.
+    if (next !== 1) setProbeM(null);
   };
 
   const current = KANAL_ACTS[act];
@@ -182,12 +248,50 @@ export default function KanalModule() {
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#6fb6d8]" />
             {current.task}
           </p>
+          <p
+            className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] tabular-nums transition-colors ${
+              actDone[act]
+                ? "border-emerald-300/35 bg-emerald-400/10 text-emerald-100"
+                : "border-white/15 bg-white/5 text-white/55"
+            }`}
+          >
+            {actDone[act] ? (
+              <Check size={12} className="shrink-0" />
+            ) : (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
+            )}
+            {progress}
+          </p>
         </div>
       </div>
 
       {/* Panel kendali (kiri bawah) */}
       <div className="absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20">
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
+          {/* Grafik untuk layar sempit.
+              Panel kanan tersembunyi di bawah lebar lg, dan di sanalah grafik
+              itu berada — artinya tugas babak 02 tidak mungkin diselesaikan
+              di ponsel sama sekali, sebab penandanya tidak ada di layar.
+              Jadi pada babak itu grafiknya ikut masuk ke panel kendali, di
+              mana pembaca memang sedang bekerja. Keduanya satu keadaan, jadi
+              penandanya selalu sama di mana pun ia digeser. */}
+          {act === 1 && (
+            <div className="mb-3 border-b border-white/10 pb-3 lg:hidden">
+              {/* Dibatasi lebarnya supaya panel kendali tidak tumbuh sampai
+                  menutupi seluruh bongkahan di belakangnya. */}
+              <div className="mx-auto max-w-[300px]">
+              <WaterTableChart
+                sim={sim}
+                stats={stats}
+                probeM={probeM}
+                onProbe={setProbeM}
+                interactive
+                revealReach={false}
+              />
+              </div>
+            </div>
+          )}
+
           {/* Kedalaman kanal */}
           <div className="flex items-baseline justify-between">
             <label htmlFor="kanal-depth" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
@@ -212,7 +316,8 @@ export default function KanalModule() {
             className="water-slider relative z-10 mt-2 w-full"
           />
 
-          {/* Waktu */}
+          {/* Waktu — baru muncul pada babak 03, babak yang memang tentang waktu. */}
+          {act >= TOOL_FROM.time && (
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
             <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Waktu berjalan</p>
@@ -239,9 +344,11 @@ export default function KanalModule() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Sekat & mulai ulang */}
           <div className="mt-3 flex flex-wrap gap-2">
+            {act >= TOOL_FROM.weir && (
             <button
               type="button"
               onClick={() => setBlocked(true)}
@@ -251,6 +358,7 @@ export default function KanalModule() {
               <Waves size={14} />
               {blocked ? CANAL_TEXT.blockedLabel : CANAL_TEXT.blockLabel}
             </button>
+            )}
             <button
               type="button"
               onClick={handleReset}
@@ -271,7 +379,14 @@ export default function KanalModule() {
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
             dari kurva ini. */}
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
-          <WaterTableChart sim={sim} stats={stats} />
+          <WaterTableChart
+            sim={sim}
+            stats={stats}
+            probeM={probeM}
+            onProbe={setProbeM}
+            interactive={act === 1}
+            revealReach={act !== 1}
+          />
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
@@ -288,7 +403,12 @@ export default function KanalModule() {
             {(
               [
                 ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM)],
-                ["Jangkauan rawan", stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—"],
+                [
+                  "Jangkauan rawan",
+                  // Disembunyikan selama babak 02: itu jawaban yang sedang
+                  // dicari pembaca di grafik tepat di atasnya.
+                  act === 1 ? "cari di grafik" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
+                ],
                 ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—"],
                 ["Karbon terlepas", stats.emittedTPerHa >= 1 ? `${Math.round(stats.emittedTPerHa)} t/ha` : "—"],
               ] as [string, string][]
@@ -329,7 +449,7 @@ export default function KanalModule() {
                 onClick={() => goToAct(i)}
                 disabled={locked}
                 aria-current={i === act ? "step" : undefined}
-                title={locked ? a.title : a.title}
+                title={locked ? current.hint : a.title}
                 className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 <span

@@ -19,6 +19,11 @@ export type KanalAct = {
   body: string;
   /** Tugas yang harus dilakukan pembaca agar babak berikutnya terbuka. */
   task: string;
+  /**
+   * Petunjuk yang muncul saat pembaca mencoba melompat ke babak yang masih
+   * terkunci. Satu kalimat perintah, bukan penjelasan.
+   */
+  hint: string;
   /** Angka kunci babak ini. */
   fact: { value: string; caption: string };
 };
@@ -28,7 +33,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "01",
     title: "Satu kanal",
     body: "Kanal digali untuk mengeringkan lahan agar dapat ditanami atau dilalui. Begitu ia terbuka, air di dalam gambut mengalir keluar dengan sendirinya — tidak dipompa, hanya mengikuti gravitasi. Muka air tanah di sekitarnya melengkung turun ke arah kanal.",
-    task: "Seret pengatur untuk menggali kanal.",
+    task: "Gali kanal sampai sedalam satu meter.",
+    hint: "Gali kanalnya sampai sedalam satu meter untuk melanjutkan.",
     fact: {
       value: "≤ 0,4 m",
       caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016)",
@@ -38,17 +44,23 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "02",
     title: "Jauh dari tepi",
     body: "Yang mengering bukan hanya tepi kanalnya. Lengkung muka air itu memanjang ratusan meter ke dalam kubah gambut, dan di sepanjang itu lapisan atasnya berubah menjadi bahan bakar. Satu kanal mengeringkan lahan yang jauh lebih luas daripada yang digali.",
-    task: "Temukan sampai jarak berapa muka airnya masih melewati batas 40 cm.",
+    task: "Geser penanda pada grafik ke tempat muka airnya menyeberangi batas 40 cm.",
+    hint: "Tandai tempat muka airnya menyeberangi batas 40 cm pada grafik.",
+    // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
+    // justru yang sedang dicari pembaca pada grafik, dan mencetaknya di panel
+    // yang sama berarti menjawabnya untuk dia. Yang ditampilkan panjang
+    // peluruhannya — tetapan yang membuat jaraknya sejauh itu, bukan jaraknya.
     fact: {
-      value: "700 m",
-      caption: "Jarak dari kanal sedalam 2 m yang muka airnya masih melewati batas 40 cm",
+      value: "190 m",
+      caption: "Panjang pengaruh satu kanal untuk tiap satu meter kedalamannya",
     },
   },
   {
     number: "03",
     title: "Tahun demi tahun",
     body: "Gambut kering tidak hanya mudah terbakar; ia juga menyusut dan teroksidasi sendiri, tanpa api sama sekali. Permukaannya turun sedikit demi sedikit, dan karbon yang tersimpan ribuan tahun terlepas ke udara. Inilah bagian yang tidak terlihat karena terjadi terlalu lambat.",
-    task: "Majukan waktu dan perhatikan permukaannya turun.",
+    task: "Jalankan waktu sampai permukaannya turun setengah meter.",
+    hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
     fact: {
       value: "± 5 cm/tahun",
       caption: "Laju penurunan permukaan gambut yang dikeringkan sedalam satu meter",
@@ -59,6 +71,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     title: "Yang kembali hanya airnya",
     body: "Menyekat kanal menahan air sehingga muka airnya naik kembali dan lahan itu tidak lagi rawan terbakar. Tetapi permukaan yang sudah melesak tidak kembali — gambut tumbuh satu milimeter per tahun, sedangkan yang hilang tadi puluhan sentimeter. Garis putus-putus di gambar menunjukkan setinggi mana tanah ini dahulu berada.",
     task: "Pasang sekat kanal, lalu bandingkan dengan garis permukaan asalnya.",
+    hint: "Pasang sekat kanalnya.",
     fact: {
       value: "1 mm/tahun",
       caption: "Laju gambut tumbuh kembali — seribu tahun untuk satu meter",
@@ -81,6 +94,28 @@ export const CANAL_TEXT = {
   blockedMessage:
     "Muka air sudah pulih dan lahan ini tidak lagi rawan terbakar. Tetapi permukaannya tetap di tempatnya yang baru — bandingkan dengan garis putus-putus di atasnya.",
   resetLabel: "Mulai dari awal",
+};
+
+/**
+ * Teks penanda jarak pada grafik — tugas babak 02.
+ *
+ * Babak 02 meminta pembaca menemukan tepi daerah rawan. Sebelum ini tidak ada
+ * yang dapat dikerjakannya untuk "menemukan": syaratnya sudah terpenuhi oleh
+ * babak 01, jadi kalimat tugasnya hanya sebuah ajakan tanpa pekerjaan. Dengan
+ * penanda ini ia benar-benar harus mencarinya, dan jawabannya berubah tiap
+ * kali kedalaman kanalnya diubah.
+ */
+export const PROBE_TEXT = {
+  label: "Penanda jarak",
+  idle: "Geser penanda di sepanjang grafik.",
+  tooNear: "Di sini muka airnya masih di bawah batas. Coba lebih jauh dari kanal.",
+  tooFar: "Di sini muka airnya sudah di atas batas. Coba lebih dekat ke kanal.",
+  found: "Tepat di sini muka airnya menyeberangi batas 40 cm.",
+  // Kanal yang dalam membuat tepinya jatuh di luar satu kilometer. Itu bukan
+  // cacat, melainkan jawabannya — dan pembaca harus menandai ujung grafik
+  // untuk menyatakan bahwa ia melihatnya.
+  beyond: "Seluruh satu kilometer ini rawan. Tandai ujung grafik.",
+  beyondFound: "Benar — dengan kanal sedalam ini, pengaruhnya tidak muat dalam satu kilometer.",
 };
 
 /** Keterangan skala yang wajib tampil pada gambar. */

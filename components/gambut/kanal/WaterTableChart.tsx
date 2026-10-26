@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   waterDepthAt,
   PROFILE_DEPTH_M,
@@ -10,6 +10,8 @@ import {
   type DrainageStats,
 } from "@/lib/drainage";
 import { NEAR_LENGTH_M } from "./scene/transect";
+import { PROBE_TEXT } from "@/config/kanal-content";
+import { judgeProbe } from "./probe";
 
 // Kurva muka air tanah sepanjang satu kilometer.
 //
@@ -63,9 +65,31 @@ function yOf(d: number): number {
 type Props = {
   sim: DrainageSim;
   stats: DrainageStats;
+  /** Jarak yang sedang ditandai pembaca (m), atau null bila belum menandai. */
+  probeM?: number | null;
+  /** Dipanggil saat pembaca menggeser penandanya. */
+  onProbe?: (m: number) => void;
+  /** Penanda hanya dapat digeser pada babak yang memintanya. */
+  interactive?: boolean;
+  /**
+   * Tampilkan jarak tepi daerah rawan sebagai angka.
+   *
+   * Dimatikan pada babak 02, dan itu bukan kerapian melainkan syarat: babak
+   * itu meminta pembaca mencari tepinya sendiri. Dicetak di atas grafik yang
+   * sedang ia telusuri, angka itu menjawab pertanyaannya sebelum ia sempat
+   * bertanya, dan tugasnya berubah menjadi menyalin.
+   */
+  revealReach?: boolean;
 };
 
-export default function WaterTableChart({ sim, stats }: Props) {
+export default function WaterTableChart({
+  sim,
+  stats,
+  probeM = null,
+  onProbe,
+  interactive = false,
+  revealReach = true,
+}: Props) {
   // Dihitung ulang tiap kali ringkasan diperbarui — lima kali sedetik, dan
   // hanya 72 titik. Yang mahal pada modul ini adalah kanvas 3D di belakangnya,
   // bukan tujuh puluh dua pembagian.
@@ -94,6 +118,56 @@ export default function WaterTableChart({ sim, stats }: Props) {
   const limitY = yOf(WATER_LIMIT_M);
   const reach = stats.riskReachM;
 
+  const svgRef = useRef<SVGSVGElement>(null);
+  const verdict = judgeProbe(probeM, reach);
+
+  // Kedalaman muka air tepat di penanda — inilah yang dibaca pembaca untuk
+  // memutuskan apakah ia sudah sampai di tepinya.
+  const probeWater =
+    probeM === null
+      ? null
+      : waterDepthAt(probeM, sim.effectiveCanalDepth(), sim.subsidenceAtDistance(probeM));
+
+  /** Ubah kedudukan penunjuk pada layar menjadi jarak dalam meter. */
+  const distanceAt = useCallback((clientX: number): number => {
+    const svg = svgRef.current;
+    if (!svg) return 0;
+    const box = svg.getBoundingClientRect();
+    const u = ((clientX - box.left) / box.width) * W;
+    const m = ((u - PAD_L) / PLOT_W) * TRANSECT_LENGTH_M;
+    return Math.max(0, Math.min(TRANSECT_LENGTH_M, Math.round(m / 5) * 5));
+  }, []);
+
+  const handlePointer = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      if (!interactive || !onProbe) return;
+      // Hanya menggeser saat tombolnya ditekan, supaya melewatkan tetikus di
+      // atas grafik tidak diam-diam mengubah jawaban pembaca.
+      if (e.type === "pointermove" && e.buttons === 0) return;
+      if (e.type === "pointerdown") e.currentTarget.setPointerCapture(e.pointerId);
+      onProbe(distanceAt(e.clientX));
+    },
+    [interactive, onProbe, distanceAt],
+  );
+
+  const handleKey = useCallback(
+    (e: React.KeyboardEvent<SVGSVGElement>) => {
+      if (!interactive || !onProbe) return;
+      // Penanda harus dapat digeser dari papan tombol: tugas babak 02 adalah
+      // syarat untuk melanjutkan, jadi ia tidak boleh hanya dapat dikerjakan
+      // dengan tetikus.
+      const step = e.shiftKey ? 100 : 25;
+      const at = probeM ?? Math.round(TRANSECT_LENGTH_M / 2);
+      if (e.key === "ArrowLeft") onProbe(Math.max(0, at - step));
+      else if (e.key === "ArrowRight") onProbe(Math.min(TRANSECT_LENGTH_M, at + step));
+      else if (e.key === "Home") onProbe(0);
+      else if (e.key === "End") onProbe(TRANSECT_LENGTH_M);
+      else return;
+      e.preventDefault();
+    },
+    [interactive, onProbe, probeM],
+  );
+
   return (
     <figure className="m-0">
       <figcaption className="mb-2">
@@ -101,7 +175,9 @@ export default function WaterTableChart({ sim, stats }: Props) {
           Muka air tanah
         </span>
         <span className="mt-0.5 block text-[10px] leading-snug text-white/35">
-          {reach > 0 ? (
+          {!revealReach ? (
+            "Sampai jarak berapa dari kanal?"
+          ) : reach > 0 ? (
             <>
               Rawan sampai{" "}
               <span className="font-medium tabular-nums text-[#f0a35e]">{Math.round(reach)} m</span>{" "}
@@ -114,9 +190,22 @@ export default function WaterTableChart({ sim, stats }: Props) {
       </figcaption>
 
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
-        role="img"
+        className={`w-full touch-none ${interactive ? "cursor-ew-resize" : ""}`}
+        tabIndex={interactive ? 0 : undefined}
+        onPointerDown={handlePointer}
+        onPointerMove={handlePointer}
+        onKeyDown={handleKey}
+        role={interactive ? "slider" : "img"}
+        aria-valuemin={interactive ? 0 : undefined}
+        aria-valuemax={interactive ? TRANSECT_LENGTH_M : undefined}
+        aria-valuenow={interactive && probeM !== null ? Math.round(probeM) : undefined}
+        aria-valuetext={
+          interactive && probeM !== null
+            ? `${Math.round(probeM)} meter dari kanal, muka air ${Math.round((probeWater ?? 0) * 100)} sentimeter`
+            : undefined
+        }
         aria-label={
           reach > 0
             ? `Kurva muka air tanah dari kanal sampai 1.000 meter. Muka air melewati batas 40 sentimeter sampai jarak ${Math.round(reach)} meter.`
@@ -155,7 +244,7 @@ export default function WaterTableChart({ sim, stats }: Props) {
         </text>
 
         {/* Tanda tempat kurva menyeberangi batas — jawaban babak 02. */}
-        {reach > 0 && reach < TRANSECT_LENGTH_M && (
+        {revealReach && reach > 0 && reach < TRANSECT_LENGTH_M && (
           <line
             x1={xOf(reach)}
             y1={PAD_T}
@@ -168,6 +257,26 @@ export default function WaterTableChart({ sim, stats }: Props) {
 
         {/* Kurva muka air. */}
         <path d={curve} fill="none" stroke="#6fb6d8" strokeWidth="1.6" strokeLinejoin="round" />
+
+        {/* Penanda jarak yang digeser pembaca — tugas babak 02. */}
+        {probeM !== null && (
+          <g>
+            <line
+              x1={xOf(probeM)}
+              y1={PAD_T - 3}
+              x2={xOf(probeM)}
+              y2={PAD_T + PLOT_H}
+              stroke={verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff"}
+              strokeWidth="1.4"
+            />
+            <circle
+              cx={xOf(probeM)}
+              cy={yOf(probeWater ?? 0)}
+              r="3"
+              fill={verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff"}
+            />
+          </g>
+        )}
 
         {/* Penanda jarak. */}
         {[0, 500, 1000].map((m) => (
@@ -183,6 +292,36 @@ export default function WaterTableChart({ sim, stats }: Props) {
           </text>
         ))}
       </svg>
+
+      {/* Bacaan penanda. Hanya muncul pada babak yang memintanya, supaya
+          grafik ini tetap menjadi bacaan sekilas di babak-babak lainnya. */}
+      {interactive && (
+        <div className="mt-1.5 border-t border-white/10 pt-1.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+              {PROBE_TEXT.label}
+            </span>
+            <span className="text-[11px] font-medium tabular-nums text-white">
+              {probeM === null ? "—" : `${Math.round(probeM)} m`}
+            </span>
+          </div>
+          {probeWater !== null && (
+            <p className="mt-0.5 text-[10px] tabular-nums text-white/45">
+              Muka air di sini {Math.round(probeWater * 100)} cm
+              <span className={probeWater > WATER_LIMIT_M ? "text-[#f0a35e]" : "text-[#7fd4a8]"}>
+                {probeWater > WATER_LIMIT_M ? " · rawan" : " · aman"}
+              </span>
+            </p>
+          )}
+          <p
+            className={`mt-1 text-[10px] leading-snug ${
+              verdict === "found" || verdict === "beyondFound" ? "text-[#7fd4a8]" : "text-white/55"
+            }`}
+          >
+            {PROBE_TEXT[verdict]}
+          </p>
+        </div>
+      )}
     </figure>
   );
 }
