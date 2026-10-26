@@ -86,7 +86,11 @@ export const CANAL_TEXT = {
 /** Keterangan skala yang wajib tampil pada gambar. */
 export const SCALE_NOTE = {
   exaggeration: (times: number) => `Tegak dibesarkan ${times}×`,
-  canal: (widthM: number) => `Lebar kanal (${widthM} m) tidak menurut skala`,
+  canal: (widthM: number) => `Lebar kanal ${widthM} m, menurut skala`,
+  // Pohon sengaja tidak ikut dibesarkan tegaknya; ia patokan ukuran, jadi ia
+  // harus setinggi pohon sungguhan. Alasannya ada di `scene/vegetation.ts`.
+  trees: "Pohon menurut tinggi sebenarnya",
+  near: (lengthM: number) => `Petak dekat kanal, ${lengthM} m tiap sisi`,
 };
 
 export const KANAL_SUMMARY = {

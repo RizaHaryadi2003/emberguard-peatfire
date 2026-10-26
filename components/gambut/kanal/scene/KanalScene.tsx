@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { PEAT_LAYERS } from "@/lib/peat";
-import { DrainageSim, TRANSECT_LENGTH_M, type DrainageStats } from "@/lib/drainage";
+import { DrainageSim, type DrainageStats } from "@/lib/drainage";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
 import {
@@ -13,67 +13,79 @@ import {
   createFaceGrid,
   createSubsidence,
   createSurfaceGrid,
+  floorY,
   surfaceY,
   updateCanalGeometry,
   updateFaceGrid,
   updateSurfaceGrid,
-  CANAL_LEFT_X,
-  CANAL_SCENE_WIDTH,
+  BLOCK_DEPTH,
+  BLOCK_HEIGHT,
+  CANAL_HALF_M,
+  HALF_WIDTH,
   NATURAL_CANAL_WATER_M,
-  SCENE_DEPTH,
-  SCENE_HEIGHT,
-  SCENE_WIDTH,
-  SURFACE_COLS,
+  NEAR_LENGTH_M,
+  SURFACE_ROWS,
+  WING_COLS,
 } from "./transect";
-import { createFieldTexture, createTransectMaterial } from "./transectMaterial";
+import {
+  createCanalWaterMaterial,
+  createFieldTexture,
+  createSurfaceMaterial,
+  createTransectMaterial,
+} from "./transectMaterial";
+import { createTreeField } from "./vegetation";
 import SceneLabels from "./SceneLabels";
 
-// Kanvas 3D Modul 03: satu kilometer gambut yang dipotong kanal, dilihat dari
-// samping.
+// Kanvas 3D Modul 03: sepetak gambut yang dibelah kanal, dilihat isometrik.
+//
+// Susunannya cermin terhadap sumbu kanal. Satu sayap dibangun, lalu digambar
+// dua kali — sekali apa adanya, sekali dengan skala x negatif. Kedua sisi
+// kanal memang mengalami hal yang persis sama, dan membangun keduanya
+// terpisah berarti menyalin kerja yang sama dua kali sekaligus membuka
+// kemungkinan keduanya tidak pernah sepakat.
 
 /**
- * Kamera ortografik, bukan perspektif seperti Modul 01 dan 02.
+ * Kamera ortografik isometrik.
  *
- * Seluruh isi modul ini adalah perbandingan jarak: sejauh apa dari kanal muka
- * airnya masih melewati batas 40 cm. Dengan kamera perspektif, ujung penampang
- * yang jauh akan termampat, sehingga 200 m di dekat kanal tergambar lebih
- * panjang daripada 200 m di ujung — dan penanda jaraknya menjadi dusta.
- * Ortografik menjaga satu meter tetap satu meter di mana pun ia berada.
+ * Tetap ortografik, dan alasannya tidak berubah dari rancangan sebelumnya:
+ * seluruh modul ini perbandingan jarak dan kedalaman, dan kamera perspektif
+ * membuat satu meter di depan tergambar lebih panjang daripada satu meter di
+ * belakang — penggarisnya menjadi dusta.
  *
- * Kemiringan kecil tetap dipakai agar hamparan permukaan ikut terlihat dan
- * bongkahannya terasa punya ketebalan. Pada kamera ortografik kemiringan itu
- * tidak merusak perbandingan jaraknya: seluruh gambar termampat oleh faktor
- * yang sama.
+ * Yang berubah kemiringannya. Sebelumnya 6°, dan pada sudut serendah itu
+ * bidang atas bongkahan tinggal setebal beberapa piksel: tidak ada permukaan
+ * tanah yang terlihat, tidak ada tumbuhan, tidak ada patokan ukuran, dan
+ * seluruh gambar jatuh menjadi satu dinding coklat. Pada 27° bidang atas
+ * mendapat seperempat tinggi gambar, dan di situlah sebagian besar isi modul
+ * ini sebenarnya berada.
  */
-const CAMERA_ELEVATION = 0.1;
-const CAMERA_AZIMUTH = 0.055;
+const CAMERA_ELEVATION = (27 * Math.PI) / 180;
+const CAMERA_AZIMUTH = (21 * Math.PI) / 180;
 
-/** Lebar penampang berikut kanalnya (satuan adegan). */
-const CONTENT_WIDTH = SCENE_WIDTH - CANAL_LEFT_X;
-
-/**
- * Bagian lebar layar yang boleh dipakai gambar, dan di mana titik tengahnya.
- *
- * Di layar lebar, sepertiga kiri layar ditempati teks cerita di atas dan
- * panel kendali di bawah. Dibiarkan terpusat, kanal beserta 240 m pertama
- * dari tepinya — bagian yang paling banyak terjadi — justru tersembunyi di
- * balik teks. Jadi gambarnya digeser ke kanan sampai seluruh penampang
- * berada di ruang yang kosong.
- *
- * Ongkosnya gambar menjadi lebih kecil. Itu dipilih dengan sadar: penampang
- * yang besar tetapi tertutup separuhnya lebih buruk daripada penampang yang
- * lebih kecil tetapi utuh.
- */
-const WIDE_SHARE = 0.66;
-const WIDE_CENTER = 0.61;
+/** Jarak kamera. Pada kamera ortografik ini hanya menentukan keratan dekat-jauh. */
+const CAMERA_DISTANCE = 200;
 
 /**
- * Ujung terjauh penampang memang berakhir di bawah panel angka di kanan, dan
- * itu dibiarkan: 800-1.000 m adalah gambut yang nyaris tidak tersentuh, dan
- * panelnya tembus pandang. Yang tidak boleh adalah terpotong tepi layar,
- * karena tepi yang terpotong terbaca sebagai gambar yang rusak, bukan sebagai
- * penampang yang memang berakhir di situ.
+ * Tinggi ruang yang harus muat di layar (satuan adegan), termasuk pohon.
+ *
+ * Dihitung sekali dari ukuran bongkahannya sendiri, bukan ditetapkan dengan
+ * tangan, supaya mengubah tebal atau kedalaman bongkahan tidak diam-diam
+ * membuat ujungnya terpotong tepi layar.
  */
+const CONTENT_WIDTH = 2 * HALF_WIDTH * Math.cos(CAMERA_AZIMUTH) + BLOCK_DEPTH * Math.sin(CAMERA_AZIMUTH);
+const CONTENT_HEIGHT =
+  (BLOCK_HEIGHT + 10) * Math.cos(CAMERA_ELEVATION) + BLOCK_DEPTH * Math.sin(CAMERA_ELEVATION);
+
+/**
+ * Bagian layar yang boleh dipakai gambar, dan di mana titik tengahnya.
+ *
+ * Di layar lebar, sepertiga kiri ditempati teks cerita dan panel kendali.
+ * Dibiarkan terpusat, kanal — yang justru pokok seluruh modul — tersembunyi
+ * di baliknya. Jadi gambarnya digeser ke kanan sampai kanalnya jatuh di ruang
+ * yang kosong.
+ */
+const WIDE_SHARE = 0.72;
+const WIDE_CENTER = 0.6;
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
@@ -82,36 +94,40 @@ function CameraRig() {
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
     const aspect = size.width / Math.max(1, size.height);
-    // Di layar sempit teksnya melebar ke seluruh lebar, jadi tidak ada ruang
-    // kosong di samping: gambarnya dipusatkan dan diberi tepi secukupnya.
     const wide = aspect >= 1.1;
-    const share = wide ? WIDE_SHARE : 0.92;
+    const share = wide ? WIDE_SHARE : 0.94;
     const centerShare = wide ? WIDE_CENTER : 0.5;
 
-    const width = CONTENT_WIDTH / share;
+    // Lebar yang diperlukan diambil dari dua syarat sekaligus: gambar harus
+    // muat melebar, dan harus muat menegak. Yang menentukan adalah yang lebih
+    // menuntut — tanpa ini, bongkahan terpotong di layar yang pendek.
+    const byWidth = CONTENT_WIDTH / share;
+    const byHeight = (CONTENT_HEIGHT / (wide ? 0.82 : 0.6)) * aspect;
+    const width = Math.max(byWidth, byHeight);
+
     const halfW = width / 2;
     const halfH = halfW / aspect;
     cam.left = -halfW;
     cam.right = halfW;
     cam.top = halfH;
     cam.bottom = -halfH;
-    cam.near = -100;
-    cam.far = 100;
+    cam.near = 1;
+    cam.far = CAMERA_DISTANCE * 2;
 
-    // Titik tengah penampang harus jatuh pada `centerShare` lebar layar.
-    const contentCenter = (CANAL_LEFT_X + SCENE_WIDTH) / 2;
-    const centerX = contentCenter - (centerShare - 0.5) * width;
-    // Dibidik sedikit di bawah permukaan: yang paling banyak dibaca adalah
-    // separuh atas profil, tempat muka airnya bergerak. Di layar sempit
-    // gambarnya diturunkan lagi agar tidak bertemu teks di atasnya.
-    const centerY = -SCENE_HEIGHT * (wide ? 0.42 : 0.3);
+    // Kanal (x = 0) harus jatuh pada `centerShare` lebar layar.
+    const centerX = -(centerShare - 0.5) * width;
+    // Dibidik sedikit di bawah permukaan: separuh atas gambar diisi tajuk
+    // pohon dan langit, jadi pusat yang tepat di permukaan membuang ruang.
+    const centerY = -BLOCK_HEIGHT * 0.3;
 
     const target = new THREE.Vector3(centerX, centerY, 0);
-    cam.position.set(
-      target.x + Math.sin(CAMERA_AZIMUTH) * 20,
-      target.y + Math.sin(CAMERA_ELEVATION) * 20,
-      20,
+    const dir = new THREE.Vector3(
+      Math.sin(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
+      Math.sin(CAMERA_ELEVATION),
+      Math.cos(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
     );
+    cam.position.copy(target).addScaledVector(dir, CAMERA_DISTANCE);
+    cam.up.set(0, 1, 0);
     cam.lookAt(target);
     cam.updateProjectionMatrix();
   }, [camera, size]);
@@ -196,8 +212,30 @@ function Simulation({
   return null;
 }
 
-/** Bidang potong, hamparan permukaan, dan kanalnya. */
-function Transect({
+/**
+ * Bidang penutup jalur kanal, dipakai selama kanal belum digali.
+ *
+ * Datar menghadap ke atas, dengan uv dan warna per titik yang sama bentuknya
+ * dengan hamparan permukaan, supaya keduanya dapat memakai bahan yang sama
+ * dan tidak pernah berbeda warna di sambungannya.
+ */
+function createBridgeGeometry(): THREE.BufferGeometry {
+  const geom = new THREE.PlaneGeometry(CANAL_HALF_M * 2, BLOCK_DEPTH, 4, 12);
+  geom.rotateX(-Math.PI / 2);
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, pos.getX(i) / 6, pos.getZ(i) / 6);
+  }
+  geom.setAttribute(
+    "color",
+    new THREE.BufferAttribute(new Float32Array(pos.count * 3).fill(1), 3),
+  );
+  return geom;
+}
+
+/** Bongkahan: bidang potong, hamparan permukaan, kanal, air, dan pohonnya. */
+function Block({
   sim,
   stateRef,
   field,
@@ -212,10 +250,7 @@ function Transect({
     THREE.TextureLoader,
     PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`),
   );
-  const [groundColor, groundNormal] = useLoader(THREE.TextureLoader, [
-    "/textures/gambut/permukaan_kering_color.webp",
-    "/textures/gambut/permukaan_kering_normal.webp",
-  ]);
+  const groundColor = useLoader(THREE.TextureLoader, "/textures/gambut/permukaan_kering_color.webp");
 
   const res = useMemo(() => {
     for (const t of colors) {
@@ -224,61 +259,56 @@ function Transect({
       t.anisotropy = 4;
     }
     groundColor.colorSpace = THREE.SRGBColorSpace;
-    for (const t of [groundColor, groundNormal]) {
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.anisotropy = 4;
-    }
-
-    const faceGeom = createFaceGrid();
-    const faceMaterial = createTransectMaterial(colors, field);
-    const surfaceGeom = createSurfaceGrid();
-    const canalGeom = createCanalGeometry();
-    const canalWaterGeom = createCanalWaterGeometry();
+    groundColor.wrapS = groundColor.wrapT = THREE.RepeatWrapping;
+    groundColor.anisotropy = 4;
 
     return {
-      faceGeom,
-      faceMaterial,
-      surfaceGeom,
-      canalGeom,
-      canalWaterGeom,
-      // Air di dalam kanal. Inilah yang membuat galian itu terbaca sebagai
-      // kanal, dan sekaligus yang memperlihatkan kerja sekatnya: begitu sekat
-      // dipasang, permukaannya naik kembali mendekati permukaan tanah.
-      canalWaterMaterial: new THREE.MeshStandardMaterial({
-        color: "#2f5f78",
-        roughness: 0.18,
-        metalness: 0.1,
-        transparent: true,
-        opacity: 0.92,
-      }),
-      surfaceMaterial: new THREE.MeshStandardMaterial({
-        map: groundColor,
-        normalMap: groundNormal,
-        color: "#8f9273",
-        roughness: 1,
-        metalness: 0,
-        vertexColors: true,
-      }),
-      // Dinding kanal: tanah yang teduh, bukan hitam — ia bagian dari
-      // bongkahan yang sama, hanya tidak kena cahaya.
-      canalMaterial: new THREE.MeshStandardMaterial({ color: "#2a211a", roughness: 1, side: THREE.DoubleSide }),
-      // Penutup gelap di belakang bidang potong, supaya tidak ada yang bolong
-      // ke latar saat permukaannya melesak.
-      backingMaterial: new THREE.MeshBasicMaterial({ color: "#140f0b" }),
+      faceGeom: createFaceGrid(),
+      // Bidang potong digambar dua kali dan salah satunya dicerminkan, jadi
+      // urutan titiknya terbalik pada salinan itu. Peneduh ini tidak membaca
+      // normal, sehingga menggambar kedua sisi lebih murah dan lebih benar
+      // daripada menyiapkan dua geometri.
+      faceMaterial: createTransectMaterial(colors, field),
+      surfaceGeom: createSurfaceGrid(),
+      surfaceMaterial: createSurfaceMaterial(groundColor, field),
+      canalGeom: createCanalGeometry(),
+      // Dinding dan dasar kanal: warna rata, tidak dipengaruhi arah cahaya.
+      // Dengan bahan yang bergantung cahaya, dinding yang membelakangi
+      // matahari jatuh menjadi hitam pekat — dan parit berdinding hitam
+      // terbaca sebagai lubang pada gambar, bukan sebagai galian pada tanah.
+      canalMaterial: new THREE.MeshBasicMaterial({ color: "#372b21", side: THREE.DoubleSide }),
+      // Bidang penutup jalur kanal. Dibuat di sini, bukan sebagai anak elemen,
+      // karena ia perlu atribut `color` sendiri: bahan hamparan membaca warna
+      // per titik, dan bidang yang tidak punya atribut itu akan dibaca three.js
+      // sebagai hitam pekat.
+      bridgeGeom: createBridgeGeometry(),
+      canalWaterGeom: createCanalWaterGeometry(),
+      canalWaterMaterial: createCanalWaterMaterial(),
+      // Dinding samping dan belakang: tanah yang teduh, bukan hitam — ia
+      // bagian dari bongkahan yang sama, hanya tidak kena cahaya.
+      sideMaterial: new THREE.MeshBasicMaterial({ color: "#1a140f" }),
+      trees: createTreeField(),
     };
-  }, [colors, groundColor, groundNormal, field]);
+  }, [colors, groundColor, field]);
+
+  useEffect(() => {
+    res.faceMaterial.side = THREE.DoubleSide;
+    res.surfaceMaterial.side = THREE.DoubleSide;
+  }, [res]);
 
   useEffect(
     () => () => {
       res.faceGeom.dispose();
       res.faceMaterial.dispose();
       res.surfaceGeom.dispose();
+      res.surfaceMaterial.dispose();
       res.canalGeom.dispose();
+      res.canalMaterial.dispose();
+      res.bridgeGeom.dispose();
       res.canalWaterGeom.dispose();
       res.canalWaterMaterial.dispose();
-      res.surfaceMaterial.dispose();
-      res.canalMaterial.dispose();
-      res.backingMaterial.dispose();
+      res.sideMaterial.dispose();
+      res.trees.dispose();
     },
     [res],
   );
@@ -287,16 +317,15 @@ function Transect({
   const rebuild = () => {
     updateFaceGrid(res.faceGeom, subsidence.fn);
     updateSurfaceGrid(res.surfaceGeom, subsidence.fn);
-    // Warna hangus hamparan permukaan: makin kering, makin pucat lalu kelabu.
+    // Sedikit peneduhan di dekat tepi potong, supaya garis tepi bongkahan
+    // terbaca sebagai sudut dan bukan sebagai jahitan antara dua gambar.
     const color = res.surfaceGeom.attributes.color as THREE.BufferAttribute;
-    const pos = res.surfaceGeom.attributes.position as THREE.BufferAttribute;
-    const cols = SURFACE_COLS + 1;
-    for (let i = 0; i < pos.count; i++) {
-      const distance = ((i % cols) / SURFACE_COLS) * TRANSECT_LENGTH_M;
-      const drop = subsidence.fn(distance);
-      const dry = Math.min(1, drop / 0.5);
-      const k = 1 - dry * 0.45;
-      color.setXYZ(i, k, k * 0.98, k * 0.9);
+    const cols = WING_COLS + 1;
+    for (let i = 0; i < color.count; i++) {
+      const row = Math.floor(i / cols) / SURFACE_ROWS;
+      const edge = 1 - Math.min(1, row / 0.08);
+      const k = 1 - edge * 0.22;
+      color.setXYZ(i, k, k, k);
     }
     color.needsUpdate = true;
     built.current = subsidence.version;
@@ -305,8 +334,12 @@ function Transect({
   useEffect(rebuild, [res, subsidence]);
 
   const drawnDepth = useRef(-1);
+  const bridgeRef = useRef<THREE.Mesh>(null);
+  const canalRef = useRef<THREE.Mesh>(null);
+  const drawnDrop = useRef(-1);
   const waterRef = useRef<THREE.Mesh>(null);
   const waterLevel = useRef(0);
+  const treeClock = useRef(0);
 
   useFrame((_, delta) => {
     const s = stateRef.current;
@@ -314,22 +347,63 @@ function Transect({
     const dt = Math.min(delta, 0.05);
     if (built.current !== subsidence.version) rebuild();
     res.faceMaterial.uniforms.uDryTint.value = s.riskTint;
+    res.surfaceMaterial.uniforms.uDryTint.value = s.riskTint;
 
-    // Kanal dibentuk ulang hanya bila kedalaman gambarnya benar-benar berubah.
-    if (Math.abs(s.drawnCanalDepthM - drawnDepth.current) > 0.002) {
+    // Kanal dibentuk ulang bila kedalaman gambarnya berubah, atau bila tanah
+    // di tepinya sudah melesak cukup jauh untuk terlihat.
+    const dropAtCanal = subsidence.fn(0);
+    if (
+      Math.abs(s.drawnCanalDepthM - drawnDepth.current) > 0.002 ||
+      Math.abs(dropAtCanal - drawnDrop.current) > 0.004
+    ) {
       drawnDepth.current = s.drawnCanalDepthM;
-      updateCanalGeometry(res.canalGeom, s.drawnCanalDepthM);
+      drawnDrop.current = dropAtCanal;
+      updateCanalGeometry(res.canalGeom, s.drawnCanalDepthM, dropAtCanal);
     }
 
-    // Permukaan air kanal: di dasar selama kanal mengalirkan air keluar, naik
-    // mendekati permukaan tanah begitu sekat menahannya.
-    const want = s.blocked ? -NATURAL_CANAL_WATER_M : -s.drawnCanalDepthM;
+    // Jalur kanal ditutup tanah selama belum ada yang menggalinya. Tanpa ini,
+    // babak 01 dibuka dengan parit menganga di tengah bongkahan sebelum
+    // pembaca menyentuh apa pun — dan ajakan "seret pengatur untuk menggali
+    // kanal" kehilangan artinya, sebab kanalnya sudah ada di sana.
+    //
+    // Kanalnya sendiri disembunyikan selama penutup itu terpasang. Pada
+    // kedalaman nol, dinding dan dasar kanal mengerut menjadi satu bidang
+    // datar yang sebidang persis dengan penutupnya — dan dua bidang sebidang
+    // berebut piksel yang sama, sehingga sambungannya tampak bergerigi.
+    const undug = s.drawnCanalDepthM < 0.06;
+    const bridge = bridgeRef.current;
+    if (bridge) bridge.visible = undug;
+    const canal = canalRef.current;
+    if (canal) canal.visible = !undug;
+
+    // Permukaan air kanal: di dekat dasar selama kanal mengalirkan air keluar,
+    // naik mendekati permukaan tanah begitu sekat menahannya.
+    const water = res.canalWaterMaterial.uniforms;
+    water.uTime.value += s.reducedMotion ? 0 : dt;
+    water.uFlow.value = THREE.MathUtils.damp(water.uFlow.value, s.blocked ? 0 : 1, 2, dt);
+
+    // Tinggi muka air kanal dihitung dari dasar dan tepinya, bukan dari
+    // permukaan asal: setelah tanahnya melesak, "sedikit di bawah permukaan"
+    // berarti permukaan yang sekarang.
+    const canalBottom = surfaceY(0) - s.drawnCanalDepthM * 2;
+    const canalTop = surfaceY(0, dropAtCanal);
+    const want = s.blocked
+      ? Math.max(canalBottom, canalTop - NATURAL_CANAL_WATER_M * 2)
+      : Math.min(canalTop - 0.1, canalBottom + 0.5);
     waterLevel.current = THREE.MathUtils.damp(waterLevel.current, want, s.reducedMotion ? 30 : 1.6, dt);
     const mesh = waterRef.current;
     if (mesh) {
-      mesh.visible = s.drawnCanalDepthM > 0.02;
-      mesh.position.set(CANAL_LEFT_X / 2, waterLevel.current, -SCENE_DEPTH / 2);
-      mesh.scale.set(CANAL_SCENE_WIDTH, 1, SCENE_DEPTH);
+      mesh.visible = s.drawnCanalDepthM > 0.05;
+      mesh.position.set(0, waterLevel.current, 0);
+      mesh.scale.set(CANAL_HALF_M * 2 - 0.3, 1, BLOCK_DEPTH);
+    }
+
+    // Pohon tidak perlu dihitung ulang tiap bingkai: yang menggerakkannya
+    // adalah muka air tanah, yang berubah dalam hitungan tahun simulasi.
+    treeClock.current -= dt;
+    if (treeClock.current <= 0) {
+      treeClock.current = 0.12;
+      res.trees.update(sim.effectiveCanalDepth(), subsidence.fn);
     }
   });
 
@@ -337,53 +411,90 @@ function Transect({
   //
   // Inilah satu-satunya cara memperlihatkan yang hilang, sebab yang hilang
   // tidak punya geometri. Tanpa garis ini, pembaca melihat permukaan turun
-  // tetapi tidak punya pembanding, dan penurunan satu meter pada gambar yang
-  // tingginya 3,4 satuan tidak terasa apa-apa.
+  // tetapi tidak punya pembanding.
   const ghost = useMemo(() => {
     const points: number[] = [];
-    for (let i = 0; i <= SURFACE_COLS; i++) {
-      const distance = (i / SURFACE_COLS) * TRANSECT_LENGTH_M;
-      points.push(distance * (SCENE_WIDTH / TRANSECT_LENGTH_M), surfaceY(distance), 0.004);
+    const z = BLOCK_DEPTH / 2 + 0.02;
+    for (let i = 0; i <= WING_COLS; i++) {
+      const distance = (i / WING_COLS) * NEAR_LENGTH_M;
+      points.push((CANAL_HALF_M + distance), surfaceY(distance), z);
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
     const material = new THREE.LineDashedMaterial({
       color: "#ffd9b0",
-      dashSize: 0.1,
-      gapSize: 0.07,
+      dashSize: 1.2,
+      gapSize: 0.8,
       transparent: true,
       opacity: 0,
     });
     const line = new THREE.Line(geometry, material);
     line.computeLineDistances();
-    return { line, material, geometry };
+    const mirror = new THREE.Line(geometry, material);
+    mirror.computeLineDistances();
+    mirror.scale.x = -1;
+    return { line, mirror, material, geometry };
   }, []);
 
-  useEffect(() => () => {
-    ghost.geometry.dispose();
-    ghost.material.dispose();
-  }, [ghost]);
+  useEffect(
+    () => () => {
+      ghost.geometry.dispose();
+      ghost.material.dispose();
+    },
+    [ghost],
+  );
 
   useFrame((_, delta) => {
     // Jejak permukaan asal baru muncul setelah ada yang hilang untuk ditandai.
-    const want = Math.min(0.85, sim.stats.maxSubsidenceM * 4);
+    const want = Math.min(0.9, sim.stats.maxSubsidenceM * 4);
     ghost.material.opacity = THREE.MathUtils.damp(ghost.material.opacity, want, 3, Math.min(delta, 0.05));
   });
 
+  const base = floorY();
+
   return (
     <group>
-      <mesh geometry={res.faceGeom} material={res.faceMaterial} />
-      <mesh geometry={res.surfaceGeom} material={res.surfaceMaterial} receiveShadow />
-      <mesh geometry={res.canalGeom} material={res.canalMaterial} />
-      <mesh ref={waterRef} geometry={res.canalWaterGeom} material={res.canalWaterMaterial} visible={false} />
-      {/* Penutup gelap, sedikit lebih besar daripada penampangnya */}
+      {/* Sayap kanan, lalu sayap kiri sebagai cerminannya. */}
+      {[1, -1].map((side) => (
+        <group key={side} scale={[side, 1, 1]}>
+          <mesh geometry={res.faceGeom} material={res.faceMaterial} />
+          <mesh geometry={res.surfaceGeom} material={res.surfaceMaterial} />
+          {/* Dinding ujung dan dinding belakang petak ini. Gelap rata: yang
+              harus dibaca bidang potong di depan, bukan sisi-sisinya. */}
+          <mesh
+            position={[HALF_WIDTH, base / 2 + 0.5, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+            material={res.sideMaterial}
+          >
+            <planeGeometry args={[BLOCK_DEPTH, Math.abs(base) + 1]} />
+          </mesh>
+          <mesh
+            position={[(CANAL_HALF_M + HALF_WIDTH) / 2, base / 2 + 0.5, -BLOCK_DEPTH / 2]}
+            rotation={[0, Math.PI, 0]}
+            material={res.sideMaterial}
+          >
+            <planeGeometry args={[HALF_WIDTH - CANAL_HALF_M, Math.abs(base) + 1]} />
+          </mesh>
+          <primitive object={side === 1 ? ghost.line : ghost.mirror} />
+        </group>
+      ))}
+
+      {/* Kanal dan airnya — satu-satunya bagian yang tidak dicerminkan. */}
+      <mesh ref={canalRef} geometry={res.canalGeom} material={res.canalMaterial} />
       <mesh
-        position={[SCENE_WIDTH / 2, -SCENE_HEIGHT / 2 + 0.3, -SCENE_DEPTH - 0.02]}
-        material={res.backingMaterial}
-      >
-        <planeGeometry args={[SCENE_WIDTH + CANAL_LEFT_X * -2 + 0.4, SCENE_HEIGHT + 1.2]} />
-      </mesh>
-      <primitive object={ghost.line} />
+        ref={bridgeRef}
+        position={[0, surfaceY(0), 0]}
+        geometry={res.bridgeGeom}
+        material={res.surfaceMaterial}
+      />
+      <mesh
+        ref={waterRef}
+        geometry={res.canalWaterGeom}
+        material={res.canalWaterMaterial}
+        visible={false}
+      />
+
+      <primitive object={res.trees.group} />
     </group>
   );
 }
@@ -414,19 +525,21 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.05;
-        // Latar rata, bukan langit: yang digambar penampang, bukan pemandangan.
-        scene.background = new THREE.Color("#0a0a0c");
+        scene.background = new THREE.Color("#0b0d10");
       }}
       fallback={
         <p className="p-6 text-sm text-white/70">
-          Peramban Anda tidak mendukung WebGL, jadi penampang kanal tidak dapat ditampilkan.
+          Peramban Anda tidak mendukung WebGL, jadi bongkahan kanal tidak dapat ditampilkan.
         </p>
       }
     >
       <CameraRig />
       <PerformanceGuard maxDpr={profile.maxDpr} />
-      <hemisphereLight args={["#cfdcec", "#3a2e20", 0.8]} />
-      <directionalLight position={[4, 8, 6]} intensity={1.4} />
+      {/* Cahaya langit dari atas dan pantulan tanah dari bawah: bidang atas
+          bongkahan harus jelas lebih terang daripada bidang potongnya, sebab
+          itulah yang memberi petak ini bentuk tiga dimensi. */}
+      <hemisphereLight args={["#c3d4e6", "#3a2e20", 1.1]} />
+      <directionalLight position={[40, 70, 30]} intensity={1.5} />
       <Simulation
         sim={sim}
         stateRef={stateRef}
@@ -437,7 +550,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
         onSubsidence={subsidence.refresh}
       />
       <Suspense fallback={null}>
-        <Transect sim={sim} stateRef={stateRef} field={field} subsidence={subsidence} />
+        <Block sim={sim} stateRef={stateRef} field={field} subsidence={subsidence} />
         <SceneLabels />
         <ReadySignal onReady={onReady} />
       </Suspense>

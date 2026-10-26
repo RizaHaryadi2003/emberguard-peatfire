@@ -15,7 +15,8 @@ import {
   WATER_LIMIT_M,
   type DrainageStats,
 } from "@/lib/drainage";
-import { CANAL_LABEL_WIDTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
+import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
+import WaterTableChart from "./WaterTableChart";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -265,6 +266,14 @@ export default function KanalModule() {
       {/* Kolom kanan: angka hidup dan keterangan skala. Satu tumpukan yang
           ditambatkan ke tepi atas, seperti perbaikan pada Modul 02. */}
       <div className="absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10">
+        {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
+            bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
+            "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
+            dari kurva ini. */}
+        <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+          <WaterTableChart sim={sim} stats={stats} />
+        </div>
+
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
             <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
@@ -293,6 +302,8 @@ export default function KanalModule() {
           <div className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[10px] leading-snug text-white/45">
             <p>{SCALE_NOTE.exaggeration(VERTICAL_EXAGGERATION)}</p>
             <p>{SCALE_NOTE.canal(CANAL_LABEL_WIDTH_M)}</p>
+            <p>{SCALE_NOTE.near(NEAR_LENGTH_M)}</p>
+            <p>{SCALE_NOTE.trees}</p>
             <p>
               Garis jingga: batas {Math.round(WATER_LIMIT_M * 100)} cm · Waktu dibatasi {SIM_MAX_YEARS} tahun
             </p>

@@ -5,60 +5,66 @@ import {
   floorY,
   surfaceY,
   xOfDistance,
-  CANAL_LEFT_X,
+  BLOCK_DEPTH,
+  CANAL_HALF_M,
   DEPTH_TICKS,
   DISTANCE_TICKS,
+  HALF_WIDTH,
   V_SCALE,
 } from "./transect";
 
-// Penggaris jarak dan kedalaman pada penampang.
+// Penggaris pada bongkahan.
 //
-// Tanpa keduanya modul ini tidak dapat mengerjakan tugasnya: babak 02 meminta
-// pembaca menemukan sampai jarak berapa muka airnya masih melewati batas 40
-// cm, dan pertanyaan itu mustahil dijawab dari gambar yang tidak punya
-// penggaris. Angkanya ditulis sebagai DOM lewat `Html`, bukan sebagai
-// geometri teks, supaya tetap tajam pada resolusi berapa pun dan dapat dibaca
-// pembaca layar.
+// Tugasnya di sini berbeda dari rancangan sebelumnya. Dahulu penggaris jarak
+// harus menjawab pertanyaan babak 02 — sampai jarak berapa muka airnya
+// melewati batas 40 cm — dan untuk itu ia harus membentang satu kilometer.
+// Pertanyaan itu sekarang dijawab grafik di panel kanan, yang memang bentuk
+// yang benar untuk mengukur.
+//
+// Yang tersisa di sini tugas yang lebih sederhana dan lebih penting: memberi
+// ukuran pada gambarnya. Pembaca harus tahu bahwa kanal itu selebar delapan
+// meter dan sedalam tiga, dan bahwa petak yang dilihatnya hanya beberapa
+// puluh meter — bukan seluruh lanskap. Tanpa itu, ia akan mengira sudah
+// melihat seluruh kerusakan, padahal yang terlihat baru tepinya.
+//
+// Angkanya ditulis sebagai DOM lewat `Html`, bukan sebagai geometri teks,
+// supaya tetap tajam pada resolusi berapa pun dan dapat dibaca pembaca layar.
 
 /** Jarak penanda dari tepi bawah bongkahan (satuan adegan). */
-const TICK_GAP = 0.3;
+const TICK_GAP = 2.4;
+
+const FRONT_Z = BLOCK_DEPTH / 2;
 
 export default function SceneLabels() {
+  const base = floorY();
+
   return (
     <group>
-      {/* Penanda jarak di bawah penampang.
-          Penanda 0 m sengaja dilewati: ia jatuh tepat di bawah kanal, tempat
-          panel kendali berada, dan kedudukan nol itu sudah ditandai oleh
-          label "Kanal" di atasnya. */}
-      {DISTANCE_TICKS.filter((m) => m > 0).map((m) => (
-        <group key={m} position={[xOfDistance(m), floorY(m) - TICK_GAP, 0]}>
-          <Html center distanceFactor={undefined} zIndexRange={[20, 10]}>
+      {/* Penanda jarak di bawah bidang potong, hanya pada sayap kanan.
+          Dipasang di satu sisi saja: bongkahannya setangkup, jadi penggaris
+          kedua tidak menambah keterangan apa pun — ia hanya menambah tulisan
+          yang harus dilewati mata. */}
+      {DISTANCE_TICKS.map((m) => (
+        <group key={m} position={[xOfDistance(m), base - TICK_GAP, FRONT_Z]}>
+          <Html center zIndexRange={[20, 10]}>
             <div className="pointer-events-none -translate-y-1/2 whitespace-nowrap text-center">
               <div className="mx-auto h-3 w-px bg-white/25" />
               <span className="mt-1 block text-[10px] tabular-nums text-white/55">
-                {m === 0 ? "0" : m.toLocaleString("id-ID")}
-                {m === DISTANCE_TICKS[DISTANCE_TICKS.length - 1] && <span className="text-white/35"> m</span>}
+                {m}
+                {m === DISTANCE_TICKS[DISTANCE_TICKS.length - 1] && (
+                  <span className="text-white/35"> m dari kanal</span>
+                )}
               </span>
             </div>
           </Html>
         </group>
       ))}
 
-      {/* Keterangan sumbu jarak */}
-      <group position={[xOfDistance(500), floorY(500) - TICK_GAP - 0.5, 0]}>
-        <Html center zIndexRange={[20, 10]}>
-          <span className="pointer-events-none whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-white/40">
-            Jarak dari kanal
-          </span>
-        </Html>
-      </group>
-
       {/* Penanda kedalaman di tepi kiri, diukur dari permukaan asal.
-          Sengaja diikatkan ke permukaan asal (y = 0 pada tepi kanal), bukan ke
-          permukaan yang sedang melesak: justru selisih keduanya yang menjadi
-          pelajaran babak 03. */}
+          Sengaja diikatkan ke permukaan asal, bukan ke permukaan yang sedang
+          melesak: justru selisih keduanya yang menjadi pelajaran babak 03. */}
       {DEPTH_TICKS.map((d) => (
-        <group key={d} position={[CANAL_LEFT_X - 0.22, -d * V_SCALE, 0]}>
+        <group key={d} position={[-HALF_WIDTH - 4.5, -d * V_SCALE, FRONT_Z]}>
           <Html center zIndexRange={[20, 10]}>
             <span className="pointer-events-none whitespace-nowrap text-[10px] tabular-nums text-white/45">
               {d} m
@@ -67,11 +73,12 @@ export default function SceneLabels() {
         </group>
       ))}
 
-      {/* Nama kanal */}
-      <group position={[CANAL_LEFT_X / 2, surfaceY(0) + 0.42, 0]}>
+      {/* Nama kanal, berikut lebarnya: lebar itu yang memberi ukuran pada
+          seluruh gambar, jadi ia ditulis di tempat yang paling dilihat. */}
+      <group position={[0, surfaceY(0) + 7.5, FRONT_Z]}>
         <Html center zIndexRange={[20, 10]}>
-          <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/55 px-2 py-0.5 text-[10px] text-white/70 backdrop-blur-sm">
-            Kanal
+          <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm">
+            Kanal · lebar {CANAL_HALF_M * 2} m
           </span>
         </Html>
       </group>
