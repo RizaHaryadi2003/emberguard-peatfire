@@ -43,15 +43,20 @@ export function createWeir(): Weir {
   // sekat ke atas dari dasar kanal dan bukan membesar ke dua arah.
   woodGeom.translate(0, 0.5, 0);
 
-  const plankMat = new THREE.MeshLambertMaterial({ color: "#6b5434" });
-  const postMat = new THREE.MeshLambertMaterial({ color: "#564027" });
+  // Kayu basah yang lama terendam: gelap, agak memantul, tidak berkilat.
+  const plankMat = new THREE.MeshStandardMaterial({ color: "#5c4729", roughness: 0.78, metalness: 0 });
+  const postMat = new THREE.MeshStandardMaterial({ color: "#4a3620", roughness: 0.82, metalness: 0 });
 
   const plank = new THREE.Mesh(woodGeom, plankMat);
+  plank.castShadow = true;
+  plank.receiveShadow = true;
   group.add(plank);
 
   const posts: THREE.Mesh[] = [];
   for (let i = 0; i < POST_COUNT; i++) {
     const post = new THREE.Mesh(woodGeom, postMat);
+    post.castShadow = true;
+    post.receiveShadow = true;
     posts.push(post);
     group.add(post);
   }

@@ -20,9 +20,37 @@ import { QUALITY_PROFILE, SUN_DIRECTION, type AtmosphereState, type Quality } fr
 export default function SkyLighting({
   stateRef,
   quality = "high",
+  worldScale = 1,
+  backgroundDim = 1,
 }: {
   stateRef: RefObject<AtmosphereState>;
   quality?: Quality;
+  /**
+   * Berapa kali lebih besar adegan ini dibanding diorama 4,4 m Modul 01 & 02.
+   *
+   * Seluruh angka di berkas ini — kerapatan kabut, jarak matahari, jangkauan
+   * peta bayangan — dipilih untuk bongkahan selebar beberapa meter. Modul 03
+   * memakai petak selebar delapan puluh meter, dan angka yang sama di sana
+   * berarti kabut setebal susu pada jarak sepuluh meter dan peta bayangan
+   * yang hanya menutupi sepersepuluh gambarnya.
+   *
+   * Jadi skalanya dinyatakan, bukan angkanya disalin dan diubah satu per satu:
+   * dengan begitu memperbaiki suasana di satu modul tetap memperbaikinya di
+   * semua modul. Nilai 1 menghasilkan angka yang persis sama seperti sebelum
+   * parameter ini ada.
+   */
+  worldScale?: number;
+  /**
+   * Pengali kecerahan latar langit/foto (1 = seperti semula).
+   *
+   * Modul 01 dan 02 memotret dioramanya dari dekat, sehingga latar hanya
+   * mengintip di sela-sela bongkahan dan kecerahannya tidak pernah menjadi
+   * soal. Modul 03 memperlihatkan petak selebar delapan puluh meter dari
+   * jauh, dan latar yang sama di sana mengisi lebih dari separuh layar —
+   * terang benderang di belakang antarmuka yang gelap, sehingga teksnya sulit
+   * dibaca dan bongkahannya tenggelam.
+   */
+  backgroundDim?: number;
 }) {
   const profile = QUALITY_PROFILE[quality];
   const gl = useThree((s) => s.gl);
@@ -42,10 +70,10 @@ export default function SkyLighting({
       depthWrite: false,
       fog: false,
     });
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), domeMat);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(300 * worldScale, 32, 16), domeMat);
     dome.renderOrder = -1;
     return { sky, skyScene, pmrem: new THREE.PMREMGenerator(gl), fog: new THREE.FogExp2(0xffffff, 0.016), dome, domeMat };
-  }, [gl]);
+  }, [gl, worldScale]);
 
   const envTarget = useRef<THREE.WebGLRenderTarget | null>(null);
   const lastBucket = useRef(-1);
@@ -97,9 +125,12 @@ export default function SkyLighting({
     // Kabut & matahari diperbarui halus tiap bingkai.
     const atm = getAtmosphere(s.danger);
     res.fog.color.setRGB(...atm.fogColor, THREE.SRGBColorSpace);
-    res.fog.density = atm.fogDensity;
+    // Kabut eksponensial diukur per satuan jarak, jadi kerapatannya dibagi
+    // skala dunia: pada adegan yang sepuluh kali lebih besar, kabut setebal
+    // itu baru tercapai pada jarak sepuluh kali lebih jauh.
+    res.fog.density = atm.fogDensity / worldScale;
     scene.environmentIntensity = atm.environmentIntensity;
-    scene.backgroundIntensity = atm.backgroundIntensity;
+    scene.backgroundIntensity = atm.backgroundIntensity * backgroundDim;
     // Kubah asap menutup langit dengan warna kabut yang sama sehingga cakrawala menyatu.
     res.domeMat.color.copy(res.fog.color);
     res.domeMat.opacity = atm.smokeCover;
@@ -111,7 +142,8 @@ export default function SkyLighting({
     }
   });
 
-  const sunPos = sunDir.clone().multiplyScalar(22);
+  const sunPos = sunDir.clone().multiplyScalar(22 * worldScale);
+  const shadowSpan = 6 * worldScale;
 
   return (
     <>
@@ -121,14 +153,14 @@ export default function SkyLighting({
       position={sunPos}
       castShadow
       shadow-mapSize={[profile.shadowSize, profile.shadowSize]}
-      shadow-bias={-0.0004}
-      shadow-normalBias={0.02}
-      shadow-camera-left={-6}
-      shadow-camera-right={6}
-      shadow-camera-top={6}
-      shadow-camera-bottom={-6}
-      shadow-camera-near={5}
-      shadow-camera-far={45}
+      shadow-bias={-0.0004 * worldScale}
+      shadow-normalBias={0.02 * worldScale}
+      shadow-camera-left={-shadowSpan}
+      shadow-camera-right={shadowSpan}
+      shadow-camera-top={shadowSpan}
+      shadow-camera-bottom={-shadowSpan}
+      shadow-camera-near={5 * worldScale}
+      shadow-camera-far={45 * worldScale}
       />
     </>
   );

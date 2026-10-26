@@ -153,11 +153,21 @@ const NO_DROP: DropFn = () => 0;
  *
  * Atributnya:
  * - `position` : titik dalam satuan adegan,
- * - `uv`       : x = letak pada tekstur keadaan, y = 0-1 sedalam bongkahan,
+ * - `normal`   : tetap menghadap kamera; bidang ini memang rata,
+ * - `uv`       : koordinat tekstur menurut meter, untuk peta normal,
+ * - `aField`   : letak titik ini pada tekstur keadaan hasil simulasi,
  * - `aDepth`   : kedalaman titik dari permukaan saat itu (m).
  *
- * `aDepth` tidak dapat diturunkan dari `uv.y`: permukaannya melesak, jadi satu
- * baris kisi yang sama berada pada kedalaman yang berbeda-beda. Lapisan
+ * `uv` sengaja tidak dipakai untuk membaca tekstur keadaan, melainkan dibuat
+ * menurut meter lanskap. Alasannya teknis tetapi menentukan: peta normal
+ * dipasang dengan rangka singgung yang dihitung dari turunan `uv`, dan `uv`
+ * yang melintasi 36 m hanya dari 0 sampai 0,036 menghasilkan turunan yang
+ * terlalu kecil untuk diandalkan — reliefnya akan berkedip atau menghadap ke
+ * arah yang salah. Letak pada tekstur keadaan karena itu dipindahkan ke
+ * atributnya sendiri.
+ *
+ * `aDepth` tidak dapat diturunkan dari ketinggian: permukaannya melesak, jadi
+ * satu baris kisi yang sama berada pada kedalaman yang berbeda-beda. Lapisan
  * gambut ikut turun bersama permukaannya, jadi kedalaman itulah yang
  * menentukan warnanya — bukan ketinggian mutlaknya.
  */
@@ -169,17 +179,19 @@ export function createFaceGrid(): THREE.BufferGeometry {
   geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
   geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
   geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
+  geom.setAttribute("aField", new THREE.BufferAttribute(new Float32Array(total), 1));
 
-  // uv tetap sepanjang modul hidup, jadi diisi sekali di sini.
-  const uv = geom.attributes.uv as THREE.BufferAttribute;
-  const uvArr = uv.array as Float32Array;
+  // Normal dan letak pada tekstur keadaan tetap sepanjang modul hidup, jadi
+  // keduanya diisi sekali di sini. Bidang potong menghadap kamera.
+  const normals = new Float32Array(total * 3);
+  for (let k = 0; k < total; k++) normals[k * 3 + 2] = 1;
+  geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+
+  const field = geom.attributes.aField as THREE.BufferAttribute;
+  const fieldArr = field.array as Float32Array;
   for (let i = 0; i < cols; i++) {
     const u = fieldU((i / WING_COLS) * NEAR_LENGTH_M);
-    for (let j = 0; j < rows; j++) {
-      const k = j * cols + i;
-      uvArr[k * 2] = u;
-      uvArr[k * 2 + 1] = 1 - j / FACE_ROWS;
-    }
+    for (let j = 0; j < rows; j++) fieldArr[j * cols + i] = u;
   }
 
   const idx: number[] = [];
@@ -203,8 +215,10 @@ export function createFaceGrid(): THREE.BufferGeometry {
 export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DROP): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
   const posArr = pos.array as Float32Array;
   const depthArr = depth.array as Float32Array;
+  const uvArr = uv.array as Float32Array;
   const cols = WING_COLS + 1;
   const bottom = floorY();
   const z = BLOCK_DEPTH / 2;
@@ -221,10 +235,16 @@ export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DRO
       posArr[k * 3 + 1] = y;
       posArr[k * 3 + 2] = z;
       depthArr[k] = (top - y) / V_SCALE;
+      // Tekstur diulang tiap 1,5 m lanskap. Lapisan gambut hanya setebal
+      // beberapa meter, jadi pengulangan yang lebih longgar membuat serat
+      // dan bongkahnya membesar sampai tidak lagi terbaca sebagai tanah.
+      uvArr[k * 2] = x / 1.5;
+      uvArr[k * 2 + 1] = y / 1.5;
     }
   }
   pos.needsUpdate = true;
   depth.needsUpdate = true;
+  uv.needsUpdate = true;
   geom.computeBoundingSphere();
 }
 
@@ -383,7 +403,9 @@ export function createCanalFaceGeometry(): THREE.BufferGeometry {
   const geom = new THREE.BufferGeometry();
   const pos = new Float32Array(cols * rows * 3);
   const uv = new Float32Array(cols * rows * 2);
+  const normals = new Float32Array(cols * rows * 3);
   const depth = new Float32Array(cols * rows);
+  const field = new Float32Array(cols * rows);
 
   const top = surfaceY(0);
   const bottom = floorY();
@@ -394,11 +416,14 @@ export function createCanalFaceGeometry(): THREE.BufferGeometry {
     const y = top + (bottom - top) * (j / FACE_ROWS);
     for (let i = 0; i < cols; i++) {
       const k = j * cols + i;
-      pos[k * 3] = i === 0 ? -CANAL_HALF_M : CANAL_HALF_M;
+      const x = i === 0 ? -CANAL_HALF_M : CANAL_HALF_M;
+      pos[k * 3] = x;
       pos[k * 3 + 1] = y;
       pos[k * 3 + 2] = z;
-      uv[k * 2] = u;
-      uv[k * 2 + 1] = 1 - j / FACE_ROWS;
+      normals[k * 3 + 2] = 1;
+      uv[k * 2] = x / 1.5;
+      uv[k * 2 + 1] = y / 1.5;
+      field[k] = u;
       depth[k] = (top - y) / V_SCALE;
     }
   }
@@ -410,8 +435,10 @@ export function createCanalFaceGeometry(): THREE.BufferGeometry {
   }
 
   geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
   geom.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   geom.setAttribute("aDepth", new THREE.BufferAttribute(depth, 1));
+  geom.setAttribute("aField", new THREE.BufferAttribute(field, 1));
   geom.setIndex(idx);
   return geom;
 }

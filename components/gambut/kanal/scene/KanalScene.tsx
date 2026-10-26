@@ -3,9 +3,12 @@
 import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { PEAT_LAYERS } from "@/lib/peat";
 import { DrainageSim, type DrainageStats } from "@/lib/drainage";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
+import SkyLighting from "@/components/gambut/scene/SkyLighting";
+import Backdrop from "@/components/gambut/scene/Backdrop";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
 import {
   createCanalFaceGeometry,
@@ -34,7 +37,7 @@ import {
   createSurfaceMaterial,
   createTransectMaterial,
 } from "./transectMaterial";
-import { createTreeField } from "./vegetation";
+import { createPlantField } from "./vegetation";
 import { createWeir } from "./weir";
 import SceneLabels from "./SceneLabels";
 
@@ -64,8 +67,52 @@ import SceneLabels from "./SceneLabels";
 const CAMERA_ELEVATION = (27 * Math.PI) / 180;
 const CAMERA_AZIMUTH = (21 * Math.PI) / 180;
 
-/** Jarak kamera. Pada kamera ortografik ini hanya menentukan keratan dekat-jauh. */
-const CAMERA_DISTANCE = 200;
+/**
+ * Jarak kamera.
+ *
+ * Pada kamera ortografik, jarak tidak mengubah besar gambar sama sekali —
+ * tetapi ia tetap menentukan dua hal. Pertama keratan dekat-jauh. Kedua, dan
+ * ini yang sempat terlewat, kabut: kabut eksponensial dihitung dari kedalaman
+ * terhadap kamera, jadi kamera yang ditaruh empat ratus meter di belakang
+ * menyelimuti seluruh adegan dengan kabut rata yang memucatkan segalanya
+ * tanpa menambah kedalaman apa pun. Jaraknya karena itu dibuat sedekat yang
+ * masih memuat bongkahannya.
+ */
+const CAMERA_DISTANCE = 150;
+
+/**
+ * Berapa kali petak ini lebih besar daripada diorama 4,4 m Modul 01 dan 02.
+ *
+ * Dipakai `SkyLighting` untuk menyetel kerapatan kabut, jarak matahari, dan
+ * jangkauan peta bayangan. Petaknya selebar 80 m, jadi angkanya 16 — dan
+ * angka itu diturunkan dari lebar bongkahannya sendiri supaya mengubah
+ * `NEAR_LENGTH_M` tidak diam-diam membuat bayangannya berhenti di tengah
+ * gambar.
+ */
+const WORLD_SCALE = Math.round((HALF_WIDTH * 2) / 5);
+
+/**
+ * Batas jauh keratan kamera.
+ *
+ * Kubah asap `SkyLighting` berjari-jari 300 kali skala dunia, dan apa pun di
+ * luar batas ini tidak pernah digambar. Pada kamera ortografik batas yang
+ * longgar tidak berbiaya ketelitian kedalaman seperti pada kamera
+ * perspektif: nilai kedalamannya berbanding lurus dengan jaraknya.
+ */
+const CAMERA_FAR = CAMERA_DISTANCE + 400 * WORLD_SCALE;
+
+/**
+ * Jumlah tumbuhan yang ditanam di tiap sayap, menurut tingkat mutu.
+ *
+ * Pohonnya di-instance, jadi yang bertambah hanya jumlah segitiga, bukan
+ * jumlah panggilan gambar. Pakis dipangkas jauh lebih dalam di ponsel:
+ * daunnya berpoligon paling rapat di seluruh adegan, sementara pada layar
+ * ponsel ia tinggal beberapa piksel.
+ */
+const PLANTING = {
+  high: { trees: 22, ferns: 20 },
+  low: { trees: 12, ferns: 0 },
+} as const;
 
 /**
  * Tinggi ruang yang harus muat di layar (satuan adegan), termasuk pohon.
@@ -114,7 +161,7 @@ function CameraRig() {
     cam.top = halfH;
     cam.bottom = -halfH;
     cam.near = 1;
-    cam.far = CAMERA_DISTANCE * 2;
+    cam.far = CAMERA_FAR;
 
     // Kanal (x = 0) harus jatuh pada `centerShare` lebar layar.
     const centerX = -(centerShare - 0.5) * width;
@@ -209,6 +256,11 @@ function Simulation({
       sim.collect();
       onStats({ ...sim.stats });
     }
+
+    // Langit menyusul keadaan lahan, perlahan: bahaya yang melompat membuat
+    // peta lingkungan dibuat ulang berkali-kali dalam sedetik, dan itu
+    // operasi termahal di seluruh adegan.
+    s.danger = THREE.MathUtils.damp(s.danger, sim.stats.riskShare, 1.5, dt);
   });
 
   return null;
@@ -242,17 +294,35 @@ function Block({
   stateRef,
   field,
   subsidence,
+  quality,
 }: {
   sim: DrainageSim;
   stateRef: RefObject<KanalState>;
   field: THREE.DataTexture;
   subsidence: ReturnType<typeof createSubsidence>;
+  quality: Quality;
 }) {
   const colors = useLoader(
     THREE.TextureLoader,
     PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`),
   );
-  const groundColor = useLoader(THREE.TextureLoader, "/textures/gambut/permukaan_kering_color.webp");
+  // Peta normal tiap lapisan. Berkasnya sudah ada di repositori untuk Modul 01
+  // dan 02; Modul 03 tidak memakainya sama sekali sebelum ini, dan itulah
+  // sebabnya tanahnya rata seperti kain bercorak.
+  const normals = useLoader(
+    THREE.TextureLoader,
+    PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_normal.webp`),
+  );
+  const [groundColor, groundNormal] = useLoader(THREE.TextureLoader, [
+    "/textures/gambut/permukaan_kering_color.webp",
+    "/textures/gambut/permukaan_kering_normal.webp",
+  ]);
+  // Model pindaian yang sama dengan Modul 01 dan 02, sehingga pembaca
+  // mengenali tumbuhan yang sama — hanya dilihat dari jauh.
+  const [treeGltf, fernGltf] = useLoader(GLTFLoader, [
+    "/models/gambut/pohon_pachira.glb",
+    "/models/gambut/pakis.glb",
+  ]);
 
   const res = useMemo(() => {
     for (const t of colors) {
@@ -260,9 +330,15 @@ function Block({
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.anisotropy = 4;
     }
+    for (const t of normals) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = 4;
+    }
     groundColor.colorSpace = THREE.SRGBColorSpace;
-    groundColor.wrapS = groundColor.wrapT = THREE.RepeatWrapping;
-    groundColor.anisotropy = 4;
+    for (const t of [groundColor, groundNormal]) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = 4;
+    }
 
     return {
       faceGeom: createFaceGrid(),
@@ -270,15 +346,22 @@ function Block({
       // urutan titiknya terbalik pada salinan itu. Peneduh ini tidak membaca
       // normal, sehingga menggambar kedua sisi lebih murah dan lebih benar
       // daripada menyiapkan dua geometri.
-      faceMaterial: createTransectMaterial(colors, field),
+      faceMaterial: createTransectMaterial(colors, normals, field),
       surfaceGeom: createSurfaceGrid(),
-      surfaceMaterial: createSurfaceMaterial(groundColor, field),
+      surfaceMaterial: createSurfaceMaterial(groundColor, groundNormal, field),
       canalGeom: createCanalGeometry(),
-      // Dinding dan dasar kanal: warna rata, tidak dipengaruhi arah cahaya.
-      // Dengan bahan yang bergantung cahaya, dinding yang membelakangi
-      // matahari jatuh menjadi hitam pekat — dan parit berdinding hitam
-      // terbaca sebagai lubang pada gambar, bukan sebagai galian pada tanah.
-      canalMaterial: new THREE.MeshBasicMaterial({ color: "#372b21", side: THREE.DoubleSide }),
+      // Dinding dan dasar kanal: tanah gambut yang baru digali, lembap dan
+      // karena itu lebih gelap daripada permukaannya. Memakai peta warna dan
+      // peta normal yang sama dengan lapisan hemik, sehingga galiannya terbaca
+      // sebagai tanah yang sama — hanya terbuka.
+      canalMaterial: new THREE.MeshStandardMaterial({
+        map: colors[1],
+        normalMap: normals[1],
+        color: "#6d5a44",
+        roughness: 0.88,
+        metalness: 0,
+        side: THREE.DoubleSide,
+      }),
       // Bidang penutup jalur kanal. Dibuat di sini, bukan sebagai anak elemen,
       // karena ia perlu atribut `color` sendiri: bahan hamparan membaca warna
       // per titik, dan bidang yang tidak punya atribut itu akan dibaca three.js
@@ -289,16 +372,16 @@ function Block({
       canalWaterMaterial: createCanalWaterMaterial(),
       // Dinding samping dan belakang: tanah yang teduh, bukan hitam — ia
       // bagian dari bongkahan yang sama, hanya tidak kena cahaya.
-      sideMaterial: new THREE.MeshBasicMaterial({ color: "#1a140f" }),
-      trees: createTreeField(),
+      sideMaterial: new THREE.MeshStandardMaterial({ color: "#241b14", roughness: 1, metalness: 0 }),
+      plants: createPlantField(
+        treeGltf.scene,
+        PLANTING[quality].ferns > 0 ? fernGltf.scene : null,
+        PLANTING[quality].trees,
+        PLANTING[quality].ferns,
+      ),
       weir: createWeir(),
     };
-  }, [colors, groundColor, field]);
-
-  useEffect(() => {
-    res.faceMaterial.side = THREE.DoubleSide;
-    res.surfaceMaterial.side = THREE.DoubleSide;
-  }, [res]);
+  }, [colors, normals, groundColor, groundNormal, treeGltf, fernGltf, quality, field]);
 
   useEffect(
     () => () => {
@@ -313,7 +396,7 @@ function Block({
       res.canalWaterGeom.dispose();
       res.canalWaterMaterial.dispose();
       res.sideMaterial.dispose();
-      res.trees.dispose();
+      res.plants.dispose();
       res.weir.dispose();
     },
     [res],
@@ -354,8 +437,8 @@ function Block({
     if (!s) return;
     const dt = Math.min(delta, 0.05);
     if (built.current !== subsidence.version) rebuild();
-    res.faceMaterial.uniforms.uDryTint.value = s.riskTint;
-    res.surfaceMaterial.uniforms.uDryTint.value = s.riskTint;
+    res.faceMaterial.dataUniforms.uDryTint.value = s.riskTint;
+    res.surfaceMaterial.dataUniforms.uDryTint.value = s.riskTint;
 
     // Kanal dibentuk ulang bila kedalaman gambarnya berubah, atau bila tanah
     // di tepinya sudah melesak cukup jauh untuk terlihat.
@@ -388,7 +471,7 @@ function Block({
 
     // Permukaan air kanal: di dekat dasar selama kanal mengalirkan air keluar,
     // naik mendekati permukaan tanah begitu sekat menahannya.
-    const water = res.canalWaterMaterial.uniforms;
+    const water = res.canalWaterMaterial.waterUniforms;
     water.uTime.value += s.reducedMotion ? 0 : dt;
     water.uFlow.value = THREE.MathUtils.damp(water.uFlow.value, s.blocked ? 0 : 1, 2, dt);
 
@@ -424,7 +507,7 @@ function Block({
     treeClock.current -= dt;
     if (treeClock.current <= 0) {
       treeClock.current = 0.12;
-      res.trees.update(sim.effectiveCanalDepth(), subsidence.fn);
+      res.plants.update(sim.effectiveCanalDepth(), subsidence.fn);
     }
   });
 
@@ -478,8 +561,8 @@ function Block({
       {/* Sayap kanan, lalu sayap kiri sebagai cerminannya. */}
       {[1, -1].map((side) => (
         <group key={side} scale={[side, 1, 1]}>
-          <mesh geometry={res.faceGeom} material={res.faceMaterial} />
-          <mesh geometry={res.surfaceGeom} material={res.surfaceMaterial} />
+          <mesh geometry={res.faceGeom} material={res.faceMaterial} receiveShadow />
+          <mesh geometry={res.surfaceGeom} material={res.surfaceMaterial} receiveShadow castShadow />
           {/* Dinding ujung dan dinding belakang petak ini. Gelap rata: yang
               harus dibaca bidang potong di depan, bukan sisi-sisinya. */}
           <mesh
@@ -501,14 +584,20 @@ function Block({
       ))}
 
       {/* Kanal dan airnya — satu-satunya bagian yang tidak dicerminkan. */}
-      <mesh ref={canalRef} geometry={res.canalGeom} material={res.canalMaterial} />
+      <mesh ref={canalRef} geometry={res.canalGeom} material={res.canalMaterial} receiveShadow />
       <mesh
         ref={bridgeRef}
         position={[0, surfaceY(0), 0]}
         geometry={res.bridgeGeom}
         material={res.surfaceMaterial}
+        receiveShadow
       />
-      <mesh ref={canalFaceRef} geometry={res.canalFaceGeom} material={res.faceMaterial} />
+      <mesh
+        ref={canalFaceRef}
+        geometry={res.canalFaceGeom}
+        material={res.faceMaterial}
+        receiveShadow
+      />
       <mesh
         ref={waterRef}
         geometry={res.canalWaterGeom}
@@ -517,7 +606,7 @@ function Block({
       />
 
       <primitive object={res.weir.group} />
-      <primitive object={res.trees.group} />
+      <primitive object={res.plants.group} />
     </group>
   );
 }
@@ -545,10 +634,10 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
       dpr={[1, profile.maxDpr]}
       frameloop={active ? "always" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
-      onCreated={({ gl, scene }) => {
+      shadows={profile.softShadow ? "percentage" : "basic"}
+      onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
-        scene.background = new THREE.Color("#0b0d10");
+        gl.toneMappingExposure = 0.95;
       }}
       fallback={
         <p className="p-6 text-sm text-white/70">
@@ -558,11 +647,19 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
     >
       <CameraRig />
       <PerformanceGuard maxDpr={profile.maxDpr} />
-      {/* Cahaya langit dari atas dan pantulan tanah dari bawah: bidang atas
-          bongkahan harus jelas lebih terang daripada bidang potongnya, sebab
-          itulah yang memberi petak ini bentuk tiga dimensi. */}
-      <hemisphereLight args={["#c3d4e6", "#3a2e20", 1.1]} />
-      <directionalLight position={[40, 70, 30]} intensity={1.5} />
+      {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 02.
+          Petak ini enam belas kali lebih besar daripada diorama di sana, dan
+          skalanya dinyatakan supaya kabut serta peta bayangannya ikut
+          menyesuaikan — bukan disalin lalu diubah angkanya satu per satu. */}
+      <SkyLighting
+        stateRef={stateRef}
+        quality={quality}
+        worldScale={WORLD_SCALE}
+        backgroundDim={0.3}
+      />
+      <Suspense fallback={null}>
+        <Backdrop />
+      </Suspense>
       <Simulation
         sim={sim}
         stateRef={stateRef}
@@ -573,7 +670,13 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
         onSubsidence={subsidence.refresh}
       />
       <Suspense fallback={null}>
-        <Block sim={sim} stateRef={stateRef} field={field} subsidence={subsidence} />
+        <Block
+          sim={sim}
+          stateRef={stateRef}
+          field={field}
+          subsidence={subsidence}
+          quality={quality}
+        />
         <SceneLabels />
         <ReadySignal onReady={onReady} />
       </Suspense>

@@ -3,13 +3,31 @@ import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
 import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaConstants";
 import { CANAL_WIDTH_M, COLUMNS, TRANSECT_LENGTH_M, WATER_LIMIT_M } from "@/lib/drainage";
 
-// Peneduh bidang potong Modul 03.
+// Bahan tanah Modul 03.
 //
-// Tugasnya berbeda dari peneduh Modul 02. Di sana yang digambar adalah
-// kejadian: bara yang berpijar, rongga abu yang melesak, asap. Di sini yang
-// digambar adalah keadaan — sampai sedalam apa gambut masih jenuh air, dan di
-// mana batas 40 cm itu dilewati. Jadi tidak ada yang berdenyut atau berkedip,
-// dan hampir seluruh isinya dapat dibaca sebagai bagan.
+// --- Mengapa MeshStandardMaterial, bukan peneduh sendiri ---------------------
+//
+// Rancangan sebelumnya memakai `ShaderMaterial` tersendiri dengan pencahayaan
+// yang ditulis tangan: satu suku ambien ditambah satu angka tetap untuk
+// matahari. Hasilnya bidang yang warnanya benar tetapi permukaannya mati —
+// tidak pernah menerima bayangan, tidak pernah memantulkan langit, tidak
+// pernah tersentuh kabut. Bongkahan tanah yang tidak menerima bayangan apa pun
+// terbaca sebagai gambar yang ditempel di depan latar, bukan sebagai benda
+// yang berada di dalam pemandangan.
+//
+// Di sini keduanya digabung. Rangkanya `MeshStandardMaterial` — jadi cahaya,
+// peta lingkungan langit, bayangan, dan kabut dikerjakan three.js dengan
+// jalur yang sudah dioptimalkan — sementara warna dasarnya tetap datang dari
+// hasil simulasi, disuntikkan lewat `onBeforeCompile`. Yang didapat: tanah
+// yang menerima matahari pagi dan bayangan pohon, tetapi masih mengatakan
+// dengan tepat sampai kedalaman berapa gambut ini masih jenuh air.
+//
+// Peta normal tiap lapisan ikut dipakai — berkasnya sudah ada di repositori
+// untuk Modul 01 dan 02, dan tidak dipakai Modul 03 sama sekali sebelum ini.
+// Peta normal inilah yang membuat serat fibrik dan bongkah saprik punya
+// relief; tanpanya, tekstur foto hanyalah gambar rata.
+//
+// --- Tekstur keadaan --------------------------------------------------------
 //
 // Dibaca dari satu tekstur data selebar jumlah kolom simulasi dan setinggi
 // satu piksel: R = penurunan permukaan, G = kedalaman muka air, B = melewati
@@ -21,171 +39,158 @@ function tintGlsl(id: PeatLayerId): string {
   return PEAT_LAYER_TINT[id].map((v) => v.toFixed(3)).join(", ");
 }
 
-const VERTEX = /* glsl */ `
-attribute float aDepth;
+/** Potongan GLSL yang dipakai kedua bahan: derau dan ragamnya. */
+const NOISE_GLSL = /* glsl */ `
+float kHash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
 
-varying vec2 vUv;
-varying float vDepth;
-varying vec3 vWorld;
+float kNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(kHash(i), kHash(i + vec2(1.0, 0.0)), f.x),
+    mix(kHash(i + vec2(0.0, 1.0)), kHash(i + vec2(1.0, 1.0)), f.x),
+    f.y
+  );
+}
 
-#include <fog_pars_vertex>
-
-void main() {
-  vUv = uv;
-  vDepth = aDepth;
-  vec4 world = modelMatrix * vec4(position, 1.0);
-  vWorld = world.xyz;
-  vec4 mvPosition = viewMatrix * world;
-  gl_Position = projectionMatrix * mvPosition;
-  #include <fog_vertex>
+float kFbm(vec2 p) {
+  return kNoise(p) * 0.6 + kNoise(p * 2.3) * 0.26 + kNoise(p * 5.1) * 0.14;
 }
 `;
 
-const FRAGMENT = /* glsl */ `
+// ---------------------------------------------------------------------------
+//  BIDANG POTONG
+// ---------------------------------------------------------------------------
+
+const FACE_PARS = /* glsl */ `
 uniform sampler2D uColor0;
 uniform sampler2D uColor1;
 uniform sampler2D uColor2;
 uniform sampler2D uColor3;
+uniform sampler2D uNormal0;
+uniform sampler2D uNormal1;
+uniform sampler2D uNormal2;
+uniform sampler2D uNormal3;
 uniform sampler2D uField;
+uniform vec3 uBounds;    // kedalaman batas fibrik/hemik, hemik/saprik, saprik/mineral (m)
+uniform float uProfile;  // kedalaman seluruh profil (m)
+uniform float uDryTint;  // kekuatan penandaan daerah rawan (0-1)
 
-uniform vec3 uBounds;      // kedalaman batas fibrik/hemik, hemik/saprik, saprik/mineral (m)
-uniform float uProfile;    // kedalaman seluruh profil (m)
-uniform float uDryTint;    // kekuatan penandaan daerah rawan (0-1)
-uniform vec3 uAmbient;
-uniform float uSunIntensity;
-
-varying vec2 vUv;
 varying float vDepth;
-varying vec3 vWorld;
+varying float vField;
+varying vec3 vPeatWorld;
 
-#include <fog_pars_fragment>
-
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
+${NOISE_GLSL}
 
 /** Bobot tiap lapisan pada kedalaman d, dengan peralihan yang lembut. */
-vec4 layerWeights(float d) {
+vec4 kLayerWeights(float d) {
   float w = 0.07;
   float b0 = smoothstep(uBounds.x - w, uBounds.x + w, d);
   float b1 = smoothstep(uBounds.y - w, uBounds.y + w, d);
   float b2 = smoothstep(uBounds.z - w, uBounds.z + w, d);
   return vec4(1.0 - b0, b0 - b1, b1 - b2, b2);
 }
+`;
 
-vec3 tintFor(vec4 w) {
-  return w.x * vec3(${tintGlsl("fibrik")}) + w.y * vec3(${tintGlsl("hemik")}) +
-         w.z * vec3(${tintGlsl("saprik")}) + w.w * vec3(${tintGlsl("mineral")});
-}
+/**
+ * Warna dasar bidang potong.
+ *
+ * Menggantikan `map_fragment`, sehingga seluruh sisa jalur PBR — bayangan,
+ * peta lingkungan, kabut — tetap berjalan apa adanya di atasnya.
+ */
+const FACE_DIFFUSE = /* glsl */ `
+  vec4 kField = texture2D(uField, vec2(vField, 0.5));
+  float kWaterDepth = kField.g * uProfile;
+  float kRisk = kField.b;
 
-void main() {
-  // Keadaan kolom ini. Tekstur datanya setinggi satu piksel, jadi koordinat
-  // tegaknya tetap 0,5 — yang dibaca hanya kedudukan mendatarnya.
-  vec4 field = texture2D(uField, vec2(vUv.x, 0.5));
-  float waterDepth = field.g * uProfile;
-  float risk = field.b;
-
-  // --- Warna dasar gambut: campuran empat tekstur lapisan menurut kedalaman.
-  //
-  // Tekstur diulang menurut satuan adegan, bukan menurut meter lanskap. Pada
-  // pembesaran 100x, pengulangan menurut meter akan terhimpit menjadi garis
-  // tegak yang rapat — tanahnya berubah menjadi kain bergaris.
-  vec2 uvT = vec2(vWorld.x * 1.2, vWorld.y * 1.2);
-  vec4 w = layerWeights(vDepth);
-  vec3 albedo =
-    texture2D(uColor0, uvT).rgb * w.x +
-    texture2D(uColor1, uvT).rgb * w.y +
-    texture2D(uColor2, uvT).rgb * w.z +
-    texture2D(uColor3, uvT).rgb * w.w;
-  albedo *= tintFor(w);
+  vec2 kUv = vMapUv;
+  vec4 kW = kLayerWeights(vDepth);
+  vec3 kAlbedo =
+    texture2D(uColor0, kUv).rgb * kW.x +
+    texture2D(uColor1, kUv).rgb * kW.y +
+    texture2D(uColor2, kUv).rgb * kW.z +
+    texture2D(uColor3, kUv).rgb * kW.w;
+  kAlbedo *= kW.x * vec3(${tintGlsl("fibrik")}) + kW.y * vec3(${tintGlsl("hemik")}) +
+             kW.z * vec3(${tintGlsl("saprik")}) + kW.w * vec3(${tintGlsl("mineral")});
 
   // Ragam skala besar supaya tekstur foto tidak tampak berulang, ditambah
   // guratan mendatar mengikuti arah pengendapan bahan organik — paling jelas
   // di fibrik yang seratnya masih utuh.
-  float mottle = noise(uvT * 0.5) * 0.45 + noise(uvT * 1.6) * 0.25;
-  float bedding = noise(vec2(vWorld.x * 0.7, vWorld.y * 16.0));
-  float fibrous = w.x * 1.0 + w.y * 0.6 + w.z * 0.25 + w.w * 0.15;
-  albedo *= 0.8 + mottle * 0.46;
-  albedo *= 1.0 + (bedding - 0.5) * 0.3 * fibrous;
+  float kMottle = kNoise(kUv * 0.5) * 0.45 + kNoise(kUv * 1.6) * 0.25;
+  float kBedding = kNoise(vec2(vPeatWorld.x * 0.7, vPeatWorld.y * 16.0));
+  float kFibrous = kW.x * 1.0 + kW.y * 0.6 + kW.z * 0.25 + kW.w * 0.15;
+  kAlbedo *= 0.8 + kMottle * 0.46;
+  kAlbedo *= 1.0 + (kBedding - 0.5) * 0.3 * kFibrous;
 
-  // --- Garis batas antarlapisan. Perpaduan warna saja terlalu halus untuk
+  // Garis batas antarlapisan. Perpaduan warna saja terlalu halus untuk
   // dibaca, sehingga susunan strata tidak terlihat.
-  float waver = (noise(vec2(vWorld.x * 0.6, 3.1)) - 0.5) * 0.06;
-  float seam =
-    (1.0 - smoothstep(0.0, 0.02, abs(vDepth - uBounds.x - waver))) * 0.8 +
-    (1.0 - smoothstep(0.0, 0.022, abs(vDepth - uBounds.y - waver))) * 0.9 +
-    (1.0 - smoothstep(0.0, 0.026, abs(vDepth - uBounds.z - waver)));
-  albedo *= 1.0 - seam * 0.36;
+  float kWaver = (kNoise(vec2(vPeatWorld.x * 0.6, 3.1)) - 0.5) * 0.06;
+  float kSeam =
+    (1.0 - smoothstep(0.0, 0.02, abs(vDepth - uBounds.x - kWaver))) * 0.8 +
+    (1.0 - smoothstep(0.0, 0.022, abs(vDepth - uBounds.y - kWaver))) * 0.9 +
+    (1.0 - smoothstep(0.0, 0.026, abs(vDepth - uBounds.z - kWaver)));
+  kAlbedo *= 1.0 - kSeam * 0.36;
 
-  // --- Alas tanah mineral di bawah profil gambut diredupkan. Ia hanya
-  // penopang bongkahan supaya kanal tidak tampak menembus dasarnya; dibiarkan
-  // seterang gambutnya, ia justru yang paling merebut perhatian, padahal
-  // tidak ada satu pun pelajaran modul ini yang terjadi di sana.
-  float plinth = smoothstep(uBounds.z, uBounds.z + 0.45, vDepth);
-  albedo *= mix(1.0, 0.5, plinth);
+  // Alas tanah mineral di bawah profil gambut diredupkan. Ia hanya penopang
+  // bongkahan supaya kanal tidak tampak menembus dasarnya.
+  kAlbedo *= mix(1.0, 0.5, smoothstep(uBounds.z, uBounds.z + 0.45, vDepth));
 
-  // --- Gambut jenuh air lebih gelap dan sedikit kebiruan daripada gambut
-  // kering di atasnya. Batas inilah seluruh isi modul ini, jadi ia harus
-  // terbaca sekali lihat. Besar peredupannya sama dengan Modul 01 dan 02.
-  float wetEdge = smoothstep(-0.02, 0.06, vDepth - waterDepth);
-  albedo = mix(
-    albedo,
-    albedo * vec3(${(WET_DARKEN * 1.04).toFixed(3)}, ${(WET_DARKEN * 1.12).toFixed(3)}, ${(WET_DARKEN * 1.26).toFixed(3)}),
-    wetEdge
+  // Gambut jenuh air lebih gelap dan sedikit kebiruan daripada gambut kering
+  // di atasnya. Batas inilah seluruh isi modul ini, jadi ia harus terbaca
+  // sekali lihat. Besar peredupannya sama dengan Modul 01 dan 02.
+  float kWet = smoothstep(-0.02, 0.06, vDepth - kWaterDepth);
+  kAlbedo = mix(
+    kAlbedo,
+    kAlbedo * vec3(${(WET_DARKEN * 1.04).toFixed(3)}, ${(WET_DARKEN * 1.12).toFixed(3)}, ${(WET_DARKEN * 1.26).toFixed(3)}),
+    kWet
   );
 
-  // --- Lapisan kering di atas muka air. Diberi warna jerami yang makin pucat
-  // mendekati permukaan: itulah bahan bakar yang dibahas Modul 02.
-  float dry = 1.0 - wetEdge;
-  float nearSurface = 1.0 - smoothstep(0.0, 0.9, vDepth);
-  albedo = mix(albedo, albedo * vec3(1.18, 1.1, 0.92), dry * nearSurface * 0.85);
+  // Lapisan kering di atas muka air: bahan bakar yang dibahas Modul 02.
+  float kDry = 1.0 - kWet;
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.18, 1.1, 0.92), kDry * (1.0 - smoothstep(0.0, 0.9, vDepth)) * 0.85);
 
-  // --- Penandaan daerah rawan: kolom yang muka airnya melewati batas 40 cm.
-  // Hanya bagian yang keringnya yang ditandai, bukan seluruh kolom — yang
-  // rawan terbakar memang lapisan di atas muka airnya.
-  albedo = mix(albedo, albedo * vec3(1.28, 0.78, 0.58), risk * dry * uDryTint);
+  // Penandaan daerah rawan: hanya bagian keringnya, bukan seluruh kolom.
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.28, 0.78, 0.58), kRisk * kDry * uDryTint);
 
-  // --- Pencahayaan. Bidang ini bagan, bukan benda: pencahayaannya dibuat
-  // rata supaya kedalaman di mana pun terbaca sama jelas. Yang memberi
-  // bentuknya adalah guratan dan garis batas di atas, bukan arah cahaya.
-  vec3 color = albedo * (uAmbient + vec3(uSunIntensity));
+  // Garis muka air tanah, dengan pias lembut di bawahnya supaya batas
+  // kering-basah terbaca sebagai bidang, bukan sekadar satu garis. Dimasukkan
+  // sebagai warna dasar, bukan sebagai pancaran, agar ia tetap tunduk pada
+  // cahaya dan kabut seperti sisa bidangnya.
+  float kLine = 1.0 - smoothstep(0.0, 0.012, abs(vDepth - kWaterDepth));
+  float kBand = (1.0 - smoothstep(0.0, 0.12, abs(vDepth - kWaterDepth))) * step(kWaterDepth, vDepth);
+  kAlbedo += vec3(0.33, 0.68, 0.93) * (kLine * 1.1 + kBand * 0.1);
 
-  // --- Garis muka air tanah, dengan pias lembut di bawahnya supaya batas
-  // kering-basah terbaca sebagai bidang, bukan sekadar satu garis.
-  float line = 1.0 - smoothstep(0.0, 0.012, abs(vDepth - waterDepth));
-  float band = (1.0 - smoothstep(0.0, 0.12, abs(vDepth - waterDepth))) * step(waterDepth, vDepth);
-  color += vec3(0.33, 0.68, 0.93) * (line * 0.9 + band * 0.08);
+  // Garis batas 40 cm PP 57/2016, di seluruh lebar gambar.
+  kAlbedo += vec3(0.95, 0.62, 0.3) *
+    (1.0 - smoothstep(0.0, 0.008, abs(vDepth - ${WATER_LIMIT_M.toFixed(3)}))) * 0.45;
 
-  // --- Garis batas 40 cm. Satu garis mendatar tipis di seluruh lebar gambar:
-  // inilah ambang PP 57/2016, dan pembaca harus dapat melihat di titik mana
-  // kurva muka airnya menyeberanginya.
-  float limit = 1.0 - smoothstep(0.0, 0.008, abs(vDepth - ${WATER_LIMIT_M.toFixed(3)}));
-  color += vec3(0.95, 0.62, 0.3) * limit * 0.35;
+  diffuseColor.rgb *= kAlbedo;
 
-  gl_FragColor = vec4(color, 1.0);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-  #include <fog_fragment>
-}
+  // Gambut jenuh air memantul lebih tajam daripada gambut kering yang
+  // berdebu. Inilah tanda kedua batas muka air, dan satu-satunya yang masih
+  // terbaca ketika gambarnya dilihat sambil lalu.
+  kFaceRoughness = mix(0.96, 0.62, kWet);
 `;
 
-export type TransectUniforms = {
+/** Peta normal empat lapisan, dipadukan dengan bobot yang sama. */
+const FACE_NORMAL = /* glsl */ `
+  vec4 kNw = kLayerWeights(vDepth);
+  vec3 kMapN =
+    texture2D(uNormal0, vMapUv).xyz * kNw.x +
+    texture2D(uNormal1, vMapUv).xyz * kNw.y +
+    texture2D(uNormal2, vMapUv).xyz * kNw.z +
+    texture2D(uNormal3, vMapUv).xyz * kNw.w;
+  kMapN = kMapN * 2.0 - 1.0;
+  kMapN.xy *= normalScale;
+  normal = normalize(tbn * kMapN);
+`;
+
+export type FaceUniforms = {
   uField: { value: THREE.Texture };
   uDryTint: { value: number };
-  uAmbient: { value: THREE.Color };
-  uSunIntensity: { value: number };
 };
 
 /**
@@ -204,35 +209,86 @@ export function createFieldTexture(): { texture: THREE.DataTexture; data: Uint8A
   return { texture, data };
 }
 
-/** Buat material bidang potong. `colors` berurutan sesuai `PEAT_LAYERS`. */
-export function createTransectMaterial(colors: THREE.Texture[], field: THREE.Texture): THREE.ShaderMaterial {
+/** Bahan yang warnanya ditentukan simulasi, dengan uniform tambahannya. */
+export type DataMaterial = THREE.MeshStandardMaterial & { dataUniforms: FaceUniforms };
+
+/**
+ * Buat bahan bidang potong.
+ *
+ * `colors` dan `normals` berurutan sesuai `PEAT_LAYERS`.
+ */
+export function createTransectMaterial(
+  colors: THREE.Texture[],
+  normals: THREE.Texture[],
+  field: THREE.Texture,
+): DataMaterial {
   const bounds = new THREE.Vector3(PEAT_LAYERS[0].bottom, PEAT_LAYERS[1].bottom, PEAT_LAYERS[2].bottom);
-  const material = new THREE.ShaderMaterial({
-    vertexShader: VERTEX,
-    fragmentShader: FRAGMENT,
-    fog: true,
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.UniformsLib.fog,
-      {
-        uColor0: { value: null },
-        uColor1: { value: null },
-        uColor2: { value: null },
-        uColor3: { value: null },
-        uField: { value: null },
-        uBounds: { value: bounds },
-        uProfile: { value: PROFILE_DEPTH },
-        uDryTint: { value: 1 },
-        uAmbient: { value: new THREE.Color(0.3, 0.31, 0.33) },
-        uSunIntensity: { value: 0.72 },
-      },
-    ]),
-  });
-  // `UniformsUtils.merge` menyalin nilainya, jadi tekstur dipasang setelahnya.
-  material.uniforms.uColor0.value = colors[0];
-  material.uniforms.uColor1.value = colors[1];
-  material.uniforms.uColor2.value = colors[2];
-  material.uniforms.uColor3.value = colors[3];
-  material.uniforms.uField.value = field;
+
+  const material = new THREE.MeshStandardMaterial({
+    // Peta pertama dipasang hanya supaya three.js menyalakan jalur `map` dan
+    // `normalMap` — koordinat dan isinya diambil alih suntikan di bawah.
+    map: colors[0],
+    normalMap: normals[0],
+    normalScale: new THREE.Vector2(1.1, 1.1),
+    roughness: 1,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  }) as DataMaterial;
+
+  const uniforms: FaceUniforms = {
+    uField: { value: field },
+    uDryTint: { value: 1 },
+  };
+  material.dataUniforms = uniforms;
+
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, {
+      uColor0: { value: colors[0] },
+      uColor1: { value: colors[1] },
+      uColor2: { value: colors[2] },
+      uColor3: { value: colors[3] },
+      uNormal0: { value: normals[0] },
+      uNormal1: { value: normals[1] },
+      uNormal2: { value: normals[2] },
+      uNormal3: { value: normals[3] },
+      uBounds: { value: bounds },
+      uProfile: { value: PROFILE_DEPTH },
+      ...uniforms,
+    });
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         attribute float aDepth;
+         attribute float aField;
+         varying float vDepth;
+         varying float vField;
+         varying vec3 vPeatWorld;`,
+      )
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+         vDepth = aDepth;
+         vField = aField;
+         vPeatWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;`,
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>\n${FACE_PARS}\nfloat kFaceRoughness = 1.0;`)
+      .replace("#include <map_fragment>", FACE_DIFFUSE)
+      .replace("#include <normal_fragment_maps>", FACE_NORMAL)
+      // Kekasaran ditetapkan setelah `roughnessmap_fragment` menghitungnya,
+      // supaya nilai dari batas basah-kering di atas tidak ditimpa kembali.
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>\n  roughnessFactor = kFaceRoughness;`,
+      );
+  };
+
+  // Dua bahan dengan `onBeforeCompile` yang berbeda harus punya kunci program
+  // yang berbeda, kalau tidak three.js memakai ulang program yang salah.
+  material.customProgramCacheKey = () => "kanal-face";
   return material;
 }
 
@@ -240,227 +296,203 @@ export function createTransectMaterial(colors: THREE.Texture[], field: THREE.Tex
 //  HAMPARAN PERMUKAAN
 // ---------------------------------------------------------------------------
 //
-// Peneduh bidang atas bongkahan. Tugasnya satu, dan tugas itu tidak dikerjakan
-// oleh rancangan sebelumnya sama sekali: memperlihatkan bahwa yang hilang
+// Bidang atas bongkahan. Tugasnya satu, dan tugas itu tidak dikerjakan oleh
+// rancangan pertama modul ini sama sekali: memperlihatkan bahwa yang hilang
 // bukan cuma air di bawah tanah, melainkan juga yang hidup di atasnya.
 //
 // Pembaca tidak dapat melihat muka air tanah — itulah seluruh persoalan
 // gambut. Yang dapat dilihatnya adalah tumbuhan. Jadi di sini kedalaman muka
 // air diterjemahkan menjadi warna permukaan: hijau selama airnya dekat,
-// menguning begitu melewati batas 40 cm, lalu kelabu dan retak ketika tanahnya
-// sudah melesak. Itulah urutan yang sama yang dilihat orang di lapangan, dan
-// urutan itulah yang harus dikenali pembaca.
+// menguning begitu melewati batas 40 cm, lalu kelabu dan retak ketika
+// tanahnya sudah melesak. Itulah urutan yang sama yang dilihat orang di
+// lapangan, dan urutan itulah yang harus dikenali pembaca.
 
-const SURFACE_VERTEX = /* glsl */ `
-varying vec2 vUv;
-varying vec3 vNormal;
-varying vec3 vWorld;
-varying vec3 vTint;
-
-void main() {
-  vUv = uv;
-  vTint = color;
-  vNormal = normalize(normalMatrix * normal);
-  vec4 world = modelMatrix * vec4(position, 1.0);
-  vWorld = world.xyz;
-  gl_Position = projectionMatrix * viewMatrix * world;
-}
-`;
-
-const SURFACE_FRAGMENT = /* glsl */ `
-uniform sampler2D uGround;
+const SURFACE_PARS = /* glsl */ `
 uniform sampler2D uField;
 uniform float uProfile;
-uniform float uLimit;        // batas 40 cm, sebagai bagian kedalaman profil
-uniform vec3 uSunDir;
-uniform vec3 uAmbient;
 uniform float uDryTint;
-uniform float uCanalHalf;    // setengah lebar kanal (m)
-uniform float uTransect;     // panjang transek simulasi (m)
+uniform float uCanalHalf;   // setengah lebar kanal (m)
+uniform float uTransect;    // panjang transek simulasi (m)
 
-varying vec2 vUv;
-varying vec3 vNormal;
-varying vec3 vWorld;
-varying vec3 vTint;
+varying vec3 vGroundWorld;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
+${NOISE_GLSL}
+`;
 
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
-    f.y
-  );
-}
-
-float fbm(vec2 p) {
-  return noise(p) * 0.6 + noise(p * 2.3) * 0.26 + noise(p * 5.1) * 0.14;
-}
-
-void main() {
-  // Keadaan kolom ini dibaca menurut jaraknya dari tepi kanal, bukan menurut
+const SURFACE_DIFFUSE = /* glsl */ `
+  // Keadaan petak ini dibaca menurut jaraknya dari tepi kanal, bukan menurut
   // uv: hamparan ini digambar dua kali, dicerminkan, jadi yang berlaku adalah
   // jarak mutlaknya.
-  float distanceM = max(0.0, abs(vWorld.x) - uCanalHalf);
-  float u = min(1.0, distanceM / uTransect);
-  vec4 field = texture2D(uField, vec2(u, 0.5));
-  float waterDepth = field.g * uProfile;
-  float dropM = field.r * uProfile;
+  float kDistance = max(0.0, abs(vGroundWorld.x) - uCanalHalf);
+  vec4 kField = texture2D(uField, vec2(min(1.0, kDistance / uTransect), 0.5));
+  float kWaterDepth = kField.g * uProfile;
+  float kDrop = kField.r * uProfile;
 
-  // --- Seberapa kering permukaan ini.
-  //
   // Dua tahap, bukan satu, karena yang terjadi di lapangan memang dua tahap
   // yang berbeda. Pertama airnya menjauh dari akar: tumbuhan menguning tetapi
   // tanahnya masih utuh. Kemudian tanahnya sendiri habis: permukaan melesak,
   // retak, dan yang tersisa tinggal gambut telanjang.
   //
   // Penggerak utamanya penurunan permukaan, bukan kedalaman muka air, dengan
-  // alasan yang sama seperti pada pohon (lihat scene/vegetation.ts): muka
-  // air turun seketika begitu pengatur digeser, sedangkan yang hidup di atas
-  // tanah membutuhkan tahun untuk mati. Kedalaman muka air tetap dipakai,
-  // tetapi hanya sebagai pelengkap yang membuat petak di dekat kanal
-  // menguning lebih dulu daripada yang jauh.
-  float ruin = smoothstep(0.04, 0.6, dropM);
-  float thirst = max(ruin, smoothstep(0.5, 2.0, waterDepth) * 0.45);
+  // alasan yang sama seperti pada pohon (lihat scene/vegetation.ts): muka air
+  // turun seketika begitu pengatur digeser, sedangkan yang hidup di atas
+  // tanah membutuhkan tahun untuk mati.
+  float kRuin = smoothstep(0.04, 0.6, kDrop);
+  float kThirst = max(kRuin, smoothstep(0.5, 2.0, kWaterDepth) * 0.45);
 
-  // --- Rumpun tumbuhan. Bercak-bercak, bukan hamparan rata: gambut yang
-  // sudah terganggu ditumbuhi pakis dan semak dalam rumpun yang terpisah.
-  float clump = fbm(vWorld.xz * 0.22);
-  float blade = fbm(vWorld.xz * 1.7);
-  // Rumpun yang paling tipis mati lebih dulu, jadi tutupannya menipis dari
-  // tepi tiap rumpun ke tengahnya — bukan memudar rata.
-  float cover = clamp((clump + 0.42) * 1.5 - thirst * 1.5 - ruin * 0.6, 0.0, 1.0);
+  // Rumpun tumbuhan. Bercak-bercak, bukan hamparan rata: gambut yang sudah
+  // terganggu ditumbuhi pakis dan semak dalam rumpun yang terpisah.
+  float kClump = kFbm(vGroundWorld.xz * 0.22);
+  float kBlade = kFbm(vGroundWorld.xz * 1.7);
+  float kCover = clamp((kClump + 0.42) * 1.5 - kThirst * 1.5 - kRuin * 0.6, 0.0, 1.0);
 
   // Hijau hutan rawa, bukan hijau rumput taman: gelap, agak kebiruan, dan
-  // tidak pernah rata — tutupan gambut yang utuh justru bergerombol.
-  vec3 lush = vec3(0.11, 0.21, 0.09);
-  vec3 sparse = vec3(0.26, 0.27, 0.12);
-  vec3 straw = vec3(0.38, 0.31, 0.16);
-  vec3 plant = mix(lush, sparse, thirst);
-  plant = mix(plant, straw, ruin * 0.7);
-  plant *= 0.6 + blade * 0.85 + clump * 0.3;
+  // tidak pernah rata.
+  vec3 kPlant = mix(vec3(0.075, 0.145, 0.055), vec3(0.22, 0.23, 0.10), kThirst);
+  kPlant = mix(kPlant, vec3(0.34, 0.27, 0.14), kRuin * 0.7);
+  kPlant *= 0.55 + kBlade * 0.6 + kClump * 0.25;
 
-  // --- Tanah telanjang di bawah tumbuhan: gambut yang makin pucat lalu
+  // Tanah telanjang di bawah tumbuhan: gambut yang makin pucat lalu
   // kelabu-kehitaman begitu bahan organiknya teroksidasi habis.
-  vec3 ground = texture2D(uGround, vUv).rgb;
-  vec3 bare = ground * mix(vec3(0.42, 0.33, 0.24), vec3(0.30, 0.26, 0.24), ruin);
-  bare *= 0.85 + fbm(vWorld.xz * 0.8) * 0.4;
+  vec3 kBare = diffuseColor.rgb * mix(vec3(0.42, 0.33, 0.24), vec3(0.30, 0.26, 0.24), kRuin);
+  kBare *= 0.85 + kFbm(vGroundWorld.xz * 0.8) * 0.4;
 
-  vec3 albedo = mix(bare, plant, cover);
+  vec3 kGround = mix(kBare, kPlant, kCover);
 
-  // --- Retak kemarau: hanya muncul pada tanah yang sudah benar-benar kering,
-  // dan hanya di tempat tumbuhannya sudah hilang.
-  float crackField = fbm(vWorld.xz * 0.55 + 11.3);
-  float crack = 1.0 - smoothstep(0.0, 0.035, abs(crackField - 0.5));
-  albedo *= 1.0 - crack * ruin * (1.0 - cover) * 0.55;
+  // Retak kemarau: hanya pada tanah yang sudah benar-benar kering, dan hanya
+  // di tempat tumbuhannya sudah hilang.
+  float kCrack = 1.0 - smoothstep(0.0, 0.035, abs(kFbm(vGroundWorld.xz * 0.55 + 11.3) - 0.5));
+  kGround *= 1.0 - kCrack * kRuin * (1.0 - kCover) * 0.55;
 
-  // --- Penandaan daerah rawan, sama ronanya dengan bidang potong supaya
-  // pembaca membaca keduanya sebagai satu keterangan.
-  float risk = field.b;
-  albedo = mix(albedo, albedo * vec3(1.26, 0.8, 0.6), risk * uDryTint * 0.5);
+  // Penandaan daerah rawan, sama ronanya dengan bidang potong supaya pembaca
+  // membaca keduanya sebagai satu keterangan.
+  kGround = mix(kGround, kGround * vec3(1.26, 0.8, 0.6), kField.b * uDryTint * 0.5);
 
-  albedo *= vTint;
+  // Warna per titik tidak dikalikan di sini: color_fragment yang berjalan
+  // tepat sesudah potongan ini sudah mengerjakannya, dan mengerjakannya dua
+  // kali membuat peneduhan tepi potong menjadi dua kali lebih gelap.
+  diffuseColor.rgb = kGround;
 
-  // --- Pencahayaan. Berbeda dari bidang potong, bidang ini benda: ia punya
-  // arah hadap, dan kemiringannya yang berubah saat tanah melesak hanya
-  // terbaca kalau cahayanya punya arah.
-  vec3 n = normalize(vNormal);
-  float lambert = max(0.0, dot(n, normalize(uSunDir)));
-  vec3 color = albedo * (uAmbient + vec3(lambert * 0.8));
-
-  gl_FragColor = vec4(color, 1.0);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}
+  // Daun memantul cahaya jauh lebih tajam daripada gambut kering, dan tanah
+  // gambut yang masih lembap lebih tajam daripada yang sudah berdebu.
+  kSurfaceRoughness = mix(mix(0.95, 0.82, 1.0 - kRuin), 0.58, kCover);
 `;
 
 /** Buat bahan hamparan permukaan. */
-export function createSurfaceMaterial(ground: THREE.Texture, field: THREE.Texture): THREE.ShaderMaterial {
-  return new THREE.ShaderMaterial({
-    vertexShader: SURFACE_VERTEX,
-    fragmentShader: SURFACE_FRAGMENT,
+export function createSurfaceMaterial(
+  ground: THREE.Texture,
+  groundNormal: THREE.Texture,
+  field: THREE.Texture,
+): DataMaterial {
+  const material = new THREE.MeshStandardMaterial({
+    map: ground,
+    normalMap: groundNormal,
+    normalScale: new THREE.Vector2(0.8, 0.8),
+    roughness: 1,
+    metalness: 0,
     vertexColors: true,
-    uniforms: {
-      uGround: { value: ground },
-      uField: { value: field },
+    side: THREE.DoubleSide,
+  }) as DataMaterial;
+
+  const uniforms: FaceUniforms = {
+    uField: { value: field },
+    uDryTint: { value: 1 },
+  };
+  material.dataUniforms = uniforms;
+
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, {
       uProfile: { value: PROFILE_DEPTH },
-      uLimit: { value: WATER_LIMIT_M },
-      uSunDir: { value: new THREE.Vector3(0.45, 0.82, 0.36).normalize() },
-      uAmbient: { value: new THREE.Color(0.22, 0.24, 0.28) },
-      uDryTint: { value: 1 },
       uCanalHalf: { value: CANAL_WIDTH_M / 2 },
       uTransect: { value: TRANSECT_LENGTH_M },
-    },
-  });
+      ...uniforms,
+    });
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>\n varying vec3 vGroundWorld;`)
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>\n vGroundWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;`,
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>\n${SURFACE_PARS}\nfloat kSurfaceRoughness = 1.0;`)
+      .replace("#include <map_fragment>", `#include <map_fragment>\n${SURFACE_DIFFUSE}`)
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>\n  roughnessFactor = kSurfaceRoughness;`,
+      );
+  };
+
+  material.customProgramCacheKey = () => "kanal-surface";
+  return material;
 }
 
 // ---------------------------------------------------------------------------
 //  AIR KANAL
 // ---------------------------------------------------------------------------
 //
-// Air di dalam kanal digambar dengan peneduhnya sendiri, bukan dengan bahan
-// baku, karena ia harus mengatakan satu hal yang tidak dapat dikatakan warna:
-// air ini sedang mengalir keluar. Riaknya berjalan menyusuri kanal selama
-// kanal terbuka, dan berhenti begitu sekat dipasang — perbedaan yang terbaca
-// seketika, tanpa perlu dibaca angkanya.
+// Air kanal memantulkan langit. Itu bukan hiasan: pantulan langit adalah
+// satu-satunya hal yang membedakan air dari lubang gelap di dalam tanah, dan
+// tanpanya kanal terbaca sebagai parit kosong. Pantulannya diambil dari peta
+// lingkungan yang sudah dibuat `SkyLighting` untuk seluruh adegan, jadi tidak
+// ada biaya tambahan sama sekali.
+//
+// Riaknya berjalan menyusuri kanal selama kanal terbuka, dan berhenti begitu
+// sekat dipasang — perbedaan yang terbaca seketika, tanpa perlu dibaca
+// angkanya.
 
-const WATER_VERTEX = /* glsl */ `
-uniform float uTime;
-uniform float uFlow;
+export type WaterMaterial = THREE.MeshStandardMaterial & {
+  waterUniforms: { uTime: { value: number }; uFlow: { value: number } };
+};
 
-varying vec2 vUv;
-varying float vRipple;
-
-void main() {
-  vUv = uv;
-  // Riak menyusuri kanal (sumbu z pada geometri yang belum diskalakan).
-  float ripple = sin((uv.y * 26.0) - uTime * 2.4) * 0.5 + 0.5;
-  ripple *= sin((uv.x * 7.0) + uTime * 1.1) * 0.5 + 0.5;
-  vRipple = ripple * uFlow;
-  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-}
-`;
-
-const WATER_FRAGMENT = /* glsl */ `
-uniform vec3 uShallow;
-uniform vec3 uDeep;
-uniform float uFlow;
-
-varying vec2 vUv;
-varying float vRipple;
-
-void main() {
-  // Lebih gelap di tengah, lebih terang di tepi: begitulah air keruh terlihat
-  // di dalam parit sempit, dan itu yang memberi kanal ini kedalaman.
-  float edge = 1.0 - smoothstep(0.0, 0.42, abs(vUv.x - 0.5));
-  vec3 color = mix(uShallow, uDeep, edge);
-  color += vec3(0.12, 0.16, 0.17) * vRipple * 0.5;
-  // Air yang tertahan sekat menjadi tenang dan sedikit lebih pantul.
-  color += vec3(0.05, 0.07, 0.08) * (1.0 - uFlow);
-  gl_FragColor = vec4(color, 0.93);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
-}
-`;
-
-/** Buat bahan permukaan air kanal. */
-export function createCanalWaterMaterial(): THREE.ShaderMaterial {
-  return new THREE.ShaderMaterial({
-    vertexShader: WATER_VERTEX,
-    fragmentShader: WATER_FRAGMENT,
+export function createCanalWaterMaterial(): WaterMaterial {
+  const material = new THREE.MeshStandardMaterial({
+    color: new THREE.Color("#22363d"),
+    roughness: 0.12,
+    metalness: 0.35,
     transparent: true,
-    uniforms: {
-      uTime: { value: 0 },
-      uFlow: { value: 1 },
-      uShallow: { value: new THREE.Color("#33484c") },
-      uDeep: { value: new THREE.Color("#16272e") },
-    },
-  });
+    opacity: 0.94,
+  }) as WaterMaterial;
+
+  const uniforms = { uTime: { value: 0 }, uFlow: { value: 1 } };
+  material.waterUniforms = uniforms;
+
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>\n varying vec2 vRipUv;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n vRipUv = uv;`);
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         uniform float uTime;
+         uniform float uFlow;
+         varying vec2 vRipUv;`,
+      )
+      // Riak dikerjakan sebagai goyangan normal, bukan sebagai garis terang:
+      // yang membuat air tampak bergerak adalah pantulan langit yang bergeser,
+      // bukan warnanya yang berubah.
+      .replace(
+        "#include <normal_fragment_begin>",
+        `#include <normal_fragment_begin>
+         // Frekuensinya rendah dengan sengaja. Riak yang rapat pada bidang
+         // selebar delapan meter yang dilihat miring berubah menjadi pola
+         // kotak-kotak yang berkedip — bukan air, melainkan cacat gambar.
+         float kRip = sin(vRipUv.y * 13.0 - uTime * 1.6) * 0.5 +
+                      sin(vRipUv.x * 5.0 + uTime * 0.9) * 0.3;
+         normal = normalize(normal + vec3(kRip * 0.05 * uFlow, 0.0, kRip * 0.025 * uFlow));`,
+      )
+      // Air yang tertahan sekat menjadi tenang dan karena itu lebih memantul.
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>\n  roughnessFactor = mix(0.06, 0.16, uFlow);`,
+      );
+  };
+
+  material.customProgramCacheKey = () => "kanal-water";
+  return material;
 }

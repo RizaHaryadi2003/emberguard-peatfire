@@ -30,6 +30,16 @@ export type KanalState = {
   drawnCanalDepthM: number;
   /** Kekuatan penandaan daerah rawan (0-1), dihaluskan oleh adegan. */
   riskTint: number;
+  /**
+   * Tingkat bahaya kebakaran (0-1), dibaca `SkyLighting` untuk menyetel langit.
+   *
+   * Diambil dari bagian penampang yang muka airnya sudah melewati batas 40 cm.
+   * Jadi langit di modul ini menguning bukan karena ada yang terbakar —
+   * tidak ada api di sini — melainkan karena lahannya sudah siap terbakar.
+   * Itu disengaja: inilah sambungan ke Modul 02, dan pembaca melihatnya di
+   * langit sebelum ia membacanya di mana pun.
+   */
+  danger: number;
 };
 
 /** Keadaan awal modul: gambut yang belum tersentuh kanal. */
@@ -42,6 +52,7 @@ export function createKanalState(): KanalState {
     reducedMotion: false,
     drawnCanalDepthM: 0,
     riskTint: 1,
+    danger: 0,
   };
 }
 
