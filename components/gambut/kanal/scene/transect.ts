@@ -368,6 +368,55 @@ export function updateCanalGeometry(
 }
 
 /**
+ * Bidang potong sepanjang jalur kanal, dipakai selama kanal belum digali.
+ *
+ * Tanpa ini, bidang potong di depan berlubang selebar kanal sebelum ada yang
+ * menggalinya — tanah yang utuh tampak sudah terbelah, dan babak 01 dibuka
+ * dengan gambar yang membantah kalimatnya sendiri.
+ *
+ * Atributnya sama persis dengan kisi bidang potong, sehingga keduanya dapat
+ * memakai peneduh yang sama dan tidak pernah berbeda warna di sambungannya.
+ */
+export function createCanalFaceGeometry(): THREE.BufferGeometry {
+  const cols = 2;
+  const rows = FACE_ROWS + 1;
+  const geom = new THREE.BufferGeometry();
+  const pos = new Float32Array(cols * rows * 3);
+  const uv = new Float32Array(cols * rows * 2);
+  const depth = new Float32Array(cols * rows);
+
+  const top = surfaceY(0);
+  const bottom = floorY();
+  const z = BLOCK_DEPTH / 2;
+  const u = fieldU(0);
+
+  for (let j = 0; j < rows; j++) {
+    const y = top + (bottom - top) * (j / FACE_ROWS);
+    for (let i = 0; i < cols; i++) {
+      const k = j * cols + i;
+      pos[k * 3] = i === 0 ? -CANAL_HALF_M : CANAL_HALF_M;
+      pos[k * 3 + 1] = y;
+      pos[k * 3 + 2] = z;
+      uv[k * 2] = u;
+      uv[k * 2 + 1] = 1 - j / FACE_ROWS;
+      depth[k] = (top - y) / V_SCALE;
+    }
+  }
+
+  const idx: number[] = [];
+  for (let j = 0; j < FACE_ROWS; j++) {
+    const a = j * cols;
+    idx.push(a, a + cols, a + 1, a + 1, a + cols, a + cols + 1);
+  }
+
+  geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geom.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  geom.setAttribute("aDepth", new THREE.BufferAttribute(depth, 1));
+  geom.setIndex(idx);
+  return geom;
+}
+
+/**
  * Permukaan air di dalam kanal.
  *
  * Inilah yang membuat galian itu terbaca sebagai kanal dan bukan sebagai

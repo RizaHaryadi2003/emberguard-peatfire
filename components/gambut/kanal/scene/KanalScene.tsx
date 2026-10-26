@@ -8,6 +8,7 @@ import { DrainageSim, type DrainageStats } from "@/lib/drainage";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
 import {
+  createCanalFaceGeometry,
   createCanalGeometry,
   createCanalWaterGeometry,
   createFaceGrid,
@@ -34,6 +35,7 @@ import {
   createTransectMaterial,
 } from "./transectMaterial";
 import { createTreeField } from "./vegetation";
+import { createWeir } from "./weir";
 import SceneLabels from "./SceneLabels";
 
 // Kanvas 3D Modul 03: sepetak gambut yang dibelah kanal, dilihat isometrik.
@@ -95,7 +97,7 @@ function CameraRig() {
     const cam = camera as THREE.OrthographicCamera;
     const aspect = size.width / Math.max(1, size.height);
     const wide = aspect >= 1.1;
-    const share = wide ? WIDE_SHARE : 0.94;
+    const share = wide ? WIDE_SHARE : 0.86;
     const centerShare = wide ? WIDE_CENTER : 0.5;
 
     // Lebar yang diperlukan diambil dari dua syarat sekaligus: gambar harus
@@ -282,12 +284,14 @@ function Block({
       // per titik, dan bidang yang tidak punya atribut itu akan dibaca three.js
       // sebagai hitam pekat.
       bridgeGeom: createBridgeGeometry(),
+      canalFaceGeom: createCanalFaceGeometry(),
       canalWaterGeom: createCanalWaterGeometry(),
       canalWaterMaterial: createCanalWaterMaterial(),
       // Dinding samping dan belakang: tanah yang teduh, bukan hitam — ia
       // bagian dari bongkahan yang sama, hanya tidak kena cahaya.
       sideMaterial: new THREE.MeshBasicMaterial({ color: "#1a140f" }),
       trees: createTreeField(),
+      weir: createWeir(),
     };
   }, [colors, groundColor, field]);
 
@@ -305,10 +309,12 @@ function Block({
       res.canalGeom.dispose();
       res.canalMaterial.dispose();
       res.bridgeGeom.dispose();
+      res.canalFaceGeom.dispose();
       res.canalWaterGeom.dispose();
       res.canalWaterMaterial.dispose();
       res.sideMaterial.dispose();
       res.trees.dispose();
+      res.weir.dispose();
     },
     [res],
   );
@@ -336,10 +342,12 @@ function Block({
   const drawnDepth = useRef(-1);
   const bridgeRef = useRef<THREE.Mesh>(null);
   const canalRef = useRef<THREE.Mesh>(null);
+  const canalFaceRef = useRef<THREE.Mesh>(null);
   const drawnDrop = useRef(-1);
   const waterRef = useRef<THREE.Mesh>(null);
   const waterLevel = useRef(0);
   const treeClock = useRef(0);
+  const weirShown = useRef(0);
 
   useFrame((_, delta) => {
     const s = stateRef.current;
@@ -373,6 +381,8 @@ function Block({
     const undug = s.drawnCanalDepthM < 0.06;
     const bridge = bridgeRef.current;
     if (bridge) bridge.visible = undug;
+    const canalFace = canalFaceRef.current;
+    if (canalFace) canalFace.visible = undug;
     const canal = canalRef.current;
     if (canal) canal.visible = !undug;
 
@@ -397,6 +407,17 @@ function Block({
       mesh.position.set(0, waterLevel.current, 0);
       mesh.scale.set(CANAL_HALF_M * 2 - 0.3, 1, BLOCK_DEPTH);
     }
+
+    // Sekat tumbuh dari dasar kanal saat dipasang, dan tidak pernah turun
+    // lagi: yang sudah dikerjakan orang tidak dibatalkan oleh berjalannya
+    // waktu.
+    weirShown.current = THREE.MathUtils.damp(
+      weirShown.current,
+      s.blocked ? 1 : 0,
+      s.reducedMotion ? 30 : 2.2,
+      dt,
+    );
+    res.weir.update(s.drawnCanalDepthM, dropAtCanal, weirShown.current);
 
     // Pohon tidak perlu dihitung ulang tiap bingkai: yang menggerakkannya
     // adalah muka air tanah, yang berubah dalam hitungan tahun simulasi.
@@ -487,6 +508,7 @@ function Block({
         geometry={res.bridgeGeom}
         material={res.surfaceMaterial}
       />
+      <mesh ref={canalFaceRef} geometry={res.canalFaceGeom} material={res.faceMaterial} />
       <mesh
         ref={waterRef}
         geometry={res.canalWaterGeom}
@@ -494,6 +516,7 @@ function Block({
         visible={false}
       />
 
+      <primitive object={res.weir.group} />
       <primitive object={res.trees.group} />
     </group>
   );
