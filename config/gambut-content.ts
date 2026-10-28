@@ -25,7 +25,7 @@ export const GAMBUT_MODULES: readonly GambutModule[] = [
   { href: "/gambut/anatomi", number: "01", title: "Anatomi Gambut", caption: "Kupas lapisannya satu per satu", available: true },
   { href: "/gambut/bara", number: "02", title: "Bara di Bawah Tanah", caption: "Api yang merambat tanpa terlihat", available: true },
   { href: "/gambut/kanal", number: "03", title: "Kanal & Pengeringan", caption: "Saat air dialirkan keluar", available: true },
-  { href: null, number: "04", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar", available: false },
+  { href: "/gambut/karbon", number: "04", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar", available: true },
 ];
 
 export type AnatomiStep = {
