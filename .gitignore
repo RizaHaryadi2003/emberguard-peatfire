@@ -62,3 +62,11 @@ next-env.d.ts
 
 # Berkas sementara Microsoft Word (mis. "~$nama.docx")
 ~$*
+
+# ---------------------------------------------------------------------------
+# Keluaran sementara di akar proyek: naskah hasil olahan Claude Code dan
+# tangkapan layar pengukuran performa. Tangkapan layar yang dipakai di naskah
+# disimpan di docs/screenshots/, bukan di sini.
+# ---------------------------------------------------------------------------
+/Claude outputs/
+/*.png
