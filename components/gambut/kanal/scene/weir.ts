@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CANAL_HALF_M, surfaceY, V_SCALE } from "./transect";
+import { CANAL_HALF_M, surfaceY, surfaceYAt, V_SCALE } from "./transect";
 
 // Sekat kanal.
 //
@@ -66,7 +66,11 @@ export function createWeir(): Weir {
     if (!group.visible) return;
 
     const bottom = surfaceY(0) - canalDepthM * V_SCALE;
-    const rim = surfaceY(0, dropM);
+    // Bibir kanal tepat di tempat sekat ini dipancang (z = 0), bukan bibir
+    // rata-rata: sejak permukaan bergundukan, keduanya berselisih sampai
+    // sejengkal, dan selisih sejengkal itu membuat papan sekat tampak
+    // mencuat atau tenggelam.
+    const rim = surfaceYAt(0, 0, dropM, canalDepthM);
     const full = Math.max(0.1, rim - bottom);
     const height = full * shown;
 

@@ -32,7 +32,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
   {
     number: "01",
     title: "Satu kanal",
-    body: "Kanal digali untuk mengeringkan lahan agar dapat ditanami atau dilalui. Begitu ia terbuka, air di dalam gambut mengalir keluar dengan sendirinya — tidak dipompa, hanya mengikuti gravitasi. Muka air tanah di sekitarnya melengkung turun ke arah kanal.",
+    body: "Kanal digali untuk mengeringkan lahan. Begitu terbuka, air di dalam gambut mengalir keluar sendiri — tanpa pompa, hanya gravitasi. Makin dalam kanalnya, makin dalam muka air tanah di sekitarnya turun.",
     task: "Gali kanal sampai sedalam satu meter.",
     hint: "Gali kanalnya sampai sedalam satu meter untuk melanjutkan.",
     fact: {
@@ -43,8 +43,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
   {
     number: "02",
     title: "Jauh dari tepi",
-    body: "Yang mengering bukan hanya tepi kanalnya. Lengkung muka air itu memanjang ratusan meter ke dalam kubah gambut, dan di sepanjang itu lapisan atasnya berubah menjadi bahan bakar. Satu kanal mengeringkan lahan yang jauh lebih luas daripada yang digali.",
-    task: "Geser penanda pada grafik ke tempat muka airnya menyeberangi batas 40 cm.",
+    body: "Yang kering bukan hanya tepi kanal. Muka air tanah melengkung turun sampai ratusan meter ke dalam, dan sepanjang itu lapisan atasnya menjadi bahan bakar. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
+    task: "Pada grafik, cari jarak tempat muka airnya melewati batas 40 cm.",
     hint: "Tandai tempat muka airnya menyeberangi batas 40 cm pada grafik.",
     // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
     // justru yang sedang dicari pembaca pada grafik, dan mencetaknya di panel
@@ -58,8 +58,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
   {
     number: "03",
     title: "Tahun demi tahun",
-    body: "Gambut kering tidak hanya mudah terbakar; ia juga menyusut dan teroksidasi sendiri, tanpa api sama sekali. Permukaannya turun sedikit demi sedikit, dan karbon yang tersimpan ribuan tahun terlepas ke udara. Inilah bagian yang tidak terlihat karena terjadi terlalu lambat.",
-    task: "Jalankan waktu sampai permukaannya turun setengah meter.",
+    body: "Gambut kering menyusut sendiri, tanpa api sama sekali. Permukaannya turun beberapa sentimeter tiap tahun, dan karbon yang tersimpan ribuan tahun terlepas ke udara. Tidak terlihat karena terlalu lambat.",
+    task: "Jalankan waktu sampai permukaan turun 50 cm.",
     hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
     fact: {
       value: "± 5 cm/tahun",
@@ -69,8 +69,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
   {
     number: "04",
     title: "Yang kembali hanya airnya",
-    body: "Menyekat kanal menahan air sehingga muka airnya naik kembali dan lahan itu tidak lagi rawan terbakar. Tetapi permukaan yang sudah melesak tidak kembali — gambut tumbuh satu milimeter per tahun, sedangkan yang hilang tadi puluhan sentimeter. Garis putus-putus di gambar menunjukkan setinggi mana tanah ini dahulu berada.",
-    task: "Pasang sekat kanal, lalu bandingkan dengan garis permukaan asalnya.",
+    body: "Sekat menahan air, muka airnya naik, dan lahan ini tidak lagi rawan terbakar. Tetapi tanah yang sudah melesak tidak kembali: gambut tumbuh satu milimeter per tahun. Garis putus-putus menunjukkan setinggi mana tanah ini dahulu.",
+    task: "Pasang sekat, lalu bandingkan dengan garis putus-putus.",
     hint: "Pasang sekat kanalnya.",
     fact: {
       value: "1 mm/tahun",
@@ -116,6 +116,24 @@ export const PROBE_TEXT = {
   // untuk menyatakan bahwa ia melihatnya.
   beyond: "Seluruh satu kilometer ini rawan. Tandai ujung grafik.",
   beyondFound: "Benar — dengan kanal sedalam ini, pengaruhnya tidak muat dalam satu kilometer.",
+};
+
+/**
+ * Keterangan yang menjelaskan hubungan dua gambar di layar.
+ *
+ * Modul ini memperlihatkan dua hal sekaligus dengan skala yang berbeda seribu
+ * kali: bongkahan tanah selebar 36 m tiap sisi, dan grafik sepanjang 1 km.
+ * Tanpa dikatakan, pembaca mengira keduanya memperlihatkan hal yang sama dan
+ * tidak dapat memahami satu pun — dan itu memang yang terjadi.
+ */
+export const FIGURE_NOTE = {
+  block: (lengthM: number) => `Gambar: ${lengthM} m dari tepi kanal`,
+  chart: "Grafik: seluruh 1 km",
+  chartLead: "Seberapa dalam muka air tanah, pada tiap jarak dari kanal",
+  // Petak 36 m hanya 3,6% lebar grafik — sepotong pita yang terlalu tipis
+  // untuk diberi label di dalam gambarnya. Jadi hubungannya dikatakan dengan
+  // kalimat, bukan dengan tanda yang harus dicari.
+  window: (lengthM: number) => `Pita terang di kiri: ${lengthM} m yang digambar besar`,
 };
 
 /** Keterangan skala yang wajib tampil pada gambar. */

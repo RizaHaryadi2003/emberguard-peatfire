@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { waterDepthAt, WATER_LIMIT_M } from "@/lib/drainage";
-import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceY, xOfDistance } from "./transect";
+import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceYAt, xOfDistance } from "./transect";
 
 // Tumbuhan di atas bongkahan.
 //
@@ -44,7 +44,7 @@ import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceY, xOfDistance } from "./transect"
 // ukuran, dan untuk itu ia harus setinggi tumbuhan sungguhan.
 
 /** Tinggi pohon dewasa (m). */
-const TREE_HEIGHT_M = 10;
+const TREE_HEIGHT_M = 11;
 
 /** Tinggi pakis tumbuhan bawah (m). */
 const FERN_HEIGHT_M = 0.9;
@@ -86,8 +86,19 @@ const THIRST_M = WATER_LIMIT_M + 0.4;
 
 export type PlantField = {
   group: THREE.Group;
-  /** Perbarui letak dan keadaan tiap tumbuhan dari keadaan simulasi. */
-  update: (canalDepthM: number, drop: (distanceM: number) => number) => void;
+  /**
+   * Perbarui letak dan keadaan tiap tumbuhan dari keadaan simulasi.
+   *
+   * `canalDepthM` kedalaman yang masih mengeringkan — nol setelah disekat —
+   * dan `dugDepthM` galian yang benar-benar ada di tanah. Yang pertama
+   * menentukan nasib tumbuhannya, yang kedua menentukan tinggi tanah tempat
+   * ia berdiri, sebab tanggul galian tidak hilang ketika kanalnya disekat.
+   */
+  update: (
+    canalDepthM: number,
+    drop: (distanceM: number) => number,
+    dugDepthM?: number,
+  ) => void;
   dispose: () => void;
 };
 
@@ -114,6 +125,8 @@ type Plant = {
   topples: boolean;
   /** Ragam model yang dipakai tumbuhan ini. */
   variant: number;
+  /** Kemiringan tumbuh (radian), kecil. */
+  lean: number;
 };
 
 /** Pengacak tetap: susunan tumbuhan harus sama tiap kali halaman dibuka. */
@@ -123,6 +136,42 @@ function seeded(seed: number): () => number {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 4294967296;
   };
+}
+
+/**
+ * Pangkas segitiga daun, dengan menjatuhkan sebagian helainya.
+ *
+ * Model pindaian ini mahal: satu pohon pachira berdaun 17.000-24.000 segitiga,
+ * dan lima puluhan pohon membuat seluruh adegan menggambar 1,3 juta segitiga
+ * tiap bingkai — pada modul yang juga menjalankan simulasi tiap bingkai.
+ * Modul 01 dan 02 tidak pernah menghadapi ini karena hanya menanam tiga.
+ *
+ * Yang dijatuhkan helai utuh, bukan segitiga satu per satu. Daun pada model
+ * ini tersusun sebagai lembar-lembar bersegitiga genap; membuang segitiga
+ * berselang-seling akan memotong tiap helai menjadi separuh, dan yang didapat
+ * bukan tajuk yang lebih jarang melainkan tajuk yang robek. Membuang sepasang
+ * segitiga sekaligus menjaga tiap helai tetap utuh — tajuknya menjadi lebih
+ * jarang, dan itu memang yang diinginkan.
+ */
+function thinFoliage(geometry: THREE.BufferGeometry, keep: number): THREE.BufferGeometry {
+  const index = geometry.getIndex();
+  if (!index || keep >= 1) return geometry;
+
+  const triangles = index.count / 3;
+  const kept: number[] = [];
+  // Dikerjakan per pasang segitiga: satu helai daun.
+  const pairs = Math.floor(triangles / 2);
+  const period = Math.max(2, Math.round(1 / keep));
+  for (let pair = 0; pair < pairs; pair++) {
+    if (pair % period !== 0) continue;
+    for (let t = pair * 2; t < pair * 2 + 2; t++) {
+      kept.push(index.getX(t * 3), index.getX(t * 3 + 1), index.getX(t * 3 + 2));
+    }
+  }
+
+  const thinned = geometry.clone();
+  thinned.setIndex(kept);
+  return thinned;
 }
 
 type Part = {
@@ -150,7 +199,7 @@ type Part = {
  * pangkalnya berada di y = 0 dan tingginya tepat 1 — dengan begitu
  * penskalaannya nanti dapat dinyatakan langsung dalam meter.
  */
-function collectVariants(root: THREE.Object3D): Part[][] {
+function collectVariants(root: THREE.Object3D, leafKeep = 1): Part[][] {
   root.updateMatrixWorld(true);
   const groups = new Map<string, Part[]>();
 
@@ -160,14 +209,12 @@ function collectVariants(root: THREE.Object3D): Part[][] {
     // Ragam dipisahkan oleh huruf terakhir nama mesh, sama seperti pada
     // SurfaceCover Modul 02 — begitulah berkas Poly Haven ini disusun.
     const key = mesh.name.slice(-1);
-    const geometry = mesh.geometry.clone();
+    const leaf = /leaf|leaves|daun/i.test(mesh.name);
+    let geometry = mesh.geometry.clone();
+    if (leaf) geometry = thinFoliage(geometry, leafKeep);
     geometry.applyMatrix4(mesh.matrixWorld);
     const list = groups.get(key) ?? [];
-    list.push({
-      geometry,
-      material: mesh.material as THREE.Material,
-      leaf: /leaf|leaves|daun/i.test(mesh.name),
-    });
+    list.push({ geometry, material: mesh.material as THREE.Material, leaf });
     groups.set(key, list);
   });
 
@@ -217,7 +264,12 @@ function plantVariants(
       inst.userData.leaf = part.leaf;
       inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       inst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(mine.length * 3).fill(1), 3);
-      inst.castShadow = castShadow;
+      // Tajuk tidak ikut langkah bayangan, batangnya ikut. Langkah bayangan
+      // menggambar seluruh adegan sekali lagi, dan tajuklah yang paling mahal
+      // di dalamnya; sementara bayangan tajuk pada petak selebar delapan puluh
+      // meter yang dilihat dari jauh hanya menjadi bercak kelabu yang tidak
+      // dapat dibedakan dari bayangan batangnya.
+      inst.castShadow = castShadow && !part.leaf;
       inst.receiveShadow = true;
       // Tajuk tumbang keluar dari kotak awalnya, dan memotong seluruh
       // kelompok karena menghitung ulang kotaknya jauh lebih mahal daripada
@@ -260,6 +312,8 @@ export function createPlantField(
   fernScene: THREE.Object3D | null,
   treesPerWing: number,
   fernsPerWing: number,
+  /** Bagian helai daun yang dipertahankan (0-1). */
+  leafKeep = 0.5,
 ): PlantField {
   const rand = seeded(20260926);
   const group = new THREE.Group();
@@ -273,6 +327,10 @@ export function createPlantField(
           z: (rand() - 0.5) * (BLOCK_DEPTH_M - 3),
           side,
           scale: 1 - spread / 2 + rand() * spread,
+          // Sedikit condong, seperti pohon rawa yang tumbuh di tanah lunak.
+          // Dengan pohon yang jumlahnya dikurangi demi biaya, ragam kecil
+          // seperti ini yang menjaga barisannya tidak terbaca sebagai tiang.
+          lean: (rand() - 0.5) * 0.14,
           spin: rand() * Math.PI * 2,
           fall: rand() * Math.PI * 2,
           topples: rand() < 0.45,
@@ -287,7 +345,7 @@ export function createPlantField(
   // itu tanggul galian, dan di sanalah memang tidak ada yang sempat tumbuh
   // besar.
   const trees = scatter(treesPerWing, 2.5, 0.55);
-  const treePlanting = plantVariants(collectVariants(treeScene), trees, true);
+  const treePlanting = plantVariants(collectVariants(treeScene, leafKeep), trees, true);
   group.add(...treePlanting.meshes);
 
   const ferns = fernScene && fernsPerWing > 0 ? scatter(fernsPerWing, 1, 0.5) : [];
@@ -297,7 +355,7 @@ export function createPlantField(
   // dengan SurfaceCover pada Modul 02.
   const fernPlanting =
     fernScene && ferns.length > 0
-      ? plantVariants(collectVariants(fernScene), ferns, false)
+      ? plantVariants(collectVariants(fernScene, leafKeep), ferns, false)
       : { plantings: [] as Planting[], meshes: [] as THREE.InstancedMesh[] };
   if (fernPlanting.meshes.length > 0) group.add(...fernPlanting.meshes);
 
@@ -308,6 +366,7 @@ export function createPlantField(
     baseHeight: number,
     deathDrop: number,
     topplesAllowed: boolean,
+    dugDepthM: number,
   ): void {
     for (const planting of plantings) {
       planting.plants.forEach((p, i) => {
@@ -327,7 +386,7 @@ export function createPlantField(
         const topples = topplesAllowed && p.topples;
         // Yang tumbang rebah ke arahnya sendiri; yang tidak menyusut menjadi
         // tunggul dan ranting.
-        const tilt = topples ? wither * wither * 1.45 : wither * 0.14;
+        const tilt = (topples ? wither * wither * 1.45 : wither * 0.14) + p.lean;
         const height = baseHeight * p.scale * (topples ? 1 : 1 - wither * 0.72);
 
         _axis.set(Math.cos(p.fall), 0, Math.sin(p.fall));
@@ -335,7 +394,15 @@ export function createPlantField(
         _spin.setFromAxisAngle(_up, p.spin);
         _q.multiply(_spin);
 
-        _pos.set(xOfDistance(p.distanceM) * p.side, surfaceY(p.distanceM, dropM), p.z);
+        // Tingginya dibaca pada titik tempat tumbuhan ini benar-benar berdiri,
+        // bukan pada garis permukaan rata-rata: sejak permukaan bergundukan,
+        // pohon yang ditaruh pada ketinggian rata-rata akan separuhnya
+        // melayang dan separuhnya terbenam.
+        _pos.set(
+          xOfDistance(p.distanceM) * p.side,
+          surfaceYAt(p.distanceM, p.z, dropM, dugDepthM),
+          p.z,
+        );
         _scale.setScalar(Math.max(0.02, height));
         _m.compose(_pos, _q, _scale);
 
@@ -364,9 +431,13 @@ export function createPlantField(
     }
   }
 
-  function update(canalDepthM: number, drop: (distanceM: number) => number): void {
-    updatePlanting(treePlanting.plantings, canalDepthM, drop, TREE_HEIGHT_M, TREE_DEATH_DROP_M, true);
-    updatePlanting(fernPlanting.plantings, canalDepthM, drop, FERN_HEIGHT_M, FERN_DEATH_DROP_M, false);
+  function update(
+    canalDepthM: number,
+    drop: (distanceM: number) => number,
+    dugDepthM = canalDepthM,
+  ): void {
+    updatePlanting(treePlanting.plantings, canalDepthM, drop, TREE_HEIGHT_M, TREE_DEATH_DROP_M, true, dugDepthM);
+    updatePlanting(fernPlanting.plantings, canalDepthM, drop, FERN_HEIGHT_M, FERN_DEATH_DROP_M, false, dugDepthM);
   }
 
   function dispose(): void {

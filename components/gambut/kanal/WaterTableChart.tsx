@@ -10,7 +10,7 @@ import {
   type DrainageStats,
 } from "@/lib/drainage";
 import { NEAR_LENGTH_M } from "./scene/transect";
-import { PROBE_TEXT } from "@/config/kanal-content";
+import { FIGURE_NOTE, PROBE_TEXT } from "@/config/kanal-content";
 import { judgeProbe } from "./probe";
 
 // Kurva muka air tanah sepanjang satu kilometer.
@@ -49,6 +49,44 @@ const PAD_B = 16;
 /** Jumlah titik kurva. Cukup halus untuk peluruhan eksponensial yang landai. */
 const SAMPLES = 72;
 
+/**
+ * Susun titik-titik menjadi satu lintasan bezier yang mulus.
+ *
+ * Sebelumnya titik-titiknya disambung dengan `L` — ruas garis lurus. Pada
+ * kurva peluruhan yang landai sambungan itu memang hampir tidak terlihat,
+ * tetapi tidak pernah benar-benar hilang: di sepertiga kiri grafik, tempat
+ * kurvanya menukik paling tajam, tiap sambungan menjadi sudut kecil, dan
+ * deretan sudut kecil itulah yang membuat garis selembut muka air tanah
+ * terbaca sebagai patahan. Yang digambar kurva alam, jadi yang menggambarnya
+ * harus kurva.
+ *
+ * Caranya Catmull-Rom yang diubah menjadi bezier kubik: tiap ruas mendapat
+ * dua titik kendali yang diambil dari kemiringan tetangganya, sehingga
+ * kurvanya tetap melewati setiap titik hasil hitungan — tidak satu pun angka
+ * yang digeser demi kehalusan. Itu syarat, bukan selera: grafik ini dibaca
+ * pembaca sebagai alat ukur.
+ */
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i === 0 ? 0 : i - 1];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+    // Seperenam, bukan sepertiga: inilah tegangan Catmull-Rom yang membuat
+    // kurvanya tidak pernah melampaui titik-titiknya sendiri. Kurva yang
+    // melampaui akan menggambar muka air sedikit lebih dalam daripada hasil
+    // hitungan, dan pembaca membaca kedalaman itu sebagai angka.
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += `C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
 const PLOT_W = W - PAD_L - PAD_R;
 const PLOT_H = H - PAD_T - PAD_B;
 
@@ -80,6 +118,17 @@ type Props = {
    * bertanya, dan tugasnya berubah menjadi menyalin.
    */
   revealReach?: boolean;
+  /**
+   * Penanda yang berubah nilainya memicu ulang animasi kurva.
+   *
+   * Dipakai babak 02: kurvanya digambar dari tepi kanal ke luar, dan itu
+   * diulang tiap kali kedalaman kanal berubah — sebab kurvanya memang
+   * berubah. Dinyatakan sebagai nilai dari luar, bukan ditebak di dalam,
+   * supaya pemanggilnya yang memutuskan kapan gerakan itu pantas.
+   */
+  sweepKey?: string | number;
+  /** Pengguna meminta gerak dikurangi. */
+  reducedMotion?: boolean;
 };
 
 export default function WaterTableChart({
@@ -89,6 +138,8 @@ export default function WaterTableChart({
   onProbe,
   interactive = false,
   revealReach = true,
+  sweepKey,
+  reducedMotion = false,
 }: Props) {
   // Dihitung ulang tiap kali ringkasan diperbarui — lima kali sedetik, dan
   // hanya 72 titik. Yang mahal pada modul ini adalah kanvas 3D di belakangnya,
@@ -100,17 +151,23 @@ export default function WaterTableChart({
   // pembaruan adalah ringkasan ini.
   const { curve, area } = useMemo(() => {
     const depth = sim.effectiveCanalDepth();
-    const points: string[] = [];
+    const points: { x: number; y: number }[] = [];
     for (let i = 0; i <= SAMPLES; i++) {
       const m = (i / SAMPLES) * TRANSECT_LENGTH_M;
       const water = waterDepthAt(m, depth, sim.subsidenceAtDistance(m));
-      points.push(`${xOf(m).toFixed(2)},${yOf(water).toFixed(2)}`);
+      points.push({ x: xOf(m), y: yOf(water) });
     }
+    const curve = smoothPath(points);
     return {
-      curve: `M${points.join("L")}`,
+      curve,
       // Daerah antara permukaan dan muka air: inilah lapisan kering yang
       // menjadi bahan bakar, dan luasnya yang tumbuh dari babak ke babak.
-      area: `M${xOf(0)},${yOf(0)}L${points.join("L")}L${xOf(TRANSECT_LENGTH_M)},${yOf(0)}Z`,
+      // Memakai ulang lintasan kurvanya sendiri, lalu ditutup di sepanjang
+      // garis permukaan — dengan begitu tepi atas daerah ini tidak mungkin
+      // berbeda sedikit pun dari kurvanya.
+      area: `M${xOf(0).toFixed(2)},${yOf(0).toFixed(2)}L${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}${curve.slice(
+        curve.indexOf("C"),
+      )}L${xOf(TRANSECT_LENGTH_M).toFixed(2)},${yOf(0).toFixed(2)}Z`,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sim, stats]);
@@ -168,31 +225,29 @@ export default function WaterTableChart({
     [interactive, onProbe, probeM],
   );
 
+  // Kurva digambar dari tepi kanal ke luar. Inilah animasi babak 02, dan
+  // babak itu sebelumnya satu-satunya yang tidak ada gerakannya sama sekali:
+  // pembaca diminta memperhatikan bahwa pengeringan memanjang ratusan meter,
+  // tetapi yang dilihatnya gambar diam. Menggambar kurvanya dari kanal ke
+  // luar memperlihatkan pemanjangan itu, bukan sekadar menyatakannya.
+  const sweep = interactive && !reducedMotion;
+  const probeColor = verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff";
+
   return (
     <figure className="m-0">
       <figcaption className="mb-2">
         <span className="block text-[10px] uppercase tracking-[0.16em] text-white/45">
-          Muka air tanah
+          {FIGURE_NOTE.chart}
         </span>
-        <span className="mt-0.5 block text-[10px] leading-snug text-white/35">
-          {!revealReach ? (
-            "Sampai jarak berapa dari kanal?"
-          ) : reach > 0 ? (
-            <>
-              Rawan sampai{" "}
-              <span className="font-medium tabular-nums text-[#f0a35e]">{Math.round(reach)} m</span>{" "}
-              dari kanal
-            </>
-          ) : (
-            "Seluruh penampang masih di atas batas"
-          )}
+        <span className="mt-0.5 block text-[10px] leading-snug text-white/40">
+          {FIGURE_NOTE.chartLead}
         </span>
       </figcaption>
 
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className={`w-full touch-none ${interactive ? "cursor-ew-resize" : ""}`}
+        className={`w-full touch-none overflow-visible ${interactive ? "cursor-ew-resize" : ""}`}
         tabIndex={interactive ? 0 : undefined}
         onPointerDown={handlePointer}
         onPointerMove={handlePointer}
@@ -212,22 +267,40 @@ export default function WaterTableChart({
             : "Kurva muka air tanah dari kanal sampai 1.000 meter. Muka air masih di atas batas 40 sentimeter di seluruh penampang."
         }
       >
-        {/* Lapisan kering di atas muka air. */}
-        <path d={area} fill="rgba(214,150,86,0.16)" />
+        <defs>
+          {/* Lapisan kering memudar ke bawah, bukan satu blok rata. Blok rata
+              membuat grafik ini terbaca sebagai kotak-kotak yang ditempel,
+              bukan sebagai keadaan tanah yang berangsur berubah. */}
+          <linearGradient id="kanal-dry" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#e0a265" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#c07a3a" stopOpacity="0.08" />
+          </linearGradient>
+          <linearGradient id="kanal-window" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-        {/* Petak yang digambar bongkahan di sebelah: beberapa puluh meter
-            pertama saja. Ditandai supaya pembaca tahu bahwa gambar besar itu
-            hanya ujung kiri grafik ini. */}
+        {/* Petak yang digambar besar di sebelah: hanya ujung kiri grafik ini.
+            Dibuat memudar, bukan kotak bertepi tajam, supaya ia terbaca
+            sebagai "bagian ini" dan bukan sebagai palang kedua. */}
         <rect
           x={xOf(0)}
-          y={PAD_T}
+          y={PAD_T - 4}
           width={xOf(NEAR_LENGTH_M) - xOf(0)}
-          height={PLOT_H}
-          fill="rgba(255,255,255,0.12)"
+          height={PLOT_H + 4}
+          fill="url(#kanal-window)"
         />
 
         {/* Permukaan tanah. */}
-        <line x1={PAD_L} y1={yOf(0)} x2={W - PAD_R} y2={yOf(0)} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
+        <line
+          x1={PAD_L}
+          y1={yOf(0)}
+          x2={W - PAD_R}
+          y2={yOf(0)}
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth="0.8"
+        />
 
         {/* Batas 40 cm PP 57/2016. */}
         <line
@@ -236,62 +309,99 @@ export default function WaterTableChart({
           x2={W - PAD_R}
           y2={limitY}
           stroke="#f0a35e"
-          strokeWidth="1"
-          strokeDasharray="3 2.5"
+          strokeOpacity="0.75"
+          strokeWidth="0.9"
+          strokeDasharray="2.5 3"
+          strokeLinecap="round"
         />
-        <text x={W - PAD_R} y={limitY - 2.5} textAnchor="end" fill="#f0a35e" fontSize="7">
-          40 cm
-        </text>
 
-        {/* Tanda tempat kurva menyeberangi batas — jawaban babak 02. */}
-        {revealReach && reach > 0 && reach < TRANSECT_LENGTH_M && (
-          <line
-            x1={xOf(reach)}
-            y1={PAD_T}
-            x2={xOf(reach)}
-            y2={PAD_T + PLOT_H}
-            stroke="rgba(240,163,94,0.55)"
-            strokeWidth="1"
+        <g key={sweep ? sweepKey : "diam"}>
+          {/* Lapisan kering di atas muka air: bahan bakarnya. */}
+          <path d={area} fill="url(#kanal-dry)" className={sweep ? "kanal-fill" : undefined} />
+
+          {/* Tanda tempat kurva menyeberangi batas. */}
+          {revealReach && reach > 0 && reach < TRANSECT_LENGTH_M && (
+            <line
+              x1={xOf(reach)}
+              y1={yOf(WATER_LIMIT_M)}
+              x2={xOf(reach)}
+              y2={PAD_T + PLOT_H}
+              stroke="rgba(240,163,94,0.45)"
+              strokeWidth="0.9"
+              strokeDasharray="2 2"
+            />
+          )}
+
+          {/* Kurva muka air, dengan nyala lembut di bawahnya supaya ia tidak
+              tampak sebagai garis patah-patah pada layar rapat. */}
+          <path
+            d={curve}
+            pathLength={1}
+            fill="none"
+            stroke="#6fb6d8"
+            strokeOpacity="0.22"
+            strokeWidth="3.4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            className={sweep ? "kanal-draw" : undefined}
           />
-        )}
-
-        {/* Kurva muka air. */}
-        <path d={curve} fill="none" stroke="#6fb6d8" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d={curve}
+            pathLength={1}
+            fill="none"
+            stroke="#8fcce8"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            className={sweep ? "kanal-draw" : undefined}
+          />
+        </g>
 
         {/* Penanda jarak yang digeser pembaca — tugas babak 02. */}
         {probeM !== null && (
           <g>
             <line
               x1={xOf(probeM)}
-              y1={PAD_T - 3}
+              y1={PAD_T - 4}
               x2={xOf(probeM)}
               y2={PAD_T + PLOT_H}
-              stroke={verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff"}
-              strokeWidth="1.4"
+              stroke={probeColor}
+              strokeOpacity="0.55"
+              strokeWidth="1"
             />
-            <circle
-              cx={xOf(probeM)}
-              cy={yOf(probeWater ?? 0)}
-              r="3"
-              fill={verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff"}
-            />
+            <circle cx={xOf(probeM)} cy={yOf(probeWater ?? 0)} r="4.5" fill={probeColor} fillOpacity="0.2" />
+            <circle cx={xOf(probeM)} cy={yOf(probeWater ?? 0)} r="2.2" fill={probeColor} />
           </g>
         )}
-
-        {/* Penanda jarak. */}
-        {[0, 500, 1000].map((m) => (
-          <text
-            key={m}
-            x={xOf(m)}
-            y={H - 5}
-            textAnchor={m === 0 ? "start" : m === 1000 ? "end" : "middle"}
-            fill="rgba(255,255,255,0.4)"
-            fontSize="7"
-          >
-            {m === 1000 ? "1.000 m" : m}
-          </text>
-        ))}
       </svg>
+
+      {/* Sumbu jarak ditulis sebagai DOM, bukan sebagai teks di dalam SVG.
+          Teks SVG setinggi tujuh satuan viewBox diskalakan oleh lebar panel,
+          jadi ukurannya tidak pernah sama dengan tulisan di sekitarnya dan
+          tepinya kabur — itulah yang membuat grafik ini tampak sebagai
+          tempelan, bukan sebagai bagian dari halaman yang sama. */}
+      <div className="mt-1 flex items-baseline justify-between text-[9px] tabular-nums text-white/35">
+        <span>0</span>
+        <span>500</span>
+        <span>1.000 m</span>
+      </div>
+      <p className="mt-1 text-[9px] leading-snug text-white/30">{FIGURE_NOTE.window(NEAR_LENGTH_M)}</p>
+
+      <div className="mt-1.5 flex items-baseline justify-between gap-2 text-[10px]">
+        <span className="text-[#f0a35e]/80">batas 40 cm</span>
+        <span className="text-white/40">
+          {!revealReach ? (
+            "sampai jarak berapa?"
+          ) : reach > 0 ? (
+            <>
+              rawan sampai{" "}
+              <span className="font-medium tabular-nums text-[#f0a35e]">{Math.round(reach)} m</span>
+            </>
+          ) : (
+            "seluruhnya di atas batas"
+          )}
+        </span>
+      </div>
 
       {/* Bacaan penanda. Hanya muncul pada babak yang memintanya, supaya
           grafik ini tetap menjadi bacaan sekilas di babak-babak lainnya. */}

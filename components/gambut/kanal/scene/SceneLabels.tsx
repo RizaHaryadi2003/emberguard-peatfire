@@ -67,13 +67,27 @@ export default function SceneLabels() {
         </group>
       ))}
 
-      {/* Penanda kedalaman di tepi kiri, diukur dari permukaan asal.
+      {/* Penanda kedalaman, diukur dari permukaan asal.
           Sengaja diikatkan ke permukaan asal, bukan ke permukaan yang sedang
-          melesak: justru selisih keduanya yang menjadi pelajaran babak 03. */}
+          melesak: justru selisih keduanya yang menjadi pelajaran babak 03.
+
+          Ditulis di atas bidang potong, bukan di margin kiri gambar seperti
+          sebelumnya. Dua alasan, dan keduanya menentukan.
+
+          Pertama kebenaran: penggaris kedalaman pada penampang geologi
+          memang digambar pada penampangnya, sebab angkanya hanya berarti
+          bersama lapisan yang ditunjuknya.
+
+          Kedua ruang. Di margin, keempat angka ini menempati pita selebar
+          enam puluh piksel di luar bongkahan — pita yang harus dikosongkan
+          oleh kamera, dan karena itu diambil dari besar gambarnya. Lebih
+          buruk lagi, pita itu jatuh persis di atas panel kendali begitu
+          panel itu tumbuh pada babak 04, sehingga angkanya tertimbun. Di
+          dalam gambar, keduanya selesai sekaligus. */}
       {DEPTH_TICKS.map((d) => (
-        <group key={d} position={[-HALF_WIDTH - 4.5, -d * V_SCALE, FRONT_Z]}>
+        <group key={d} position={[-HALF_WIDTH + 3.6, -d * V_SCALE, FRONT_Z + 0.05]}>
           <Html center zIndexRange={[20, 10]}>
-            <span className="pointer-events-none hidden whitespace-nowrap text-[10px] tabular-nums text-white/45 md:inline">
+            <span className="pointer-events-none hidden whitespace-nowrap rounded-sm bg-black/45 px-1 text-[10px] tabular-nums leading-tight text-white/70 backdrop-blur-[2px] md:inline">
               {d} m
             </span>
           </Html>

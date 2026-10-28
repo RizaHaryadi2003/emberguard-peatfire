@@ -2,6 +2,11 @@ import * as THREE from "three";
 import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
 import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaConstants";
 import { CANAL_WIDTH_M, COLUMNS, TRANSECT_LENGTH_M, WATER_LIMIT_M } from "@/lib/drainage";
+import { createNoiseTexture, NOISE_GLSL } from "@/components/gambut/scene/noiseTexture";
+
+// `createNoiseTexture` diekspor ulang supaya KanalScene tidak perlu tahu
+// bahwa deraunya kini milik bersama, bukan milik modul ini.
+export { createNoiseTexture };
 
 // Bahan tanah Modul 03.
 //
@@ -39,28 +44,6 @@ function tintGlsl(id: PeatLayerId): string {
   return PEAT_LAYER_TINT[id].map((v) => v.toFixed(3)).join(", ");
 }
 
-/** Potongan GLSL yang dipakai kedua bahan: derau dan ragamnya. */
-const NOISE_GLSL = /* glsl */ `
-float kHash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float kNoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(kHash(i), kHash(i + vec2(1.0, 0.0)), f.x),
-    mix(kHash(i + vec2(0.0, 1.0)), kHash(i + vec2(1.0, 1.0)), f.x),
-    f.y
-  );
-}
-
-float kFbm(vec2 p) {
-  return kNoise(p) * 0.6 + kNoise(p * 2.3) * 0.26 + kNoise(p * 5.1) * 0.14;
-}
-`;
-
 // ---------------------------------------------------------------------------
 //  BIDANG POTONG
 // ---------------------------------------------------------------------------
@@ -78,6 +61,8 @@ uniform sampler2D uField;
 uniform vec3 uBounds;    // kedalaman batas fibrik/hemik, hemik/saprik, saprik/mineral (m)
 uniform float uProfile;  // kedalaman seluruh profil (m)
 uniform float uDryTint;  // kekuatan penandaan daerah rawan (0-1)
+uniform float uRiskFront; // sejauh mana penandaan sudah menjalar dari kanal (m)
+uniform float uTransect;  // panjang transek simulasi (m)
 
 varying float vDepth;
 varying float vField;
@@ -119,7 +104,7 @@ const FACE_DIFFUSE = /* glsl */ `
   // Ragam skala besar supaya tekstur foto tidak tampak berulang, ditambah
   // guratan mendatar mengikuti arah pengendapan bahan organik — paling jelas
   // di fibrik yang seratnya masih utuh.
-  float kMottle = kNoise(kUv * 0.5) * 0.45 + kNoise(kUv * 1.6) * 0.25;
+  float kMottle = kNoise(kUv * 0.5) * 0.58;
   float kBedding = kNoise(vec2(vPeatWorld.x * 0.7, vPeatWorld.y * 16.0));
   float kFibrous = kW.x * 1.0 + kW.y * 0.6 + kW.z * 0.25 + kW.w * 0.15;
   kAlbedo *= 0.8 + kMottle * 0.46;
@@ -152,8 +137,10 @@ const FACE_DIFFUSE = /* glsl */ `
   float kDry = 1.0 - kWet;
   kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.18, 1.1, 0.92), kDry * (1.0 - smoothstep(0.0, 0.9, vDepth)) * 0.85);
 
-  // Penandaan daerah rawan: hanya bagian keringnya, bukan seluruh kolom.
-  kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.28, 0.78, 0.58), kRisk * kDry * uDryTint);
+  // Penandaan daerah rawan: hanya bagian keringnya, bukan seluruh kolom, dan
+  // hanya sejauh mukanya sudah menjalar dari kanal.
+  float kReached = 1.0 - smoothstep(uRiskFront - 3.0, uRiskFront, vField * uTransect);
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.28, 0.78, 0.58), kRisk * kDry * uDryTint * kReached);
 
   // Garis muka air tanah, dengan pias lembut di bawahnya supaya batas
   // kering-basah terbaca sebagai bidang, bukan sekadar satu garis. Dimasukkan
@@ -191,6 +178,16 @@ const FACE_NORMAL = /* glsl */ `
 export type FaceUniforms = {
   uField: { value: THREE.Texture };
   uDryTint: { value: number };
+  uRiskFront: { value: number };
+  /**
+   * Kedalaman galian yang sedang digambar (m).
+   *
+   * Hanya dibaca bahan hamparan permukaan — bidang potong tidak punya
+   * tanggul — tetapi tetap dipasang pada keduanya supaya `dataUniforms`
+   * berbentuk sama dan pemanggilnya tidak perlu tahu bahan mana yang
+   * memerlukan apa.
+   */
+  uCanalDepth: { value: number };
 };
 
 /**
@@ -221,6 +218,7 @@ export function createTransectMaterial(
   colors: THREE.Texture[],
   normals: THREE.Texture[],
   field: THREE.Texture,
+  noise: THREE.Texture,
 ): DataMaterial {
   const bounds = new THREE.Vector3(PEAT_LAYERS[0].bottom, PEAT_LAYERS[1].bottom, PEAT_LAYERS[2].bottom);
 
@@ -238,11 +236,15 @@ export function createTransectMaterial(
   const uniforms: FaceUniforms = {
     uField: { value: field },
     uDryTint: { value: 1 },
+    uRiskFront: { value: 0 },
+    uCanalDepth: { value: 0 },
   };
   material.dataUniforms = uniforms;
 
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, {
+      uTransect: { value: TRANSECT_LENGTH_M },
+      uNoise: { value: noise },
       uColor0: { value: colors[0] },
       uColor1: { value: colors[1] },
       uColor2: { value: colors[2] },
@@ -311,8 +313,10 @@ const SURFACE_PARS = /* glsl */ `
 uniform sampler2D uField;
 uniform float uProfile;
 uniform float uDryTint;
+uniform float uRiskFront;   // sejauh mana penandaan sudah menjalar dari kanal (m)
 uniform float uCanalHalf;   // setengah lebar kanal (m)
 uniform float uTransect;    // panjang transek simulasi (m)
+uniform float uCanalDepth;  // kedalaman galian yang sedang digambar (m)
 
 varying vec3 vGroundWorld;
 
@@ -324,6 +328,25 @@ const SURFACE_DIFFUSE = /* glsl */ `
   // uv: hamparan ini digambar dua kali, dicerminkan, jadi yang berlaku adalah
   // jarak mutlaknya.
   float kDistance = max(0.0, abs(vGroundWorld.x) - uCanalHalf);
+
+  // Butiran tekstur foto permukaan, disimpan sebelum warnanya ditimpa.
+  //
+  // Inilah cacat yang membuat hamparan ini terbaca sebagai kain hijau polos.
+  // Potongan ini disisipkan sesudah map_fragment, jadi diffuseColor di
+  // sini memuat foto permukaan gambut — lalu baris terakhir potongan ini
+  // menimpanya seluruhnya dengan warna hasil hitungan, dan warna tumbuhan
+  // yang dihitungnya tidak pernah membaca foto itu sama sekali. Yang
+  // sampai ke layar karena itu hanya derau berskala meter: tidak ada satu
+  // pun butir, serat, atau bintik seukuran daun di seluruh permukaan,
+  // sehingga mata tidak punya apa pun untuk dibaca sebagai bahan.
+  //
+  // Yang dipakai hanya kecerahannya, bukan ronanya: rona foto tanah kering
+  // akan menguningkan hutan yang masih hijau. Dinormalkan terhadap
+  // kecerahan rata-rata fotonya sendiri, sehingga ia hanya menambah
+  // ragam — tidak menggelapkan atau menerangkan apa pun secara keseluruhan.
+  float kGrain = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  kGrain = clamp(kGrain / 0.30, 0.55, 1.5);
+
   vec4 kField = texture2D(uField, vec2(min(1.0, kDistance / uTransect), 0.5));
   float kWaterDepth = kField.g * uProfile;
   float kDrop = kField.r * uProfile;
@@ -342,31 +365,82 @@ const SURFACE_DIFFUSE = /* glsl */ `
 
   // Rumpun tumbuhan. Bercak-bercak, bukan hamparan rata: gambut yang sudah
   // terganggu ditumbuhi pakis dan semak dalam rumpun yang terpisah.
+  //
+  // Tiga skala, bukan dua, dan yang ditambahkan justru yang paling kasar:
+  // petak selebar belasan meter yang membuat satu sudut lahan lebih rapat
+  // dan lebih tua daripada sudut yang lain. Tanpa petak itu, seluruh
+  // hamparan punya kerapatan rata-rata yang sama di mana-mana, dan hamparan
+  // yang rata-ratanya sama di mana-mana terbaca sebagai karpet — persis
+  // kesan "hijau kaku" yang harus hilang dari gambar ini. Biayanya satu
+  // pencarian tekstur, sebab deraunya sekarang tekstur.
+  float kPatch = kNoise(vGroundWorld.xz * 0.07);
   float kClump = kFbm(vGroundWorld.xz * 0.22);
   float kBlade = kFbm(vGroundWorld.xz * 1.7);
-  float kCover = clamp((kClump + 0.42) * 1.5 - kThirst * 1.5 - kRuin * 0.6, 0.0, 1.0);
+
+  // Tanggul galian. Bentuknya persis sama dengan spoilM pada scene/transect.ts
+  // — di sana ia menaikkan tanahnya, di sini ia menelanjanginya — dan kedua
+  // tempat itu harus memakai angka yang sama, jika tidak gundukan tanahnya
+  // berdiri di satu tempat dan tanah telanjangnya di tempat lain.
+  //
+  // Inilah yang membuat kanal terbaca sebagai galian dan bukan sebagai parit
+  // yang selalu ada di situ: tanah yang baru dikeruk tidak sempat ditumbuhi
+  // apa pun, jadi di sepanjang kedua tepi kanal ada pita coklat telanjang
+  // yang lebarnya tumbuh bersama dalamnya galian.
+  // Tepinya digoyang oleh derau rumpun supaya pita telanjang ini tidak
+  // berupa garis sejajar kanal sepanjang tiga puluh meter: tanah yang
+  // dilempar dari galian jatuh berantakan, tidak diukur.
+  float kSpoilT = (kDistance - 2.4 + (kClump - 0.5) * 3.4) / 3.2;
+  float kSpoil = exp(-kSpoilT * kSpoilT) * smoothstep(0.05, 0.5, uCanalDepth);
+
+  float kCover = clamp(
+    (kClump + 0.30 + kPatch * 0.34) * 1.5 - kThirst * 1.5 - kRuin * 0.6,
+    0.0,
+    1.0
+  ) * (1.0 - kSpoil * 0.88);
 
   // Hijau hutan rawa, bukan hijau rumput taman: gelap, agak kebiruan, dan
-  // tidak pernah rata.
-  vec3 kPlant = mix(vec3(0.075, 0.145, 0.055), vec3(0.22, 0.23, 0.10), kThirst);
+  // tidak pernah rata. Rona dasarnya sendiri bergeser antarpetak — lumut
+  // gambut, pakis, dan semak berdaun keras tidak sehijau satu sama lain.
+  vec3 kLush = mix(vec3(0.062, 0.128, 0.052), vec3(0.105, 0.168, 0.068), kPatch);
+  vec3 kPlant = mix(kLush, vec3(0.22, 0.23, 0.10), kThirst);
   kPlant = mix(kPlant, vec3(0.34, 0.27, 0.14), kRuin * 0.7);
-  kPlant *= 0.55 + kBlade * 0.6 + kClump * 0.25;
+  kPlant *= (0.5 + kBlade * 0.68 + kClump * 0.3) * kGrain;
 
   // Tanah telanjang di bawah tumbuhan: gambut yang makin pucat lalu
   // kelabu-kehitaman begitu bahan organiknya teroksidasi habis.
+  // Ragam tanah telanjang memakai ulang derau rumpun, hanya digeser —
+  // menghitungnya sekali lagi pada skala lain tidak menghasilkan apa pun yang
+  // dapat dibedakan mata pada jarak ini.
   vec3 kBare = diffuseColor.rgb * mix(vec3(0.42, 0.33, 0.24), vec3(0.30, 0.26, 0.24), kRuin);
-  kBare *= 0.85 + kFbm(vGroundWorld.xz * 0.8) * 0.4;
+  kBare *= 0.85 + (kClump * 0.6 + kBlade * 0.4) * 0.4;
+  // Gambut yang baru dikeruk masih lembap, jadi lebih gelap dan lebih merah
+  // daripada permukaan di sekitarnya yang sudah lama kering.
+  kBare = mix(kBare, kBare * vec3(0.78, 0.66, 0.58), kSpoil * 0.8);
 
   vec3 kGround = mix(kBare, kPlant, kCover);
 
   // Retak kemarau: hanya pada tanah yang sudah benar-benar kering, dan hanya
   // di tempat tumbuhannya sudah hilang.
-  float kCrack = 1.0 - smoothstep(0.0, 0.035, abs(kFbm(vGroundWorld.xz * 0.55 + 11.3) - 0.5));
-  kGround *= 1.0 - kCrack * kRuin * (1.0 - kCover) * 0.55;
+  // Dihitung hanya di tempat yang tanahnya memang sudah melesak dan
+  // tumbuhannya sudah habis. Di seluruh babak 01 dan 02 syarat itu tidak
+  // pernah terpenuhi di mana pun, jadi deraunya tidak pernah dihitung.
+  // Frekuensinya dinaikkan dari 0,55 ke 2,4. Pada 0,55 satu sel derau
+  // selebar hampir dua meter, sehingga "retak" yang digambarnya selebar satu
+  // meter dan sepanjang belasan — bukan retak kemarau melainkan parit cacing
+  // raksasa, dan itulah yang membuat permukaan babak 04 terbaca sebagai
+  // corak yang digambar, bukan sebagai tanah yang pecah. Retak kemarau
+  // sebenarnya membentuk petak selebar sejengkal sampai setengah meter;
+  // 2,4 memberi sel 42 cm.
+  float kCrackable = kRuin * (1.0 - kCover);
+  if (kCrackable > 0.01) {
+    float kCrack = 1.0 - smoothstep(0.0, 0.03, abs(kFbm(vGroundWorld.xz * 2.4 + 11.3) - 0.5));
+    kGround *= 1.0 - kCrack * kCrackable * 0.6;
+  }
 
   // Penandaan daerah rawan, sama ronanya dengan bidang potong supaya pembaca
   // membaca keduanya sebagai satu keterangan.
-  kGround = mix(kGround, kGround * vec3(1.26, 0.8, 0.6), kField.b * uDryTint * 0.5);
+  float kReached = 1.0 - smoothstep(uRiskFront - 3.0, uRiskFront, kDistance);
+  kGround = mix(kGround, kGround * vec3(1.26, 0.8, 0.6), kField.b * uDryTint * kReached * 0.5);
 
   // Warna per titik tidak dikalikan di sini: color_fragment yang berjalan
   // tepat sesudah potongan ini sudah mengerjakannya, dan mengerjakannya dua
@@ -383,6 +457,7 @@ export function createSurfaceMaterial(
   ground: THREE.Texture,
   groundNormal: THREE.Texture,
   field: THREE.Texture,
+  noise: THREE.Texture,
 ): DataMaterial {
   const material = new THREE.MeshStandardMaterial({
     map: ground,
@@ -397,6 +472,8 @@ export function createSurfaceMaterial(
   const uniforms: FaceUniforms = {
     uField: { value: field },
     uDryTint: { value: 1 },
+    uRiskFront: { value: 0 },
+    uCanalDepth: { value: 0 },
   };
   material.dataUniforms = uniforms;
 
@@ -405,6 +482,7 @@ export function createSurfaceMaterial(
       uProfile: { value: PROFILE_DEPTH },
       uCanalHalf: { value: CANAL_WIDTH_M / 2 },
       uTransect: { value: TRANSECT_LENGTH_M },
+      uNoise: { value: noise },
       ...uniforms,
     });
 
@@ -484,7 +562,11 @@ export function createCanalWaterMaterial(): WaterMaterial {
          // kotak-kotak yang berkedip — bukan air, melainkan cacat gambar.
          float kRip = sin(vRipUv.y * 13.0 - uTime * 1.6) * 0.5 +
                       sin(vRipUv.x * 5.0 + uTime * 0.9) * 0.3;
-         normal = normalize(normal + vec3(kRip * 0.05 * uFlow, 0.0, kRip * 0.025 * uFlow));`,
+         // Dinaikkan dari 0,05. Pada petak yang kini digambar sepertiga lebih
+         // besar, goyangan selemah itu tidak lagi cukup memecah pantulan
+         // langit, sehingga permukaan kanal terbaca sebagai satu bidang
+         // berwarna rata — pelat biru tua, bukan air.
+         normal = normalize(normal + vec3(kRip * 0.09 * uFlow, 0.0, kRip * 0.045 * uFlow));`,
       )
       // Air yang tertahan sekat menjadi tenang dan karena itu lebih memantul.
       .replace(

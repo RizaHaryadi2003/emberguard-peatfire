@@ -11,6 +11,8 @@ import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
 import {
+  canalBedHalf,
+  createBridgeGeometry,
   createCanalFaceGeometry,
   createCanalGeometry,
   createCanalWaterGeometry,
@@ -19,6 +21,9 @@ import {
   createSurfaceGrid,
   floorY,
   surfaceY,
+  surfaceYAt,
+  updateBridgeGeometry,
+  updateCanalFaceGeometry,
   updateCanalGeometry,
   updateFaceGrid,
   updateSurfaceGrid,
@@ -34,6 +39,7 @@ import {
 import {
   createCanalWaterMaterial,
   createFieldTexture,
+  createNoiseTexture,
   createSurfaceMaterial,
   createTransectMaterial,
 } from "./transectMaterial";
@@ -105,14 +111,42 @@ const CAMERA_FAR = CAMERA_DISTANCE + 400 * WORLD_SCALE;
  * Jumlah tumbuhan yang ditanam di tiap sayap, menurut tingkat mutu.
  *
  * Pohonnya di-instance, jadi yang bertambah hanya jumlah segitiga, bukan
- * jumlah panggilan gambar. Pakis dipangkas jauh lebih dalam di ponsel:
- * daunnya berpoligon paling rapat di seluruh adegan, sementara pada layar
- * ponsel ia tinggal beberapa piksel.
+ * jumlah panggilan gambar — dan jumlah segitiga itulah yang menjadi soal:
+ * satu pohon pachira pindaian berdaun dua puluh ribu segitiga.
+ *
+ * Angkanya dipilih setelah diukur dan dilihat. Dua puluh dua pohon dengan
+ * daun dijarangkan sampai 60% ternyata lebih buruk daripada enam belas pohon
+ * berdaun penuh pada biaya yang hampir sama: penjarangan menyebarkan lubang
+ * merata ke seluruh tajuk, sehingga hutan yang seharusnya utuh pada babak 01
+ * justru terbaca sudah meranggas — persis kebalikan dari yang diceritakan
+ * babak itu. Jadi yang dikurangi jumlah pohonnya, bukan kerapatan daunnya.
+ *
+ * `leafKeep` tetap ada dan dipakai di ponsel, tempat tiap pohon tinggal
+ * beberapa puluh piksel sehingga penjarangannya memang tidak terlihat.
  */
 const PLANTING = {
-  high: { trees: 22, ferns: 20 },
-  low: { trees: 12, ferns: 0 },
+  high: { trees: 8, ferns: 8, leafKeep: 1 },
+  low: { trees: 5, ferns: 0, leafKeep: 0.5 },
 } as const;
+
+/**
+ * Batas resolusi render khusus modul ini, di atas batas bersama.
+ *
+ * Modul 01 dan 02 memotret bongkahan kecil yang menempati sebagian layar;
+ * sisanya latar foto yang tidak berbiaya apa-apa. Modul 03 menutupi hampir
+ * separuh layar dengan tanah yang tiap pikselnya menjalankan peneduh berisi
+ * empat peta warna, empat peta normal, derau berlapis, dan seluruh jalur PBR
+ * dengan peta lingkungan serta bayangan. Pada 1,5× resolusi perangkat, layar
+ * 1440×900 berarti menghitung peneduh itu untuk 2,9 juta piksel tiap
+ * bingkai — dan itulah, lebih daripada jumlah segitiga mana pun, yang
+ * membuat modul ini tersendat.
+ *
+ * 1,25× menghemat sepertiga biaya itu seketika. `PerformanceGuard` tetap
+ * dapat menurunkannya lagi sampai 1× bila ternyata masih kurang; yang
+ * dikerjakan angka ini hanya memulai dari tempat yang masuk akal, bukan
+ * memulai dari yang paling mahal lalu menunggu empat detik untuk mundur.
+ */
+const MODULE_MAX_DPR = { high: 1.25, low: 1 } as const;
 
 /**
  * Tinggi ruang yang harus muat di layar (satuan adegan), termasuk pohon.
@@ -126,15 +160,58 @@ const CONTENT_HEIGHT =
   (BLOCK_HEIGHT + 10) * Math.cos(CAMERA_ELEVATION) + BLOCK_DEPTH * Math.sin(CAMERA_ELEVATION);
 
 /**
- * Bagian layar yang boleh dipakai gambar, dan di mana titik tengahnya.
+ * Ruang kosong di layar yang boleh dipakai gambar, sebagai pecahan lebar dan
+ * tinggi layar: [kiri, kanan, atas, bawah].
  *
- * Di layar lebar, sepertiga kiri ditempati teks cerita dan panel kendali.
- * Dibiarkan terpusat, kanal — yang justru pokok seluruh modul — tersembunyi
- * di baliknya. Jadi gambarnya digeser ke kanan sampai kanalnya jatuh di ruang
- * yang kosong.
+ * Diukur dari tata letaknya yang sebenarnya, bukan dikira-kira. Pada layar
+ * 1440x900 panel-panelnya menempati x 56-460 di kiri (teks cerita dan panel
+ * kendali) dan x 1164-1400 di kanan (grafik dan angka), jadi yang tersisa
+ * untuk gambar adalah x 470-1155.
+ *
+ * Rancangan sebelumnya memakai "bagian lebar layar" tanpa batas kanan, dan
+ * akibatnya bongkahan menjulur sampai di bawah kedua kartu di kanan —
+ * ujungnya tertutup, dan keterangan jaraknya tertindih tulisan kartu di
+ * atasnya. Dengan batas kanan yang dinyatakan, gambarnya mengecil sedikit
+ * tetapi tidak pernah lagi bertabrakan dengan apa pun.
+ *
+ * Angkanya kemudian dirapatkan sekali lagi. Pita 0,33-0,80 benar sebagai
+ * batas tabrakan, tetapi gambar yang dipaskan ke dalamnya tetap kecil: pada
+ * layar 1440×900 bongkahan hanya setinggi seperlima layar, dan dua pertiga
+ * ruang di bawahnya kosong. Yang menyusut bukan pitanya melainkan isinya,
+ * jadi batasnya digeser sampai benar-benar menyentuh tepi panel — 0,325 di
+ * kiri dan 0,805 di kanan (kolom angka mulai di 0,808) — dan pita tegaknya
+ * dilebarkan ke 0,12-0,95.
+ *
+ * Batas kiri 0,325 dihitung dari panel kendali, bukan dari teks cerita:
+ * panel itu berakhir di x 460 pada layar 1440, yakni 0,319, dan pada babak
+ * 04 ia tumbuh paling tinggi — kedalaman kanal, waktu berjalan, dua tombol,
+ * dan kabar sekat sekaligus. Batas yang hanya cukup untuk panel babak 01
+ * membuat ujung kiri bawah bongkahan hilang di balik panel tepat pada babak
+ * yang meminta pembaca membandingkan permukaannya dengan garis putus-putus.
+ *
+ * Yang membuat gambarnya tetap membesar meski pitanya menyempit bukan
+ * pitanya melainkan isinya: petaknya dipendekkan dari 36 m menjadi 28 m
+ * tiap sisi, sehingga pita yang sama memuat lahan yang lebih sedikit dan
+ * karena itu menggambarnya lebih besar.
  */
-const WIDE_SHARE = 0.72;
-const WIDE_CENTER = 0.6;
+const FREE_WIDE = { left: 0.325, right: 0.805, top: 0.12, bottom: 0.95 };
+
+/**
+ * Di bawah lebar lg, kolom kanan disembunyikan dan panel kendali turun ke
+ * bawah layar, jadi yang kosong adalah pita di tengah.
+ */
+const FREE_NARROW = { left: 0.04, right: 0.96, top: 0.24, bottom: 0.6 };
+
+/**
+ * Lebar layar tempat kolom kanan mulai tampil (piksel CSS).
+ *
+ * Harus sama dengan titik putus `lg` Tailwind yang dipakai kolom itu
+ * (`lg:flex`). Sebelumnya pembingkaian dipilih menurut nisbah layar, bukan
+ * lebarnya — sehingga jendela 900x600 yang nisbahnya lebar tetapi kolom
+ * kanannya sudah disembunyikan tetap menyisakan ruang kosong untuk panel yang
+ * tidak ada di sana.
+ */
+const PANEL_BREAKPOINT = 1024;
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
@@ -143,16 +220,14 @@ function CameraRig() {
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
     const aspect = size.width / Math.max(1, size.height);
-    const wide = aspect >= 1.1;
-    const share = wide ? WIDE_SHARE : 0.86;
-    const centerShare = wide ? WIDE_CENTER : 0.5;
+    const free = size.width >= PANEL_BREAKPOINT ? FREE_WIDE : FREE_NARROW;
 
     // Lebar yang diperlukan diambil dari dua syarat sekaligus: gambar harus
-    // muat melebar, dan harus muat menegak. Yang menentukan adalah yang lebih
-    // menuntut — tanpa ini, bongkahan terpotong di layar yang pendek.
-    const byWidth = CONTENT_WIDTH / share;
-    const byHeight = (CONTENT_HEIGHT / (wide ? 0.82 : 0.6)) * aspect;
-    const width = Math.max(byWidth, byHeight);
+    // muat melebar di dalam pita kosongnya, dan muat menegak di dalamnya.
+    // Yang menentukan adalah yang lebih menuntut.
+    const shareX = free.right - free.left;
+    const shareY = free.bottom - free.top;
+    const width = Math.max(CONTENT_WIDTH / shareX, (CONTENT_HEIGHT / shareY) * aspect);
 
     const halfW = width / 2;
     const halfH = halfW / aspect;
@@ -163,11 +238,11 @@ function CameraRig() {
     cam.near = 1;
     cam.far = CAMERA_FAR;
 
-    // Kanal (x = 0) harus jatuh pada `centerShare` lebar layar.
-    const centerX = -(centerShare - 0.5) * width;
-    // Dibidik sedikit di bawah permukaan: separuh atas gambar diisi tajuk
-    // pohon dan langit, jadi pusat yang tepat di permukaan membuang ruang.
-    const centerY = -BLOCK_HEIGHT * 0.3;
+    // Titik tengah pita kosong, dinyatakan sebagai pecahan layar. Kamera
+    // digeser berlawanan arah: menggeser bidikan ke kiri memindahkan
+    // gambarnya ke kanan.
+    const centerX = -((free.left + free.right) / 2 - 0.5) * width;
+    const centerY = ((free.top + free.bottom) / 2 - 0.5) * (width / aspect) - BLOCK_HEIGHT * 0.1;
 
     const target = new THREE.Vector3(centerX, centerY, 0);
     const dir = new THREE.Vector3(
@@ -226,6 +301,18 @@ function Simulation({
     const wantTint = s.act >= 1 ? 1 : 0.25;
     s.riskTint = THREE.MathUtils.damp(s.riskTint, wantTint, s.reducedMotion ? 30 : 4, dt);
 
+    // Mukanya menjalar keluar dari kanal sekali, saat babak 02 dibuka, lalu
+    // tinggal di ujung petak. Lajunya dipilih supaya menyeberangi petak dalam
+    // waktu yang kira-kira sama dengan kurva pada grafik menggambar dirinya —
+    // keduanya mengatakan hal yang sama, jadi keduanya harus terasa satu
+    // gerakan meski skalanya berbeda seribu kali.
+    const wantFront = s.act >= 1 ? NEAR_LENGTH_M + 6 : 0;
+    const frontSpeed = s.reducedMotion ? 1000 : (NEAR_LENGTH_M + 6) / 1.2;
+    s.riskFront =
+      s.riskFront < wantFront
+        ? Math.min(wantFront, s.riskFront + frontSpeed * dt)
+        : wantFront;
+
     // Tekstur keadaan disalin beberapa puluh kali per detik; menyalin 200 sel
     // lalu mengunggahnya tidak perlu lebih sering daripada mata dapat
     // membedakannya.
@@ -266,39 +353,19 @@ function Simulation({
   return null;
 }
 
-/**
- * Bidang penutup jalur kanal, dipakai selama kanal belum digali.
- *
- * Datar menghadap ke atas, dengan uv dan warna per titik yang sama bentuknya
- * dengan hamparan permukaan, supaya keduanya dapat memakai bahan yang sama
- * dan tidak pernah berbeda warna di sambungannya.
- */
-function createBridgeGeometry(): THREE.BufferGeometry {
-  const geom = new THREE.PlaneGeometry(CANAL_HALF_M * 2, BLOCK_DEPTH, 4, 12);
-  geom.rotateX(-Math.PI / 2);
-  const pos = geom.attributes.position as THREE.BufferAttribute;
-  const uv = geom.attributes.uv as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    uv.setXY(i, pos.getX(i) / 6, pos.getZ(i) / 6);
-  }
-  geom.setAttribute(
-    "color",
-    new THREE.BufferAttribute(new Float32Array(pos.count * 3).fill(1), 3),
-  );
-  return geom;
-}
-
 /** Bongkahan: bidang potong, hamparan permukaan, kanal, air, dan pohonnya. */
 function Block({
   sim,
   stateRef,
   field,
+  noise,
   subsidence,
   quality,
 }: {
   sim: DrainageSim;
   stateRef: RefObject<KanalState>;
   field: THREE.DataTexture;
+  noise: THREE.DataTexture;
   subsidence: ReturnType<typeof createSubsidence>;
   quality: Quality;
 }) {
@@ -346,9 +413,9 @@ function Block({
       // urutan titiknya terbalik pada salinan itu. Peneduh ini tidak membaca
       // normal, sehingga menggambar kedua sisi lebih murah dan lebih benar
       // daripada menyiapkan dua geometri.
-      faceMaterial: createTransectMaterial(colors, normals, field),
+      faceMaterial: createTransectMaterial(colors, normals, field, noise),
       surfaceGeom: createSurfaceGrid(),
-      surfaceMaterial: createSurfaceMaterial(groundColor, groundNormal, field),
+      surfaceMaterial: createSurfaceMaterial(groundColor, groundNormal, field, noise),
       canalGeom: createCanalGeometry(),
       // Dinding dan dasar kanal: tanah gambut yang baru digali, lembap dan
       // karena itu lebih gelap daripada permukaannya. Memakai peta warna dan
@@ -378,10 +445,11 @@ function Block({
         PLANTING[quality].ferns > 0 ? fernGltf.scene : null,
         PLANTING[quality].trees,
         PLANTING[quality].ferns,
+        PLANTING[quality].leafKeep,
       ),
       weir: createWeir(),
     };
-  }, [colors, normals, groundColor, groundNormal, treeGltf, fernGltf, quality, field]);
+  }, [colors, normals, groundColor, groundNormal, treeGltf, fernGltf, quality, field, noise]);
 
   useEffect(
     () => () => {
@@ -402,10 +470,19 @@ function Block({
     [res],
   );
 
+  // Bentuk tanah sekarang bergantung pada dua hal, bukan satu: penurunan
+  // permukaan (yang berubah pelan, ditandai `subsidence.version`) dan
+  // kedalaman galian (yang berubah cepat saat pengatur diseret, sebab
+  // tanggulnya ikut tumbuh). Keduanya dicatat, dan bentuknya dihitung ulang
+  // hanya kalau salah satunya benar-benar berubah.
   const built = useRef(-1);
-  const rebuild = () => {
-    updateFaceGrid(res.faceGeom, subsidence.fn);
-    updateSurfaceGrid(res.surfaceGeom, subsidence.fn);
+  const builtDepth = useRef(-1);
+  const rebuild = (canalDepthM = 0) => {
+    builtDepth.current = canalDepthM;
+    updateFaceGrid(res.faceGeom, subsidence.fn, canalDepthM);
+    updateSurfaceGrid(res.surfaceGeom, subsidence.fn, canalDepthM);
+    updateBridgeGeometry(res.bridgeGeom, subsidence.fn);
+    updateCanalFaceGeometry(res.canalFaceGeom, subsidence.fn);
     // Sedikit peneduhan di dekat tepi potong, supaya garis tepi bongkahan
     // terbaca sebagai sudut dan bukan sebagai jahitan antara dua gambar.
     const color = res.surfaceGeom.attributes.color as THREE.BufferAttribute;
@@ -420,7 +497,10 @@ function Block({
     built.current = subsidence.version;
   };
 
-  useEffect(rebuild, [res, subsidence]);
+  useEffect(() => {
+    rebuild(stateRef.current?.drawnCanalDepthM ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [res, subsidence]);
 
   const drawnDepth = useRef(-1);
   const bridgeRef = useRef<THREE.Mesh>(null);
@@ -436,9 +516,24 @@ function Block({
     const s = stateRef.current;
     if (!s) return;
     const dt = Math.min(delta, 0.05);
-    if (built.current !== subsidence.version) rebuild();
+    // Ambang 4 cm pada kedalaman galian: cukup rapat untuk membuat tanggul
+    // tampak tumbuh mulus saat pengatur diseret, cukup longgar untuk tidak
+    // membentuk ulang seribu titik pada tiap bingkai seretan.
+    if (
+      built.current !== subsidence.version ||
+      Math.abs(s.drawnCanalDepthM - builtDepth.current) > 0.04
+    ) {
+      rebuild(s.drawnCanalDepthM);
+    }
     res.faceMaterial.dataUniforms.uDryTint.value = s.riskTint;
     res.surfaceMaterial.dataUniforms.uDryTint.value = s.riskTint;
+    res.faceMaterial.dataUniforms.uRiskFront.value = s.riskFront;
+    res.surfaceMaterial.dataUniforms.uRiskFront.value = s.riskFront;
+    // Dipakai hamparan permukaan untuk menelanjangi tanggul galian. Dibaca
+    // dari kedalaman yang sedang digambar, bukan yang diminta, supaya pita
+    // tanah telanjang itu melebar seiring dinding kanalnya turun — bukan
+    // melompat jadi lebar sebelum galiannya sempat terbentuk.
+    res.surfaceMaterial.dataUniforms.uCanalDepth.value = s.drawnCanalDepthM;
 
     // Kanal dibentuk ulang bila kedalaman gambarnya berubah, atau bila tanah
     // di tepinya sudah melesak cukup jauh untuk terlihat.
@@ -479,7 +574,9 @@ function Block({
     // permukaan asal: setelah tanahnya melesak, "sedikit di bawah permukaan"
     // berarti permukaan yang sekarang.
     const canalBottom = surfaceY(0) - s.drawnCanalDepthM * 2;
-    const canalTop = surfaceY(0, dropAtCanal);
+    // Bibir kanal di tengah bongkahan, lengkap dengan reliefnya: itulah yang
+    // dilihat pembaca sebagai "setinggi apa airnya dibanding tanahnya".
+    const canalTop = surfaceYAt(0, 0, dropAtCanal, s.drawnCanalDepthM);
     const want = s.blocked
       ? Math.max(canalBottom, canalTop - NATURAL_CANAL_WATER_M * 2)
       : Math.min(canalTop - 0.1, canalBottom + 0.5);
@@ -488,7 +585,18 @@ function Block({
     if (mesh) {
       mesh.visible = s.drawnCanalDepthM > 0.05;
       mesh.position.set(0, waterLevel.current, 0);
-      mesh.scale.set(CANAL_HALF_M * 2 - 0.3, 1, BLOCK_DEPTH);
+      // Lebar permukaan air mengikuti tinggi airnya, sebab dinding galian
+      // melandai ke dalam: dasarnya lebih sempit daripada mulutnya. Dibuat
+      // selebar mulut seperti sebelumnya, bidang air menembus kedua dinding
+      // setiap kali airnya rendah — dan air yang menembus tanah adalah hal
+      // pertama yang dilihat mata sebagai "ini gambar komputer".
+      const bedHalf = canalBedHalf(s.drawnCanalDepthM);
+      const fill = THREE.MathUtils.clamp(
+        (waterLevel.current - canalBottom) / Math.max(0.1, canalTop - canalBottom),
+        0,
+        1,
+      );
+      mesh.scale.set(THREE.MathUtils.lerp(bedHalf, CANAL_HALF_M, fill) * 2 - 0.25, 1, BLOCK_DEPTH);
     }
 
     // Sekat tumbuh dari dasar kanal saat dipasang, dan tidak pernah turun
@@ -507,7 +615,12 @@ function Block({
     treeClock.current -= dt;
     if (treeClock.current <= 0) {
       treeClock.current = 0.12;
-      res.plants.update(sim.effectiveCanalDepth(), subsidence.fn);
+      // Dua kedalaman, dan keduanya memang berbeda. Yang pertama kedalaman
+      // yang masih mengeringkan — nol begitu sekat terpasang, sebab airnya
+      // sudah kembali. Yang kedua galian yang benar-benar ada di tanah, dan
+      // itulah yang menentukan tinggi tanggul tempat pohon-pohon ini berdiri:
+      // tanggulnya tidak hilang hanya karena kanalnya disekat.
+      res.plants.update(sim.effectiveCanalDepth(), subsidence.fn, s.drawnCanalDepthM);
     }
   });
 
@@ -521,7 +634,10 @@ function Block({
     const z = BLOCK_DEPTH / 2 + 0.02;
     for (let i = 0; i <= WING_COLS; i++) {
       const distance = (i / WING_COLS) * NEAR_LENGTH_M;
-      points.push((CANAL_HALF_M + distance), surfaceY(distance), z);
+      // Mengikuti relief permukaan, bukan garis lurus: jejak ini menandai
+      // tanah yang dahulu ada di situ, dan tanah itu pun bergundukan. Tanpa
+      // tanggul galian — tanggulnya belum ada ketika tanah ini masih utuh.
+      points.push(CANAL_HALF_M + distance, surfaceYAt(distance, BLOCK_DEPTH / 2), z);
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
@@ -622,16 +738,19 @@ type Props = {
 
 export default function KanalScene({ sim, stateRef, active, quality, onStats, onReady }: Props) {
   const { texture: field, data } = useMemo(() => createFieldTexture(), []);
+  const noise = useMemo(() => createNoiseTexture(), []);
   const subsidence = useMemo(() => createSubsidence(sim), [sim]);
 
   useEffect(() => () => field.dispose(), [field]);
+  useEffect(() => () => noise.dispose(), [noise]);
 
   const profile = QUALITY_PROFILE[quality];
+  const maxDpr = Math.min(profile.maxDpr, MODULE_MAX_DPR[quality]);
 
   return (
     <Canvas
       orthographic
-      dpr={[1, profile.maxDpr]}
+      dpr={[1, maxDpr]}
       frameloop={active ? "always" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
       shadows={profile.softShadow ? "percentage" : "basic"}
@@ -646,7 +765,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
       }
     >
       <CameraRig />
-      <PerformanceGuard maxDpr={profile.maxDpr} />
+      <PerformanceGuard maxDpr={maxDpr} />
       {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 02.
           Petak ini enam belas kali lebih besar daripada diorama di sana, dan
           skalanya dinyatakan supaya kabut serta peta bayangannya ikut
@@ -674,6 +793,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
           sim={sim}
           stateRef={stateRef}
           field={field}
+          noise={noise}
           subsidence={subsidence}
           quality={quality}
         />

@@ -40,8 +40,23 @@ import {
 // lapisan terbaca, tetapi masih cukup jujur sehingga kanal yang digambar
 // tetap berbentuk kanal, bukan sumur.
 
-/** Panjang lahan yang digambar di tiap sisi kanal (m). */
-export const NEAR_LENGTH_M = 36;
+/**
+ * Panjang lahan yang digambar di tiap sisi kanal (m).
+ *
+ * Diturunkan dari 36 m. Angka ini menentukan besar gambar di layar, bukan
+ * hanya isinya: kamera ortografik dipaskan pada lebar bongkahannya, jadi
+ * petak yang lebih pendek tergambar lebih besar pada pita kosong yang sama.
+ * Pada 36 m seluruh bongkahan hanya menempati separuh lebar layar dan
+ * tingginya tinggal sepersepuluh — kanal, lapisan, dan tumbuhannya terlalu
+ * kecil untuk benar-benar dilihat, padahal itu seluruh isi modulnya.
+ *
+ * 28 m masih lebih dari tiga kali lebar kanalnya sendiri — cukup untuk
+ * memperlihatkan bahwa pengeringannya menjangkau jauh melewati galian, yang
+ * memang satu-satunya tugas bongkahan ini. Pertanyaan "sejauh apa" dijawab
+ * grafik satu kilometer di panel kanan, bukan di sini; bongkahan ini
+ * menjawab "seperti apa rupanya". Untuk menjawab itu ia harus besar.
+ */
+export const NEAR_LENGTH_M = 28;
 
 /** Lebar kanal (m) — menurut skala sebenarnya, tidak dilebih-lebihkan. */
 export const CANAL_LABEL_WIDTH_M = CANAL_WIDTH_M;
@@ -88,10 +103,28 @@ export const BLOCK_HEIGHT = BASE_DEPTH_M * V_SCALE;
 /** Tebal bongkahan (satuan adegan). */
 export const BLOCK_DEPTH = BLOCK_DEPTH_M;
 
-/** Kerapatan kisi satu sayap: bidang potong dan hamparan permukaan. */
-export const WING_COLS = 72;
-export const FACE_ROWS = 40;
-export const SURFACE_ROWS = 14;
+/**
+ * Kerapatan kisi satu sayap: bidang potong dan hamparan permukaan.
+ *
+ * Diturunkan setelah diukur. Permukaan yang melesak dan muka air yang
+ * melengkung keduanya sangat landai pada petak 36 m — kurvanya tidak pernah
+ * cukup tajam untuk memperlihatkan sudut kisi, dan bentuknya dihitung ulang
+ * tiap kali penurunan berubah. Yang tersisa dari kerapatan yang berlebih
+ * hanyalah biayanya.
+ */
+export const WING_COLS = 48;
+export const FACE_ROWS = 28;
+/**
+ * Baris hamparan permukaan ke arah belakang bongkahan.
+ *
+ * Dinaikkan dari 10 ke 20 bersamaan dengan masuknya relief mikro di bawah.
+ * Pada 10 baris, satu sel sedalam tiga meter — gundukan dan cekungan gambut
+ * yang panjang gelombangnya beberapa meter tidak akan terbentuk sama sekali,
+ * dan yang didapat hanya hamparan yang miring-miring. Dua puluh baris
+ * menghasilkan sel 1,5 m, cukup untuk membentuk gundukannya, dan 48 × 21 =
+ * 1.008 titik masih jauh lebih murah daripada satu pohon pindaian.
+ */
+export const SURFACE_ROWS = 20;
 
 /** Kedudukan mendatar (satuan adegan) untuk jarak `m` dari tepi kanal. */
 export function xOfDistance(m: number): number {
@@ -119,6 +152,124 @@ export function surfaceY(distanceM: number, dropM = 0): number {
 /** Ketinggian dasar bongkahan (satuan adegan). Alas mineral tidak melesak. */
 export function floorY(): number {
   return -BASE_DEPTH_M * V_SCALE;
+}
+
+// ---------------------------------------------------------------------------
+//  RELIEF PERMUKAAN
+// ---------------------------------------------------------------------------
+//
+// Permukaan gambut tidak rata, dan rancangan sebelumnya menggambarnya rata.
+// Akibatnya bongkahan ini terbaca sebagai papan hijau yang dipotong kotak —
+// bukan sebagai lahan. Yang hilang bukan tekstur (teksturnya sudah ada pada
+// peneduh), melainkan bentuk: cahaya matahari yang jatuh pada bidang yang
+// benar-benar datar menghasilkan satu nilai terang yang sama di seluruh
+// permukaan, sehingga tidak ada satu pun bayangan sendiri yang memberi tahu
+// mata bahwa yang dilihatnya punya ketinggian.
+//
+// Dua hal ditambahkan di sini, dan keduanya ada di lapangan:
+//
+//   1. Gundukan-cekungan (hummock-hollow). Gambut kubah tumbuh dalam
+//      gundukan lumut dan cekungan di antaranya, beda tingginya dua sampai
+//      empat puluh sentimeter. Inilah bentuk dasar permukaan gambut yang
+//      belum terganggu.
+//   2. Tanggul galian. Tanah yang dikeruk dari kanal ditumpuk di tepinya —
+//      harus, sebab tidak ada ke mana lagi. Tanggul itu bukan hiasan: ia
+//      bagian gambut yang paling cepat kering, dan tingginya sebanding
+//      dengan dalamnya galian, sehingga menggeser pengatur kedalaman
+//      sekarang menumbuhkan tanggulnya juga.
+//
+// Keduanya dihitung dengan derau lattice tetap — bentuk tanahnya harus sama
+// persis setiap kali halaman dibuka, jika tidak, dua tangkapan layar pada
+// naskah skripsi akan memperlihatkan dua lahan yang berbeda.
+
+/** Nilai acak tetap pada titik lattice (ix, iy). */
+function latticeHash(ix: number, iy: number): number {
+  let n = Math.imul(ix | 0, 374761393) + Math.imul(iy | 0, 668265263);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Derau nilai dua dimensi, 0-1, mulus di antara titik lattice. */
+function valueNoise(x: number, y: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = latticeHash(ix, iy);
+  const b = latticeHash(ix + 1, iy);
+  const c = latticeHash(ix, iy + 1);
+  const d = latticeHash(ix + 1, iy + 1);
+  const top = a + (b - a) * ux;
+  const bottom = c + (d - c) * ux;
+  return top + (bottom - top) * uy;
+}
+
+/**
+ * Gundukan dan cekungan permukaan gambut (m) pada titik (x, z) lanskap.
+ *
+ * Dua panjang gelombang: gundukan selebar sembilan meter yang memberi bentuk
+ * besar, dan riak tiga meter yang memecah punggungnya supaya tidak terbaca
+ * sebagai ombak yang teratur. Jumlahnya tidak pernah melebihi ±23 cm —
+ * sebesar gundukan gambut yang sebenarnya, dan cukup kecil untuk tidak
+ * mengaburkan penurunan permukaan setengah meter yang menjadi pelajaran
+ * babak 03.
+ */
+export function microReliefM(xM: number, zM: number): number {
+  const broad = valueNoise(xM / 9, zM / 9) - 0.5;
+  const fine = valueNoise(xM / 3.2 + 17.3, zM / 3.2 - 5.1) - 0.5;
+  return broad * 0.44 + fine * 0.16;
+}
+
+/**
+ * Tinggi tanggul galian (m) pada jarak `distanceM` dari tepi kanal.
+ *
+ * Puncaknya beberapa meter dari tepi, bukan tepat di tepinya: tanah yang
+ * dikeruk dilempar menjauh dari bibir galian supaya bibirnya tidak runtuh
+ * kembali ke dalam. Tingginya sebanding dengan kedalaman kanal, dan sedikit
+ * berubah-ubah sepanjang kanalnya supaya tidak terbaca sebagai tanggul beton.
+ */
+export function spoilM(distanceM: number, zM: number, canalDepthM: number): number {
+  if (canalDepthM <= 0.01) return 0;
+  const t = (distanceM - 2.4) / 3.2;
+  const ridge = Math.exp(-t * t);
+  const vary = 0.75 + 0.5 * valueNoise(zM / 7 + 31.7, 3.5);
+  return canalDepthM * 0.14 * ridge * vary;
+}
+
+/**
+ * Ketinggian permukaan (satuan adegan) pada titik (x, z) adegan, lengkap
+ * dengan relief dan tanggulnya.
+ *
+ * `surfaceY` di atas tetap ada dan tetap dipakai, tetapi untuk hal yang
+ * berbeda: ia permukaan geologis — kubah gambut dikurangi lesakannya — dan
+ * itulah acuan yang benar untuk dasar kanal, yang memang digali rata oleh
+ * alat berat. Yang dipakai untuk menggambar tanahnya fungsi ini.
+ *
+ * Reliefnya dibaca pada |x|, sebab bongkahan digambar dua kali dengan sayap
+ * kiri sebagai cermin sayap kanan: dibaca pada x bertanda, kedua sayap akan
+ * mendapat gundukan yang berbeda dan sambungannya di tepi kanal retak.
+ */
+export function groundY(xScene: number, zM: number, dropM = 0, canalDepthM = 0): number {
+  const distance = distanceOfX(xScene);
+  return (
+    (naturalSurfaceM(distance) -
+      dropM +
+      microReliefM(Math.abs(xScene), zM) +
+      spoilM(distance, zM, canalDepthM)) *
+    V_SCALE
+  );
+}
+
+/** Seperti `groundY`, tetapi dinyatakan dengan jarak dari tepi kanal. */
+export function surfaceYAt(
+  distanceM: number,
+  zM: number,
+  dropM = 0,
+  canalDepthM = 0,
+): number {
+  return groundY(xOfDistance(distanceM), zM, dropM, canalDepthM);
 }
 
 /**
@@ -212,7 +363,11 @@ export function createFaceGrid(): THREE.BufferGeometry {
  * Normal titik sengaja tidak dihitung — peneduh bidang potong tidak
  * membacanya, sama seperti pada Modul 02.
  */
-export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DROP): void {
+export function updateFaceGrid(
+  geom: THREE.BufferGeometry,
+  drop: DropFn = NO_DROP,
+  canalDepthM = 0,
+): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
@@ -226,7 +381,10 @@ export function updateFaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DRO
   for (let i = 0; i < cols; i++) {
     const distance = (i / WING_COLS) * NEAR_LENGTH_M;
     const x = xOfDistance(distance);
-    const top = surfaceY(distance, drop(distance));
+    // Garis atas bidang potong harus persis sama dengan baris terdepan
+    // hamparan permukaan, jika tidak akan ada celah menganga sepanjang tepi
+    // potong. Keduanya karena itu memanggil fungsi yang sama pada z yang sama.
+    const top = surfaceYAt(distance, z, drop(distance), canalDepthM);
     for (let j = 0; j <= FACE_ROWS; j++) {
       const t = j / FACE_ROWS;
       const y = top + (bottom - top) * t;
@@ -287,8 +445,12 @@ export function createSurfaceGrid(): THREE.BufferGeometry {
   return geom;
 }
 
-/** Perbarui hamparan permukaan mengikuti penurunan. */
-export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_DROP): void {
+/** Perbarui hamparan permukaan mengikuti penurunan dan dalamnya galian. */
+export function updateSurfaceGrid(
+  geom: THREE.BufferGeometry,
+  drop: DropFn = NO_DROP,
+  canalDepthM = 0,
+): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const posArr = pos.array as Float32Array;
@@ -299,16 +461,24 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
   for (let i = 0; i < cols; i++) {
     const distance = (i / WING_COLS) * NEAR_LENGTH_M;
     const x = xOfDistance(distance);
-    const y = surfaceY(distance, drop(distance));
+    const dropHere = drop(distance);
     for (let j = 0; j <= SURFACE_ROWS; j++) {
       const z = front - (j / SURFACE_ROWS) * BLOCK_DEPTH;
+      // Ketinggian dihitung per titik, bukan per kolom: reliefnya berubah ke
+      // arah belakang bongkahan juga, dan justru perubahan itulah yang
+      // membuat hamparan ini menangkap cahaya tidak rata.
+      const y = groundY(x, z, dropHere, canalDepthM);
       const k = j * cols + i;
       posArr[k * 3] = x;
       posArr[k * 3 + 1] = y;
       posArr[k * 3 + 2] = z;
-      // Tekstur diulang tiap 6 m lanskap: sebesar semak, bukan sebesar petak.
-      uvArr[k * 2] = x / 6;
-      uvArr[k * 2 + 1] = z / 6;
+      // Tekstur diulang tiap 3,5 m lanskap. Semula 6 m, dan pada petak yang
+      // kini digambar jauh lebih besar, satu ulangan selebar enam meter
+      // berarti butiran fotonya membesar sampai seukuran semak — terbaca
+      // sebagai bercak, bukan sebagai bahan. Pada 3,5 m butirannya kembali
+      // seukuran serasah dan rumpun kecil, yang memang ukuran yang benar.
+      uvArr[k * 2] = x / 3.5;
+      uvArr[k * 2 + 1] = z / 3.5;
     }
   }
   pos.needsUpdate = true;
@@ -333,19 +503,53 @@ export function updateSurfaceGrid(geom: THREE.BufferGeometry, drop: DropFn = NO_
  * yang sebenarnya: dinding tegak lurus pada gambut akan runtuh, dan parit
  * berdinding tegak terbaca sebagai potongan geometri, bukan sebagai galian.
  */
-const CANAL_BATTER = 0.35;
+export const CANAL_BATTER = 0.35;
+
+/** Setengah lebar dasar kanal sedalam `canalDepthM` (satuan adegan). */
+export function canalBedHalf(canalDepthM: number): number {
+  return Math.max(0.8, CANAL_HALF_M - canalDepthM * CANAL_BATTER);
+}
+
+/**
+ * Jumlah irisan kanal ke arah memanjang.
+ *
+ * Sebelumnya dua — muka dan belakang saja — dan itu memaksa bibir kanal
+ * menjadi dua garis lurus sempurna sepanjang tiga puluh meter. Dengan
+ * permukaan yang sekarang bergundukan, bibir itu harus mengikuti tanah yang
+ * dilewatinya; dua titik tidak dapat mengikuti apa pun.
+ *
+ * Disamakan dengan `SURFACE_ROWS`, dan itu syarat, bukan kebetulan: bibir
+ * kanal dan tepi hamparan rumput adalah garis yang sama, dan dua garis yang
+ * sama harus dicuplik pada z yang sama. Dicuplik pada z yang berbeda,
+ * keduanya hanya berpotongan di titik-titik cuplikannya dan merenggang di
+ * antaranya — celah setipis beberapa sentimeter sepanjang tiga puluh meter,
+ * yang pada layar menjadi garis latar yang mengintip di tepi kanal.
+ */
+const CANAL_SEGS = SURFACE_ROWS;
 
 export function createCanalGeometry(): THREE.BufferGeometry {
   const geom = new THREE.BufferGeometry();
-  // Delapan titik: tepi atas kiri, dasar kiri, dasar kanan, tepi atas kanan —
-  // masing-masing di muka dan di belakang bongkahan.
-  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(8 * 3), 3));
-  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(8 * 3), 3));
-  geom.setIndex([
-    0, 2, 1, 1, 2, 3, // dinding kiri
-    2, 4, 3, 3, 4, 5, // dasar
-    4, 6, 5, 5, 6, 7, // dinding kanan
-  ]);
+  // Empat lajur titik pada tiap irisan: bibir kiri, dasar kiri, dasar kanan,
+  // bibir kanan.
+  const rows = CANAL_SEGS + 1;
+  const total = 4 * rows;
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  // Koordinat tekstur: selama ini tidak ada sama sekali, sehingga seluruh
+  // dinding dan dasar kanal membaca satu titik yang sama pada peta warna dan
+  // peta normalnya — galian sedalam tiga meter tergambar sebagai bidang
+  // berwarna rata tanpa serat apa pun. Inilah sebab kanalnya terbaca sebagai
+  // potongan geometri dan bukan sebagai tanah yang terbuka.
+  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+
+  const idx: number[] = [];
+  for (let j = 0; j < CANAL_SEGS; j++) {
+    for (let i = 0; i < 3; i++) {
+      const a = j * 4 + i;
+      idx.push(a, a + 4, a + 1, a + 1, a + 4, a + 5);
+    }
+  }
+  geom.setIndex(idx);
   return geom;
 }
 
@@ -367,22 +571,36 @@ export function updateCanalGeometry(
   dropM = 0,
 ): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
-  const bottom = surfaceY(0) - canalDepthM * V_SCALE;
-  const top = Math.max(bottom + 0.05, surfaceY(0, dropM));
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const floor = surfaceY(0) - canalDepthM * V_SCALE;
   // Dasar lebih sempit daripada mulutnya, sebanding dengan dalamnya.
-  const bedHalf = Math.max(0.8, CANAL_HALF_M - canalDepthM * CANAL_BATTER);
+  const bedHalf = canalBedHalf(canalDepthM);
   const front = BLOCK_DEPTH / 2;
-  const back = -BLOCK_DEPTH / 2;
+  // Ragam dasar kanal: endapan lumpur tidak pernah rata. Dikecilkan pada
+  // galian yang masih dangkal supaya tidak pernah menembus bibirnya.
+  const siltAmp = 0.12 * V_SCALE * Math.min(1, canalDepthM);
 
-  pos.setXYZ(0, -CANAL_HALF_M, top, front);
-  pos.setXYZ(1, -CANAL_HALF_M, top, back);
-  pos.setXYZ(2, -bedHalf, bottom, front);
-  pos.setXYZ(3, -bedHalf, bottom, back);
-  pos.setXYZ(4, bedHalf, bottom, front);
-  pos.setXYZ(5, bedHalf, bottom, back);
-  pos.setXYZ(6, CANAL_HALF_M, top, front);
-  pos.setXYZ(7, CANAL_HALF_M, top, back);
+  for (let j = 0; j <= CANAL_SEGS; j++) {
+    const along = (j / CANAL_SEGS) * BLOCK_DEPTH;
+    const z = front - along;
+    const rim = Math.max(floor + 0.1, surfaceYAt(0, z, dropM, canalDepthM));
+    const bed = floor + (valueNoise(z / 5 + 71.3, 2.5) - 0.5) * siltAmp;
+    const wall = (rim - bed) / V_SCALE;
+
+    const xs = [-CANAL_HALF_M, -bedHalf, bedHalf, CANAL_HALF_M];
+    const ys = [rim, bed, bed, rim];
+    // v diukur dari bibir ke bawah dalam meter, sehingga serat tanah pada
+    // dinding galian seukuran serat tanah pada bidang potong di sebelahnya.
+    const vs = [0, wall, wall, 0];
+    for (let i = 0; i < 4; i++) {
+      const k = j * 4 + i;
+      pos.setXYZ(k, xs[i], ys[i], z);
+      uv.setXY(k, along / 1.5, vs[i] / 1.5);
+    }
+  }
+
   pos.needsUpdate = true;
+  uv.needsUpdate = true;
   geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }
@@ -397,50 +615,138 @@ export function updateCanalGeometry(
  * Atributnya sama persis dengan kisi bidang potong, sehingga keduanya dapat
  * memakai peneduh yang sama dan tidak pernah berbeda warna di sambungannya.
  */
+/** Jumlah lajur titik yang melintasi mulut kanal. */
+const MOUTH_COLS = 6;
+
+/** Kedudukan mendatar lajur ke-`i` pada mulut kanal (satuan adegan). */
+function mouthX(i: number): number {
+  return -CANAL_HALF_M + (i / (MOUTH_COLS - 1)) * CANAL_HALF_M * 2;
+}
+
 export function createCanalFaceGeometry(): THREE.BufferGeometry {
-  const cols = 2;
   const rows = FACE_ROWS + 1;
+  const total = MOUTH_COLS * rows;
   const geom = new THREE.BufferGeometry();
-  const pos = new Float32Array(cols * rows * 3);
-  const uv = new Float32Array(cols * rows * 2);
-  const normals = new Float32Array(cols * rows * 3);
-  const depth = new Float32Array(cols * rows);
-  const field = new Float32Array(cols * rows);
-
-  const top = surfaceY(0);
-  const bottom = floorY();
-  const z = BLOCK_DEPTH / 2;
-  const u = fieldU(0);
-
-  for (let j = 0; j < rows; j++) {
-    const y = top + (bottom - top) * (j / FACE_ROWS);
-    for (let i = 0; i < cols; i++) {
-      const k = j * cols + i;
-      const x = i === 0 ? -CANAL_HALF_M : CANAL_HALF_M;
-      pos[k * 3] = x;
-      pos[k * 3 + 1] = y;
-      pos[k * 3 + 2] = z;
-      normals[k * 3 + 2] = 1;
-      uv[k * 2] = x / 1.5;
-      uv[k * 2 + 1] = y / 1.5;
-      field[k] = u;
-      depth[k] = (top - y) / V_SCALE;
-    }
+  const normals = new Float32Array(total * 3);
+  const field = new Float32Array(total);
+  for (let k = 0; k < total; k++) {
+    normals[k * 3 + 2] = 1;
+    field[k] = fieldU(0);
   }
+
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+  geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
+  geom.setAttribute("aField", new THREE.BufferAttribute(field, 1));
 
   const idx: number[] = [];
   for (let j = 0; j < FACE_ROWS; j++) {
-    const a = j * cols;
-    idx.push(a, a + cols, a + 1, a + 1, a + cols, a + cols + 1);
+    for (let i = 0; i < MOUTH_COLS - 1; i++) {
+      const a = j * MOUTH_COLS + i;
+      idx.push(a, a + MOUTH_COLS, a + 1, a + 1, a + MOUTH_COLS, a + MOUTH_COLS + 1);
+    }
+  }
+  geom.setIndex(idx);
+  updateCanalFaceGeometry(geom);
+  return geom;
+}
+
+/**
+ * Perbarui bidang potong jalur kanal.
+ *
+ * Garis atasnya harus mengikuti relief yang sama dengan penutup di atasnya,
+ * jika tidak akan tampak takik di tepi potong tepat di tengah gambar.
+ */
+export function updateCanalFaceGeometry(
+  geom: THREE.BufferGeometry,
+  drop: DropFn = NO_DROP,
+): void {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const depth = geom.attributes.aDepth as THREE.BufferAttribute;
+  const bottom = floorY();
+  const z = BLOCK_DEPTH / 2;
+  const dropHere = drop(0);
+
+  for (let i = 0; i < MOUTH_COLS; i++) {
+    const x = mouthX(i);
+    const top = groundY(x, z, dropHere);
+    for (let j = 0; j <= FACE_ROWS; j++) {
+      const y = top + (bottom - top) * (j / FACE_ROWS);
+      const k = j * MOUTH_COLS + i;
+      pos.setXYZ(k, x, y, z);
+      uv.setXY(k, x / 1.5, y / 1.5);
+      depth.setX(k, (top - y) / V_SCALE);
+    }
   }
 
-  geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
-  geom.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-  geom.setAttribute("aDepth", new THREE.BufferAttribute(depth, 1));
-  geom.setAttribute("aField", new THREE.BufferAttribute(field, 1));
+  pos.needsUpdate = true;
+  uv.needsUpdate = true;
+  depth.needsUpdate = true;
+  geom.computeBoundingSphere();
+}
+
+// ---------------------------------------------------------------------------
+//  PENUTUP JALUR KANAL
+// ---------------------------------------------------------------------------
+
+/**
+ * Bidang penutup jalur kanal, dipakai selama kanal belum digali.
+ *
+ * Dipindahkan ke berkas ini dari `KanalScene`, sebab sejak permukaan punya
+ * relief ia tidak lagi dapat berupa satu bidang datar: ia harus mengikuti
+ * gundukan yang sama persis dengan hamparan di kiri dan kanannya, dan fungsi
+ * yang mengetahui gundukan itu ada di sini.
+ *
+ * Atributnya sengaja sama bentuknya dengan hamparan permukaan — termasuk
+ * `color` per titik, yang tanpa itu akan dibaca three.js sebagai hitam pekat.
+ */
+export function createBridgeGeometry(): THREE.BufferGeometry {
+  const rows = SURFACE_ROWS + 1;
+  const total = MOUTH_COLS * rows;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+  geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(total * 3).fill(1), 3));
+
+  const idx: number[] = [];
+  for (let j = 0; j < SURFACE_ROWS; j++) {
+    for (let i = 0; i < MOUTH_COLS - 1; i++) {
+      const a = j * MOUTH_COLS + i;
+      idx.push(a, a + 1, a + MOUTH_COLS, a + 1, a + MOUTH_COLS + 1, a + MOUTH_COLS);
+    }
+  }
   geom.setIndex(idx);
+  updateBridgeGeometry(geom);
   return geom;
+}
+
+/** Perbarui penutup jalur kanal mengikuti relief dan penurunan. */
+export function updateBridgeGeometry(
+  geom: THREE.BufferGeometry,
+  drop: DropFn = NO_DROP,
+): void {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const front = BLOCK_DEPTH / 2;
+  const dropHere = drop(0);
+
+  for (let i = 0; i < MOUTH_COLS; i++) {
+    const x = mouthX(i);
+    for (let j = 0; j <= SURFACE_ROWS; j++) {
+      const z = front - (j / SURFACE_ROWS) * BLOCK_DEPTH;
+      const k = j * MOUTH_COLS + i;
+      pos.setXYZ(k, x, groundY(x, z, dropHere), z);
+      uv.setXY(k, x / 3.5, z / 3.5);
+    }
+  }
+
+  pos.needsUpdate = true;
+  uv.needsUpdate = true;
+  geom.computeVertexNormals();
+  geom.computeBoundingSphere();
 }
 
 /**
@@ -487,7 +793,7 @@ export function createSubsidence(sim: DrainageSim): Subsidence {
 }
 
 /** Penanda jarak yang ditulis pada bongkahan (m dari tepi kanal). */
-export const DISTANCE_TICKS = [10, 20, 30];
+export const DISTANCE_TICKS = [10, 20];
 
 /** Penanda kedalaman yang ditulis di tepi gambar (m). */
 export const DEPTH_TICKS = [1, 2, 3, 4];

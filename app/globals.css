@@ -105,3 +105,50 @@ body {
     opacity: 1;
   }
 }
+
+/* ---------- Grafik muka air Modul 03 ---------- */
+/*
+ * Kurva muka air digambar dari tepi kanal ke luar — animasi babak 02.
+ *
+ * Dikerjakan CSS, bukan SMIL `<animate>`, dan dapat diulang dengan mengganti
+ * `key` elemennya karena animasi CSS dimulai saat elemennya muncul.
+ *
+ * Kurvanya digambar sebagai garis yang memanjang: `pathLength` dibuat 1
+ * sehingga panjangnya dapat dinyatakan sebagai pecahan tanpa perlu tahu
+ * panjang sebenarnya, lalu celah putus-putusnya digeser dari penuh ke nol.
+ *
+ * Cara ini dipilih setelah dua cara lain gagal, dan kegagalannya pantas
+ * dicatat supaya tidak diulang:
+ *   - `<animate>` SMIL menghitung waktunya dari jam dokumen, bukan dari saat
+ *     elemennya dipasang, sehingga animasi yang disisipkan beberapa detik
+ *     setelah halaman dibuka melompat ke tengah atau langsung ke akhir.
+ *   - Elemen di dalam `<clipPath>` tidak pernah dirender, jadi animasi CSS
+ *     yang dipasang padanya tidak pernah berjalan.
+ * Yang ini berjalan pada elemen yang benar-benar digambar.
+ */
+@keyframes kanalDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes kanalFill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.kanal-draw {
+  stroke-dasharray: 1;
+  animation: kanalDraw 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.kanal-fill {
+  animation: kanalFill 1.3s ease-out 0.35s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanal-draw,
+  .kanal-fill {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}

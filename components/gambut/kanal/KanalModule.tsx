@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, MousePointerClick, Pause, RotateCcw, Waves } from "lucide-react";
-import { CANAL_TEXT, KANAL_ACTS, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
+import { CANAL_TEXT, FIGURE_NOTE, KANAL_ACTS, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
 import {
   CANAL_DEPTH_MAX_M,
@@ -73,6 +73,23 @@ export default function KanalModule() {
   const [blocked, setBlocked] = useState(false);
   /** Jarak yang ditandai pembaca pada grafik (m) — tugas babak 02. */
   const [probeM, setProbeM] = useState<number | null>(null);
+  /**
+   * Pembaca pernah menandai tepi daerah rawan dengan benar.
+   *
+   * Diingat, bukan dihitung ulang dari penandanya. Penanda itu dibersihkan
+   * begitu babak 02 ditinggalkan — ia tidak berarti apa-apa di babak lain —
+   * sehingga `actDone[1]` kembali palsu dan penanda babak 02 pada navigasi
+   * berubah kelabu lagi, seolah pekerjaannya batal. Modul 02 memakai cara
+   * yang sama untuk hal yang sama: `dousedOnce`, `thermalSeen`, `rewetOnce`.
+   *
+   * Dikunci di dalam penangan geseran, bukan di dalam `useEffect` yang
+   * mengawasi penandanya. Keduanya menghasilkan hal yang sama, tetapi yang
+   * kedua memanggil `setState` di dalam badan efek: satu render tambahan
+   * tiap kali penandanya bergerak, hanya untuk mencatat sesuatu yang sudah
+   * diketahui pada render sebelumnya. Di sini kuncinya dipasang di tempat
+   * pembaca benar-benar mengerjakannya.
+   */
+  const [probeSolvedOnce, setProbeSolvedOnce] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -123,7 +140,24 @@ export default function KanalModule() {
   }, []);
 
   const handleStats = useCallback((next: DrainageStats) => setStats(next), []);
+
   const handleReady = useCallback(() => setReady(true), []);
+
+  /**
+   * Pembaca menggeser penanda jaraknya.
+   *
+   * Dicatat sekali saat penandanya tepat, lalu tidak pernah dicabut sampai
+   * ia memulai dari awal — lihat `probeSolvedOnce`. Jangkauan rawan dibaca
+   * dari ringkasan simulasi saat geseran itu terjadi, sebab itulah angka
+   * yang sedang dilihat pembaca pada grafik yang sedang ia telusuri.
+   */
+  const handleProbe = useCallback(
+    (m: number) => {
+      setProbeM(m);
+      if (probeSolved(judgeProbe(m, stats.riskReachM))) setProbeSolvedOnce(true);
+    },
+    [stats.riskReachM],
+  );
 
   const handleReset = useCallback(() => {
     sim.reset();
@@ -133,6 +167,7 @@ export default function KanalModule() {
     setSpeedIndex(0);
     setBlocked(false);
     setProbeM(null);
+    setProbeSolvedOnce(false);
     Object.assign(stateRef.current, createKanalState());
   }, [sim]);
 
@@ -146,7 +181,7 @@ export default function KanalModule() {
   // tugasnya, dan tombol "Babak berikutnya" sudah menyala ketika babaknya
   // baru dibuka.
   const probeVerdict = judgeProbe(probeM, stats.riskReachM);
-  const probeFound = probeSolved(probeVerdict);
+  const probeFound = probeSolved(probeVerdict) || probeSolvedOnce;
 
   const actDone = [
     canalDepthCm >= ACT1_DEPTH_CM,
@@ -284,9 +319,11 @@ export default function KanalModule() {
                 sim={sim}
                 stats={stats}
                 probeM={probeM}
-                onProbe={setProbeM}
+                onProbe={handleProbe}
                 interactive
                 revealReach={false}
+                sweepKey={`hp-${act}-${canalDepthCm}`}
+                reducedMotion={reducedMotion}
               />
               </div>
             </div>
@@ -359,7 +396,7 @@ export default function KanalModule() {
               {blocked ? CANAL_TEXT.blockedLabel : CANAL_TEXT.blockLabel}
             </button>
             )}
-            <button
+  <button
               type="button"
               onClick={handleReset}
               className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-3.5 py-2 text-xs font-medium text-white/75 transition-colors hover:border-white/40 hover:text-white"
@@ -368,12 +405,31 @@ export default function KanalModule() {
               {CANAL_TEXT.resetLabel}
             </button>
           </div>
+
+          {/* Kabar bahwa sekatnya bekerja.
+              Tempatnya di sini, tepat di bawah tombol yang baru saja ditekan
+              pembaca — bukan di kolom kanan seperti sebelumnya. Di sana ia
+              kartu ketiga yang ditumpuk di bawah grafik dan tabel angka, dan
+              tumpukan itu pada layar setinggi 900 piksel menjulur melewati
+              tepi bawah layar: begitu babak 04 dibuka, kalimat yang paling
+              penting di seluruh modul justru yang terpotong. Kolom kanan
+              sekarang tidak pernah bertambah tinggi di babak mana pun. */}
+          {blocked && (
+            <p className="mt-3 border-t border-emerald-300/20 pt-3 text-[11px] leading-relaxed text-emerald-50/85">
+              {CANAL_TEXT.blockedMessage}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Kolom kanan: angka hidup dan keterangan skala. Satu tumpukan yang
           ditambatkan ke tepi atas, seperti perbaikan pada Modul 02. */}
-      <div className="absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10">
+      {/* `bottom-24` bukan hiasan: ia yang menjamin tumpukan ini tidak pernah
+          lagi menjulur melewati tepi bawah layar, berapa pun isinya dan
+          sependek apa pun jendelanya. Kalau suatu saat isinya memang tidak
+          muat, yang terjadi tumpukan ini bergulir sendiri — bukan separuh
+          kartunya hilang tanpa tanda apa pun. */}
+      <div className="absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0">
         {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
@@ -383,9 +439,11 @@ export default function KanalModule() {
             sim={sim}
             stats={stats}
             probeM={probeM}
-            onProbe={setProbeM}
+            onProbe={handleProbe}
             interactive={act === 1}
             revealReach={act !== 1}
+            sweepKey={`${act}-${canalDepthCm}`}
+            reducedMotion={reducedMotion}
           />
         </div>
 
@@ -422,7 +480,7 @@ export default function KanalModule() {
           <div className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[10px] leading-snug text-white/45">
             <p>{SCALE_NOTE.exaggeration(VERTICAL_EXAGGERATION)}</p>
             <p>{SCALE_NOTE.canal(CANAL_LABEL_WIDTH_M)}</p>
-            <p>{SCALE_NOTE.near(NEAR_LENGTH_M)}</p>
+            <p>{FIGURE_NOTE.block(NEAR_LENGTH_M)}</p>
             <p>{SCALE_NOTE.trees}</p>
             <p>
               Garis jingga: batas {Math.round(WATER_LIMIT_M * 100)} cm · Waktu dibatasi {SIM_MAX_YEARS} tahun
@@ -430,11 +488,6 @@ export default function KanalModule() {
           </div>
         </div>
 
-        {blocked && (
-          <div className="pointer-events-none rounded-2xl border border-emerald-300/30 bg-black/60 p-3.5 backdrop-blur-xl">
-            <p className="text-xs leading-relaxed text-white/85">{CANAL_TEXT.blockedMessage}</p>
-          </div>
-        )}
       </div>
 
       {/* Navigasi babak (bawah) */}

@@ -40,6 +40,15 @@ export type KanalState = {
    * langit sebelum ia membacanya di mana pun.
    */
   danger: number;
+  /**
+   * Sejauh mana penandaan daerah rawan sudah menjalar dari kanal (m).
+   *
+   * Babak 02 mengatakan bahwa yang kering bukan hanya tepi kanal, melainkan
+   * ratusan meter ke dalam. Dikatakan pada gambar yang diam, kalimat itu
+   * hanya kalimat. Dengan muka yang menjalar keluar dari kanal, pembaca
+   * melihat arahnya — dan arah itulah isi babaknya.
+   */
+  riskFront: number;
 };
 
 /** Keadaan awal modul: gambut yang belum tersentuh kanal. */
@@ -53,6 +62,7 @@ export function createKanalState(): KanalState {
     drawnCanalDepthM: 0,
     riskTint: 1,
     danger: 0,
+    riskFront: 0,
   };
 }
 
