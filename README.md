@@ -24,7 +24,7 @@ Universitas BSI.
 | Grafis 3D | Three.js 0.186, React Three Fiber 9, @react-three/drei 10 |
 | Animasi | GSAP 3.15 + `useGSAP`, ScrollTrigger |
 | Audio | Web Audio API (disintesis langsung, tanpa berkas suara) |
-| Pengujian | Vitest 5 — 48 uji unit atas logika murni |
+| Pengujian | Vitest 5 — 157 uji unit atas logika murni |
 | Mutu kode | ESLint 9 (flat config) + `eslint-config-next` |
 
 Seluruh perhitungan berjalan di peramban. Tidak ada basis data, tidak ada API
@@ -49,7 +49,7 @@ Perintah lain:
 ```bash
 npm run build     # build produksi
 npm start         # menjalankan hasil build
-npm test          # 48 uji Vitest
+npm test          # 157 uji Vitest
 npm run lint      # ESLint
 ```
 
@@ -72,6 +72,8 @@ components/          Komponen antarmuka dan adegan 3D.
   gambut/scene/        Bagian 3D yang dipakai bersama semua modul.
   gambut/anatomi/      Modul 01.
   gambut/bara/         Modul 02.
+  gambut/kanal/        Modul 03.
+  gambut/karbon/       Modul 04.
 config/              Seluruh teks Bahasa Indonesia, terpisah dari kode.
 hooks/               Hook React yang dipakai ulang.
 lib/                 Logika murni: tanpa React, tanpa Three.js, tanpa DOM.
@@ -91,9 +93,13 @@ diuji otomatis di lingkungan Node dan dikutip sebagai algoritma pada naskah.
 | | Modul | Keadaan |
 |---|---|---|
 | 01 | **Anatomi Gambut** — mengupas lapisan fibrik, hemik, saprik, dan tanah mineral mengikuti gulir halaman | Selesai |
-| 02 | **Bara di Bawah Tanah** — ruang uji perambatan bara pada bidang penampang | Babak 01–03 berjalan |
-| 03 | Kanal & Pengeringan | Belum dikerjakan |
-| 04 | Gudang Karbon | Belum dikerjakan |
+| 02 | **Bara di Bawah Tanah** — ruang uji perambatan bara pada bidang penampang | Selesai |
+| 03 | **Kanal & Pengeringan** — satu kanal digali, dan pengaruhnya diikuti sampai satu kilometer ke dalam kubah gambut | Selesai |
+| 04 | **Gudang Karbon** — bidang potong yang sama dibaca sebagai kalender dan sebagai gudang karbon | Selesai |
+
+Keempat modul memakai pola yang sama: empat babak berurutan, dan babak
+berikutnya hanya terbuka setelah pembaca benar-benar mengerjakan tugas babak
+yang sedang dibukanya — bukan setelah menekan "lanjut".
 
 Bagian **Simulasi**, **Dampak**, dan **Pencegahan** masih berupa halaman
 penanda.
@@ -102,7 +108,19 @@ penanda.
 
 ## Model Simulasi
 
-Inti proyek ada pada [`lib/smolder.ts`](lib/smolder.ts): model sel-otomata
+Tiap modul berdiri di atas satu model di `lib/`, dan model itu tidak pernah
+mengimpor React atau Three.js:
+
+| Modul | Model | Yang dihitung |
+|---|---|---|
+| 01 | [`lib/peat.ts`](lib/peat.ts) | Klasifikasi lapisan menurut kedalaman, status muka air, indeks bahaya |
+| 02 | [`lib/smolder.ts`](lib/smolder.ts) | Perambatan bara pada bidang penampang |
+| 03 | [`lib/drainage.ts`](lib/drainage.ts) | Kerucut penurunan muka air sepanjang 1 km, subsiden, dan emisi per tahun |
+| 04 | [`lib/carbon.ts`](lib/carbon.ts) | Cadangan karbon, CO₂ yang lepas, umur gambut menurut kedalaman, lama pemulihan |
+
+### Modul 02 — perambatan bara
+
+Model yang paling besar ada pada [`lib/smolder.ts`](lib/smolder.ts): sel-otomata
 (*cellular automaton*) dua dimensi pada bidang penampang gambut, berukuran
 96 × 56 sel yang mewakili bongkahan 4,4 m × 3,4 m.
 
@@ -125,16 +143,44 @@ Langkah waktunya tetap (15 menit simulasi per langkah) sehingga hasilnya tidak
 bergantung pada kecepatan perangkat, dan bilangan acaknya ber-*seed* sehingga
 tangkapan layar dapat direproduksi.
 
+### Modul 03 — hidrologi kanal
+
+[`lib/drainage.ts`](lib/drainage.ts) menarik kamera ke belakang: penampang
+lanskap sepanjang **satu kilometer**, karena pada bongkahan 4,4 m kerucut
+penurunan muka air hanya akan tampak sebagai garis datar. Panjang pengaruh
+satu kanal dihitung sebanding dengan kedalamannya, laju subsiden dan emisi
+sebanding dengan kedalaman muka air setempat, dan pemadatan awal yang lebih
+cepat pada dua tahun pertama dipisahkan dari oksidasi jangka panjang.
+
+### Modul 04 — gudang karbon
+
+[`lib/carbon.ts`](lib/carbon.ts) menghitung dua arah dari bidang potong yang
+sama. Ke bawah sebagai **kalender**: satu milimeter setahun, jadi kedalaman
+dapat dibaca sebagai umur. Dan sebagai **gudang**: 55 kg karbon tiap meter
+kubik, sehingga yang lepas saat terbakar ditentukan oleh luas **dikali**
+kedalaman — bukan oleh luas saja, yang justru satu-satunya angka yang
+biasanya diberitakan.
+
+### Tentang angka-angkanya
+
 Nilai-nilai tetapan bersifat ilustratif: besarannya dipilih agar sesuai urutan
 besar pengamatan lapangan, bukan hasil kalibrasi terhadap satu lokasi tertentu.
+
+Pada `drainage.ts` dan `carbon.ts`, seluruh tetapan kuantitatif yang **belum
+memiliki sumber** dikumpulkan dalam satu blok bertanda di kepala berkas, bukan
+disebar ke dalam kode, dan diurutkan menurut besar pengaruhnya pada kesimpulan
+yang dibawa pembaca. Dengan begitu semuanya dapat diganti sekaligus begitu
+rujukannya ada. Angka-angka itu belum boleh dikutip sebagai temuan.
 
 ---
 
 ## Sumber & Atribusi
 
 - Klasifikasi fibrik / hemik / saprik mengikuti **USDA Soil Taxonomy**.
-- Batas muka air tanah 0,4 m merujuk **PP No. 57 Tahun 2016** tentang
-  perlindungan dan pengelolaan ekosistem gambut.
+- Ketebalan minimum 50 cm agar suatu lahan disebut gambut merujuk **PP No. 71
+  Tahun 2014** tentang perlindungan dan pengelolaan ekosistem gambut.
+- Batas muka air tanah 0,4 m merujuk **PP No. 57 Tahun 2016**, perubahan atas
+  PP No. 71 Tahun 2014.
 - Sumber dan lisensi tiap aset tercatat pada
   [`public/models/gambut/SUMBER.md`](public/models/gambut/SUMBER.md) dan
   [`public/textures/gambut/SUMBER.md`](public/textures/gambut/SUMBER.md).

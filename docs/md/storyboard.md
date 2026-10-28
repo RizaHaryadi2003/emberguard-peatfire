@@ -173,6 +173,13 @@ bagian 2.
 
 > *"Saat air dialirkan keluar"*
 
+> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/gambut/kanal/`,
+> model di `lib/drainage.ts`. Pesan utama, keempat babak, dan tugas tiap babak
+> di bawah ini tetap seperti rencana. Panggungnya berubah: bukan satu petak
+> ± 500 m, melainkan **dua gambar berdampingan** — bongkahan isometrik
+> puluhan meter di dekat kanal, dan grafik muka air sepanjang 1 km. Kerucut
+> penurunannya tidak dapat dibaca pada satu gambar saja.
+
 **Pesan utama:** kebakaran gambut hampir tidak pernah bermula dari api. Ia
 bermula dari **air yang dikeluarkan**, bertahun-tahun sebelumnya.
 
@@ -205,6 +212,14 @@ Murni, dapat diuji.
 ### 5.2 Modul 04 — Gudang Karbon
 
 > *"Apa yang lepas saat gambut terbakar"*
+
+> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/gambut/karbon/`,
+> model di `lib/carbon.ts`. Pesan utamanya tetap ketimpangan waktu. Panggungnya
+> berubah: bukan satu tiang gambut 1 m × 1 m, melainkan **bidang potong yang
+> sama** yang sudah dikenal pembaca sejak Modul 01, dibaca ulang sebagai
+> kalender dan sebagai gudang. Satu babak ditambahkan di luar rencana —
+> "Hektare bukan ukurannya" — karena luas tanpa kedalaman adalah justru
+> kekeliruan yang dibawa pembaca dari berita.
 
 **Pesan utama:** ketimpangan waktu. Gambut menabung karbon selama ribuan tahun,
 dan kebakaran menghabiskannya dalam hitungan hari.
@@ -426,11 +441,11 @@ Diurutkan berdasarkan **manfaat dibagi kesulitan**, bukan berdasarkan nomor.
 
 | Urutan | Pekerjaan | Kesulitan | Alasan didahulukan |
 |---|---|---|---|
-| 1 | Selesaikan Babak 04 Modul 02 | Kecil | Sudah 90%; menyelesaikan satu modul penuh lebih berharga daripada memulai yang baru |
-| 2 | Tambal Tahap 1 dan 3 Modul 01 | Kecil | Menutup satu-satunya celah terhadap aturan pembimbing |
-| 3 | **Modul 03 — Kanal** | Sedang | Mata rantai yang hilang: menjelaskan *mengapa* gambut kering. Tanpa ini, Modul 02 seolah bermula dari ketiadaan |
-| 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan |
-| 5 | Modul 04 — Gudang Karbon | Sedang | Berdiri sendiri, bisa dikerjakan kapan saja |
+| ~~1~~ | ~~Selesaikan Babak 04 Modul 02~~ | Kecil | **Selesai** |
+| 2 | Tambal Tahap 1 dan 3 Modul 01 | Kecil | Menutup satu-satunya celah terhadap aturan pembimbing — masih tertunda, lihat bagian 3 |
+| ~~3~~ | ~~**Modul 03 — Kanal**~~ | Sedang | **Selesai** |
+| ~~5~~ | ~~Modul 04 — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
+| 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |
 | 6 | Bagian 03 — Dampak | Sedang | Sebagian besar sudah tersedia lewat `getAtmosphere` |
 | 7 | Bagian 02 — Simulasi | **Besar** | Perlu perluasan `SmolderSim` ke bidang datar. Kerjakan terakhir, saat pola kerja sudah mapan |
 

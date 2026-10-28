@@ -4,8 +4,9 @@ Dokumen ini merangkum seluruh teknologi yang dipakai proyek **Emberguard**,
 beserta alasan tiap pilihan. Disusun dari pemeriksaan langsung berkas proyek,
 bukan dari rencana atau perkiraan.
 
-- Tanggal pemeriksaan: **30 September 2026**
-- Diverifikasi dengan: `npm test` (48 uji lolos) dan `npm run build` (berhasil)
+- Tanggal pemeriksaan: **28 Oktober 2026**
+- Diverifikasi dengan: `npm test` (157 uji lolos), `npm run lint`, dan
+  `npx tsc --noEmit` (keduanya tanpa keluhan)
 
 ---
 
@@ -52,7 +53,7 @@ statis**. Alasan lengkapnya ada pada bagian 6.
 
 | Perkakas | Versi | Keterangan |
 |---|---|---|
-| Vitest | ^5.0.0 | Lingkungan `node`, hanya menguji `lib/**/*.test.ts` |
+| Vitest | ^5.0.0 | Lingkungan `node`, menguji `lib/**` dan berkas perhitungan di `components/**` |
 | ESLint | ^9 | Konfigurasi rata (*flat config*) + `eslint-config-next` |
 | Turbopack | bawaan Next 16 | Penyusun berkas, dipakai otomatis oleh `next build` |
 | npm | — | `package-lock.json` |
@@ -185,12 +186,22 @@ Isi `lib/`:
 
 | Berkas | Baris | Isi |
 |---|---|---|
-| `smolder.ts` | 556 | Model sel-otomata perambatan bara gambut |
-| `peat.ts` | 153 | Profil lapisan gambut, status muka air, indeks bahaya |
+| `smolder.ts` | 622 | Model sel-otomata perambatan bara gambut (Modul 02) |
+| `drainage.ts` | 519 | Hidrologi kanal: kerucut penurunan muka air, subsiden, emisi (Modul 03) |
+| `carbon.ts` | 475 | Cadangan karbon, CO₂ yang lepas, umur menurut kedalaman, pemulihan (Modul 04) |
+| `peat.ts` | 228 | Profil lapisan gambut, status muka air, indeks bahaya (Modul 01) |
 | `ambientSound.ts` | 168 | Sintesis suara suasana lewat Web Audio API |
 | `atmosphere.ts` | 92 | Peralihan langit cerah menuju langit berasap |
 | `spotlight.ts` | 35 | Penghalusan gerak sorot kursor |
 | `random.ts` | 14 | Pembangkit acak ber-*seed* (Lehmer) |
+
+Tiga model terbesar memakai pola yang sama: `STEP_*` tetap supaya hasilnya
+tidak bergantung pada kecepatan perangkat, satu kelas `*Sim` yang menyimpan
+keadaan, dan satu tipe `*Stats` yang dibaca komponen React. Pada `drainage.ts`
+dan `carbon.ts`, tetapan kuantitatif yang belum memiliki sumber dikumpulkan
+dalam satu blok bertanda di kepala berkas — diurutkan menurut besar
+pengaruhnya pada kesimpulan — supaya dapat diganti sekaligus dan tidak
+terkutip sebelum waktunya.
 
 ---
 
@@ -253,22 +264,37 @@ modul berikutnya.
 Konfigurasinya sengaja sempit:
 
 ```ts
-test: { environment: "node", include: ["lib/**/*.test.ts"] }
+test: {
+  environment: "node",
+  include: ["lib/**/*.test.ts", "components/**/*.test.ts"],
+}
 ```
 
 Yang diuji adalah **model ilmiahnya**, bukan tampilannya. Komponen React dan
 adegan 3D diuji secara manual dan visual, dengan bukti tangkapan layar di
 `docs/screenshots/`.
 
-Keadaan terakhir: **5 berkas uji, 48 uji, seluruhnya lolos** (durasi 2,65 detik).
+Cakupannya diperluas ke `components/**` karena sebagian bentuk geometri
+diorama dan penilaian jawaban pembaca masih berada di sana bersama
+komponennya. Yang diuji tetap hanya berkas yang murni perhitungan — tidak
+satu pun uji merender React.
 
-| Berkas uji | Baris | Cakupan |
+Keadaan terakhir: **11 berkas uji, 157 uji, seluruhnya lolos** (durasi 3,41
+detik).
+
+| Berkas uji | Uji | Cakupan |
 |---|---|---|
-| `smolder.test.ts` | 228 | Penyalaan, perambatan, pemadaman, subsiden |
-| `peat.test.ts` | 120 | Klasifikasi lapisan, status air, indeks bahaya |
-| `spotlight.test.ts` | 43 | Interpolasi dan penghalusan kursor |
-| `atmosphere.test.ts` | 34 | Peralihan suasana langit |
-| `ambientSound.test.ts` | 19 | Laju derak bara dan peluang kicau burung |
+| `lib/carbon.test.ts` | 32 | Cadangan karbon, CO₂, umur menurut kedalaman, pemulihan |
+| `lib/peat.test.ts` | 28 | Klasifikasi lapisan, status air, indeks bahaya |
+| `lib/drainage.test.ts` | 25 | Panjang pengaruh kanal, subsiden, emisi, pemadatan |
+| `lib/smolder.test.ts` | 23 | Penyalaan, perambatan, pemadaman, subsiden |
+| `components/gambut/bara/scene/crossSection.test.ts` | 12 | Pemetaan sel simulasi ke geometri penampang |
+| `components/gambut/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 03 |
+| `components/gambut/karbon/depthProbe.test.ts` | 8 | Penilaian penanda kedalaman babak 01 Modul 04 |
+| `lib/spotlight.test.ts` | 7 | Interpolasi dan penghalusan kursor |
+| `components/gambut/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 02 |
+| `lib/atmosphere.test.ts` | 4 | Peralihan suasana langit |
+| `lib/ambientSound.test.ts` | 2 | Laju derak bara dan peluang kicau burung |
 
 ---
 
@@ -385,9 +411,9 @@ Sumber dan lisensi tercatat pada `public/models/gambut/SUMBER.md` dan
 |---|---|
 | Beranda, Navbar, halaman `/gambut` | Selesai |
 | Modul 01 — Anatomi Gambut | Selesai |
-| Modul 02 — Bara di Bawah Tanah | Babak 01–03 berjalan; babak 04 dan layar sempit belum diuji |
-| Modul 03 — Kanal & Pengeringan | Belum dikerjakan |
-| Modul 04 — Gudang Karbon | Belum dikerjakan |
+| Modul 02 — Bara di Bawah Tanah | Selesai — empat babak berjalan dengan gerbangnya |
+| Modul 03 — Kanal & Pengeringan | Selesai — empat babak berjalan dengan gerbangnya |
+| Modul 04 — Gudang Karbon | Selesai — empat babak berjalan dengan gerbangnya |
 | `/simulasi`, `/dampak`, `/pencegahan` | Halaman penanda |
 
 Satu hal yang masih tertunda: `config/assets.ts` masih berisi teks kosong untuk
