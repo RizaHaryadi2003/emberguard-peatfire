@@ -3,13 +3,18 @@
 Dokumen ini menetapkan **cerita seluruh situs** dan **aturan yang membuatnya
 disebut animasi interaktif**, bukan animasi biasa.
 
-Disusun setelah Modul 01 dan Modul 02 selesai, dengan cara membaca ulang apa
-yang sudah berhasil pada keduanya, lalu menjadikannya patokan untuk bagian yang
-belum dikerjakan. Jadi aturannya bukan teori dari luar, melainkan pola yang
-sudah terbukti berjalan di dalam proyek ini sendiri.
+Isi setiap babak **diturunkan dari riset acuan**, bukan dari perkiraan
+sendiri. Tiap modul memiliki satu acuan utama yang dibahas dalam dokumen
+tersendiri (`docs/md/acuan-modul-XX.md`). Dokumen inilah yang mengatur
+**bentuk** interaksinya (Pola 5A), sedangkan dokumen acuan mengatur **isinya**.
 
-- Tanggal: 30 September 2026
+- Tanggal: 30 September 2026, direvisi 8 November 2026
 - Berlaku untuk: seluruh bagian, termasuk Modul 01 dan 02 yang sudah jadi
+
+| Modul | Acuan utama | Dokumen |
+|---|---|---|
+| 01 Anatomi Gambut | Andriesse (1988), FAO Soils Bulletin 59 | `acuan-modul-01.md` |
+| 02 – 04, Bagian 02 – 04 | *(menyusul)* | — |
 
 ---
 
@@ -46,7 +51,7 @@ aturan itu dipecah menjadi lima unsur yang **wajib ada pada setiap babak**:
 
 ### Uji kelayakan satu babak
 
-Sebelum sebuah babak ditulis kodenya, jawab tiga pertanyaan ini:
+Sebelum sebuah babak ditulis kodenya, jawab empat pertanyaan ini:
 
 1. **Uji hapus-aksi** — bila A2 dihapus dan animasinya berjalan sendiri, apakah
    babak ini masih berarti? Kalau **ya**, babak ini belum interaktif; ia hanya
@@ -57,7 +62,23 @@ Sebelum sebuah babak ditulis kodenya, jawab tiga pertanyaan ini:
    apakah jawabannya datang dari **yang ia lihat terjadi**, bukan dari teks yang
    ia baca? Kalau jawabannya dari teks, animasinya cuma hiasan.
 
-Babak yang lolos ketiganya sah disebut animasi interaktif.
+4. **Uji acuan**: apakah setiap gerak yang menyampaikan klaim ilmiah, dan
+   setiap angka pada A5, dapat ditunjuk bagian sumbernya di dokumen acuan
+   modul? Kalau tidak, babak itu berdiri di atas perkiraan. Cari acuannya
+   dulu, atau hapus klaimnya.
+
+Babak yang lolos keempatnya sah disebut animasi interaktif.
+
+### Alur dari riset ke animasi
+
+```
+TEMUAN RISET   →   BESARAN   →   AKSI PEMBACA   →   ANIMASI & AKIBAT
+```
+
+Temuan ditulis dulu beserta kutipan dan nomor bagiannya. Baru sesudah itu
+dipikirkan aksi yang membuat pembaca **menemukan sendiri** temuan tersebut.
+Gerak yang hanya membantu keterbacaan (warna, kamera) boleh ada, asalkan
+tidak menyampaikan klaim ilmiah.
 
 ### Tingkatan aksi
 
@@ -99,29 +120,33 @@ tiga hal yang harus ditiru modul lain:
 3. **Akibat tak terbalik** — gambut yang jadi abu tidak kembali. Ada yang
    dipertaruhkan.
 
-### Modul 01 — Anatomi Gambut ⚠️ **perlu ditambal**
+### Modul 01 — Anatomi Gambut ⚠️ **disusun ulang menurut acuan**
 
-| Tahap | Ajakan | Tingkat | 5A lengkap? |
-|---|---|---|---|
-| 1 Hutan di atas spons | *(tidak ada)* | 0 | ❌ Gagal uji hapus-aksi |
-| 2 Lapis demi lapis | "Klik salah satu lapisan" | 3 | ✅ |
-| 3 Menyimpan air | *(tidak ada)* | 0 | ❌ Gagal uji hapus-aksi |
-| 4 Saat air surut | "Geser pengatur di bawah" | 2 | ✅ |
+> **Acuan:** Andriesse, J. P. (1988). *Nature and Management of Tropical Peat
+> Soils.* FAO Soils Bulletin 59. Rincian temuan, angka, dan kutipan tiap tahap
+> ada di `docs/md/acuan-modul-01.md`.
 
-Dua dari empat tahapnya berjalan sendiri mengikuti gulir. Bila pembimbing
-memeriksa modul ini dengan aturannya sendiri, dua tahap itu akan dinilai
-sebagai animasi biasa.
+**Keadaan sekarang.** Tahap 1 (seret umur) dan Tahap 2 (klik lapisan) sudah
+memiliki aksi. Tahap 3 belum menuntut aksi apa pun, dan Tahap 4 bisa
+dibalik sepenuhnya tanpa akibat. Laju tumbuh 1 mm/tahun, ambang serat, dan
+klaim "makin ke bawah makin matang" ternyata **bertentangan dengan acuan**
+(daftar lengkap di bagian 7 dokumen acuan).
 
-**Tambalan yang disarankan** (kecil, tidak membongkar modul):
+**Papan cerita baru:**
 
-| Tahap | Tambahkan aksi | Animasi yang muncul | Angka |
-|---|---|---|---|
-| 1 | **Seret pengatur waktu** 0 → 5.000 tahun | Bongkahan gambut tumbuh naik lapis demi lapis dari dasar mineral; serasah jatuh dan tertimbun | "± 1 mm / tahun — laju penumpukan gambut" |
-| 3 | **Tekan dan tahan "Peras spons"** | Air terperas keluar dari bongkahan ke gelas ukur di sisi layar; gelas terisi sampai ± 90% volume | "± 90% — bagian volume gambut alami yang berupa air" |
+| Tahap | Temuan acuan | Ajakan (A1) | Aksi (A2) | Tingkat | Animasi (A3) | Akibat (A4) | Angka (A5) |
+|---|---|---|---|---|---|---|---|
+| **1** Hutan di atas spons | Gambut tumbuh dari cekungan (primer → sekunder → tersier) menjadi kubah yang hanya diisi hujan; lajunya melambat seiring tahap (§3.2–3.4) | "Seret waktu dan lihat rawa ini menimbun dirinya sendiri." | Pengatur waktu | **2** | Penampang lanskap: cekungan terisi, meluap, lalu menggembung jadi kubah; panah air sungai memudar sampai tinggal hujan; tebal yang bertambah per seretan makin kecil | Melewati 50 cm (sah disebut gambut); label berubah *topogen → ombrogen* | "1 m per 214 tahun di awal, 1 m per 455 tahun di akhir" |
+| **2** Lapis demi lapis | Kematangan ditentukan dari kandungan serat setelah digosok sepuluh kali (§5.6.1, Tabel 17) | "Ambil contoh dari satu lapisan, lalu gosok sepuluh kali." | Klik lapisan, lalu seret bolak-balik | **4** | Serat lemah putus tiap gosokan; bilah "serat tersisa" turun lalu berhenti | Contoh tergolong fibrik / hemik / saprik; kartu sifatnya terbuka | "> 2/3 serat = fibrik · < 1/3 = saprik" |
+| **3** Menyimpan air | Pori fibrik ± 90% volume; air jenuh 850–> 3.000% bobot kering; air perasan makin gelap seiring penguraian (§4.2.4, Tabel 16–17) | "Tekan dan tahan untuk memeras contoh gambut." | Tekan-tahan pada contoh | **3** | Air menetes ke gelas ukur; jumlah dan warnanya berbeda untuk tiap contoh | Contoh yang diperas menyusut dan tidak bisa diulang | "1 kg fibrik kering menahan 8,5 – 30 kg air" |
+| **4** Saat air surut | Gambut yang dikeringkan teroksidasi, jadi seperti ampas kopi, dan sukar dibasahi lagi (§4.2.7, §7.3–7.4) | "Turunkan muka air, lalu coba naikkan lagi." | Pengatur muka air turun, lalu naik | **2** | Bagian di atas air menyusut dan berbutir; saat air naik lagi, lapisan atas **tetap kering dan lebih rendah** | **Tak terbalik**; status "rawan" setelah 40 cm | "30 cm: 400 tahun terbentuk, < 10 tahun hilang" · "0,4 m (PP 57/2016)" |
 
-Tahap 1 sekaligus memperbaiki masalah lain: sekarang tidak ada apa pun yang
-menunjukkan bahwa gambut **butuh ribuan tahun untuk terbentuk** — padahal itu
-fondasi pesan Modul 04.
+Tingkat aksinya 2 → 4 → 3 → 2: tiga tingkat berbeda, dan tidak ada dua tahap
+berurutan yang sama.
+
+**Keputusan yang masih terbuka** (lihat bagian 8 dokumen acuan): laju tumbuh
+tiga fase atau satu rata-rata, urutan lapisan pada bongkahan, dan panggung
+penampang lanskap untuk Tahap 1.
 
 ---
 
@@ -137,7 +162,7 @@ BERANDA
         │
         ▼
 BAGIAN 01 — GAMBUT                              [ KENALI ]
-  Modul 01  Anatomi Gambut        apa itu gambut      ✅ selesai
+  Modul 01  Anatomi Gambut        apa itu gambut      ⚠️ disesuaikan ke acuan
   Modul 02  Bara di Bawah Tanah   mengapa sulit padam ✅ selesai
   Modul 03  Kanal & Pengeringan   mengapa jadi kering ⬜
   Modul 04  Gudang Karbon         apa yang hilang     ⬜
@@ -229,8 +254,8 @@ dengan sumbu tahun di sisi kiri dan penghitung karbon di sisi kanan.
 
 | Babak | Judul | Ajakan (A1) | Aksi (A2) | Tingkat | Animasi (A3) | Akibat (A4) | Angka (A5) |
 |---|---|---|---|---|---|---|---|
-| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur 0 → 5.000 tahun | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan; warna lapisan berubah matang dari bawah ke atas | Tiang penuh setinggi 5 m; karbon tersimpan penuh | "± 1 mm per tahun" dan total karbon tersimpan per hektar *(perlu rujukan)* |
-| **02** | Habis dalam hitungan hari | "Sulut tiang gambut." | Satu klik pada tiang | **3** | Bara turun cepat; tiang menyusut dari atas; **penghitung karbon berbalik turun**, dan angka yang hilang naik ke langit sebagai kabut gelap; sumbu tahun di kiri ikut tergerus mundur — 5.000 tahun terhapus dalam beberapa detik | Tiang habis. Penghitung nol | "Terbentuk 5.000 tahun · Habis 3 hari" — dua angka disandingkan |
+| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur dari 0 sampai umur penuh profil | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan | Tiang penuh; karbon tersimpan penuh | Laju tumbuh mengikuti `acuan-modul-01.md`; total karbon per hektar menunggu acuan Modul 04 |
+| **02** | Habis dalam hitungan hari | "Sulut tiang gambut." | Satu klik pada tiang | **3** | Bara turun cepat; tiang menyusut dari atas; **penghitung karbon berbalik turun**, dan angka yang hilang naik ke langit sebagai kabut gelap; sumbu tahun di kiri ikut tergerus mundur — umur yang tadi ditabung terhapus dalam beberapa detik | Tiang habis. Penghitung nol | Umur terbentuk dan lama terbakar disandingkan *(angka menunggu acuan Modul 04)* |
 | **03** | Sebesar apa itu | "Pilih pembanding yang paling mudah kamu bayangkan." | Menekan kartu pembanding (mobil setahun / penerbangan / rumah tangga) | **1** | Ikon pembanding memenuhi layar satu per satu sampai jumlahnya setara karbon yang barusan lepas; berhenti dengan angka besar | Pembaca punya pegangan nyata atas besaran abstrak | Jumlah setara *(perlu rujukan dan perhitungan sendiri)* |
 | **04** | Menabung ulang | "Coba kembalikan karbonnya." | Memutar pengatur tahun ke depan lagi, sekuat apa pun | **4** | Tiang tumbuh **sangat lambat** — pengatur diputar penuh, tiang hanya naik beberapa sentimeter. Bilah pemulihan nyaris tidak bergerak | Pembaca merasakan sendiri ketimpangannya; tidak bisa menang | "Butuh ribuan tahun untuk mengembalikan apa yang hilang dalam tiga hari." |
 
@@ -442,7 +467,7 @@ Diurutkan berdasarkan **manfaat dibagi kesulitan**, bukan berdasarkan nomor.
 | Urutan | Pekerjaan | Kesulitan | Alasan didahulukan |
 |---|---|---|---|
 | ~~1~~ | ~~Selesaikan Babak 04 Modul 02~~ | Kecil | **Selesai** |
-| 2 | Tambal Tahap 1 dan 3 Modul 01 | Kecil | Menutup satu-satunya celah terhadap aturan pembimbing — masih tertunda, lihat bagian 3 |
+| 2 | Susun ulang Modul 01 menurut `acuan-modul-01.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
 | ~~3~~ | ~~**Modul 03 — Kanal**~~ | Sedang | **Selesai** |
 | ~~5~~ | ~~Modul 04 — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
 | 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |
@@ -464,7 +489,8 @@ selanjutnya* pada bab penutup daripada dikerjakan setengah jadi.
 - [ ] Lolos uji pelajaran — pelajarannya datang dari yang terlihat, bukan dari teks
 - [ ] Tingkat aksinya berbeda dari babak sebelumnya
 - [ ] Syarat pembuka babak berikutnya dibaca dari keadaan simulasi
-- [ ] Angka pada A5 sudah punya rujukan, atau ditandai *(perlu rujukan)*
+- [ ] Temuan riset babak ini sudah tertulis di dokumen acuan modul, lengkap dengan nomor bagiannya
+- [ ] Angka pada A5 diambil dari acuan; babak dengan angka *(perlu rujukan)* belum boleh dikodekan
 - [ ] Logika ilmiahnya ditempatkan di `lib/` tanpa impor React atau Three.js
 - [ ] Seluruh teksnya berada di `config/`, bukan tertanam di komponen
 
@@ -483,7 +509,8 @@ Dua sumber yang sudah dipakai dan dapat dilanjutkan:
 Untuk laju subsiden, kandungan karbon, dan luas kanal, gunakan jurnal yang
 sudah dikumpulkan di `docs/Jurnal Reference/` atau data resmi BRGM dan KLHK.
 
-Sikap yang dipakai proyek ini — sebagaimana tertulis pada `lib/smolder.ts` —
-adalah menyatakan terus terang bahwa nilai tetapan bersifat **ilustratif**,
-dipilih agar sesuai urutan besar pengamatan lapangan, bukan hasil kalibrasi
-terhadap satu lokasi tertentu. Pertahankan kejujuran itu di seluruh modul baru.
+Setiap tetapan di `lib/` diambil dari dokumen acuan modulnya, dan komentar
+kodenya menyebut sumber serta nomor bagiannya. Bila angka acuan perlu
+disederhanakan (mis. tiga fase laju dibulatkan), cara penyederhanaannya
+ditulis di dokumen acuan supaya dapat dihitung ulang oleh penguji. Angka yang
+dipilih "agar terasa wajar" tanpa sumber tidak dipakai lagi.
