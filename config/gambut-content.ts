@@ -48,8 +48,8 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
   {
     title: "Menyimpan air",
-    body: "Dalam keadaan alami, pori-pori gambut penuh berisi air. Muka air tanah berada dekat permukaan, sehingga gambut tetap basah sepanjang tahun, bahkan saat kemarau.",
-    fact: { value: "± 90%", caption: "Bagian volume gambut alami yang berupa air" },
+    body: "Gambut bekerja seperti spons. Sebagian besar volumenya berupa pori, dan dalam keadaan alami pori itu penuh berisi air. Satu kilogram gambut fibrik kering dapat menahan 8,5 sampai lebih dari 30 kg air, sedangkan saprik yang lebih matang dan rapat kurang dari 4,5 kg. Muka air tanah berada dekat permukaan, sehingga gambut tetap basah sepanjang tahun, bahkan saat kemarau.",
+    fact: { value: "± 90%", caption: "Bagian volume gambut fibrik yang berupa pori, terisi air saat jenuh (Boelter 1974, dalam Andriesse 1988)" },
   },
   {
     title: "Saat air surut",
