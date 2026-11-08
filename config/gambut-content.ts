@@ -58,6 +58,47 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
 ];
 
+/**
+ * Pembuka Modul 01. Dimulai dari pertanyaan yang sudah dimiliki pembaca, bukan
+ * dari definisi, karena ia datang dari media sosial dan belum tentu berniat
+ * belajar. Klaim "sebagian besar isinya air" bersandar pada pori gambut yang
+ * jenuh, 81–93% volume (Andriesse 1988, §4.2.4 dan Tabel 10).
+ */
+export const ANATOMI_HOOK = {
+  setup: "Tanah ini sebagian besar isinya air.",
+  question: "Kok bisa terbakar?",
+  cta: "Cari tahu",
+  scrollHint: "atau gulir ke bawah",
+  /** Pengantar untuk pembaca yang datang dari tautan kartu hasil temannya. */
+  sharedLead: (cm: number) => `Temanmu mengatur muka air gambut sampai ${cm} cm. Sekarang giliranmu.`,
+};
+
+/**
+ * Isi kartu hasil Tahap 4, menurut keadaan muka air pilihan pembaca.
+ * Angka 400 tahun dan 10 tahun dikutip utuh dari Andriesse (1988, §7.4),
+ * tidak dihitung ulang dari model Tahap 1.
+ */
+export const RESULT_CARD_TEXT: Record<WaterStatus, { headline: string; note: string; challenge: string; source: string }> = {
+  basah: {
+    headline: "Aku menjaga muka air gambut tetap dekat permukaan.",
+    note: "Muka airnya masih jauh dari batas 40 cm, jadi gambut tetap basah.",
+    challenge: "Seberapa dalam sampai gambut ini rawan terbakar? Coba sendiri.",
+    source: "Batas muka air: PP 57/2016",
+  },
+  waspada: {
+    headline: "Muka air gambutku hampir menyentuh batas.",
+    note: "Sedikit lagi melewati 40 cm, batas yang ditetapkan PP 57/2016.",
+    challenge: "Kamu bisa menjaganya lebih baik? Coba sendiri.",
+    source: "Batas muka air: PP 57/2016",
+  },
+  rawan: {
+    headline: "Aku menurunkan muka air gambut melewati batas.",
+    note: "30 cm gambut butuh 400 tahun untuk terbentuk, dan bisa hilang dalam kurang dari 10 tahun.",
+    challenge: "Kamu bisa menjaganya lebih baik? Coba sendiri.",
+    source: "Andriesse (1988), FAO Soils Bulletin 59 · PP 57/2016",
+  },
+};
+
 export const WATER_STATUS_TEXT: Record<WaterStatus, { label: string; message: string }> = {
   basah: {
     label: "Basah · Aman",

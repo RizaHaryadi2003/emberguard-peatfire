@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplets, Flame } from "lucide-react";
+import { Droplets, Flame, Share2 } from "lucide-react";
 import { WATER_STATUS_TEXT } from "@/config/gambut-content";
 import { getWaterStatus, WATER_LIMIT_CM, WATER_MAX_CM, WATER_MIN_CM } from "@/lib/peat";
 
@@ -9,6 +9,9 @@ type Props = {
   onChange: (cm: number) => void;
   /** Dipanggil saat pengguna mulai menyentuh pengatur (menghentikan demo otomatis). */
   onInteract: () => void;
+  /** Kartu hanya boleh dibuat dari nilai pilihan pembaca, bukan dari demo otomatis. */
+  canCreateCard: boolean;
+  onCreateCard: () => void;
 };
 
 const STATUS_STYLE = {
@@ -18,7 +21,7 @@ const STATUS_STYLE = {
 } as const;
 
 /** Panel pengatur muka air tanah untuk tahap interaktif. */
-export default function WaterControl({ waterCm, onChange, onInteract }: Props) {
+export default function WaterControl({ waterCm, onChange, onInteract, canCreateCard, onCreateCard }: Props) {
   const status = getWaterStatus(waterCm);
   const text = WATER_STATUS_TEXT[status];
   const limitPct = ((WATER_LIMIT_CM - WATER_MIN_CM) / (WATER_MAX_CM - WATER_MIN_CM)) * 100;
@@ -79,6 +82,16 @@ export default function WaterControl({ waterCm, onChange, onInteract }: Props) {
       </div>
 
       <p className="mt-4 min-h-[3.5em] text-sm leading-relaxed text-white/75">{text.message}</p>
+
+      <button
+        type="button"
+        onClick={onCreateCard}
+        disabled={!canCreateCard}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-[#f0a060] enabled:cursor-pointer disabled:bg-white/10 disabled:text-white/50"
+      >
+        <Share2 size={15} />
+        {canCreateCard ? "Buat kartu hasilmu" : "Geser pengatur untuk membuat kartumu"}
+      </button>
     </div>
   );
 }

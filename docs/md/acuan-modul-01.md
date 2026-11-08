@@ -290,3 +290,5 @@ gambar penampang tersendiri sebelum kamera mendekat ke bongkahan pada Tahap 2.
 | Tahap 4: kering tak balik | Andriesse (1988), §4.2.7; Driessen & Suhardjo (1976), Tabel 11 |
 | Tahap 4: 400 tahun → < 10 tahun | Andriesse (1988), §7.4 |
 | Tahap 4: muka air ± 40 cm | Andriesse (1988), §8.2.2; PP 57/2016 |
+| Pembuka: "sebagian besar isinya air" | Boelter (1974) dalam Andriesse (1988), §4.2.4; Driessen & Rochimah (1976), Tabel 10 |
+| Kartu hasil: 400 tahun → < 10 tahun, batas 40 cm | Andriesse (1988), §7.4; PP 57/2016 |

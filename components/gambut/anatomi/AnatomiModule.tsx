@@ -6,12 +6,14 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { ANATOMI_STEPS, GAMBUT_MODULES } from "@/config/gambut-content";
+import { ANATOMI_HOOK, ANATOMI_STEPS, GAMBUT_MODULES } from "@/config/gambut-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
+import ModuleHook from "./ModuleHook";
+import ResultCardDialog from "./ResultCardDialog";
 import StepAdvance from "./StepAdvance";
 import WaterControl from "./WaterControl";
 import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
@@ -29,6 +31,12 @@ const STEP_WATER_CM = [15, 15, 4];
 /** Nilai awal pengatur & sasaran demo otomatis pada tahap interaktif. */
 const DEFAULT_WATER_CM = 15;
 const DEMO_WATER_CM = 62;
+
+/**
+ * Muka air di balik layar pembuka. Gambut utuh dibuat kering sampai membara,
+ * supaya pertanyaan "kok bisa terbakar?" langsung punya gambarnya.
+ */
+const HOOK_WATER_CM = 90;
 
 /**
  * Sasaran demo otomatis pada tahap pertumbuhan (tahun).
@@ -66,13 +74,23 @@ const STEP_FREE = [false, false, true, true];
  * gulir memindahkan cerita ke tahap berikutnya, sementara model 3D di
  * belakangnya berubah (kamera, lapisan terurai, muka air, bara).
  */
-export default function AnatomiModule() {
+export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<ScrollTrigger | null>(null);
 
   const [step, setStep] = useState(0);
+  /** Layar pembuka masih tampil; tertutup oleh tombol atau gulir pertama. */
+  const [hookOpen, setHookOpen] = useState(true);
+  const hookOpenRef = useRef(true);
+  useEffect(() => {
+    hookOpenRef.current = hookOpen;
+  }, [hookOpen]);
+  /** Pembaca sudah memegang pengatur muka air, jadi nilainya adalah pilihannya sendiri. */
+  const [waterTouched, setWaterTouched] = useState(false);
+  /** Muka air yang dibekukan pada kartu; `null` berarti dialog tertutup. */
+  const [cardWaterCm, setCardWaterCm] = useState<number | null>(null);
   /** Tahap terjauh yang sudah terbuka; bertambah setelah syarat tahap ini tuntas. */
   const [unlocked, setUnlocked] = useState(0);
   /** Pembaca mencoba melanjutkan padahal syaratnya belum tuntas (arahan disorot sebentar). */
@@ -102,9 +120,9 @@ export default function AnatomiModule() {
     setUnlocked((u) => Math.max(u, Math.min(i + 1, STEP_COUNT - 1)));
   }, []);
 
-  const waterCm = step === INTERACTIVE_STEP ? userWaterCm : STEP_WATER_CM[step];
+  const waterCm = hookOpen ? HOOK_WATER_CM : step === INTERACTIVE_STEP ? userWaterCm : STEP_WATER_CM[step];
   // Di luar tahap pertumbuhan, gambut selalu ditampilkan utuh.
-  const years = step === GROWTH_STEP ? userYears : PEAT_MAX_YEARS;
+  const years = !hookOpen && step === GROWTH_STEP ? userYears : PEAT_MAX_YEARS;
   /** Tahap yang memunculkan panel pengatur di sudut kiri bawah. */
   const hasPanel = step === GROWTH_STEP || step === INTERACTIVE_STEP;
 
@@ -212,6 +230,12 @@ export default function AnatomiModule() {
           ease: "power2.inOut",
         },
         onUpdate: (self) => {
+          // Gulir pertama hanya menutup pembuka, tidak ikut memindahkan tahap.
+          if (hookOpenRef.current) {
+            setHookOpen(false);
+            window.scrollTo({ top: self.start, behavior: "auto" });
+            return;
+          }
           const max = limit();
           if (self.progress > max + 0.002) {
             // Ditahan di batas tahap yang terbuka, lalu arahannya disorot
@@ -285,7 +309,7 @@ export default function AnatomiModule() {
   const growthTween = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
-    if (step !== GROWTH_STEP || !ready || growthDemoPlayed.current) return;
+    if (step !== GROWTH_STEP || !ready || hookOpen || growthDemoPlayed.current) return;
     growthDemoPlayed.current = true;
     // Bila gerak dikurangi, demo tidak dijalankan: timbunan langsung tampil
     // utuh supaya pembaca tidak disambut tanah kosong.
@@ -303,7 +327,7 @@ export default function AnatomiModule() {
     return () => {
       tween.kill();
     };
-  }, [step, ready, reducedMotion, applyYears]);
+  }, [step, ready, hookOpen, reducedMotion, applyYears]);
 
   const stopGrowthDemo = useCallback(() => {
     growthTween.current?.kill();
@@ -313,7 +337,9 @@ export default function AnatomiModule() {
   const stopDemo = useCallback(() => {
     demoTween.current?.kill();
     demoTween.current = null;
+    setWaterTouched(true);
   }, []);
+  const closeCard = useCallback(() => setCardWaterCm(null), []);
 
   // Seret horizontal untuk memutar diorama.
   const drag = useRef<{ x: number; start: number } | null>(null);
@@ -404,6 +430,17 @@ export default function AnatomiModule() {
           )}
         </div>
 
+        <ModuleHook
+          open={hookOpen}
+          kicker={`Modul ${MODULE.number} · ${MODULE.title}`}
+          setup={ANATOMI_HOOK.setup}
+          question={ANATOMI_HOOK.question}
+          cta={ANATOMI_HOOK.cta}
+          scrollHint={ANATOMI_HOOK.scrollHint}
+          lead={sharedWaterCm === null ? null : ANATOMI_HOOK.sharedLead(sharedWaterCm)}
+          onStart={() => setHookOpen(false)}
+        />
+
         {/* Tirai pemuatan */}
         <div
           className={`pointer-events-none absolute inset-0 flex items-center justify-center bg-[#050505] transition-opacity duration-1000 ${
@@ -421,7 +458,11 @@ export default function AnatomiModule() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
         {/* Panel cerita (kiri atas) */}
-        <div className="pointer-events-none absolute left-5 right-5 top-20 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[400px] [@media(max-height:880px)]:top-16 [@media(max-height:880px)]:sm:top-16">
+        <div
+          className={`pointer-events-none absolute left-5 right-5 top-20 transition-opacity duration-700 sm:left-10 sm:top-24 md:left-14 md:right-auto md:max-w-[400px] [@media(max-height:880px)]:top-16 [@media(max-height:880px)]:sm:top-16 ${
+            hookOpen ? "opacity-0" : "opacity-100"
+          }`}
+        >
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
             Modul {MODULE.number} · {MODULE.title}
           </p>
@@ -456,7 +497,10 @@ export default function AnatomiModule() {
         {/* Navigasi tahap (kiri bawah) */}
         <nav
           aria-label="Tahap modul"
-          className="absolute bottom-8 left-5 hidden gap-2 sm:left-10 md:left-14 md:flex"
+          inert={hookOpen}
+          className={`absolute bottom-8 left-5 hidden gap-2 transition-opacity duration-700 sm:left-10 md:left-14 md:flex ${
+            hookOpen ? "opacity-0" : "opacity-100"
+          }`}
         >
           {ANATOMI_STEPS.map((s, i) => {
             const shut = i > unlocked;
@@ -510,9 +554,9 @@ export default function AnatomiModule() {
         {/* Pengatur umur timbunan (tahap pertumbuhan) */}
         <div
           className={`absolute bottom-6 left-1/2 w-[min(560px,calc(100%-2.5rem))] -translate-x-1/2 md:bottom-20 md:left-14 md:w-[400px] md:translate-x-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            step === GROWTH_STEP ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"
+            step === GROWTH_STEP && !hookOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"
           }`}
-          inert={step !== GROWTH_STEP}
+          inert={step !== GROWTH_STEP || hookOpen}
         >
           {/* Di layar sempit panel ini menempati seluruh tepi bawah, jadi panah
               lanjut duduk tepat di atasnya; di layar lebar panahnya ada di
@@ -551,11 +595,18 @@ export default function AnatomiModule() {
             waterCm={userWaterCm}
             onChange={setUserWaterCm}
             onInteract={stopDemo}
+            canCreateCard={waterTouched}
+            onCreateCard={() => setCardWaterCm(userWaterCm)}
           />
         </div>
 
         {/* Kanan bawah: petunjuk interaksi, tombol suara, dan panah lanjut */}
-        <div className="absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14">
+        <div
+          inert={hookOpen}
+          className={`absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 transition-opacity duration-700 sm:bottom-8 sm:right-10 xl:right-14 ${
+            hookOpen ? "opacity-0" : "opacity-100"
+          }`}
+        >
           <div
             className={`pointer-events-none hidden items-center gap-4 pb-2 transition-opacity duration-500 lg:flex ${
               hasPanel ? "opacity-0" : "opacity-100"
@@ -606,6 +657,8 @@ export default function AnatomiModule() {
           ) : null}
         </div>
       </div>
+
+      {cardWaterCm !== null && <ResultCardDialog waterCm={cardWaterCm} onClose={closeCard} />}
     </div>
   );
 }
