@@ -163,10 +163,12 @@ type Props = {
   onHoverLayer: (id: PeatLayerId | null) => void;
   onSelectLayer: (id: PeatLayerId | null) => void;
   onReady: () => void;
+  /** Perangkat tetap kewalahan pada resolusi terendah. */
+  onOverload: () => void;
 };
 
 /** Kanvas 3D Modul 01. Berhenti merender saat tidak terlihat di layar. */
-export default function PeatScene({ stateRef, active, quality, onHoverLayer, onSelectLayer, onReady }: Props) {
+export default function PeatScene({ stateRef, active, quality, onHoverLayer, onSelectLayer, onReady, onOverload }: Props) {
   const profile = QUALITY_PROFILE[quality];
   const maxDpr = profile.maxDpr;
   return (
@@ -175,9 +177,9 @@ export default function PeatScene({ stateRef, active, quality, onHoverLayer, onS
       dpr={[1, maxDpr]}
       // Klik di ruang kosong melepaskan lapisan yang sedang dipilih.
       onPointerMissed={() => onSelectLayer(null)}
-      frameloop={active ? "always" : "never"}
+      frameloop={active ? "demand" : "never"}
       camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
+      gl={{ antialias: profile.antialias, powerPreference: "default" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 0.9;
@@ -188,7 +190,7 @@ export default function PeatScene({ stateRef, active, quality, onHoverLayer, onS
       {/* Cahaya pantul lembut dari langit & air agar sisi teduh tidak hitam pekat */}
       <hemisphereLight args={["#cfdcec", "#2a2116", 0.12]} />
       <CameraRig stateRef={stateRef} />
-      <PerformanceGuard maxDpr={maxDpr} />
+      <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
 
       <Suspense fallback={null}>
         <Backdrop />

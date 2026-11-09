@@ -432,6 +432,8 @@ type Props = {
   onStats: (stats: CarbonStats) => void;
   onProbe: (depthM: number) => void;
   onReady: () => void;
+  /** Perangkat tetap kewalahan pada resolusi terendah. */
+  onOverload: () => void;
 };
 
 export default function KarbonScene({
@@ -442,6 +444,7 @@ export default function KarbonScene({
   onStats,
   onProbe,
   onReady,
+  onOverload,
 }: Props) {
   const noise = useMemo(() => createNoiseTexture(), []);
   useEffect(() => () => noise.dispose(), [noise]);
@@ -453,8 +456,8 @@ export default function KarbonScene({
     <Canvas
       orthographic
       dpr={[1, maxDpr]}
-      frameloop={active ? "always" : "never"}
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
+      frameloop={active ? "demand" : "never"}
+      gl={{ antialias: profile.antialias, powerPreference: "default" }}
       shadows={profile.softShadow ? "percentage" : "basic"}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -467,7 +470,7 @@ export default function KarbonScene({
       }
     >
       <CameraRig />
-      <PerformanceGuard maxDpr={maxDpr} />
+      <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       {/* Langit, kabut, dan matahari yang sama dengan modul lain. Bongkahan
           ini sebesar bongkahan Modul 01 dan 02, jadi skala dunianya 1 —
           tidak ada yang perlu disetel ulang. */}

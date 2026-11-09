@@ -90,6 +90,7 @@ export default function KarbonModule() {
   const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
+  const handleOverload = useCallback(() => setQuality("low"), []);
 
   const stateRef = useRef<KarbonState>(createKarbonState());
 
@@ -126,7 +127,7 @@ export default function KarbonModule() {
       ([e]) => {
         if (!e.isIntersecting) return;
         const low = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
-        setQuality(low ? "low" : "high");
+        if (low) setQuality("low");
         setMounted(true);
       },
       { rootMargin: "600px 0px" },
@@ -249,6 +250,7 @@ export default function KarbonModule() {
             stateRef={stateRef}
             active={visible}
             quality={quality}
+            onOverload={handleOverload}
             onStats={handleStats}
             onProbe={handleProbe}
             onReady={handleReady}

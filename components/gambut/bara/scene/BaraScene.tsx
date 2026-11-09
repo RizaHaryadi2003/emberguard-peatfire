@@ -244,6 +244,8 @@ type Props = {
   onSurfaceClick: (xFraction: number) => void;
   onCollapse: () => void;
   onReady: () => void;
+  /** Perangkat tetap kewalahan pada resolusi terendah. */
+  onOverload: () => void;
 };
 
 export default function BaraScene({
@@ -256,6 +258,7 @@ export default function BaraScene({
   onSurfaceClick,
   onCollapse,
   onReady,
+  onOverload,
 }: Props) {
   // Tekstur data hasil simulasi: satu piksel per sel penampang. Dua penyangga,
   // karena perataan 3 × 3 tidak dapat dikerjakan di tempat — `raw` menampung
@@ -282,9 +285,9 @@ export default function BaraScene({
     <Canvas
       shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
-      frameloop={active ? "always" : "never"}
+      frameloop={active ? "demand" : "never"}
       camera={{ fov: 34, near: 0.1, far: 400, position: INITIAL_POS }}
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
+      gl={{ antialias: profile.antialias, powerPreference: "default" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         // Dinaikkan dari 0,9: seluruh adegan terbaca terlalu gelap, dan yang
@@ -302,7 +305,7 @@ export default function BaraScene({
           sisi yang tidak kena matahari tidak jatuh ke hitam pekat. */}
       <hemisphereLight args={["#cfdcec", "#3a2e20", 0.3]} />
       <CameraRig stateRef={stateRef} />
-      <PerformanceGuard maxDpr={maxDpr} />
+      <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       <Simulation
         sim={sim}
         stateRef={stateRef}

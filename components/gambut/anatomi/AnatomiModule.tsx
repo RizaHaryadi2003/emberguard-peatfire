@@ -109,6 +109,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   const [ready, setReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
+  const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
 
   /**
@@ -198,7 +199,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
         if (!e.isIntersecting) return;
         // Ponsel & layar sentuh memakai mutu grafis ringan (tanpa pantulan air nyata).
         const low = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
-        setQuality(low ? "low" : "high");
+        if (low) setQuality("low");
         setMounted(true);
       },
       { rootMargin: "800px 0px" },
@@ -423,6 +424,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               stateRef={sceneState}
               active={visible}
               quality={quality}
+              onOverload={handleOverload}
               onHoverLayer={setHovered}
               onSelectLayer={selectLayer}
               onReady={handleReady}

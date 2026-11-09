@@ -734,9 +734,11 @@ type Props = {
   quality: Quality;
   onStats: (stats: DrainageStats) => void;
   onReady: () => void;
+  /** Perangkat tetap kewalahan pada resolusi terendah. */
+  onOverload: () => void;
 };
 
-export default function KanalScene({ sim, stateRef, active, quality, onStats, onReady }: Props) {
+export default function KanalScene({ sim, stateRef, active, quality, onStats, onReady, onOverload }: Props) {
   const { texture: field, data } = useMemo(() => createFieldTexture(), []);
   const noise = useMemo(() => createNoiseTexture(), []);
   const subsidence = useMemo(() => createSubsidence(sim), [sim]);
@@ -751,8 +753,8 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
     <Canvas
       orthographic
       dpr={[1, maxDpr]}
-      frameloop={active ? "always" : "never"}
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}
+      frameloop={active ? "demand" : "never"}
+      gl={{ antialias: profile.antialias, powerPreference: "default" }}
       shadows={profile.softShadow ? "percentage" : "basic"}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -765,7 +767,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
       }
     >
       <CameraRig />
-      <PerformanceGuard maxDpr={maxDpr} />
+      <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 02.
           Petak ini enam belas kali lebih besar daripada diorama di sana, dan
           skalanya dinyatakan supaya kabut serta peta bayangannya ikut
