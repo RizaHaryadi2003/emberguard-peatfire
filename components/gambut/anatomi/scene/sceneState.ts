@@ -5,6 +5,7 @@ import type { PeatLayerId } from "@/lib/peat";
 export {
   BLOCK_DEPTH,
   BLOCK_WIDTH,
+  DIORAMA_BASE_YAW,
   DIORAMA_Y,
   MAX_ROTATION,
   QUALITY_PROFILE,

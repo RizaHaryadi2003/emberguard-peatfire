@@ -11,6 +11,7 @@ import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
 import {
+  DIORAMA_BASE_YAW,
   DIORAMA_Y,
   EXPLODE_GAP,
   EXPLODE_STEP,
@@ -135,7 +136,7 @@ function Diorama({
     s.danger = THREE.MathUtils.damp(s.danger, getFireDanger(s.waterCm), fast ? 30 : 1.6, dt);
 
     const idle = fast ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.06;
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, -0.18 + s.rotation + idle, 4, dt);
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, DIORAMA_BASE_YAW + s.rotation + idle, 4, dt);
 
     // Permukaan (rumput, pohon, bara) ikut naik bersama lapisan teratas, dan
     // ikut turun saat timbunan gambut belum setebal profil penuh.

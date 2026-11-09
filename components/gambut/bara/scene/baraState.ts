@@ -7,7 +7,9 @@ import type { ViewMode } from "@/config/bara-content";
 export {
   BLOCK_DEPTH,
   BLOCK_WIDTH,
+  DIORAMA_BASE_YAW,
   DIORAMA_Y,
+  MAX_ROTATION,
   PEAT_LAYER_TINT,
   QUALITY_PROFILE,
   SUN_DIRECTION,
@@ -39,10 +41,8 @@ export type BaraState = {
   flameX: number;
   /** Animasi semburan air ke permukaan (0–1). */
   spray: number;
-  /** Putaran diorama ke kiri/kanan oleh seretan pembaca (radian). */
+  /** Putaran diorama ke kiri/kanan oleh seretan pembaca (radian, sumbu Y). */
   rotation: number;
-  /** Jungkitan diorama ke atas/bawah oleh seretan pembaca (radian). */
-  tilt: number;
   /**
    * Jarak tempuh seretan terakhir dalam piksel. Dipakai untuk membedakan
    * seretan dari klik: tanpa ini, memutar bongkahan akan sekaligus menyulut
@@ -53,29 +53,6 @@ export type BaraState = {
   thermal: number;
   danger: number;
 };
-
-/**
- * Putaran kiri/kanan tidak dibatasi: diorama dapat diputar penuh satu putaran.
- *
- * Bongkahan ini dipotong separuh, jadi dari belakang yang terlihat hanya
- * dinding tanah tanpa penampang. Itu bukan kerusakan — badannya tertutup
- * rapat oleh dinding dan kedua tutupnya — melainkan sisi lain benda yang sama,
- * dan memang berguna untuk memastikan bentuknya. Yang perlu diurus hanyalah
- * keterangan: lihat SceneLabels, yang menyembunyikan dirinya begitu bidang
- * potong berpaling dari kamera.
- */
-
-/**
- * Batas jungkitan ke atas dan ke bawah (radian).
- *
- * Tidak simetris, karena kedua arah tidak sama gunanya. Menunduk sampai 0,55
- * radian memperlihatkan permukaan tanah dari atas — justru itu yang dibahas
- * babak 03: dari atas, kebakaran ini nyaris tidak terlihat. Menengadah hanya
- * memperlihatkan dasar bongkahan yang tidak menyimpan apa pun, jadi cukup
- * sedikit saja agar bentuknya tetap terasa tiga dimensi.
- */
-export const BARA_MAX_TILT_DOWN = 0.7;
-export const BARA_MAX_TILT_UP = 0.35;
 
 /** Seretan dianggap putaran, bukan klik, setelah melewati jarak ini (piksel). */
 export const DRAG_THRESHOLD = 5;
@@ -93,7 +70,6 @@ export function createBaraState(waterM: number): BaraState {
     flameX: 0.5,
     spray: 0,
     rotation: 0,
-    tilt: 0,
     dragMoved: 0,
     thermal: 0,
     danger: 0,
@@ -148,46 +124,4 @@ export function createSubsidence(sim: SmolderSim): Subsidence {
     },
   };
   return tracker;
-}
-
-/**
- * Simpangan pandang yang masih dianggap "menghadap penampang" (radian).
- *
- * Putaran dibatasi lebih ketat daripada jungkitan karena keduanya tidak sama
- * akibatnya: memutar sedikit saja sudah memiringkan bidang potong sehingga
- * kedalaman tidak lagi terbaca jujur, sedangkan menunduk justru dianjurkan
- * pada babak 03 — dari atas, kebakaran ini nyaris tidak terlihat.
- */
-export const FACING_YAW_TOLERANCE = 0.18;
-export const FACING_TILT_TOLERANCE = 0.3;
-
-const TAU = Math.PI * 2;
-
-/**
- * Benarkah diorama sudah dipalingkan jauh dari hadapan penampang?
- *
- * Dipakai untuk memunculkan tombol "Kembali ke penampang". Tanpa tombol itu
- * pembaca yang memutar bongkahan sampai melihat punggungnya harus menyeret
- * balik dengan jarak yang sama persis untuk menemukan penampangnya lagi —
- * dan karena putaran tidak dibatasi, ia bisa tersesat beberapa putaran jauhnya.
- */
-export function isTurnedAway(s: BaraState): boolean {
-  return Math.abs(signedYaw(s.rotation)) > FACING_YAW_TOLERANCE || Math.abs(s.tilt) > FACING_TILT_TOLERANCE;
-}
-
-/**
- * Putaran terdekat yang menghadapkan penampang kembali ke kamera.
- *
- * Putaran penuh bukan simpangan: pada 2π penampang sudah menghadap kamera
- * lagi. Yang dicari karena itu bukan nol, melainkan kelipatan 2π terdekat,
- * supaya diorama berputar balik lewat jalan terpendek alih-alih memutar
- * mundur sebanyak putaran yang sudah ditempuh pembaca.
- */
-export function nearestFacing(rotation: number): number {
-  return Math.round(rotation / TAU) * TAU;
-}
-
-/** Sisa putaran terhadap kelipatan 2π terdekat, dalam rentang −π…π. */
-function signedYaw(rotation: number): number {
-  return rotation - nearestFacing(rotation);
 }

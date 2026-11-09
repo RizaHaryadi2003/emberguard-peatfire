@@ -17,6 +17,9 @@ export const DIORAMA_Y = 0.2;
 /** Batas putaran balok ke kiri/kanan oleh seretan pengguna (radian). */
 export const MAX_ROTATION = 0.9;
 
+/** Sudut hadap awal diorama pada sumbu tegak (radian), sebelum diseret. */
+export const DIORAMA_BASE_YAW = -0.18;
+
 /**
  * Rona pengali warna tekstur tiap lapisan.
  *

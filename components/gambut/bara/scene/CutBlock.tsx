@@ -108,8 +108,8 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
         // matahari dan menyimpan seluruh kejadiannya, bukan karena tanah di
         // sekitarnya digelapkan.
         color: new THREE.Color(...LAYER_TINT[layer.id]),
-        roughness: 0.95,
-        normalScale: new THREE.Vector2(1.2, 1.2),
+        roughness: 0.96,
+        normalScale: new THREE.Vector2(1.4, 1.4),
         vertexColors: true,
       }),
     }));
@@ -210,10 +210,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
     // Badan lapisan diredupkan pada tampilan termal agar penampang menonjol.
     res.bodies.forEach(({ layer, material }) => {
       const tint = LAYER_TINT[layer.id];
-      material.color
-        .setRGB(tint[0], tint[1], tint[2])
-        .multiplyScalar(layer.id === "mineral" ? 0.62 : 0.82)
-        .lerp(slate, s.thermal);
+      material.color.setRGB(tint[0], tint[1], tint[2]).lerp(slate, s.thermal);
     });
   });
 
