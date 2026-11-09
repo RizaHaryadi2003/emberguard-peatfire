@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isInsideFootprint } from "@/components/gambut/scene/terrain";
+import { DIORAMA_TREE_SPOTS, DIORAMA_UNDERSTORY_SPOTS } from "@/components/gambut/scene/dioramaConstants";
 import { seeded } from "@/lib/random";
 import { type SmolderSim } from "@/lib/smolder";
 import {
@@ -21,26 +22,10 @@ import { BLOCK_WIDTH, DRAG_THRESHOLD, QUALITY_PROFILE, type BaraState, type Qual
 // public/models/gambut/SUMBER.md). Di modul ini permukaan ikut melesak ke dalam
 // rongga abu, tumbuhannya menghangus, dan pohon di atas rongga terlebar tumbang.
 
-/** Letak pohon: [x, z, tinggi target (m), rotasi]. Semua di belakang bidang potong. */
-const TREE_SPOTS: [number, number, number, number][] = [
-  [-1.35, -0.62, 2.5, 0.3],
-  [0.62, -0.78, 2.1, 2.1],
-  [1.62, -0.42, 1.7, 4.2],
-];
-
-/** Letak tumbuhan bawah: [x, z, jenis, tinggi target (m)]. */
-const UNDERSTORY_SPOTS: [number, number, "fern" | "calathea" | "anthurium", number][] = [
-  [-1.85, -0.35, "fern", 0.7],
-  [-1.05, -0.28, "calathea", 0.5],
-  [-0.62, -0.72, "fern", 0.6],
-  [-0.18, -0.3, "anthurium", 0.45],
-  [0.22, -0.66, "fern", 0.55],
-  [0.95, -0.25, "calathea", 0.45],
-  [1.28, -0.85, "fern", 0.6],
-  [1.9, -0.6, "anthurium", 0.5],
-  [-1.5, -0.95, "calathea", 0.45],
-  [0.05, -1.0, "fern", 0.5],
-];
+// Tumbuhan yang sama letaknya dengan Modul 01; yang berdiri di separuh depan
+// ikut hilang bersama tanah yang dipotong.
+const TREE_SPOTS = DIORAMA_TREE_SPOTS.filter(([, z]) => z < 0);
+const UNDERSTORY_SPOTS = DIORAMA_UNDERSTORY_SPOTS.filter(([, z]) => z < 0);
 
 /** Penurunan permukaan yang membuat tumbuhan menghangus habis (m). */
 const SCORCH_FULL = 0.16;

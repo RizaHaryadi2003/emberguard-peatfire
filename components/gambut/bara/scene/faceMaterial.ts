@@ -76,6 +76,7 @@ uniform sampler2D uNormal1;
 uniform sampler2D uNormal2;
 uniform sampler2D uNormal3;
 uniform sampler2D uField;
+uniform sampler2D uContents; // gambar isi tiap lapisan (lihat layerContents.ts)
 
 uniform vec2 uTexel;
 uniform vec3 uBounds;      // kedalaman batas fibrik/hemik, hemik/saprik, saprik/mineral (m)
@@ -223,6 +224,12 @@ void main() {
   float fibrous = w.x * 1.0 + w.y * 0.6 + w.z * 0.25 + w.w * 0.15;
   albedo *= 0.78 + mottle * 0.5;
   albedo *= 1.0 + (bedding - 0.5) * 0.34 * fibrous;
+
+  // Isi tiap lapisan: serat, akar, ranting, daun, butiran, dan kerikil. Ditaruh
+  // sebelum perhitungan basah dan hangus, supaya isinya ikut menggelap saat
+  // jenuh air dan ikut habis saat gambutnya menjadi abu.
+  vec4 contents = texture2D(uContents, vUv);
+  albedo = mix(albedo, contents.rgb, contents.a);
 
   // --- Garis batas antarlapisan. Perpaduan warna antarlapisan saja terlalu
   // halus untuk dibaca, sehingga susunan strata tidak terlihat. Garis ini
@@ -407,6 +414,7 @@ export function createFaceMaterial(
   colors: THREE.Texture[],
   normals: THREE.Texture[],
   field: THREE.Texture,
+  contents: THREE.Texture,
   sunDir: THREE.Vector3,
 ): THREE.ShaderMaterial {
   const bounds = new THREE.Vector3(PEAT_LAYERS[0].bottom, PEAT_LAYERS[1].bottom, PEAT_LAYERS[2].bottom);
@@ -426,6 +434,7 @@ export function createFaceMaterial(
         uNormal2: { value: null },
         uNormal3: { value: null },
         uField: { value: null },
+        uContents: { value: null },
         uTexel: { value: new THREE.Vector2(1 / GRID_COLS, 1 / GRID_ROWS) },
         uBounds: { value: bounds },
         uProfile: { value: PROFILE_DEPTH },
@@ -446,7 +455,7 @@ export function createFaceMaterial(
     ]),
   });
   // `UniformsUtils.merge` menyalin nilainya, jadi tekstur dipasang setelahnya.
-  assignFaceTextures(material, colors, normals, field);
+  assignFaceTextures(material, colors, normals, field, contents);
   return material;
 }
 
@@ -456,6 +465,7 @@ export function assignFaceTextures(
   colors: THREE.Texture[],
   normals: THREE.Texture[],
   field: THREE.Texture,
+  contents: THREE.Texture,
 ): void {
   material.uniforms.uColor0.value = colors[0];
   material.uniforms.uColor1.value = colors[1];
@@ -466,4 +476,5 @@ export function assignFaceTextures(
   material.uniforms.uNormal2.value = normals[2];
   material.uniforms.uNormal3.value = normals[3];
   material.uniforms.uField.value = field;
+  material.uniforms.uContents.value = contents;
 }

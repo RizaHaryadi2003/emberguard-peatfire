@@ -6,9 +6,15 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
+import {
+  DIORAMA_CAMERA_POSES as CAMERA_POSES,
+  DIORAMA_EXPOSURE,
+  DIORAMA_HEMISPHERE,
+} from "@/components/gambut/scene/dioramaConstants";
 import { GRID_COLS, GRID_ROWS, smoothField, type SmolderSim, type SmolderStats } from "@/lib/smolder";
 import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
+import WallDetails from "./WallDetails";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
@@ -21,55 +27,8 @@ import {
   type Quality,
 } from "./baraState";
 
-// Kanvas 3D Modul 02. Kamera menghadap bidang potong hampir tegak lurus supaya
-// seluruh kejadian di bawah tanah terbaca, dengan sedikit sudut agar bongkahan
-// tetap terasa berdimensi tiga.
-
-/**
- * Pose kamera tiap babak: arah pandang (derajat) dan jarak (m) ke titik bidik.
- *
- * Ditulis sebagai sudut, bukan koordinat, karena yang harus sama dengan Modul
- * 01 memang sudut dan jaraknya — di sana kamera berdiri pada azimut 33–39°,
- * ketinggian 8–16°, dan jarak 12,3–14,3 m dengan bidang pandang 34°.
- * Bongkahannya pun sama (BLOCK_WIDTH, BLOCK_DEPTH, dan bentuk tapak yang
- * sama), jadi dengan pose yang setara ia tampak persis sebesar dan sekokoh
- * bongkahan Modul 01.
- *
- * Dahulu modul ini memandang bidang potong hampir tegak lurus (azimut 10–15°).
- * Kedalaman memang terbaca paling jujur dari sana, tetapi bongkahannya
- * terbaca sebagai lembaran datar, bukan bongkahan tanah yang sama dengan
- * modul sebelumnya. Dengan azimut Modul 01, dinding sampingnya ikut terlihat
- * sehingga tebalnya terasa — sementara bidang potong hanya memendek 19%,
- * jauh dari cukup untuk menyembunyikan bara di dalamnya.
- */
-type CameraPose = {
-  /** Sudut datang kamera terhadap sumbu z, searah sumbu x positif (derajat). */
-  azimuth: number;
-  /** Ketinggian kamera di atas bidang datar (derajat). */
-  elevation: number;
-  distance: number;
-  target: [number, number, number];
-};
-
-const CAMERA_POSES: CameraPose[] = [
-  { azimuth: 38, elevation: 26, distance: 13.0, target: [0, -0.35, 0] }, // 01: permukaan tempat menyulut
-  { azimuth: 34, elevation: 9, distance: 13.4, target: [0, -1.5, 0] }, // 02: seluruh penampang
-  { azimuth: 38, elevation: 20, distance: 13.0, target: [0, -1.0, 0] }, // 03: permukaan & penampang bersama
-  { azimuth: 35, elevation: 12, distance: 13.2, target: [0, -1.55, 0] }, // 04: pembasahan
-];
-
-/** Letak kamera suatu pose, relatif terhadap titik bidiknya. */
-function poseOffset(out: THREE.Vector3, pose: CameraPose): THREE.Vector3 {
-  const az = THREE.MathUtils.degToRad(pose.azimuth);
-  const el = THREE.MathUtils.degToRad(pose.elevation);
-  const flat = Math.cos(el) * pose.distance;
-  return out.set(Math.sin(az) * flat, Math.sin(el) * pose.distance, Math.cos(az) * flat);
-}
-
-/** Letak kamera saat kanvas pertama dibuat. */
-const INITIAL_POS = poseOffset(new THREE.Vector3(), CAMERA_POSES[0])
-  .add(new THREE.Vector3(...CAMERA_POSES[0].target))
-  .toArray() as [number, number, number];
+// Kanvas 3D Modul 02. Kamera, cahaya, dan gerak bongkahannya sama dengan Modul
+// 01; bedanya hanya bongkahan ini dipotong sehingga isinya terlihat.
 
 /**
  * Putar diorama mengikuti seretan pembaca. Gerakannya sama dengan Modul 01:
@@ -108,7 +67,7 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     const parallax = s.reducedMotion ? 0 : 1;
 
     wantTarget.set(...pose.target);
-    poseOffset(wantPos, pose).multiplyScalar(zoom).add(wantTarget);
+    wantPos.set(...pose.pos).sub(wantTarget).multiplyScalar(zoom).add(wantTarget);
     wantPos.x += state.pointer.x * 0.35 * parallax;
     wantPos.y += state.pointer.y * 0.2 * parallax;
 
@@ -267,13 +226,11 @@ export default function BaraScene({
       shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
       frameloop={active ? "demand" : "never"}
-      camera={{ fov: 34, near: 0.1, far: 400, position: INITIAL_POS }}
+      camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
       gl={{ antialias: profile.antialias, powerPreference: "default" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        // Dinaikkan dari 0,9: seluruh adegan terbaca terlalu gelap, dan yang
-        // paling dirugikan justru penampang — bagian yang harus dibaca.
-        gl.toneMappingExposure = 1.12;
+        gl.toneMappingExposure = DIORAMA_EXPOSURE;
       }}
       fallback={
         <p className="p-6 text-sm text-white/70">
@@ -282,9 +239,7 @@ export default function BaraScene({
       }
     >
       <SkyLighting stateRef={stateRef} quality={quality} />
-      {/* Cahaya langit-tanah yang lembut, menaikkan dasar kegelapan supaya
-          sisi yang tidak kena matahari tidak jatuh ke hitam pekat. */}
-      <hemisphereLight args={["#cfdcec", "#3a2e20", 0.3]} />
+      <hemisphereLight args={DIORAMA_HEMISPHERE} />
       <CameraRig stateRef={stateRef} />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       <Simulation
@@ -329,6 +284,7 @@ export default function BaraScene({
                 onCollapse={onCollapse}
                 onSurfaceClick={onSurfaceClick}
               />
+              <WallDetails stateRef={stateRef} subsidence={subsidence} />
             </Suspense>
             <SmokePlumes sim={sim} stateRef={stateRef} quality={quality} />
             <WaterSpray stateRef={stateRef} subsidence={subsidence} />

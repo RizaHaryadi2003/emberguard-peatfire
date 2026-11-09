@@ -11,6 +11,11 @@ import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
 import {
+  DIORAMA_CAMERA_POSES as CAMERA_POSES,
+  DIORAMA_EXPOSURE,
+  DIORAMA_HEMISPHERE,
+} from "@/components/gambut/scene/dioramaConstants";
+import {
   DIORAMA_BASE_YAW,
   DIORAMA_Y,
   EXPLODE_GAP,
@@ -21,14 +26,6 @@ import {
   type Quality,
   type SceneState,
 } from "./sceneState";
-
-/** Posisi kamera & titik bidik untuk tiap tahap cerita. */
-const CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number] }[] = [
-  { pos: [8.6, 3.2, 10.6], target: [0, -0.8, 0] }, // 0: hutan di atas spons
-  { pos: [7.8, 1.4, 11.8], target: [0, -0.5, 0] }, // 1: lapisan terurai (naik ke atas)
-  { pos: [7.2, 1.2, 9.8], target: [0, -1.0, 0] }, // 2: menyimpan air
-  { pos: [7.6, 2.6, 9.4], target: [0, -0.6, 0] }, // 3: saat air surut
-];
 
 /** Kamera bergerak halus ke pose tahap aktif, ditambah paralaks kursor. */
 function CameraRig({ stateRef }: { stateRef: RefObject<SceneState> }) {
@@ -183,13 +180,13 @@ export default function PeatScene({ stateRef, active, quality, onHoverLayer, onS
       gl={{ antialias: profile.antialias, powerPreference: "default" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.9;
+        gl.toneMappingExposure = DIORAMA_EXPOSURE;
       }}
       fallback={<p className="p-6 text-sm text-white/70">Peramban Anda tidak mendukung WebGL, jadi model 3D gambut tidak dapat ditampilkan.</p>}
     >
       <SkyLighting stateRef={stateRef} quality={quality} />
       {/* Cahaya pantul lembut dari langit & air agar sisi teduh tidak hitam pekat */}
-      <hemisphereLight args={["#cfdcec", "#2a2116", 0.12]} />
+      <hemisphereLight args={DIORAMA_HEMISPHERE} />
       <CameraRig stateRef={stateRef} />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
 

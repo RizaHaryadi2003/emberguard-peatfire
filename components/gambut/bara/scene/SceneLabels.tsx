@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { PROFILE_DEPTH } from "@/lib/peat";
+import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
 import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
 import { BLOCK_WIDTH, type BaraState, type Subsidence } from "./baraState";
@@ -49,7 +49,33 @@ const NEAR_X = 1.4;
  * saling didorong, yang di bawah dalam daftar inilah yang disembunyikan —
  * lebih baik satu keterangan hilang daripada dua-duanya tidak terbaca.
  */
-const PRIORITY = ["bara", "abu", "air", "siram", "padam", "permukaan", "lebar", "d1", "d2", "d3"];
+const PRIORITY = [
+  "bara",
+  "abu",
+  "air",
+  "siram",
+  "padam",
+  "permukaan",
+  "fibrik",
+  "hemik",
+  "saprik",
+  "mineral",
+  "lebar",
+  "d1",
+  "d2",
+  "d3",
+];
+
+/** Nama dan isi tiap lapisan yang ditulis pada bidang potong. */
+const LAYER_CAPTION: Record<PeatLayerId, { short: string; full: string }> = {
+  fibrik: { short: "Fibrik", full: "Fibrik · serat & akar masih utuh" },
+  hemik: { short: "Hemik", full: "Hemik · sisa tumbuhan setengah terurai" },
+  saprik: { short: "Saprik", full: "Saprik · halus, serat hampir hilang" },
+  mineral: { short: "Mineral", full: "Tanah mineral · pasir & kerikil" },
+};
+
+/** Letak mendatar keterangan lapisan pada lebar bidang potong (0–1). */
+const LAYER_CAPTION_AT = 0.62;
 
 /**
  * Kedalaman yang diberi angka pada penggaris di tepi kiri (m).
@@ -228,6 +254,23 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
           : `Air hanya meresap ±${Math.round(DOUSE_DEPTH * 100)} cm`,
         tone: "water",
       });
+    }
+
+    // Nama dan isi tiap lapisan. Citra termal tidak memperlihatkan isinya, jadi
+    // keterangannya hanya tampil pada tampilan nyata.
+    if (s.thermal < 0.5) {
+      const x = bounds.left + (bounds.right - bounds.left) * LAYER_CAPTION_AT;
+      for (const layer of PEAT_LAYERS) {
+        const caption = LAYER_CAPTION[layer.id];
+        list.push({
+          id: layer.id,
+          x,
+          y: yAt((layer.top + layer.bottom) / 2, x),
+          text: narrow ? caption.short : caption.full,
+          tone: "plain",
+          pinned: true,
+        });
+      }
     }
 
     // Lebar bongkahan, menemani batang ukur di bawahnya.

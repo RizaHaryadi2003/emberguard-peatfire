@@ -228,13 +228,16 @@ type HeightFn = (x: number, z: number) => number;
  * bentuknya sudah dititipkan ke kedua fungsi batas oleh pemanggil, lewat
  * `sinkAt`, sehingga semua lapisan memampat bersama. Menerapkannya sekali lagi
  * di sini akan menurunkan permukaan dua kali lipat.
+ *
+ * Mengembalikan ketebalan terbesar (m), agar pemanggil dapat menyembunyikan
+ * irisan yang tipisnya nol.
  */
 export function updateHalfBody(
   geom: THREE.BufferGeometry,
   bottom: HeightFn,
   top: HeightFn,
   drop: DropFn = NO_DROP,
-): void {
+): number {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const color = geom.attributes.color as THREE.BufferAttribute;
@@ -261,6 +264,7 @@ export function updateHalfBody(
   const cols = SEGMENTS + 1;
   const wallCount = cols * (WALL_RINGS + 1);
   const capCount = cols * (CAP_RINGS + 1);
+  let maxThickness = 0;
 
   for (let i = 0; i < cols; i++) {
     const { theta, cos, sin, fr, rSurface } = HALF_COLUMNS[i];
@@ -268,6 +272,7 @@ export function updateHalfBody(
     const z0 = sin * rSurface;
     const yb = bottom(x0, z0);
     const yt = Math.max(yb, top(x0, z0));
+    if (yt - yb > maxThickness) maxThickness = yt - yb;
     const u = theta * 1.9 * UV_PER_METER;
     for (let j = 0; j <= WALL_RINGS; j++) {
       const y = yb + ((yt - yb) * j) / WALL_RINGS;
@@ -334,6 +339,35 @@ export function updateHalfBody(
   uv.needsUpdate = true;
   color.needsUpdate = true;
   geom.computeVertexNormals();
+  geom.computeBoundingSphere();
+  return maxThickness;
+}
+
+/** Pita garis muka air tanah pada dinding separuh belakang bongkahan. */
+export function createHalfRibbon(): THREE.BufferGeometry {
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array((SEGMENTS + 1) * 2 * 3), 3));
+  const idx: number[] = [];
+  for (let i = 0; i < SEGMENTS; i++) {
+    const a = i * 2;
+    idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+  }
+  geom.setIndex(idx);
+  return geom;
+}
+
+/** Letakkan pita muka air pada ketinggian y, sedikit di luar dinding. */
+export function updateHalfRibbon(geom: THREE.BufferGeometry, y: number, halfHeight = 0.008): void {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i <= SEGMENTS; i++) {
+    const { theta, cos, sin, fr } = HALF_COLUMNS[i];
+    const r = radiusFrom(fr, theta, y) + 0.012;
+    const x = cos * r;
+    const z = sin * r;
+    pos.setXYZ(i * 2, x, y - halfHeight, z);
+    pos.setXYZ(i * 2 + 1, x, y + halfHeight, z);
+  }
+  pos.needsUpdate = true;
   geom.computeBoundingSphere();
 }
 

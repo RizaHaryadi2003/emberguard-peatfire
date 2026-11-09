@@ -20,6 +20,52 @@ export const MAX_ROTATION = 0.9;
 /** Sudut hadap awal diorama pada sumbu tegak (radian), sebelum diseret. */
 export const DIORAMA_BASE_YAW = -0.18;
 
+/** Posisi kamera & titik bidik tiap tahap, dipakai bersama Modul 01 dan Modul 02. */
+export const DIORAMA_CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number] }[] = [
+  { pos: [8.6, 3.2, 10.6], target: [0, -0.8, 0] },
+  { pos: [7.8, 1.4, 11.8], target: [0, -0.5, 0] },
+  { pos: [7.2, 1.2, 9.8], target: [0, -1.0, 0] },
+  { pos: [7.6, 2.6, 9.4], target: [0, -0.6, 0] },
+];
+
+/** Eksposur kamera diorama. */
+export const DIORAMA_EXPOSURE = 0.9;
+
+/** Cahaya pantul lembut dari langit dan tanah: warna atas, warna bawah, kekuatan. */
+export const DIORAMA_HEMISPHERE: [string, string, number] = ["#cfdcec", "#2a2116", 0.12];
+
+/** Letak tetap pohon: [x, z, tinggi target (m), rotasi]. */
+export const DIORAMA_TREE_SPOTS: [number, number, number, number][] = [
+  [-1.45, -0.55, 2.6, 0.3],
+  [0.55, -0.7, 2.2, 2.1],
+  [1.55, 0.35, 1.8, 4.2],
+  [-0.4, 0.55, 1.5, 1.2],
+];
+
+/** Letak tetap tumbuhan bawah: [x, z, jenis, tinggi target (m)]. */
+export const DIORAMA_UNDERSTORY_SPOTS: [number, number, "fern" | "calathea" | "anthurium", number][] = [
+  [-1.8, 0.7, "fern", 0.75],
+  [-0.9, -0.1, "fern", 0.6],
+  [0.2, 0.2, "calathea", 0.55],
+  [1.05, -0.2, "fern", 0.7],
+  [1.9, -0.8, "anthurium", 0.55],
+  [-1.95, -0.85, "calathea", 0.5],
+  [0.95, 0.9, "fern", 0.55],
+  [-0.2, -0.95, "anthurium", 0.5],
+  [1.85, 0.95, "calathea", 0.45],
+  [-1.1, 0.95, "anthurium", 0.45],
+  [-0.55, 0.15, "fern", 0.5],
+  [0.35, 0.95, "fern", 0.6],
+  [1.45, -0.95, "fern", 0.55],
+  [-1.5, 0.1, "calathea", 0.4],
+  [0.9, 0.35, "calathea", 0.4],
+  [-0.95, -0.9, "fern", 0.55],
+  [1.95, 0.25, "fern", 0.5],
+  [-2.0, 0.05, "fern", 0.5],
+  [0.05, -0.45, "calathea", 0.35],
+  [-0.35, 1.05, "calathea", 0.35],
+];
+
 /**
  * Rona pengali warna tekstur tiap lapisan.
  *
