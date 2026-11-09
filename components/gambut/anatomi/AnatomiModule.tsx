@@ -50,8 +50,12 @@ const DEMO_YEARS = 620;
 
 const MODULE = GAMBUT_MODULES[0];
 
-/** Modul sesudah ini; menjadi tujuan panah pada tahap terakhir. */
-const NEXT_MODULE = GAMBUT_MODULES[1];
+/** Tujuan panah pada tahap terakhir: pembaca kembali memilih sendiri modulnya. */
+const BACK_TO_LIST = {
+  nextTitle: "Daftar modul Gambut",
+  label: "Kembali ke daftar modul",
+  href: "/gambut",
+};
 
 /**
  * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
@@ -381,9 +385,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     return () => window.clearTimeout(id);
   }, [urgent]);
 
-  /** Panah tahap terakhir: tidak ada tahap lagi, jadi ia menuju modul berikutnya. */
-  const toNextModule = lastStep && NEXT_MODULE.available && NEXT_MODULE.href ? NEXT_MODULE : null;
-
   const advance = useCallback(() => {
     const st = triggerRef.current;
     if (!st) return;
@@ -584,13 +585,9 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           inert={step !== INTERACTIVE_STEP}
         >
           {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
-          {toNextModule && (
+          {lastStep && (
             <div className="absolute bottom-full right-0 mb-3 md:hidden">
-              <StepAdvance
-                nextTitle={`Modul ${toNextModule.number} · ${toNextModule.title}`}
-                label="Modul berikutnya"
-                href={toNextModule.href ?? undefined}
-              />
+              <StepAdvance {...BACK_TO_LIST} />
             </div>
           )}
           <WaterControl
@@ -636,7 +633,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
             Suara alam
           </button>
 
-          {/* Panah lanjut: ke tahap berikutnya, lalu ke modul berikutnya pada
+          {/* Panah lanjut: ke tahap berikutnya, lalu kembali ke daftar modul pada
               tahap terakhir. Di layar sempit panah ini pindah ke atas panel
               pengatur, jadi di sini ia disembunyikan. */}
           {!lastStep ? (
@@ -649,14 +646,9 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               onAdvance={advance}
               className={hasPanel ? "hidden md:flex" : "flex"}
             />
-          ) : toNextModule ? (
-            <StepAdvance
-              nextTitle={`Modul ${toNextModule.number} · ${toNextModule.title}`}
-              label="Modul berikutnya"
-              href={toNextModule.href ?? undefined}
-              className={hasPanel ? "hidden md:flex" : "flex"}
-            />
-          ) : null}
+          ) : (
+            <StepAdvance {...BACK_TO_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
+          )}
         </div>
       </div>
 
