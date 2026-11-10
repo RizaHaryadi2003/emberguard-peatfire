@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ArrowRight, MousePointerClick, Volume2, VolumeX } from "lucide-react";
-import { BARA_ACTS, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
+import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
 import { SmolderSim, type SmolderStats } from "@/lib/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
@@ -15,6 +15,7 @@ import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
+import ModuleHook from "@/components/gambut/ModuleHook";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
 
@@ -30,6 +31,9 @@ const START_WATER_CM = 120;
 
 /** Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS). */
 const ACT_SPEED = [0, 2, 2, 2];
+
+/** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
+const HOOK_SWIPE = 30;
 
 /** Syarat lulus tiap babak, dibaca dari keadaan simulasi & tindakan pembaca. */
 const ACT_HINT = [
@@ -59,6 +63,7 @@ export default function BaraModule() {
     return instance;
   }, []);
 
+  const [hookOpen, setHookOpen] = useState(true);
   const [act, setAct] = useState(0);
   const [stats, setStats] = useState<SmolderStats>(() => sim.stats);
   const [source, setSource] = useState<IgnitionSource | null>(null);
@@ -91,8 +96,33 @@ export default function BaraModule() {
       hoursPerSecond: TIME_SPEEDS[speedIndex].hoursPerSecond,
       waterM: waterCm / 100,
       reducedMotion,
+      hookOpen,
     });
-  }, [act, view, speedIndex, waterCm, reducedMotion]);
+  }, [act, view, speedIndex, waterCm, reducedMotion, hookOpen]);
+
+  // Halaman ini dikunci setinggi layar, jadi tidak ada gulir sungguhan yang
+  // bisa ditangkap seperti di Modul 01. Gerakannya dibaca langsung.
+  useEffect(() => {
+    if (!hookOpen) return;
+    let startY: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY > 0) setHookOpen(false);
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (startY !== null && startY - e.touches[0].clientY > HOOK_SWIPE) setHookOpen(false);
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [hookOpen]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -156,7 +186,8 @@ export default function BaraModule() {
         gsap.set(".act-anim", { opacity: 1, y: 0, filter: "none" });
       });
     },
-    { scope: textRef, dependencies: [act], revertOnUpdate: true },
+    // Ikut menunggu layar pembuka, agar gerak masuknya tidak habis di balik layar itu.
+    { scope: textRef, dependencies: [act, hookOpen], revertOnUpdate: true },
   );
 
   // Pesan kejadian (hasil penyiraman, pohon tumbang) hilang sendiri.
@@ -273,6 +304,9 @@ export default function BaraModule() {
    */
   const dense = act >= 2;
 
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01. */
+  const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+
   const actDone = [ignited, ignited && stats.hours >= 48, dousedOnce && thermalSeen, stats.extinguished && rewetOnce];
   const canAdvance = actDone[act] && act < BARA_ACTS.length - 1;
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
@@ -340,6 +374,16 @@ export default function BaraModule() {
         )}
       </div>
 
+      <ModuleHook
+        open={hookOpen}
+        kicker={`Modul ${MODULE.number} · ${MODULE.title}`}
+        setup={BARA_HOOK.setup}
+        question={BARA_HOOK.question}
+        cta={BARA_HOOK.cta}
+        scrollHint={BARA_HOOK.scrollHint}
+        onStart={() => setHookOpen(false)}
+      />
+
       {/* Tirai pemuatan */}
       <div
         className={`pointer-events-none absolute inset-0 flex items-center justify-center bg-[#050505] transition-opacity duration-1000 ${
@@ -347,7 +391,7 @@ export default function BaraModule() {
         }`}
         aria-hidden={ready}
       >
-        <p className="animate-pulse text-xs uppercase tracking-[0.25em] text-white/40">Membuka penampang gambut…</p>
+        {!hookOpen && <p className="animate-pulse text-xs uppercase tracking-[0.25em] text-white/40">Membuka penampang gambut…</p>}
       </div>
 
       {/* Gradasi agar teks tetap terbaca di atas model */}
@@ -373,7 +417,7 @@ export default function BaraModule() {
           adalah "tampilkan bila layarnya cukup tinggi", sehingga keadaan
           sempit menjadi keadaan dasar dan tidak ada rentang tinggi yang
           terlewat tanpa penanganan. */}
-      <div className="pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24">
+      <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
@@ -434,7 +478,7 @@ export default function BaraModule() {
       {/* Pada layar sangat pendek panel merapat ke tepi bawah. Navigasi babak
           berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
           menindih. */}
-      <div className="absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20">
+      <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
         {finished ? (
           <SummaryCard stats={stats} onReset={handleReset} />
         ) : probe ? (
@@ -467,7 +511,7 @@ export default function BaraModule() {
           angka di tengah — pada 1280×600 keduanya bertindih 136 px. Dengan
           satu tumpukan, keduanya tidak mungkin lagi saling menindih, dan
           pesannya pun kini muncul berdampingan dengan angka yang dibahasnya. */}
-      <div className="absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10">
+      <div inert={hookOpen} className={`absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 ${panelFade}`}>
         <StatsPanel stats={stats} fact={current.fact} />
         {message && (
           <div className="pointer-events-none rounded-2xl border border-[#e8702a]/30 bg-black/60 p-3.5 backdrop-blur-xl">
@@ -477,7 +521,7 @@ export default function BaraModule() {
       </div>
 
       {/* Navigasi babak (bawah) */}
-      <nav aria-label="Babak modul" className="absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14">
+      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14 ${panelFade}`}>
         <div className="flex gap-2">
           {BARA_ACTS.map((a, i) => {
             const locked = i > act && !actDone[act];
@@ -517,7 +561,7 @@ export default function BaraModule() {
       </nav>
 
       {/* Kanan bawah: petunjuk & tombol suara */}
-      <div className="absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:right-10">
+      <div inert={hookOpen} className={`absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:right-10 ${panelFade}`}>
         <span className="hidden lg:inline">
           {act === 0 ? "Klik permukaan untuk menyulut" : "Klik penampang untuk memeriksa satu titik"}
           <span className="text-white/35"> · seret untuk memutar</span>

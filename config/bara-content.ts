@@ -21,6 +21,18 @@ export type BaraAct = {
   fact: { value: string; caption: string };
 };
 
+/**
+ * Pembuka Modul 02. Berangkat dari yang sering dilihat pembaca saat musim kabut
+ * asap: asap tebal tanpa api. Tidak memuat angka; klaim bahwa bara gambut
+ * berasap tanpa nyala sama dengan isi Babak 01 dan Babak 03 di bawah.
+ */
+export const BARA_HOOK = {
+  setup: "Tidak ada api yang terlihat.",
+  question: "Asapnya dari mana?",
+  cta: "Cari tahu",
+  scrollHint: "atau gulir ke bawah",
+};
+
 export const BARA_ACTS: readonly BaraAct[] = [
   {
     number: "01",

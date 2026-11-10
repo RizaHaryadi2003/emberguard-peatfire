@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import BaraModule from "@/components/gambut/bara/BaraModule";
+import { BARA_HOOK } from "@/config/bara-content";
 
-export const metadata: Metadata = { title: "Bara di Bawah Tanah — Emberguard" };
+export const metadata: Metadata = {
+  title: "Bara di Bawah Tanah — Emberguard",
+  description: `${BARA_HOOK.setup} ${BARA_HOOK.question}`,
+};
 
 // Halaman Modul 02: satu layar penuh, tanpa gulir.
 //

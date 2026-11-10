@@ -12,7 +12,7 @@ import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
-import ModuleHook from "./ModuleHook";
+import ModuleHook from "@/components/gambut/ModuleHook";
 import ResultCardDialog from "./ResultCardDialog";
 import StepAdvance from "./StepAdvance";
 import WaterControl from "./WaterControl";

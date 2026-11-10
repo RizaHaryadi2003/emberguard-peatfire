@@ -19,6 +19,20 @@ const SMOKE_REACH = 1.2;
 
 type Hot = { x: number; depth: number };
 
+/**
+ * Titik keluarnya asap selama layar pembuka tampil. Simulasi belum disulut,
+ * jadi titik-titik ini berdiri sendiri: pembaca melihat asap tanpa api, tepat
+ * seperti yang ditanyakan layar pembuka.
+ */
+const HOOK_VENTS: Hot[] = [
+  { x: -0.95, depth: 0.25 },
+  { x: 0.15, depth: 0.2 },
+  { x: 1.2, depth: 0.3 },
+];
+
+/** Kepekatan asap pada layar pembuka (0–1). */
+const HOOK_SMOKE = 0.7;
+
 type Particle = { x: number; z: number; y: number; vy: number; life: number; maxLife: number; seed: number };
 
 export default function SmokePlumes({
@@ -86,8 +100,15 @@ export default function SmokePlumes({
   // Daftar titik bara yang masih dangkal, disegarkan berkala (bukan tiap bingkai).
   const hot = useRef<Hot[]>([]);
   const scan = useRef(0);
+  const hookWasOpen = useRef(false);
+  /** Kepekatan asap pembuka; surut halus saat layar pembuka ditutup. */
+  const hookSmoke = useRef(0);
 
-  const refreshHot = () => {
+  const refreshHot = (hookOpen: boolean) => {
+    if (hookOpen) {
+      hot.current = HOOK_VENTS;
+      return;
+    }
     const list: Hot[] = [];
     // Ambil sebagian sel saja: cukup untuk menentukan tempat asap keluar.
     for (let row = 0; row < GRID_ROWS; row += 1) {
@@ -124,17 +145,22 @@ export default function SmokePlumes({
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
 
+    // Disegarkan seketika saat layar pembuka ditutup, agar titik asapnya tidak
+    // sempat dianggap bara dan menyalakan lampu atau percikan.
     scan.current -= dt;
-    if (scan.current <= 0) {
+    if (scan.current <= 0 || s.hookOpen !== hookWasOpen.current) {
       scan.current = 0.25;
-      refreshHot();
+      hookWasOpen.current = s.hookOpen;
+      refreshHot(s.hookOpen);
     }
+    hookSmoke.current = THREE.MathUtils.damp(hookSmoke.current, s.hookOpen ? HOOK_SMOKE : 0, 3, dt);
 
     const stats = sim.stats;
     // Uap: saat permukaan disiram atau muka air dinaikkan, asap menjadi putih.
     const steam = Math.max(s.spray, sim.getDouse()) * (stats.alive ? 1 : 0.6);
-    const smokeLevel = Math.max(stats.surfaceSmoke, s.flame * 0.8);
-    const active = hot.current.length > 0 || s.flame > 0.01 || steam > 0.01;
+    const fireSmoke = Math.max(stats.surfaceSmoke, s.flame * 0.8);
+    const smokeLevel = Math.max(fireSmoke, hookSmoke.current);
+    const active = hot.current.length > 0 || s.flame > 0.01 || steam > 0.01 || hookSmoke.current > 0.01;
 
     // --- Asap
     smokes.forEach((p, i) => {
@@ -167,7 +193,7 @@ export default function SmokePlumes({
     // --- Percikan kecil di mulut rongga yang terbuka ke permukaan
     const pos = res.sparkGeo.attributes.position as THREE.BufferAttribute;
     const col = res.sparkGeo.attributes.color as THREE.BufferAttribute;
-    const sparkLevel = Math.max(s.flame, smokeLevel * 0.5) * (1 - steam);
+    const sparkLevel = Math.max(s.flame, fireSmoke * 0.5) * (1 - steam);
     if (pointsRef.current) pointsRef.current.visible = sparkLevel > 0.02;
     if (sparkLevel > 0.02) {
       sparks.forEach((p, i) => {
@@ -202,7 +228,7 @@ export default function SmokePlumes({
     const list = hot.current;
     lightRefs.current.forEach((light, i) => {
       if (!light) return;
-      if (list.length === 0 && s.flame < 0.05) {
+      if (s.hookOpen || (list.length === 0 && s.flame < 0.05)) {
         light.intensity = 0;
         return;
       }

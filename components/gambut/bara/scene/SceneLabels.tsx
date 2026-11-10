@@ -143,6 +143,16 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     if (timer.current > 0) return;
     timer.current = REFRESH;
 
+    // Layar pembuka hanya bertanya; semua keterangan menunggu sampai ia ditutup.
+    if (groupRef.current) groupRef.current.visible = !s.hookOpen;
+    if (s.hookOpen) {
+      if (signature.current !== "") {
+        signature.current = "";
+        setMarkers([]);
+      }
+      return;
+    }
+
     // Layar sempit perlu diperlakukan berbeda sejak label disusun, bukan hanya
     // saat disaring: pil selebar 260 piksel tidak muat pada layar 390 piksel,
     // sehingga teksnya diringkas dan label muka air dipindah ke dalam
