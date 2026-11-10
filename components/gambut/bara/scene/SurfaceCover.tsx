@@ -280,7 +280,9 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
       const drop = subsidence.fn(p.x);
       // Gambut di bawah tumbuhan yang masih basah tidak menghanguskan apa pun.
       const scorchTarget = Math.min(1, drop / SCORCH_FULL);
-      p.scorch = THREE.MathUtils.damp(p.scorch, scorchTarget, s.reducedMotion ? 30 : BURN_RATE, dt);
+      // Tingkat terbakar hanya turun saat modul diulang, dan saat itu tumbuhannya
+      // harus langsung utuh kembali, bukan tumbuh perlahan.
+      p.scorch = scorchTarget < p.scorch ? scorchTarget : THREE.MathUtils.damp(p.scorch, scorchTarget, s.reducedMotion ? 30 : BURN_RATE, dt);
       p.burn.uBurn.value = p.scorch;
       // Berpijar hanya selama api masih memakan tumbuhannya.
       p.burn.uBurnGlow.value = s.reducedMotion ? 0 : Math.min(1, Math.max(0, (scorchTarget - p.scorch) * 5));

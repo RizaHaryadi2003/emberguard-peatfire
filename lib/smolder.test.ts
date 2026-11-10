@@ -202,6 +202,39 @@ describe("atap tanah dan bara yang muncul lagi", () => {
   });
 });
 
+describe("perubahan kisi saat waktu berhenti", () => {
+  it("memberi tanda saat diulang dan saat disulut", () => {
+    const sim = new SmolderSim();
+    sim.setWaterTable(0.95);
+    const awal = sim.revision;
+    sim.ignite(0.5);
+    expect(sim.revision).toBeGreaterThan(awal);
+    const tersulut = sim.revision;
+    sim.reset();
+    expect(sim.revision).toBeGreaterThan(tersulut);
+  });
+
+  it("tidak memberi tanda saat muka air berubah, karena itu terjadi tiap bingkai", () => {
+    const sim = new SmolderSim();
+    const awal = sim.revision;
+    sim.setWaterTable(0.5);
+    expect(sim.revision).toBe(awal);
+  });
+
+  it("kisi yang diulang menghasilkan tekstur tanpa bara dan tanpa abu", () => {
+    const { sim } = ignited(0.95);
+    jalan(sim, 2);
+    sim.reset();
+    const field = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
+    sim.writeField(field);
+    for (let i = 0; i < GRID_COLS * GRID_ROWS; i++) {
+      expect(field[i * 4]).toBe(0);
+      expect(field[i * 4 + 1]).toBe(0);
+      expect(field[i * 4 + 3]).toBe(0);
+    }
+  });
+});
+
 describe("penyulutan", () => {
   it("gagal bila gambut basah (muka air di permukaan)", () => {
     const sim = new SmolderSim();

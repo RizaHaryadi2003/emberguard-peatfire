@@ -138,7 +138,7 @@ function Simulation({
   onSubsidence: () => void;
 }) {
   const profile = QUALITY_PROFILE[quality];
-  const clock = useRef({ report: 0, subside: 0, consumed: -1, field: 0 });
+  const clock = useRef({ report: 0, subside: 0, consumed: -1, field: 0, fieldRevision: -1, shapeRevision: -1 });
 
   useFrame((_, delta) => {
     const s = stateRef.current;
@@ -152,8 +152,12 @@ function Simulation({
     // dapat membedakannya.
     const stepped = sim.advance(dt * s.hoursPerSecond, profile.simSteps);
     c.field -= dt;
-    if (stepped && c.field <= 0) {
+    // Kisi yang diulang atau disulut harus langsung tergambar walau waktu sedang
+    // berhenti; kalau menunggu langkah waktu, penampang lama tetap terlihat.
+    const fieldStale = sim.revision !== c.fieldRevision;
+    if (fieldStale || (stepped && c.field <= 0)) {
       c.field = 1 / profile.fieldHz;
+      c.fieldRevision = sim.revision;
       sim.writeField(raw);
       // Perataan 3 × 3 dikerjakan di sini, bukan di dalam peneduh: biayanya
       // 5.376 sel beberapa puluh kali per detik, bukan 117 pembacaan tekstur
@@ -186,8 +190,10 @@ function Simulation({
     // jedanya diperlonggar di perangkat lemah. Selama bongkahan diseret
     // pekerjaan ini ditunda, supaya putarannya tidak tersendat.
     c.subside -= dt;
-    if (c.subside <= 0 && !s.dragging && Math.abs(stats.consumed - c.consumed) > 0.002) {
+    const shapeStale = sim.revision !== c.shapeRevision;
+    if (!s.dragging && (shapeStale || (c.subside <= 0 && Math.abs(stats.consumed - c.consumed) > 0.002))) {
       c.subside = profile.subsideSec;
+      c.shapeRevision = sim.revision;
       c.consumed = stats.consumed;
       onSubsidence();
     }

@@ -249,6 +249,13 @@ export class SmolderSim {
 
   stats: SmolderStats = emptyStats();
 
+  /**
+   * Bertambah setiap kali kisi berubah di luar langkah waktu (diulang atau
+   * disulut). Saat waktu berhenti tidak ada langkah yang memberi tahu adegan,
+   * jadi tanpa ini gambar penampang lama tetap tampil.
+   */
+  revision = 0;
+
   constructor(seed = 1337) {
     const n = GRID_COLS * GRID_ROWS;
     this.state = new Uint8Array(n);
@@ -287,6 +294,7 @@ export class SmolderSim {
 
   /** Kembalikan seluruh kisi ke keadaan utuh. */
   reset(seed = 1337): void {
+    this.revision++;
     this.rand = seeded(seed);
     this.carry = 0;
     this.douse = 0;
@@ -358,6 +366,7 @@ export class SmolderSim {
       }
     }
     if (lit) {
+      this.revision++;
       this.everBurned = true;
       this.segmentLit[SEGMENT_OF_COL[Math.max(0, Math.min(GRID_COLS - 1, centerCol))]] = 1;
       this.collect();
