@@ -1,12 +1,32 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { RotateCcw, Share2 } from "lucide-react";
+import ShareCardDialog from "@/components/gambut/ShareCardDialog";
 import { BARA_SUMMARY } from "@/config/bara-content";
+import { baraCardImagePath, baraShareLink, getBaraCard, type SharedBurn } from "@/lib/baraCard";
 import { formatElapsed, type SmolderStats } from "@/lib/smolder";
+
+/** Dibuat hanya setelah diklik di peramban, jadi `window` selalu tersedia. */
+function BaraCardDialog({ burn, onClose }: { burn: SharedBurn; onClose: () => void }) {
+  const card = getBaraCard(burn);
+  const link = baraShareLink(window.location.origin, burn);
+  return (
+    <ShareCardDialog
+      imageSrc={baraCardImagePath(burn, "story")}
+      imageAlt={`Kartu hasil: bara sedalam ${card.depth}, ${card.zoneLabel}. ${card.headline} ${card.note}`}
+      fileName={`kartu-bara-${card.cm}cm.png`}
+      link={link}
+      shareText={`${card.challenge} ${link}`}
+      onClose={onClose}
+    />
+  );
+}
 
 /** Kartu penutup: jejak yang ditinggalkan bara setelah berhasil dipadamkan. */
 export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; onReset: () => void }) {
+  const [cardOpen, setCardOpen] = useState(false);
+  const burn: SharedBurn = { cm: Math.round(stats.maxDepth * 100), resurfaced: stats.resurfaceX !== null };
   const rows: [string, string][] = [
     // `burningHours`, bukan `hours`: pembaca baru saja memadamkan baranya dan
     // boleh membiarkan waktu berjalan untuk memastikan ia tidak hidup lagi.
@@ -37,19 +57,21 @@ export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; o
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
+          onClick={() => setCardOpen(true)}
+          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-[#f0a060]"
+        >
+          <Share2 size={14} /> Buat kartu hasilmu
+        </button>
+        <button
+          type="button"
           onClick={onReset}
           className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-3.5 py-2 text-xs font-medium text-white/80 transition-colors hover:border-white/40 hover:text-white"
         >
           <RotateCcw size={14} /> Coba lagi dari awal
         </button>
-        <Link
-          href="/gambut"
-          className="group inline-flex items-center gap-2 text-xs font-medium text-white/80 transition-colors hover:text-white"
-        >
-          Semua modul Gambut
-          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-        </Link>
       </div>
+
+      {cardOpen && <BaraCardDialog burn={burn} onClose={() => setCardOpen(false)} />}
     </div>
   );
 }

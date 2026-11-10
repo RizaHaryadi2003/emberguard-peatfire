@@ -17,6 +17,7 @@ import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import StepAdvance from "@/components/gambut/StepAdvance";
+import type { SharedBurn } from "@/lib/baraCard";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
 
@@ -65,7 +66,7 @@ const ACT_HINT = [
  * memadamkan, dan akhirnya membasahi gambutnya kembali. Tiap tindakan langsung
  * mengubah simulasi bara (`lib/smolder.ts`) yang digambar pada penampang.
  */
-export default function BaraModule() {
+export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
@@ -444,6 +445,7 @@ export default function BaraModule() {
         question={BARA_HOOK.question}
         cta={BARA_HOOK.cta}
         scrollHint={BARA_HOOK.scrollHint}
+        lead={shared ? BARA_HOOK.sharedLead(shared.cm) : null}
         onStart={() => setHookOpen(false)}
       />
 

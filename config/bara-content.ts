@@ -36,7 +36,43 @@ export const BARA_HOOK = {
   question: "Asapnya dari mana?",
   cta: "Cari tahu",
   scrollHint: "atau gulir ke bawah",
+  /** Pengantar untuk pembaca yang datang dari tautan kartu hasil temannya. */
+  sharedLead: (cm: number) => `Bara temanmu sampai ${cm} cm di dalam gambut. Sekarang giliranmu.`,
 };
+
+export type BaraCardZone = "permukaan" | "dalam" | "lebih";
+
+/**
+ * Isi kartu hasil, menurut kedalaman bara yang dicapai pembaca. Pembagian
+ * kedalamannya dari Usup dkk. (2004), hlm. 10–12. Kedalamannya sendiri hasil
+ * simulasi, dan itu ditulis pada baris sumber.
+ */
+export const BARA_CARD_TEXT: Record<BaraCardZone, { zoneLabel: string; headline: string; note: string; challenge: string; source: string }> = {
+  permukaan: {
+    zoneLabel: "Bara permukaan",
+    headline: "Baraku hanya sampai lapisan atas.",
+    note: "Di Kalimantan Tengah, bara permukaan membakar 0–20 cm teratas.",
+    challenge: "Asapnya dari mana? Coba sendiri.",
+    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+  },
+  dalam: {
+    zoneLabel: "Bara dalam",
+    headline: "Baraku menembus lapisan dalam.",
+    note: "Bara dalam teramati pada 20–50 cm, dan sulit padam walau hujan lebat.",
+    challenge: "Asapnya dari mana? Coba sendiri.",
+    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+  },
+  lebih: {
+    zoneLabel: "Lebih dalam dari pengamatan",
+    headline: "Baraku turun lebih dalam lagi.",
+    note: "Melewati 20–50 cm yang teramati di Kalimantan Tengah, karena gambutnya makin kering.",
+    challenge: "Bisa kamu jaga lebih basah? Coba sendiri.",
+    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+  },
+};
+
+/** Tambahan judul kartu bila bara muncul lagi di tempat lain. */
+export const BARA_CARD_RESURFACED = "Lalu muncul lagi di tempat lain.";
 
 export const BARA_ACTS: readonly BaraAct[] = [
   {

@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { MousePointer2, Rotate3d, Volume2, VolumeX } from "lucide-react";
+import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { ANATOMI_HOOK, ANATOMI_STEPS, BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
@@ -361,6 +361,37 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     window.scrollTo({ top: y, behavior: reducedMotion ? "auto" : "smooth" });
   };
 
+  /** Kembali ke tahap pertama dengan semua pilihan pembaca dihapus. */
+  const restart = () => {
+    demoTween.current?.kill();
+    growthTween.current?.kill();
+    demoPlayed.current = false;
+    growthDemoPlayed.current = false;
+    // Dibaca penangan gulir, jadi harus berubah sebelum halamannya bergerak.
+    unlockedRef.current = 0;
+    setUnlocked(0);
+    setStep(0);
+    setUserYears(0);
+    setUserWaterCm(DEFAULT_WATER_CM);
+    setWaterTouched(false);
+    setHovered(null);
+    setFocused(null);
+    setUrgent(false);
+    const st = triggerRef.current;
+    if (st) window.scrollTo({ top: st.start, behavior: "auto" });
+  };
+
+  const restartButton = (
+    <button
+      type="button"
+      onClick={restart}
+      className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[11px] text-white/70 backdrop-blur-md transition-colors hover:text-white"
+    >
+      <RotateCcw size={14} />
+      Coba lagi dari awal
+    </button>
+  );
+
   // --- Syarat lanjut tiap tahap ---------------------------------------------
   //
   // Tiap tahap meminta satu tindakan sebelum tahap berikutnya terbuka, supaya
@@ -512,7 +543,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               >
                 <span
                   className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${
-                    i === step ? "bg-white" : shut ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
+                    i === step ? "bg-white" : i < unlocked ? "bg-[#e8702a]" : shut ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
                   }`}
                 />
                 <span className={`text-[11px] tabular-nums transition-colors ${i === step ? "text-white" : "text-white/40"}`}>
@@ -579,7 +610,8 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
         >
           {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
           {lastStep && (
-            <div className="absolute bottom-full right-0 mb-3 md:hidden">
+            <div className="absolute bottom-full right-0 mb-3 flex items-end gap-2 md:hidden">
+              {restartButton}
               <StepAdvance {...BACK_TO_MODULE_LIST} />
             </div>
           )}
@@ -640,7 +672,10 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               className={hasPanel ? "hidden md:flex" : "flex"}
             />
           ) : (
-            <StepAdvance {...BACK_TO_MODULE_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
+            <>
+              <div className="hidden md:block">{restartButton}</div>
+              <StepAdvance {...BACK_TO_MODULE_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
+            </>
           )}
         </div>
       </div>
