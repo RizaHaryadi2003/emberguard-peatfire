@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, type ThreeEvent } from "@react-three/fiber";
-import { PEAT_LAYERS } from "@/lib/peat";
+import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
 import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { getAtmosphere } from "@/lib/atmosphere";
 import { interfaceY } from "@/components/gambut/scene/terrain";
@@ -22,6 +22,7 @@ import {
 } from "./crossSection";
 import { CAVITY_DEPTH, createFaceMaterial } from "./faceMaterial";
 import { createLayerContentsTexture } from "./layerContents";
+import { describeCell, describeLayer, isTouchOnly, type LayerHintHandle } from "./layerHint";
 import {
   DRAG_THRESHOLD,
   PEAT_LAYER_TINT,
@@ -79,9 +80,38 @@ const WATER_STEP = 0.001;
 /** Lebar kanvas gambar isi lapisan (piksel), menurut mutu grafis. */
 const CONTENTS_WIDTH: Record<Quality, number> = { high: 2048, low: 1024 };
 
+/** Jeda penyegaran keterangan saat kursor diam (detik). */
+const HINT_REFRESH = 0.3;
+
+/** Lama keterangan bertahan setelah ketukan pada layar sentuh (detik). */
+const TOUCH_HINT_SECONDS = 2.6;
+
+/** Yang sedang ditunjuk: satu sel bidang potong, atau dinding sebuah lapisan. */
+type HintTarget = { col: number; row: number } | { layer: PeatLayerId };
+
+type ActiveHint = {
+  target: HintTarget;
+  x: number;
+  y: number;
+  /** Sisa waktu sampai isi keterangan disegarkan (detik). */
+  refresh: number;
+  /** Sisa waktu sampai keterangan hilang sendiri; `null` bila mengikuti kursor. */
+  lifetime: number | null;
+};
+
+/** Sel simulasi pada koordinat uv bidang potong. */
+function cellAt(uv: THREE.Vector2): { col: number; row: number } {
+  return {
+    col: Math.max(0, Math.min(GRID_COLS - 1, Math.floor(uv.x * GRID_COLS))),
+    row: Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(uv.y * GRID_ROWS))),
+  };
+}
+
 type Props = {
   sim: SmolderSim;
   stateRef: RefObject<BaraState>;
+  /** Keterangan lapisan yang tampil saat tanah ditunjuk. */
+  hint: RefObject<LayerHintHandle | null>;
   /** Tekstur data hasil simulasi (diperbarui oleh komponen simulasi). */
   field: THREE.DataTexture;
   subsidence: Subsidence;
@@ -92,7 +122,7 @@ type Props = {
   quality: Quality;
 };
 
-export default function CutBlock({ sim, stateRef, field, subsidence, quality, onProbe, onIgnite }: Props) {
+export default function CutBlock({ sim, stateRef, hint, field, subsidence, quality, onProbe, onIgnite }: Props) {
   const anisotropy = QUALITY_PROFILE[quality].anisotropy;
   const urls = PEAT_LAYERS.flatMap((l) => [
     `/textures/gambut/${l.id}_color.webp`,
@@ -251,11 +281,83 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
   /** Warna badan lapisan saat tampilan termal (dihitung sekali). */
   const slate = useMemo(() => new THREE.Color(0.02, 0.03, 0.07), []);
 
+  const activeHint = useRef<ActiveHint | null>(null);
+
+  const clearHint = () => {
+    activeHint.current = null;
+    hint.current?.hide();
+  };
+
+  const paintHint = ({ target, x, y }: ActiveHint) => {
+    let content;
+    if ("layer" in target) {
+      content = describeLayer(target.layer);
+    } else {
+      const cell = sim.probe(target.col, target.row);
+      content = describeCell(cell.state, cell.layer);
+    }
+    hint.current?.show(content, x, y);
+  };
+
+  const showHint = (target: HintTarget, x: number, y: number, lifetime: number | null = null) => {
+    const s = stateRef.current;
+    // Citra termal tidak memperlihatkan isi tanah, jadi tidak ada yang dinamai.
+    if (!s || s.thermal >= 0.5) {
+      clearHint();
+      return;
+    }
+    s.layerHinted = true;
+    const next: ActiveHint = { target, x, y, lifetime, refresh: HINT_REFRESH };
+    activeHint.current = next;
+    paintHint(next);
+  };
+
+  /** Kursor bergerak di atas tanah. Saat bongkahan diseret, tulisannya hilang. */
+  const handleHover = (e: ThreeEvent<PointerEvent>, target: HintTarget) => {
+    if (e.pointerType === "touch") return;
+    e.stopPropagation();
+    if (e.buttons !== 0) {
+      clearHint();
+      return;
+    }
+    showHint(target, e.clientX, e.clientY);
+  };
+
+  const handleFaceHover = (e: ThreeEvent<PointerEvent>) => {
+    if (e.uv) handleHover(e, cellAt(e.uv));
+  };
+
+  // Ketukan juga memunculkan "kursor keluar" sesaat sesudahnya; keterangan
+  // dari ketukan punya waktu habis sendiri dan tidak boleh ikut hilang.
+  const handleHoverEnd = () => {
+    if (activeHint.current && activeHint.current.lifetime === null) clearHint();
+  };
+
+  /** Layar sentuh tidak punya kursor: ketukan yang membuka keterangannya. */
+  const flashHint = (e: ThreeEvent<MouseEvent>, target: HintTarget) => {
+    if (isTouchOnly()) showHint(target, e.clientX, e.clientY, TOUCH_HINT_SECONDS);
+  };
+
   useFrame((state, delta) => {
     const s = stateRef.current;
     if (!s) return;
     const dt = Math.min(delta, 0.05);
     const u = res.faceMaterial.uniforms;
+
+    // Kursor yang diam tetap harus mengikuti tanah yang berubah di bawahnya:
+    // bara bisa merambat ke titik yang sedang ditunjuk.
+    const active = activeHint.current;
+    if (active) {
+      active.refresh -= dt;
+      if (active.lifetime !== null) active.lifetime -= delta;
+      if (active.lifetime !== null && active.lifetime <= 0) {
+        clearHint();
+      } else if (active.refresh <= 0) {
+        active.refresh = HINT_REFRESH;
+        if (s.thermal >= 0.5) clearHint();
+        else paintHint(active);
+      }
+    }
 
     // Muka air tanah bergerak halus ke nilai yang diminta pengguna.
     water.current = water.current < 0 ? s.waterM : THREE.MathUtils.damp(water.current, s.waterM, s.reducedMotion ? 30 : 2.6, dt);
@@ -304,24 +406,31 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
     // Seretan untuk memutar bongkahan tidak boleh ikut menyulut atau memeriksa.
     if ((stateRef.current?.dragMoved ?? 0) > DRAG_THRESHOLD) return;
     e.stopPropagation();
+    const cell = cellAt(e.uv);
+    flashHint(e, cell);
     if (stateRef.current?.act === 0) {
       onIgnite(e.uv.x);
       return;
     }
-    onProbe(
-      Math.max(0, Math.min(GRID_COLS - 1, Math.floor(e.uv.x * GRID_COLS))),
-      Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(e.uv.y * GRID_ROWS))),
-    );
+    onProbe(cell.col, cell.row);
   };
 
   return (
     <group>
-      {res.bodies.map(({ layer, dryGeom, wetGeom, dry, wet }, i) => (
-        <group key={layer.id}>
-          <mesh ref={(el) => void (dryMeshRefs.current[i] = el)} geometry={dryGeom} material={dry} castShadow receiveShadow />
-          <mesh ref={(el) => void (wetMeshRefs.current[i] = el)} geometry={wetGeom} material={wet} castShadow receiveShadow />
-        </group>
-      ))}
+      {res.bodies.map(({ layer, dryGeom, wetGeom, dry, wet }, i) => {
+        // Irisan kering dan basah satu lapisan sama-sama menyebut lapisan itu.
+        const hintEvents = {
+          onPointerMove: (e: ThreeEvent<PointerEvent>) => handleHover(e, { layer: layer.id }),
+          onPointerOut: handleHoverEnd,
+          onClick: (e: ThreeEvent<MouseEvent>) => flashHint(e, { layer: layer.id }),
+        };
+        return (
+          <group key={layer.id}>
+            <mesh ref={(el) => void (dryMeshRefs.current[i] = el)} geometry={dryGeom} material={dry} castShadow receiveShadow {...hintEvents} />
+            <mesh ref={(el) => void (wetMeshRefs.current[i] = el)} geometry={wetGeom} material={wet} castShadow receiveShadow {...hintEvents} />
+          </group>
+        );
+      })}
 
       {/* Pita garis muka air tanah di dinding, menyambung garis pada bidang potong */}
       <mesh geometry={res.ribbon.geom} material={res.ribbon.material} />
@@ -332,6 +441,8 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
         material={res.faceMaterial}
         position-z={FACE_Z}
         onClick={handleProbe}
+        onPointerMove={handleFaceHover}
+        onPointerOut={handleHoverEnd}
       />
 
       {/* Penutup gelap di belakang penampang, supaya rongga abu tidak bolong ke

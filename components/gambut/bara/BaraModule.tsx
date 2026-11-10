@@ -14,7 +14,9 @@ import ControlDock, { WATER_MAX_CM } from "./ControlDock";
 import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
+import LayerHint from "./LayerHint";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
+import type { LayerHintHandle } from "./scene/layerHint";
 
 gsap.registerPlugin(useGSAP);
 
@@ -79,6 +81,7 @@ export default function BaraModule() {
   const [soundOn, setSoundOn] = useState(false);
 
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
+  const hintRef = useRef<LayerHintHandle>(null);
 
   // Salurkan keadaan antarmuka ke adegan 3D (dibaca tiap bingkai).
   useEffect(() => {
@@ -324,6 +327,7 @@ export default function BaraModule() {
           <BaraScene
             sim={sim}
             stateRef={stateRef}
+            hint={hintRef}
             active={visible}
             quality={quality}
             onOverload={handleOverload}
@@ -530,6 +534,9 @@ export default function BaraModule() {
           Suara
         </button>
       </div>
+
+      {/* Ditaruh paling akhir agar tidak ikut tergelapkan peredup di atas kanvas. */}
+      <LayerHint ref={hintRef} />
 
       {/* Peringatan bila muka air dinaikkan melebihi jangkauan pengatur */}
       <span className="sr-only">

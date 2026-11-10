@@ -20,6 +20,7 @@ import { CAMERA_FOV, fitView, type ViewFit } from "./viewFit";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
+import type { LayerHintHandle } from "./layerHint";
 import {
   createSubsidence,
   DIORAMA_BASE_YAW,
@@ -197,6 +198,8 @@ function Simulation({
 type Props = {
   sim: SmolderSim;
   stateRef: RefObject<BaraState>;
+  /** Keterangan lapisan yang tampil saat tanah ditunjuk. */
+  hint: RefObject<LayerHintHandle | null>;
   active: boolean;
   quality: Quality;
   onStats: (stats: SmolderStats) => void;
@@ -211,6 +214,7 @@ type Props = {
 export default function BaraScene({
   sim,
   stateRef,
+  hint,
   active,
   quality,
   onStats,
@@ -280,6 +284,7 @@ export default function BaraScene({
             <CutBlock
               sim={sim}
               stateRef={stateRef}
+              hint={hint}
               field={field}
               subsidence={subsidence}
               quality={quality}

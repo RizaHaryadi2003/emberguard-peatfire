@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
+import { PROFILE_DEPTH } from "@/lib/peat";
 import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
 import { BLOCK_WIDTH, type BaraState, type Subsidence } from "./baraState";
+import { isTouchOnly } from "./layerHint";
 import { readingArea } from "./viewFit";
 
 // Keterangan yang menempel pada bendanya di dalam adegan.
@@ -57,26 +58,16 @@ const PRIORITY = [
   "siram",
   "padam",
   "permukaan",
-  "fibrik",
-  "hemik",
-  "saprik",
-  "mineral",
+  "petunjuk",
   "lebar",
   "d1",
   "d2",
   "d3",
 ];
 
-/** Nama dan isi tiap lapisan yang ditulis pada bidang potong. */
-const LAYER_CAPTION: Record<PeatLayerId, { short: string; full: string }> = {
-  fibrik: { short: "Fibrik", full: "Fibrik · serat & akar masih utuh" },
-  hemik: { short: "Hemik", full: "Hemik · sisa tumbuhan setengah terurai" },
-  saprik: { short: "Saprik", full: "Saprik · halus, serat hampir hilang" },
-  mineral: { short: "Mineral", full: "Tanah mineral · pasir & kerikil" },
-};
-
-/** Letak mendatar keterangan lapisan pada lebar bidang potong (0–1). */
-const LAYER_CAPTION_AT = 0.62;
+/** Letak petunjuk keterangan lapisan: lebar bidang potong (0–1) dan kedalaman (m). */
+const HOVER_PROMPT_AT = 0.62;
+const HOVER_PROMPT_DEPTH = 1.1;
 
 /**
  * Kedalaman yang diberi angka pada penggaris di tepi kiri (m).
@@ -257,21 +248,21 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       });
     }
 
-    // Nama dan isi tiap lapisan. Citra termal tidak memperlihatkan isinya, jadi
-    // keterangannya hanya tampil pada tampilan nyata.
-    if (s.thermal < 0.5) {
-      const x = bounds.left + (bounds.right - bounds.left) * LAYER_CAPTION_AT;
-      for (const layer of PEAT_LAYERS) {
-        const caption = LAYER_CAPTION[layer.id];
-        list.push({
-          id: layer.id,
-          x,
-          y: yAt((layer.top + layer.bottom) / 2, x),
-          text: narrow ? caption.short : caption.full,
-          tone: "plain",
-          pinned: true,
-        });
-      }
+    // Nama lapisan baru muncul saat tanahnya ditunjuk (lihat `layerHint.ts`).
+    // Supaya pembaca tahu tanahnya bisa ditunjuk, ada satu petunjuk yang hilang
+    // setelah dipakai sekali. Di layar sentuh ia menunggu sampai bara tersulut,
+    // sebab pada babak pertama ketukan pada tanah berarti menyulut.
+    const touch = isTouchOnly();
+    if (!s.layerHinted && s.thermal < 0.5 && (!touch || s.act > 0)) {
+      const x = bounds.left + (bounds.right - bounds.left) * HOVER_PROMPT_AT;
+      list.push({
+        id: "petunjuk",
+        x,
+        y: yAt(HOVER_PROMPT_DEPTH, x),
+        text: touch ? "Ketuk tanah untuk nama lapisannya" : "Arahkan kursor ke tanah",
+        tone: "plain",
+        pinned: true,
+      });
     }
 
     // Lebar bongkahan, menemani batang ukur di bawahnya.

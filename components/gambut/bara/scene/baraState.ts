@@ -49,6 +49,8 @@ export type BaraState = {
    * atau memeriksa titik yang kebetulan berada di bawah kursor saat dilepas.
    */
   dragMoved: number;
+  /** Pembaca sudah pernah membuka keterangan lapisan; petunjuknya tidak perlu lagi. */
+  layerHinted: boolean;
   /** Nilai yang dihaluskan oleh adegan sendiri. */
   thermal: number;
   danger: number;
@@ -71,6 +73,7 @@ export function createBaraState(waterM: number): BaraState {
     spray: 0,
     rotation: 0,
     dragMoved: 0,
+    layerHinted: false,
     thermal: 0,
     danger: 0,
   };
