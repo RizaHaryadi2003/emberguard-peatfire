@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { ANATOMI_HOOK, ANATOMI_STEPS, GAMBUT_MODULES } from "@/config/gambut-content";
+import { ANATOMI_HOOK, ANATOMI_STEPS, BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
@@ -14,7 +14,7 @@ import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import ResultCardDialog from "./ResultCardDialog";
-import StepAdvance from "./StepAdvance";
+import StepAdvance from "@/components/gambut/StepAdvance";
 import WaterControl from "./WaterControl";
 import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
 
@@ -49,13 +49,6 @@ const HOOK_WATER_CM = 90;
 const DEMO_YEARS = 620;
 
 const MODULE = GAMBUT_MODULES[0];
-
-/** Tujuan panah pada tahap terakhir: pembaca kembali memilih sendiri modulnya. */
-const BACK_TO_LIST = {
-  nextTitle: "Daftar modul Gambut",
-  label: "Kembali ke daftar modul",
-  href: "/gambut",
-};
 
 /**
  * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
@@ -587,7 +580,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
           {lastStep && (
             <div className="absolute bottom-full right-0 mb-3 md:hidden">
-              <StepAdvance {...BACK_TO_LIST} />
+              <StepAdvance {...BACK_TO_MODULE_LIST} />
             </div>
           )}
           <WaterControl
@@ -647,7 +640,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               className={hasPanel ? "hidden md:flex" : "flex"}
             />
           ) : (
-            <StepAdvance {...BACK_TO_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
+            <StepAdvance {...BACK_TO_MODULE_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
           )}
         </div>
       </div>

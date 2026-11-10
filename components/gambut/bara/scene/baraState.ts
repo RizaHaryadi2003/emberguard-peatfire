@@ -49,6 +49,8 @@ export type BaraState = {
    * atau memeriksa titik yang kebetulan berada di bawah kursor saat dilepas.
    */
   dragMoved: number;
+  /** Bongkahan sedang diseret; pekerjaan berat ditunda sampai dilepas. */
+  dragging: boolean;
   /** Layar pembuka masih menutupi adegan. */
   hookOpen: boolean;
   /** Pembaca sudah pernah membuka keterangan lapisan; petunjuknya tidak perlu lagi. */
@@ -75,6 +77,7 @@ export function createBaraState(waterM: number): BaraState {
     spray: 0,
     rotation: 0,
     dragMoved: 0,
+    dragging: false,
     hookOpen: false,
     layerHinted: false,
     thermal: 0,

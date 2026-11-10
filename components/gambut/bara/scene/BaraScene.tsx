@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
@@ -183,9 +183,10 @@ function Simulation({
 
     // Bentuk rongga & permukaan diperbarui saat jumlah abu bertambah. Ini
     // membentuk ulang geometri bongkahan dan menghitung ulang normalnya, jadi
-    // jedanya diperlonggar di perangkat lemah.
+    // jedanya diperlonggar di perangkat lemah. Selama bongkahan diseret
+    // pekerjaan ini ditunda, supaya putarannya tidak tersendat.
     c.subside -= dt;
-    if (c.subside <= 0 && Math.abs(stats.consumed - c.consumed) > 0.002) {
+    if (c.subside <= 0 && !s.dragging && Math.abs(stats.consumed - c.consumed) > 0.002) {
       c.subside = profile.subsideSec;
       c.consumed = stats.consumed;
       onSubsidence();
@@ -210,7 +211,9 @@ type Props = {
   onOverload: () => void;
 };
 
-export default function BaraScene({
+export default memo(BaraScene);
+
+function BaraScene({
   sim,
   stateRef,
   hint,

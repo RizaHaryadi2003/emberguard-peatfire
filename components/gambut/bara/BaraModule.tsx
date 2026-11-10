@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { ArrowRight, MousePointerClick, Volume2, VolumeX } from "lucide-react";
+import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
-import { GAMBUT_MODULES } from "@/config/gambut-content";
+import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
 import { SmolderSim, type SmolderStats } from "@/lib/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
 import IgnitionPicker from "./IgnitionPicker";
@@ -16,6 +16,7 @@ import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
 import ModuleHook from "@/components/gambut/ModuleHook";
+import StepAdvance from "@/components/gambut/StepAdvance";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
 
@@ -334,7 +335,6 @@ export default function BaraModule() {
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   const actDone = [ignited, ignited && stats.hours >= 48, dousedOnce && thermalSeen, stats.extinguished && rewetOnce];
-  const canAdvance = actDone[act] && act < BARA_ACTS.length - 1;
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
 
   const goToAct = (next: number) => {
@@ -346,6 +346,20 @@ export default function BaraModule() {
     if (next === 2) setView("permukaan");
   };
 
+  /** Panah lanjut: ke babak berikutnya, lalu kembali ke daftar modul pada babak terakhir. */
+  const advance =
+    act < BARA_ACTS.length - 1 ? (
+      <StepAdvance
+        nextTitle={BARA_ACTS[act + 1].title}
+        label="Babak berikutnya"
+        hint={ACT_HINT[act]}
+        locked={!actDone[act]}
+        onAdvance={() => goToAct(act + 1)}
+      />
+    ) : (
+      <StepAdvance {...BACK_TO_MODULE_LIST} />
+    );
+
   // Seret mendatar untuk memutar diorama, sama dengan Modul 01. Jarak tempuhnya
   // disimpan agar penangan klik di dalam adegan dapat membedakan seretan dari
   // ketukan.
@@ -353,6 +367,7 @@ export default function BaraModule() {
   const handleDragStart = useCallback((e: React.PointerEvent) => {
     stateRef.current.dragMoved = 0;
     if (e.pointerType === "touch") return;
+    stateRef.current.dragging = true;
     drag.current = { x: e.clientX, y: e.clientY, start: stateRef.current.rotation };
   }, []);
   const handleDragMove = useCallback((e: React.PointerEvent) => {
@@ -366,6 +381,7 @@ export default function BaraModule() {
   }, []);
   const handleDragEnd = useCallback(() => {
     drag.current = null;
+    stateRef.current.dragging = false;
   }, []);
 
   // Sampai hari ke-2, waktu berhenti sendiri supaya pembaca sempat pindah babak
@@ -519,8 +535,10 @@ export default function BaraModule() {
       {/* Panel kendali (kiri bawah) */}
       {/* Pada layar sangat pendek panel merapat ke tepi bawah. Navigasi babak
           berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
-          menindih. */}
-      <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
+          menindih. Di layar sempit navigasi itu tidak ada, jadi panelnya turun
+          dan panah lanjut duduk di atasnya, sama dengan Modul 01. */}
+      <div inert={hookOpen} className={`absolute bottom-6 left-5 right-5 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
+        <div className="absolute bottom-full right-0 mb-3 md:hidden">{advance}</div>
         {finished ? (
           <SummaryCard stats={stats} onReset={handleReset} />
         ) : probe ? (
@@ -554,7 +572,7 @@ export default function BaraModule() {
           satu tumpukan, keduanya tidak mungkin lagi saling menindih, dan
           pesannya pun kini muncul berdampingan dengan angka yang dibahasnya. */}
       <div inert={hookOpen} className={`absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 ${panelFade}`}>
-        <StatsPanel stats={stats} fact={current.fact} />
+        <StatsPanel stats={stats} fact={current.fact} compact={message !== null} />
         {message && (
           <div className="pointer-events-none rounded-2xl border border-[#e8702a]/30 bg-black/60 p-3.5 backdrop-blur-xl">
             <p className="text-xs leading-relaxed text-white/85">{message}</p>
@@ -562,63 +580,61 @@ export default function BaraModule() {
         )}
       </div>
 
-      {/* Navigasi babak (bawah) */}
-      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14 ${panelFade}`}>
-        <div className="flex gap-2">
-          {BARA_ACTS.map((a, i) => {
-            const locked = i > act && !actDone[act];
-            return (
-              <button
-                key={a.number}
-                type="button"
-                onClick={() => goToAct(i)}
-                disabled={locked}
-                aria-current={i === act ? "step" : undefined}
-                title={locked ? ACT_HINT[act] : a.title}
-                className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <span
-                  className={`h-0.5 w-12 rounded-full transition-colors duration-500 ${
-                    i === act ? "bg-white" : actDone[i] ? "bg-[#e8702a]" : locked ? "bg-white/12" : "bg-white/25 group-hover:bg-white/50"
-                  }`}
-                />
-                <span className={`text-[11px] tabular-nums transition-colors ${i === act ? "text-white" : "text-white/40"}`}>
-                  {a.number}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {canAdvance && (
-          <button
-            type="button"
-            onClick={() => goToAct(act + 1)}
-            className="group mb-1 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
-          >
-            Babak berikutnya
-            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-          </button>
-        )}
+      {/* Navigasi babak (kiri bawah) */}
+      <nav
+        inert={hookOpen}
+        aria-label="Babak modul"
+        className={`absolute bottom-6 left-5 hidden gap-2 sm:left-10 md:left-14 md:flex [@media(min-height:651px)]:bottom-8 ${panelFade}`}
+      >
+        {BARA_ACTS.map((a, i) => {
+          const shut = i > act && !actDone[act];
+          return (
+            <button
+              key={a.number}
+              type="button"
+              onClick={() => goToAct(i)}
+              disabled={shut}
+              aria-current={i === act ? "step" : undefined}
+              title={shut ? ACT_HINT[act] : a.title}
+              className={`group flex flex-col items-start gap-2 text-left ${shut ? "cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <span
+                className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${
+                  i === act ? "bg-white" : actDone[i] ? "bg-[#e8702a]" : shut ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
+                }`}
+              />
+              <span className={`text-[11px] tabular-nums transition-colors ${i === act ? "text-white" : "text-white/40"}`}>{a.number}</span>
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Kanan bawah: petunjuk & tombol suara */}
-      <div inert={hookOpen} className={`absolute bottom-6 right-5 flex items-center gap-4 text-[11px] text-white/60 sm:right-10 ${panelFade}`}>
-        <span className="hidden lg:inline">
-          {act === 0 ? "Klik permukaan untuk menyulut" : "Klik penampang untuk memeriksa satu titik"}
-          <span className="text-white/35"> · seret untuk memutar</span>
-        </span>
+      {/* Kanan bawah: petunjuk interaksi, tombol suara, dan panah lanjut */}
+      <div
+        inert={hookOpen}
+        className={`absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14 ${panelFade}`}
+      >
+        {/* Baru tampil pada layar lebar; di bawah itu ia menabrak panel kendali. */}
+        <div className="pointer-events-none hidden items-center gap-4 pb-2 xl:flex">
+          <span className="inline-flex items-center gap-1.5">
+            <Rotate3d size={14} /> Seret untuk memutar
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <MousePointer2 size={14} /> Arahkan ke tanah
+          </span>
+        </div>
         <button
           type="button"
           onClick={toggleSound}
           aria-pressed={soundOn}
-          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors ${
+          className={`hidden cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors md:inline-flex ${
             soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
           }`}
         >
           {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          Suara
+          Suara alam
         </button>
+        <div className="hidden md:block">{advance}</div>
       </div>
 
       {/* Ditaruh paling akhir agar tidak ikut tergelapkan peredup di atas kanvas. */}

@@ -15,6 +15,8 @@ export type Hint = { text: string; tone: HintTone };
 /** Pintu yang dipakai adegan 3D untuk menampilkan keterangan di atas halaman. */
 export type LayerHintHandle = {
   show: (hint: Hint, clientX: number, clientY: number) => void;
+  /** Geser keterangan yang sedang tampil tanpa mengganti isinya. */
+  move: (clientX: number, clientY: number) => void;
   hide: () => void;
 };
 

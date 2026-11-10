@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { useFrame, useLoader, type ThreeEvent } from "@react-three/fiber";
+import { useFrame, useLoader, useThree, type RootState, type ThreeEvent } from "@react-three/fiber";
 import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
 import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { getAtmosphere } from "@/lib/atmosphere";
@@ -82,6 +82,16 @@ const CONTENTS_WIDTH: Record<Quality, number> = { high: 2048, low: 1024 };
 
 /** Jeda penyegaran keterangan saat kursor diam (detik). */
 const HINT_REFRESH = 0.3;
+
+/**
+ * Jeda terkecil antarpemeriksaan titik di bawah kursor (detik).
+ *
+ * Memakai `onPointerMove` milik react-three-fiber berarti memeriksa tabrakan
+ * sinar dengan seluruh segitiga bongkahan pada tiap gerakan kursor. Sebagai
+ * gantinya pemeriksaan dibatasi di sini dan dihentikan selama bongkahan
+ * diseret; tulisannya sendiri tetap mengikuti kursor tiap bingkai.
+ */
+const HOVER_INTERVAL = 0.08;
 
 /** Lama keterangan bertahan setelah ketukan pada layar sentuh (detik). */
 const TOUCH_HINT_SECONDS = 2.6;
@@ -282,6 +292,32 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
   const slate = useMemo(() => new THREE.Color(0.02, 0.03, 0.07), []);
 
   const activeHint = useRef<ActiveHint | null>(null);
+  const domElement = useThree((s) => s.gl.domElement);
+  const faceRef = useRef<THREE.Mesh>(null);
+  const pointer = useRef({ x: 0, y: 0, inside: false, dragging: false, moved: false, wait: 0 });
+  const pointerNdc = useMemo(() => new THREE.Vector2(), []);
+
+  useEffect(() => {
+    const p = pointer.current;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      p.x = e.clientX;
+      p.y = e.clientY;
+      p.inside = true;
+      p.dragging = e.buttons !== 0;
+      p.moved = true;
+    };
+    const onLeave = () => {
+      p.inside = false;
+      p.moved = true;
+    };
+    domElement.addEventListener("pointermove", onMove, { passive: true });
+    domElement.addEventListener("pointerleave", onLeave, { passive: true });
+    return () => {
+      domElement.removeEventListener("pointermove", onMove);
+      domElement.removeEventListener("pointerleave", onLeave);
+    };
+  }, [domElement]);
 
   const clearHint = () => {
     activeHint.current = null;
@@ -312,25 +348,30 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
     paintHint(next);
   };
 
-  /** Kursor bergerak di atas tanah. Saat bongkahan diseret, tulisannya hilang. */
-  const handleHover = (e: ThreeEvent<PointerEvent>, target: HintTarget) => {
-    if (e.pointerType === "touch") return;
-    e.stopPropagation();
-    if (e.buttons !== 0) {
-      clearHint();
+  /** Periksa bagian tanah di bawah kursor. Saat bongkahan diseret, tulisannya hilang. */
+  const sampleHover = (state: RootState) => {
+    const p = pointer.current;
+    // Keterangan dari ketukan punya waktu habis sendiri.
+    const followsCursor = !activeHint.current || activeHint.current.lifetime === null;
+    if (!followsCursor) return;
+    if (!p.inside || p.dragging) {
+      if (activeHint.current) clearHint();
       return;
     }
-    showHint(target, e.clientX, e.clientY);
-  };
-
-  const handleFaceHover = (e: ThreeEvent<PointerEvent>) => {
-    if (e.uv) handleHover(e, cellAt(e.uv));
-  };
-
-  // Ketukan juga memunculkan "kursor keluar" sesaat sesudahnya; keterangan
-  // dari ketukan punya waktu habis sendiri dan tidak boleh ikut hilang.
-  const handleHoverEnd = () => {
-    if (activeHint.current && activeHint.current.lifetime === null) clearHint();
+    const { left, top, width, height } = state.size;
+    pointerNdc.set(((p.x - left) / width) * 2 - 1, -((p.y - top) / height) * 2 + 1);
+    state.raycaster.setFromCamera(pointerNdc, state.camera);
+    const targets = [faceRef.current, ...dryMeshRefs.current, ...wetMeshRefs.current].filter(
+      (mesh): mesh is THREE.Mesh => mesh !== null && mesh.visible,
+    );
+    const hit = state.raycaster.intersectObjects(targets, false)[0];
+    if (!hit) {
+      if (activeHint.current) clearHint();
+    } else if (hit.object === faceRef.current) {
+      if (hit.uv) showHint(cellAt(hit.uv), p.x, p.y);
+    } else {
+      showHint({ layer: hit.object.userData.layer as PeatLayerId }, p.x, p.y);
+    }
   };
 
   /** Layar sentuh tidak punya kursor: ketukan yang membuka keterangannya. */
@@ -346,7 +387,19 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
 
     // Kursor yang diam tetap harus mengikuti tanah yang berubah di bawahnya:
     // bara bisa merambat ke titik yang sedang ditunjuk.
+    const p = pointer.current;
+    p.wait -= delta;
+    if (p.moved && p.wait <= 0) {
+      p.moved = false;
+      p.wait = HOVER_INTERVAL;
+      sampleHover(state);
+    }
     const active = activeHint.current;
+    if (active && active.lifetime === null && p.inside) {
+      active.x = p.x;
+      active.y = p.y;
+      hint.current?.move(p.x, p.y);
+    }
     if (active) {
       active.refresh -= dt;
       if (active.lifetime !== null) active.lifetime -= delta;
@@ -420,8 +473,7 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
       {res.bodies.map(({ layer, dryGeom, wetGeom, dry, wet }, i) => {
         // Irisan kering dan basah satu lapisan sama-sama menyebut lapisan itu.
         const hintEvents = {
-          onPointerMove: (e: ThreeEvent<PointerEvent>) => handleHover(e, { layer: layer.id }),
-          onPointerOut: handleHoverEnd,
+          userData: { layer: layer.id },
           onClick: (e: ThreeEvent<MouseEvent>) => flashHint(e, { layer: layer.id }),
         };
         return (
@@ -437,12 +489,11 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
 
       {/* Bidang potong: seluruh cerita bawah tanah digambar di sini */}
       <mesh
+        ref={faceRef}
         geometry={res.faceGeom}
         material={res.faceMaterial}
         position-z={FACE_Z}
         onClick={handleProbe}
-        onPointerMove={handleFaceHover}
-        onPointerOut={handleHoverEnd}
       />
 
       {/* Penutup gelap di belakang penampang, supaya rongga abu tidak bolong ke

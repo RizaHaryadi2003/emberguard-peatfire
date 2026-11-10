@@ -58,6 +58,13 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
 ];
 
+/** Tujuan panah pada tahap terakhir: pembaca kembali memilih sendiri modulnya. */
+export const BACK_TO_MODULE_LIST = {
+  nextTitle: "Daftar modul Gambut",
+  label: "Kembali ke daftar modul",
+  href: "/gambut",
+};
+
 /**
  * Pembuka Modul 01. Dimulai dari pertanyaan yang sudah dimiliki pembaca, bukan
  * dari definisi, karena ia datang dari media sosial dan belum tentu berniat

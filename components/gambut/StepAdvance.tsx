@@ -20,7 +20,8 @@ type Props = {
 };
 
 /**
- * Panah lanjut pada Modul 01, beserta satu baris arahan di atasnya.
+ * Panah lanjut yang dipakai bersama modul-modul Gambut, beserta satu baris
+ * arahan di atasnya.
  *
  * Panahnya sengaja tetap terlihat meski belum bisa diklik: kalau ia baru
  * muncul setelah syaratnya tuntas, pembaca tidak tahu bahwa ada sesuatu yang
@@ -65,10 +66,13 @@ export default function StepAdvance({
   return (
     <div className={`flex flex-col items-end gap-2 ${className}`}>
       {/* Di layar sempit arahan ini jatuh tepat di atas diorama, jadi ia
-          membawa alas gelapnya sendiri agar tetap terbaca di atas dedaunan. */}
+          membawa alas gelapnya sendiri agar tetap terbaca di atas dedaunan.
+          Di layar lebar alas itu dilepas: teks yang terlipat tidak mengisi
+          lebar kotaknya, sehingga sisi kirinya tampak sebagai ruang kosong,
+          padahal di sana sudah ada peredup di tepi bawah layar. */}
       <p
         aria-live="polite"
-        className={`max-w-[210px] rounded-2xl bg-black/35 px-3 py-1.5 text-right text-[11px] leading-snug backdrop-blur-[2px] transition-colors duration-300 ${
+        className={`max-w-[210px] rounded-2xl bg-black/35 px-3 py-1.5 text-right text-[11px] leading-snug backdrop-blur-[2px] transition-colors duration-300 md:max-w-[260px] md:rounded-none md:bg-transparent md:p-0 md:backdrop-blur-none ${
           locked ? (urgent ? "text-amber-200" : "text-white/55") : "text-white/45"
         }`}
       >

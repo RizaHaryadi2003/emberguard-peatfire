@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDownToLine, ChevronsDown, Cloud, Flame, MoveHorizontal, type LucideIcon } from "lucide-react";
 import { LEGEND_ITEMS, type BaraAct } from "@/config/bara-content";
 import type { SmolderStats } from "@/lib/smolder";
 
@@ -7,6 +8,11 @@ type Props = {
   stats: SmolderStats;
   /** Angka kunci babak yang sedang berjalan. */
   fact: BaraAct["fact"];
+  /**
+   * Lepas keterangan warna selama pesan kejadian tampil di bawah panel ini.
+   * Tanpa ini tumpukannya menjulur sampai ke arahan panah lanjut di kanan bawah.
+   */
+  compact: boolean;
 };
 
 /**
@@ -22,13 +28,13 @@ type Props = {
  * 03 dan 04 itulah angkanya hampir tidak pernah tampil. Kolom kanan ini
  * ditambatkan ke tepi atas sendiri dan tidak berebut ruang dengan apa pun.
  */
-export default function StatsPanel({ stats, fact }: Props) {
-  const rows: [string, string][] = [
-    ["Kedalaman bara", stats.frontDepth > 0 ? `${(stats.frontDepth * 100).toFixed(0)} cm` : "—"],
-    ["Laju rambat", stats.spreadCmPerDay > 0 ? `${stats.spreadCmPerDay.toFixed(0)} cm/hari` : "—"],
-    ["Gambut habis", `${(stats.consumed * 100).toFixed(1)} %`],
-    ["Permukaan turun", stats.maxSubsidence > 0 ? `${(stats.maxSubsidence * 100).toFixed(0)} cm` : "—"],
-    ["Asap di permukaan", stats.surfaceSmoke > 0.02 ? `${Math.round(stats.surfaceSmoke * 100)} %` : "tidak terlihat"],
+export default function StatsPanel({ stats, fact, compact }: Props) {
+  const rows: [LucideIcon, string, string][] = [
+    [ArrowDownToLine, "Kedalaman bara", stats.frontDepth > 0 ? `${(stats.frontDepth * 100).toFixed(0)} cm` : "—"],
+    [MoveHorizontal, "Laju rambat", stats.spreadCmPerDay > 0 ? `${stats.spreadCmPerDay.toFixed(0)} cm/hari` : "—"],
+    [Flame, "Gambut habis", `${(stats.consumed * 100).toFixed(1)} %`],
+    [ChevronsDown, "Permukaan turun", stats.maxSubsidence > 0 ? `${(stats.maxSubsidence * 100).toFixed(0)} cm` : "—"],
+    [Cloud, "Asap di permukaan", stats.surfaceSmoke > 0.02 ? `${Math.round(stats.surfaceSmoke * 100)} %` : "tidak terlihat"],
   ];
 
   return (
@@ -49,9 +55,12 @@ export default function StatsPanel({ stats, fact }: Props) {
       </div>
 
       <dl className="space-y-2 [@media(min-height:769px)]:space-y-2.5">
-        {rows.map(([label, value]) => (
+        {rows.map(([Icon, label, value]) => (
           <div key={label} className="flex items-baseline justify-between gap-3">
-            <dt className="text-[11px] text-white/50">{label}</dt>
+            <dt className="inline-flex items-center gap-1.5 text-[11px] text-white/50">
+              <Icon size={11} className="shrink-0 text-white/40" aria-hidden="true" />
+              {label}
+            </dt>
             <dd className="text-xs font-medium tabular-nums text-white">{value}</dd>
           </div>
         ))}
@@ -61,6 +70,7 @@ export default function StatsPanel({ stats, fact }: Props) {
           tinggal; penjelasannya tiga baris dan itulah bagian tertinggi panel
           ini. Nama warnanya sendiri sudah cukup untuk membaca penampang, dan
           penjelasan penuhnya tetap terbaca saat kursor berhenti di sana. */}
+      {!compact && (
       <div className="mt-3 space-y-1.5 border-t border-white/10 pt-2.5 [@media(min-height:769px)]:mt-4 [@media(min-height:769px)]:space-y-2 [@media(min-height:769px)]:pt-3">
         {LEGEND_ITEMS.map((item) => (
           <div key={item.label} className="flex items-start gap-2" title={`${item.label} — ${item.note}`}>
@@ -76,6 +86,7 @@ export default function StatsPanel({ stats, fact }: Props) {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

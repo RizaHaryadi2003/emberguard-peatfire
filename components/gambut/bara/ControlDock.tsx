@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
+import { Clock, Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
 import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/bara-content";
 import { formatDay, formatElapsed } from "@/lib/smolder";
 
@@ -66,7 +66,10 @@ export default function ControlDock({
       {/* Waktu */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Waktu berjalan</p>
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+            <Clock size={12} aria-hidden="true" />
+            Waktu berjalan
+          </p>
           <p className="mt-1 whitespace-nowrap font-playfair text-xl italic leading-none text-white [@media(min-height:901px)]:text-2xl">
             {formatDay(hours)}
             <span className="ml-2 font-sans text-[11px] not-italic text-white/50">{formatElapsed(hours)}</span>
@@ -94,7 +97,8 @@ export default function ControlDock({
       {/* Muka air tanah */}
       <div className="relative mt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:901px)]:mt-5">
         <div className="flex items-baseline justify-between">
-          <label htmlFor="bara-water" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+          <label htmlFor="bara-water" className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+            <Droplets size={12} aria-hidden="true" />
             Muka air tanah
           </label>
           <span className="font-playfair text-xl italic text-white tabular-nums">

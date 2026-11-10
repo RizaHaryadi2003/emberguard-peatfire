@@ -106,10 +106,12 @@ function spread(list: Marker[]): Marker[] {
 }
 
 const TONE_CLASS: Record<Tone, string> = {
-  ember: "border-[#f0a060]/45 bg-[#2a1405]/85 text-[#ffd9b0]",
-  ash: "border-white/20 bg-black/75 text-white/80",
-  water: "border-sky-300/40 bg-[#07202e]/85 text-sky-100",
-  plain: "border-white/20 bg-black/75 text-white/85",
+  // Alasnya pekat tanpa pengaburan: label bergeser tiap bingkai saat bongkahan
+  // diputar, dan mengaburkan kanvas di belakangnya tiap bingkai sangat mahal.
+  ember: "border-[#f0a060]/45 bg-[#2a1405]/95 text-[#ffd9b0]",
+  ash: "border-white/20 bg-black/85 text-white/80",
+  water: "border-sky-300/40 bg-[#07202e]/95 text-sky-100",
+  plain: "border-white/20 bg-black/85 text-white/85",
   depth: "",
 };
 
@@ -420,7 +422,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
             <span className="whitespace-nowrap text-[10px] font-medium tabular-nums text-white/55">{m.text}</span>
           ) : (
             <div
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-md ${TONE_CLASS[m.tone]}`}
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium ${TONE_CLASS[m.tone]}`}
             >
               <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[m.tone]}`} aria-hidden="true" />
               {m.text}
