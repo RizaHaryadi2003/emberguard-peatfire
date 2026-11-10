@@ -15,12 +15,13 @@ import {
   surfaceYAt,
   updateSurfaceGrid,
 } from "./crossSection";
+import { applyBurn, createBurnUniforms, type BurnUniforms } from "./burnMaterial";
 import { BLOCK_WIDTH, DRAG_THRESHOLD, QUALITY_PROFILE, type BaraState, type Quality, type Subsidence } from "./baraState";
 
 // Permukaan hutan rawa di atas bongkahan yang dipotong. Tumbuhan memakai model
 // pindaian yang sama dengan Modul 01 (Poly Haven, CC0 — lihat
 // public/models/gambut/SUMBER.md). Di modul ini permukaan ikut melesak ke dalam
-// rongga abu dan tumbuhannya menghangus.
+// rongga abu, dan tumbuhannya terbakar bertahap (lihat `burnMaterial.ts`).
 
 // Tumbuhan yang sama letaknya dengan Modul 01; yang berdiri di separuh depan
 // ikut hilang bersama tanah yang dipotong.
@@ -29,6 +30,14 @@ const UNDERSTORY_SPOTS = DIORAMA_UNDERSTORY_SPOTS.filter(([, z]) => z < 0);
 
 /** Penurunan permukaan yang membuat tumbuhan menghangus habis (m). */
 const SCORCH_FULL = 0.16;
+/** Kecepatan api memakan tumbuhan, supaya prosesnya terlihat berlangsung. */
+const BURN_RATE = 0.4;
+/** Tingkat terbakar saat tajuk tidak lagi menjatuhkan bayangan. */
+const LEAF_SHADOW_UNTIL = 0.8;
+/** Tingkat terbakar saat tumbuhan bawah sudah habis dan berhenti digambar. */
+const UNDERSTORY_GONE_AT = 0.97;
+/** Tumbuhan bawah mengerut sebanyak ini sebelum habis. */
+const UNDERSTORY_SHRINK = 0.3;
 
 function heightOf(obj: THREE.Object3D) {
   return new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3()).y;
@@ -68,8 +77,14 @@ type Plant = {
   /** Rotasi awal, supaya goyangannya menambah dan bukan menggantikan. */
   baseRotation: THREE.Euler;
   materials: { mat: THREE.MeshStandardMaterial; base: THREE.Color }[];
-  /** Nilai teranimasi: tingkat hangus (0–1). */
+  /** Nilai teranimasi: tingkat terbakar (0–1). */
   scorch: number;
+  burn: BurnUniforms;
+  /** Punya batang, jadi tetap berdiri setelah daunnya habis. */
+  hasBark: boolean;
+  baseScale: number;
+  /** Mesh daun yang menjatuhkan bayangan. */
+  shadowLeaves: THREE.Mesh[];
 };
 
 type Props = {
@@ -155,7 +170,12 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
 
     const make = (template: THREE.Object3D, x: number, z: number, height: number, ry: number): Plant => {
       const object = template.clone();
-      object.scale.setScalar(height / Math.max(heightOf(template), 0.01));
+      const localHeight = heightOf(template);
+      const baseScale = height / Math.max(localHeight, 0.01);
+      object.scale.setScalar(baseScale);
+      const burn = createBurnUniforms(localHeight, baseScale);
+      const shadowLeaves: THREE.Mesh[] = [];
+      let hasBark = false;
       object.position.set(x, 0, z);
       object.rotation.y = ry;
       const materials: Plant["materials"] = [];
@@ -163,6 +183,10 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh) return;
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+        const bark = mat.name.includes("bark");
+        hasBark ||= bark;
+        if (!bark && mesh.castShadow) shadowLeaves.push(mesh);
+        applyBurn(mat, burn, bark ? "bark" : "foliage");
         mesh.material = mat;
         materials.push({ mat, base: mat.color.clone() });
       });
@@ -173,6 +197,10 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
         baseRotation: object.rotation.clone(),
         materials,
         scorch: 0,
+        burn,
+        hasBark,
+        baseScale,
+        shadowLeaves,
       };
     };
 
@@ -199,7 +227,6 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
     [res, plants],
   );
 
-  const charcoal = useMemo(() => new THREE.Color("#171310"), []);
   /** Warna dingin untuk tampilan termal. */
   const cold = useMemo(() => new THREE.Color("#0a1030"), []);
   const straw = useMemo(() => new THREE.Color("#a07a3e"), []);
@@ -215,8 +242,13 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
       const burn = Math.min(1, drop / SCORCH_FULL);
       // Hampir hitam, bukan sekadar gelap. Pada 0,88 hamparan yang ambruk
       // masih memantulkan cahaya dan terbaca sebagai pita mengilap yang
-      // berlipat-lipat, bukan tanah yang hangus.
-      const k = 1 - burn * 0.96;
+      // berlipat-lipat, bukan tanah yang hangus. Di sela-selanya ada bercak
+      // abu pucat, supaya tanah yang terbakar tidak hitam rata.
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const patch = 0.5 + 0.5 * Math.sin(x * 7.3 + Math.sin(z * 5.1) * 1.7) * Math.sin(z * 9.7 + x * 2.3);
+      const ash = THREE.MathUtils.smoothstep(patch, 0.62, 0.85) * Math.max(0, burn - 0.6) * 2.5;
+      const k = THREE.MathUtils.lerp(1 - burn * 0.96, 0.3, ash);
       // Hamparan mulai koyak setelah permukaan turun 45 cm dan hilang sama
       // sekali pada 95 cm; di bawahnya yang terlihat adalah dinding rongga.
       const alpha = 1 - Math.min(1, Math.max(0, (drop - 0.45) / 0.5));
@@ -248,13 +280,26 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSur
       const drop = subsidence.fn(p.x);
       // Gambut di bawah tumbuhan yang masih basah tidak menghanguskan apa pun.
       const scorchTarget = Math.min(1, drop / SCORCH_FULL);
-      p.scorch = THREE.MathUtils.damp(p.scorch, scorchTarget, s.reducedMotion ? 30 : 1.4, dt);
+      p.scorch = THREE.MathUtils.damp(p.scorch, scorchTarget, s.reducedMotion ? 30 : BURN_RATE, dt);
+      p.burn.uBurn.value = p.scorch;
+      // Berpijar hanya selama api masih memakan tumbuhannya.
+      p.burn.uBurnGlow.value = s.reducedMotion ? 0 : Math.min(1, Math.max(0, (scorchTarget - p.scorch) * 5));
+      p.burn.uBurnThermal.value = s.thermal;
 
-      // Warna: menguning saat kering, lalu menghitam saat tersentuh bara.
+      // Yang sudah habis tidak perlu digambar sama sekali.
+      p.object.visible = p.hasBark || p.scorch < UNDERSTORY_GONE_AT;
+      if (!p.object.visible) return;
+      if (!p.hasBark) p.object.scale.setScalar(p.baseScale * (1 - p.scorch * UNDERSTORY_SHRINK));
+      const castsShadow = p.scorch < LEAF_SHADOW_UNTIL;
+      p.shadowLeaves.forEach((leaf) => {
+        leaf.castShadow = castsShadow;
+      });
+
+      // Warna: menguning saat kering; tahapan terbakarnya diurus peneduh.
       const wilt = Math.min(0.75, dryness * 0.6);
       p.materials.forEach(({ mat, base }) => {
         // Pada citra termal, tumbuhan yang dingin tampak gelap kebiruan.
-        mat.color.copy(base).lerp(straw, wilt).lerp(charcoal, p.scorch * 0.95).lerp(cold, s.thermal * 0.92);
+        mat.color.copy(base).lerp(straw, wilt).lerp(cold, s.thermal * 0.92);
       });
 
       // Permukaan turun, jadi tumbuhan ikut turun.
