@@ -4,15 +4,18 @@ import {
   CELL_INTACT,
   CELL_QUENCHED,
   CELL_SMOLDER,
-  CAPILLARY_RISE,
+  CELL_W,
   DOUSE_DEPTH,
   formatDay,
   formatElapsed,
   GRID_COLS,
   GRID_ROWS,
+  MEASURED_SPREAD_CM_PER_HOUR,
   MOISTURE_LIMIT,
+  MOISTURE_SATURATED,
   smoothField,
   SmolderSim,
+  SURFACE_PEAT_DEPTH,
 } from "./smolder";
 
 /** Bangun simulasi dengan muka air dalam (gambut kering) lalu sulut di tengah. */
@@ -39,15 +42,84 @@ describe("kelembapan mengikuti muka air tanah", () => {
   it("jenuh tepat pada dan di bawah muka air tanah", () => {
     const sim = new SmolderSim();
     sim.setWaterTable(1);
-    expect(sim.moistureAtDepth(1)).toBe(1);
-    expect(sim.moistureAtDepth(2.5)).toBe(1);
+    expect(sim.moistureAtDepth(1)).toBe(MOISTURE_SATURATED);
+    expect(sim.moistureAtDepth(2.5)).toBe(MOISTURE_SATURATED);
   });
 
-  it("kering penuh pada ketinggian air kapiler di atas muka air", () => {
+  it("mengikuti profil kadar air Usup dkk. pada muka air terendah", () => {
     const sim = new SmolderSim();
-    sim.setWaterTable(1);
-    expect(sim.moistureAtDepth(1 - CAPILLARY_RISE)).toBeCloseTo(0, 6);
-    expect(sim.moistureAtDepth(1 - CAPILLARY_RISE / 2)).toBeCloseTo(0.5, 6);
+    sim.setWaterTable(0.95);
+    expect(sim.moistureAtDepth(0)).toBeCloseTo(1, 6);
+    expect(sim.moistureAtDepth(0.2)).toBeCloseTo(1.2, 6);
+    expect(sim.moistureAtDepth(0.4)).toBeCloseTo(1.2, 6);
+    expect(sim.moistureAtDepth(0.7)).toBeGreaterThan(MOISTURE_LIMIT);
+  });
+});
+
+/** Lebar daerah terbakar pada satu pita kedalaman (cm). */
+function lebarPita(sim: SmolderSim, atas: number, bawah: number) {
+  let kiri = GRID_COLS;
+  let kanan = -1;
+  for (let row = 0; row < GRID_ROWS; row++) {
+    const d = sim.depthOfRow(row);
+    if (d < atas || d >= bawah) continue;
+    for (let col = 0; col < GRID_COLS; col++) {
+      if (sim.state[sim.index(col, row)] === CELL_INTACT) continue;
+      kiri = Math.min(kiri, col);
+      kanan = Math.max(kanan, col);
+    }
+  }
+  return kanan < 0 ? 0 : (kanan - kiri + 1) * CELL_W * 100;
+}
+
+/**
+ * Laju mendatar rata-rata (cm/jam) pada satu pita. Bahan bakar di luar pita
+ * dihabiskan lebih dulu, supaya yang terukur hanya rambatan di pita itu.
+ */
+function lajuPita(atas: number, bawah: number, jam: number) {
+  let total = 0;
+  for (let n = 1; n <= 8; n++) {
+    const sim = new SmolderSim(n * 31);
+    sim.setWaterTable(1.6);
+    for (let row = 0; row < GRID_ROWS; row++) {
+      const d = sim.depthOfRow(row);
+      if (d >= atas && d < bawah) continue;
+      for (let col = 0; col < GRID_COLS; col++) sim.fuel[sim.index(col, row)] = 0;
+    }
+    sim.ignite(0.5, (atas + bawah) / 2);
+    const awal = lebarPita(sim, atas, bawah);
+    while (sim.stats.hours < jam) sim.advance(6);
+    total += (lebarPita(sim, atas, bawah) - awal) / 2 / jam;
+  }
+  return total / 8;
+}
+
+describe("sesuai pengukuran lapangan", () => {
+  it("bara permukaan merambat seperti rata-rata Usup dkk.", () => {
+    const laju = lajuPita(0, SURFACE_PEAT_DEPTH, 36);
+    expect(laju).toBeGreaterThan(MEASURED_SPREAD_CM_PER_HOUR.surface * 0.85);
+    expect(laju).toBeLessThan(MEASURED_SPREAD_CM_PER_HOUR.surface * 1.15);
+  });
+
+  it("bara dalam merambat seperti rata-rata Usup dkk.", () => {
+    const laju = lajuPita(SURFACE_PEAT_DEPTH, 0.6, 72);
+    expect(laju).toBeGreaterThan(MEASURED_SPREAD_CM_PER_HOUR.deep * 0.85);
+    expect(laju).toBeLessThan(MEASURED_SPREAD_CM_PER_HOUR.deep * 1.15);
+  });
+
+  it("pada muka air terendah bara berhenti di kisaran bara dalam", () => {
+    const { sim } = ignited(0.95);
+    let terdalam = 0;
+    for (let hari = 0; hari < 10; hari++) {
+      jalan(sim, 1);
+      terdalam = Math.max(terdalam, sim.stats.frontDepth);
+    }
+    expect(terdalam).toBeGreaterThan(SURFACE_PEAT_DEPTH);
+    expect(terdalam).toBeLessThanOrEqual(0.5);
+  });
+
+  it("tidak dapat menyala bila muka air dijaga 40 cm", () => {
+    expect(ignited(0.4).lit).toBe(false);
   });
 });
 
@@ -128,7 +200,7 @@ describe("pemadaman", () => {
   it("siraman permukaan tidak mematikan bara yang sudah dalam", () => {
     const { sim } = ignited();
     // Biarkan bara turun lebih dalam daripada jangkauan siraman.
-    jalan(sim, 6);
+    jalan(sim, 2);
     expect(sim.stats.frontDepth).toBeGreaterThan(DOUSE_DEPTH);
 
     sim.douseSurface();
@@ -140,7 +212,7 @@ describe("pemadaman", () => {
 
     // Setelah air menguap, bara kembali melebar.
     const sebelum = sim.stats.consumed;
-    jalan(sim, 6);
+    jalan(sim, 1);
     expect(sim.stats.alive).toBe(true);
     expect(sim.stats.consumed).toBeGreaterThan(sebelum);
   });
@@ -202,7 +274,7 @@ describe("pemadaman", () => {
 
   it("pembasahan setengah hanya memadamkan bara di bawah muka air baru", () => {
     const { sim } = ignited(2.2);
-    jalan(sim, 10);
+    jalan(sim, 3);
     expect(sim.stats.frontDepth).toBeGreaterThan(0.6);
 
     sim.setWaterTable(0.4);
@@ -342,7 +414,8 @@ describe("perataan di CPU sama dengan perataan di peneduh", () => {
   const sim = new SmolderSim();
   sim.setWaterTable(2.2);
   sim.ignite(0.5);
-  jalan(sim, 6);
+  // Cukup sehari, selagi bara belum sampai ke tepi bongkahan.
+  jalan(sim, 1);
   const raw = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
   const rata = new Uint8Array(GRID_COLS * GRID_ROWS * 4);
   sim.writeField(raw);

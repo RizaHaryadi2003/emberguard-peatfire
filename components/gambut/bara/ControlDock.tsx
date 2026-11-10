@@ -3,11 +3,11 @@
 import { Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
 import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/bara-content";
 import { formatDay, formatElapsed } from "@/lib/smolder";
-import { PROFILE_DEPTH } from "@/lib/peat";
 
 /** Batas pengatur muka air tanah pada antarmuka (cm). */
 export const WATER_MIN_CM = 0;
-export const WATER_MAX_CM = Math.round(PROFILE_DEPTH * 100) - 40;
+// Sedikit melewati terendah yang tercatat (94–98 cm), untuk lahan yang dikeringkan.
+export const WATER_MAX_CM = 120;
 
 type Props = {
   hours: number;

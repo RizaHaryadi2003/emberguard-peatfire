@@ -8,9 +8,10 @@
 //
 // Semua besaran dinyatakan dalam satuan nyata (meter dan jam) sehingga angka
 // yang muncul di antarmuka — kedalaman bara, laju rambat, hari ke-berapa —
-// dapat dibaca langsung. Nilai tetapannya bersifat ilustratif: besarannya
-// dipilih agar sesuai urutan besar (order of magnitude) pengamatan lapangan,
-// bukan hasil kalibrasi terhadap satu lokasi tertentu.
+// dapat dibaca langsung. Kadar air dan laju rambatnya dikalibrasi terhadap
+// pengukuran lapangan di Kalimantan Tengah (Usup dkk., 2004) dan ambang bara
+// Frandsen; rinciannya ada di docs/md/acuan-modul-02.md. Sisanya, seperti arah
+// rambat dan besar penurunan permukaan, adalah asumsi model.
 //
 // Berkas ini murni logika (tanpa three.js maupun React) agar dapat diuji
 // otomatis dan dirujuk sebagai algoritma pada naskah skripsi.
@@ -38,51 +39,67 @@ export const CELL_QUENCHED = 3;
 
 export type CellState = typeof CELL_INTACT | typeof CELL_SMOLDER | typeof CELL_ASH | typeof CELL_QUENCHED;
 
+/** Batas antara bara gambut permukaan dan bara gambut dalam (m); Usup dkk. (2004). */
+export const SURFACE_PEAT_DEPTH = 0.2;
+
+/** Laju rambat mendatar rata-rata yang terukur (cm/jam); Usup dkk. (2004), Tabel 3. */
+export const MEASURED_SPREAD_CM_PER_HOUR = { surface: 3.83, deep: 1.29 };
+
 /**
- * Sifat bakar tiap tingkat kematangan gambut.
- * - `burnHours`: lama satu sel habis terbakar pada kondisi paling kering (jam).
- * - `spreadPerHour`: kecenderungan menyalakan sel tetangga tiap jam (0–1).
- * Gambut fibrik paling berpori sehingga paling cepat menyambar, sedangkan
- * saprik lebih padat: merambat lambat tetapi baranya bertahan lebih lama.
+ * Sifat bakar menurut kedalaman, mengikuti pembagian Usup dkk. (2004).
+ * - `burnHours`: lama satu sel habis terbakar (jam). Permukaan mengikuti suhu
+ *   yang bertahan 4–5 jam (Usup dkk.); dalam mengikuti 12–17 jam pada
+ *   Santoso dkk. (2022).
+ * - `spreadPerHour`: peluang menyalakan sel tetangga tiap jam, dikalibrasi agar
+ *   laju yang terbentuk sama dengan `MEASURED_SPREAD_CM_PER_HOUR`.
  */
-export const LAYER_BURN: Record<PeatLayerId, { burnHours: number; spreadPerHour: number }> = {
-  fibrik: { burnHours: 8, spreadPerHour: 0.26 },
-  hemik: { burnHours: 13, spreadPerHour: 0.18 },
-  saprik: { burnHours: 22, spreadPerHour: 0.12 },
-  mineral: { burnHours: Infinity, spreadPerHour: 0 },
+export const ZONE_BURN = {
+  surface: { burnHours: 5, spreadPerHour: 0.75 },
+  deep: { burnHours: 14, spreadPerHour: 0.28 },
 };
 
 /**
- * Batas kelembapan (0–1). Di atas nilai ini gambut tidak dapat dinyalakan dan
- * bara yang sudah ada akan padam. Inilah sebabnya muka air tanah menentukan
- * sampai kedalaman mana kebakaran gambut mungkin terjadi.
+ * Kadar air gambut dalam fraksi berat kering (1 berarti 100%). Nilainya dari
+ * profil yang diukur Usup dkk. (2004), Gbr. 12: permukaan ± 100%, kedalaman
+ * 10–40 cm ± 120%, dan lebih dalam lagi melonjak ke ± 220%.
  */
-export const MOISTURE_LIMIT = 0.55;
+export const MOISTURE_DRIEST = 1;
+export const MOISTURE_UNSATURATED = 1.2;
+export const MOISTURE_SATURATED = 2.2;
 
 /**
- * Tinggi naiknya air kapiler di atas muka air tanah (m). Gambut tepat di atas
- * muka air masih lembap; makin ke atas makin kering sampai benar-benar kering
- * pada ketinggian ini.
+ * Di atas ambang ini gambut tidak dapat dinyalakan dan bara yang sudah ada akan
+ * padam. Frandsen (1987) memberi 110% untuk gambut umumnya dan 130% untuk
+ * permukaan hutan rawa gambut (dalam Usup dkk., 2004). Dipakai 130%, karena
+ * bara memang teramati hidup pada kadar air ± 120%.
  */
-export const CAPILLARY_RISE = 0.5;
+export const MOISTURE_LIMIT = 1.3;
+
+/** Kedalaman lapisan paling atas yang lebih kering daripada di bawahnya (m). */
+const DRY_TOP_DEPTH = 0.1;
+
+/**
+ * Tebal zona di atas muka air tanah yang masih dibasahi air tanah (m). Pada
+ * profil Usup kadar air melonjak mulai 40 cm; dengan muka air terendah ± 95 cm,
+ * zona itu setebal ± 55 cm.
+ */
+export const CAPILLARY_RISE = 0.55;
 
 /** Lama bara bertahan dalam keadaan terlalu lembap sebelum padam (jam). */
 export const QUENCH_HOURS = 3;
 
 /** Progres bakar minimum sebelum satu sel mampu menyalakan tetangganya. */
-const IGNITE_THRESHOLD = 0.3;
+const IGNITE_THRESHOLD = 0.1;
+
+/** Bobot arah penyalaan. Yang mendatar sudah terkalibrasi; yang lain asumsi model. */
+const SPREAD_WEIGHT = { down: 0.6, side: 1, up: 0.3 };
 
 /**
- * Kedalaman acuan pembatasan oksigen (m). Oksigen masuk lewat permukaan dan
- * lewat rongga bekas terbakar, jadi bara yang jauh di bawah rongga melambat.
+ * Pengali peluang bara permukaan masuk ke lapisan dalam. Usup dkk. mencatat api
+ * permukaan bergerak zig-zag mencari tempat yang cocok untuk turun, jadi tidak
+ * semua titik permukaan menjadi bara dalam.
  */
-const OXYGEN_DEPTH = 1.0;
-
-/** Batas bawah faktor oksigen: bara dalam tetap hidup, hanya sangat lambat. */
-const OXYGEN_FLOOR = 0.18;
-
-/** Bobot arah penyalaan: ke bawah paling mudah, ke atas paling sulit. */
-const SPREAD_WEIGHT = { down: 1, side: 0.8, up: 0.42 };
+const DEEP_ENTRY = 0.04;
 
 /**
  * Bagian volume yang hilang saat gambut menjadi abu. Rongga inilah yang
@@ -174,6 +191,8 @@ export class SmolderSim {
   private readonly wetTime: Float32Array;
   /** Lapisan gambut tiap baris. */
   private readonly rowLayer: PeatLayerId[];
+  /** Baris yang termasuk bara gambut dalam. */
+  private readonly rowDeep: boolean[];
   /**
    * Penampung sel penyebar, dialokasikan sekali seumur hidup simulasi.
    * Dipakai ulang tiap langkah agar tidak ada sampah memori yang menumpuk —
@@ -201,6 +220,7 @@ export class SmolderSim {
       const layer = getLayerAtDepth((row + 0.5) * CELL_H);
       return layer ? layer.id : "mineral";
     });
+    this.rowDeep = Array.from({ length: GRID_ROWS }, (_, row) => (row + 0.5) * CELL_H >= SURFACE_PEAT_DEPTH);
     this.rand = seeded(seed);
     this.reset(seed);
   }
@@ -299,15 +319,34 @@ export class SmolderSim {
     return lit;
   }
 
-  /** Kelembapan gambut pada kedalaman `depth` (m) untuk keadaan air saat ini. */
+  /** Kadar air (fraksi berat kering) pada kedalaman `depth` untuk keadaan air saat ini. */
   moistureAtDepth(depth: number): number {
-    // Di bawah muka air tanah gambut jenuh; di atasnya mengering bertahap
-    // sejauh air kapiler masih sampai.
+    // Di bawah muka air tanah gambut jenuh; di atasnya menurun sejauh air
+    // tanah masih sampai, lalu mendatar pada kadar air lapisan tak jenuh.
     const above = this.waterTable - depth;
-    const base = above <= 0 ? 1 : Math.max(0, 1 - above / CAPILLARY_RISE);
+    let base = MOISTURE_SATURATED;
+    if (above > 0) {
+      const reach = Math.max(0, 1 - above / CAPILLARY_RISE);
+      base = MOISTURE_UNSATURATED + (MOISTURE_SATURATED - MOISTURE_UNSATURATED) * reach;
+      // Lapisan paling atas lebih kering daripada di bawahnya.
+      if (depth < DRY_TOP_DEPTH) base -= (MOISTURE_UNSATURATED - MOISTURE_DRIEST) * (1 - depth / DRY_TOP_DEPTH);
+    }
     // Air siraman hanya membasahi lapisan tipis paling atas.
-    const wetted = depth < DOUSE_DEPTH ? this.douse * (1 - depth / DOUSE_DEPTH) : 0;
-    return Math.min(1, base + wetted);
+    const wetted = depth < DOUSE_DEPTH ? this.douse * (1 - depth / DOUSE_DEPTH) * (MOISTURE_SATURATED - MOISTURE_DRIEST) : 0;
+    return Math.min(MOISTURE_SATURATED, base + wetted);
+  }
+
+  /** Kadar air yang diratakan ke 0 (terkering) sampai 1 (jenuh). */
+  private wetnessOf(moisture: number): number {
+    return Math.max(0, Math.min(1, (moisture - MOISTURE_DRIEST) / (MOISTURE_SATURATED - MOISTURE_DRIEST)));
+  }
+
+  /**
+   * Pengali laju menurut kadar air. Laju terukur berlaku pada kadar air lapangan
+   * (sampai ± 120%), lalu melemah sampai nol tepat di ambang bara.
+   */
+  private drynessOf(moisture: number): number {
+    return Math.max(0, Math.min(1, (MOISTURE_LIMIT - moisture) / (MOISTURE_LIMIT - MOISTURE_UNSATURATED)));
   }
 
   private updateMoisture(): void {
@@ -317,22 +356,6 @@ export class SmolderSim {
     }
   }
 
-  /**
-   * Faktor oksigen pada satu sel (0–1). Oksigen masuk dari permukaan dan dari
-   * rongga bekas terbakar di atasnya, sehingga bara yang jauh di bawah rongga
-   * membakar makin lambat.
-   */
-  private oxygenAt(col: number, row: number): number {
-    // Rongga terdalam yang menyambung dari permukaan pada kolom ini.
-    let voidDepth = 0;
-    for (let r = 0; r < row; r++) {
-      if (this.state[this.index(col, r)] !== CELL_ASH) break;
-      voidDepth = this.depthOfRow(r);
-    }
-    const buried = Math.max(0, this.depthOfRow(row) - voidDepth);
-    return Math.max(OXYGEN_FLOOR, 1 - buried / OXYGEN_DEPTH);
-  }
-
   /** Coba nyalakan satu sel tetangga. */
   private trySpread(col: number, row: number, chance: number): void {
     if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return;
@@ -340,9 +363,7 @@ export class SmolderSim {
     if (this.state[i] !== CELL_INTACT || this.fuel[i] <= 0) return;
     const m = this.moisture[i];
     if (m >= MOISTURE_LIMIT) return;
-    // Makin kering makin mudah tersambar.
-    const dryness = 1 - m / MOISTURE_LIMIT;
-    if (this.rand() < chance * dryness) {
+    if (this.rand() < chance * this.drynessOf(m)) {
       this.state[i] = CELL_SMOLDER;
       this.wetTime[i] = 0;
     }
@@ -365,7 +386,7 @@ export class SmolderSim {
     // justru padam di langkah ini: jam itu ia memang masih menyala.
     let burning = 0;
     for (let row = 0; row < GRID_ROWS; row++) {
-      const burn = LAYER_BURN[this.rowLayer[row]];
+      const burn = this.rowDeep[row] ? ZONE_BURN.deep : ZONE_BURN.surface;
       for (let col = 0; col < GRID_COLS; col++) {
         const i = this.index(col, row);
         if (this.state[i] !== CELL_SMOLDER) continue;
@@ -383,9 +404,7 @@ export class SmolderSim {
         }
         this.wetTime[i] = Math.max(0, this.wetTime[i] - dt);
 
-        const dryness = 1 - m / MOISTURE_LIMIT;
-        const rate = (dt / burn.burnHours) * dryness * this.oxygenAt(col, row);
-        this.progress[i] += rate;
+        this.progress[i] += (dt / burn.burnHours) * this.drynessOf(m);
         if (this.progress[i] >= 1) {
           this.progress[i] = 1;
           this.state[i] = CELL_ASH;
@@ -399,9 +418,10 @@ export class SmolderSim {
       const i = spreaders[n];
       const col = i % GRID_COLS;
       const row = (i - col) / GRID_COLS;
-      const burn = LAYER_BURN[this.rowLayer[row]];
-      const k = burn.spreadPerHour * dt * this.oxygenAt(col, row);
-      this.trySpread(col, row + 1, k * SPREAD_WEIGHT.down);
+      const deep = this.rowDeep[row];
+      const k = (deep ? ZONE_BURN.deep : ZONE_BURN.surface).spreadPerHour * dt;
+      const entersDeep = !deep && row + 1 < GRID_ROWS && this.rowDeep[row + 1];
+      this.trySpread(col, row + 1, k * SPREAD_WEIGHT.down * (entersDeep ? DEEP_ENTRY : 1));
       this.trySpread(col - 1, row, k * SPREAD_WEIGHT.side);
       this.trySpread(col + 1, row, k * SPREAD_WEIGHT.side);
       this.trySpread(col, row - 1, k * SPREAD_WEIGHT.up);
@@ -524,7 +544,7 @@ export class SmolderSim {
       const o = i * 4;
       target[o] = Math.round(ash * 255);
       target[o + 1] = Math.round(heat * 255);
-      target[o + 2] = Math.round(this.moisture[i] * 255);
+      target[o + 2] = Math.round(this.wetnessOf(this.moisture[i]) * 255);
       target[o + 3] = Math.round(Math.min(1, char) * 255);
     }
   }
@@ -551,7 +571,7 @@ export class SmolderSim {
       st === CELL_SMOLDER
         ? Math.round(420 + Math.sin(Math.PI * Math.min(1, this.progress[i])) * 180)
         : st === CELL_ASH
-          ? Math.round(120 + 60 * (1 - this.moisture[i]))
+          ? Math.round(120 + 60 * (1 - this.wetnessOf(this.moisture[i])))
           : st === CELL_QUENCHED
             ? 45
             : 28;

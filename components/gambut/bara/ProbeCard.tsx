@@ -43,7 +43,7 @@ export default function ProbeCard({ probe, onClose }: { probe: ProbeResult; onCl
           <dd className="mt-0.5 text-xs tabular-nums text-white/90">{probe.temperature} °C</dd>
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">Kelembapan</dt>
+          <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">Kadar air</dt>
           <dd className="mt-0.5 text-xs tabular-nums text-white/90">{Math.round(probe.moisture * 100)} %</dd>
         </div>
         <div>

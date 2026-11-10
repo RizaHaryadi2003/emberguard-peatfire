@@ -45,7 +45,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
   {
     number: "02",
     title: "Merambat dalam gelap",
-    body: "Bara menjalar ke samping dan turun ke dalam, mengikuti gambut yang kering. Ia tidak butuh angin dan tidak butuh banyak oksigen, jadi ia bekerja siang dan malam. Majukan waktu dan geser muka air tanah untuk melihat apa yang menentukan seberapa dalam dan seberapa cepat bara merambat.",
+    body: "Bara menjalar ke samping dan turun ke dalam. Mula-mula cepat di 20 cm teratas, lalu sebagian masuk ke lapisan dalam dan melambat sampai separuh atau sepertiganya. Majukan waktu dan geser muka air tanah untuk melihat sampai sedalam apa bara masih bisa hidup.",
     task: "Majukan waktu sampai bara berumur dua hari.",
     fact: { value: "Berminggu-minggu", caption: "Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama" },
   },

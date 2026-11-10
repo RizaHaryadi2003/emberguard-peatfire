@@ -26,11 +26,23 @@ const BaraScene = dynamic(() => import("./scene/BaraScene"), { ssr: false });
 
 const MODULE = GAMBUT_MODULES[1];
 
-/** Muka air tanah awal: gambut sudah dikeringkan sehingga dapat terbakar. */
-const START_WATER_CM = 120;
+/**
+ * Muka air tanah awal (cm): sedalam yang terendah pada catatan 1993–2002 di
+ * hutan rawa gambut Palangka Raya, 94–98 cm (Usup dkk., 2004, Gbr. 5).
+ */
+const START_WATER_CM = 95;
 
-/** Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS). */
-const ACT_SPEED = [0, 2, 2, 2];
+/**
+ * Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS).
+ *
+ * "Lambat", bukan "Sedang": dengan laju rambat lapangan, bara pada bongkahan
+ * selebar 4,4 m habis sendiri dalam beberapa hari simulasi, jadi pada kecepatan
+ * yang lebih tinggi ia sudah padam sebelum pembaca selesai membaca babaknya.
+ */
+const ACT_SPEED = [0, 1, 1, 1];
+
+/** Jam simulasi saat waktu dihentikan otomatis pada dua babak pertama. */
+const FIRST_PAUSE_HOURS = 48;
 
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;
@@ -87,6 +99,7 @@ export default function BaraModule() {
 
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
   const hintRef = useRef<LayerHintHandle>(null);
+  const pausedOnce = useRef(false);
 
   // Salurkan keadaan antarmuka ke adegan 3D (dibaca tiap bingkai).
   useEffect(() => {
@@ -274,6 +287,7 @@ export default function BaraModule() {
     setSource(null);
     setIgnited(false);
     setSpeedIndex(0);
+    pausedOnce.current = false;
     setWaterCm(START_WATER_CM);
     setView("permukaan");
     setProbe(null);
@@ -342,7 +356,15 @@ export default function BaraModule() {
     drag.current = null;
   }, []);
 
-  const handleStats = useCallback((next: SmolderStats) => setStats(next), []);
+  // Sampai hari ke-2, waktu berhenti sendiri supaya pembaca sempat pindah babak
+  // selagi baranya masih hidup. Sekali saja, jadi pembaca tetap bisa melanjutkan.
+  const handleStats = useCallback((next: SmolderStats) => {
+    setStats(next);
+    if (!pausedOnce.current && stateRef.current.act <= 1 && next.hours >= FIRST_PAUSE_HOURS) {
+      pausedOnce.current = true;
+      setSpeedIndex(0);
+    }
+  }, []);
   const handleReady = useCallback(() => setReady(true), []);
 
   return (
