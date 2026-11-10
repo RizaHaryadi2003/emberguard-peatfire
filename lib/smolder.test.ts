@@ -13,6 +13,7 @@ import {
   MEASURED_SPREAD_CM_PER_HOUR,
   MOISTURE_LIMIT,
   MOISTURE_SATURATED,
+  resurfacingSettled,
   smoothField,
   SmolderSim,
   SURFACE_PEAT_DEPTH,
@@ -199,6 +200,48 @@ describe("atap tanah dan bara yang muncul lagi", () => {
     sim.reset();
     expect(sim.stats.collapseX).toBeNull();
     expect(sim.stats.resurfaceX).toBeNull();
+  });
+});
+
+describe("angka untuk antarmuka", () => {
+  it("mengingat kedalaman terdalam setelah bara padam", () => {
+    const { sim } = ignited(0.95);
+    jalan(sim, 2);
+    const terdalam = sim.stats.frontDepth;
+    expect(terdalam).toBeGreaterThan(0);
+    sim.setWaterTable(0);
+    jalan(sim, 1);
+    expect(sim.stats.frontDepth).toBe(0);
+    expect(sim.stats.maxDepth).toBeGreaterThanOrEqual(terdalam);
+  });
+
+  it("melupakan kedalaman terdalam saat diulang", () => {
+    const { sim } = ignited(0.95);
+    jalan(sim, 2);
+    sim.reset();
+    expect(sim.stats.maxDepth).toBe(0);
+  });
+
+  it("tidak menampilkan laju rambat sebelum setengah hari", () => {
+    const { sim } = ignited(0.95);
+    while (sim.stats.hours < 6) sim.advance(1);
+    sim.collect();
+    expect(sim.stats.spreadCmPerDay).toBe(0);
+  });
+
+  it("laju rambat yang tampil tidak melewati maksimum lapangan", () => {
+    const { sim } = ignited(0.95);
+    for (let jam = 0; jam < 120; jam += 6) {
+      jalan(sim, 0.25);
+      expect(sim.stats.spreadCmPerDay).toBeLessThanOrEqual(156);
+    }
+  });
+
+  it("menganggap Babak 03 selesai saat bara muncul lagi atau sudah habis", () => {
+    const { sim } = ignited(0.95);
+    expect(resurfacingSettled(sim.stats)).toBe(false);
+    expect(resurfacingSettled({ ...sim.stats, resurfaceX: 1.4 })).toBe(true);
+    expect(resurfacingSettled({ ...sim.stats, extinguished: true })).toBe(true);
   });
 });
 

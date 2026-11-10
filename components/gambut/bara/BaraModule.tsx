@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
 import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
-import { SmolderSim, type SmolderStats } from "@/lib/smolder";
+import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
 import IgnitionPicker from "./IgnitionPicker";
 import ControlDock, { WATER_MAX_CM } from "./ControlDock";
@@ -52,7 +52,7 @@ const HOOK_SWIPE = 30;
 const ACT_HINT = [
   "Sulut permukaan untuk melanjutkan.",
   "Butuh dua hari perjalanan waktu untuk melanjutkan.",
-  "Siram permukaan lalu buka tampilan termal untuk melanjutkan.",
+  "Siram, buka tampilan termal, lalu tunggu sampai bara muncul lagi.",
   "Naikkan muka air tanah sampai seluruh bara padam.",
 ];
 
@@ -334,7 +334,12 @@ export default function BaraModule() {
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
-  const actDone = [ignited, ignited && stats.hours >= 48, dousedOnce && thermalSeen, stats.extinguished && rewetOnce];
+  const actDone = [
+    ignited,
+    ignited && stats.hours >= 48,
+    dousedOnce && thermalSeen && resurfacingSettled(stats),
+    stats.extinguished && rewetOnce,
+  ];
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
 
   const goToAct = (next: number) => {

@@ -145,6 +145,9 @@ export const DOUSE_DECAY_HOURS = 60;
 /** Kedalaman yang benar-benar tersentuh air siraman dari permukaan (m). */
 export const DOUSE_DEPTH = 0.25;
 
+/** Lama menyala terpendek sebelum laju rambat ditampilkan (hari). */
+const MIN_SPREAD_DAYS = 0.5;
+
 /** Kedalaman bara yang asapnya masih terlihat di permukaan (m). */
 export const VISIBLE_SMOKE_DEPTH = 0.55;
 
@@ -167,6 +170,8 @@ export type SmolderStats = {
   active: number;
   /** Kedalaman bara terdalam (m); 0 bila tidak ada bara. */
   frontDepth: number;
+  /** Kedalaman terdalam yang pernah dicapai bara (m), juga setelah padam. */
+  maxDepth: number;
   /** Kedalaman rata-rata bara yang sedang aktif (m). */
   meanDepth: number;
   /** Lebar daerah yang sudah terbakar dari ujung ke ujung (m). */
@@ -195,6 +200,7 @@ function emptyStats(): SmolderStats {
     burningHours: 0,
     active: 0,
     frontDepth: 0,
+    maxDepth: 0,
     meanDepth: 0,
     burnedWidth: 0,
     spreadCmPerDay: 0,
@@ -245,6 +251,7 @@ export class SmolderSim {
   /** Atap yang sudah runtuh. */
   private readonly roofFallen = new Uint8Array(ROOFS.length);
   private collapseX: number | null = null;
+  private maxDepth = 0;
   private resurfaceX: number | null = null;
 
   stats: SmolderStats = emptyStats();
@@ -303,6 +310,7 @@ export class SmolderSim {
     this.roofFallen.fill(0);
     this.collapseX = null;
     this.resurfaceX = null;
+    this.maxDepth = 0;
     this.state.fill(CELL_INTACT);
     this.progress.fill(0);
     this.wetTime.fill(0);
@@ -596,13 +604,17 @@ export class SmolderSim {
     const width = maxCol >= minCol ? (maxCol - minCol + 1) * CELL_W : 0;
     // Laju rambat diukur dari lebar daerah terbakar, dibagi dua karena bara
     // merambat ke kiri dan ke kanan dari titik sulut.
-    const spread = days > 0.04 ? (width * 100) / 2 / days : 0;
+    // Baru dihitung setelah setengah hari: sebelum itu lebarnya masih didominasi
+    // titik sulut, sehingga hasil baginya jauh di atas laju yang sebenarnya.
+    const spread = days >= MIN_SPREAD_DAYS ? (width * 100) / 2 / days : 0;
+    this.maxDepth = Math.max(this.maxDepth, deepest);
 
     this.stats = {
       hours: this.stats.hours,
       burningHours: this.stats.burningHours,
       active,
       frontDepth: deepest,
+      maxDepth: this.maxDepth,
       meanDepth: active > 0 ? depthSum / active : 0,
       burnedWidth: width,
       spreadCmPerDay: spread,
@@ -736,6 +748,14 @@ export function smoothField(src: Uint8Array, dst: Uint8Array): void {
       }
     }
   }
+}
+
+/**
+ * Bara sudah sempat muncul lagi, atau sudah habis sehingga tidak akan muncul.
+ * Syarat kedua mencegah pembaca terkunci di Babak 03 bila bara tidak menyeberang.
+ */
+export function resurfacingSettled(stats: SmolderStats): boolean {
+  return stats.resurfaceX !== null || stats.extinguished;
 }
 
 export function formatDay(hours: number): string {

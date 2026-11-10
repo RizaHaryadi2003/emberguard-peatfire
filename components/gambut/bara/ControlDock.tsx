@@ -65,16 +65,10 @@ export default function ControlDock({
     <div className="rounded-3xl border border-white/10 bg-black/45 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:651px)]:p-3.5 [@media(min-height:901px)]:p-4 [@media(min-height:901px)]:sm:p-5">
       {/* Waktu */}
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
-            <Clock size={12} aria-hidden="true" />
-            Waktu berjalan
-          </p>
-          <p className="mt-1 whitespace-nowrap font-playfair text-xl italic leading-none text-white [@media(min-height:901px)]:text-2xl">
-            {formatDay(hours)}
-            <span className="ml-2 font-sans text-[11px] not-italic text-white/50">{formatElapsed(hours)}</span>
-          </p>
-        </div>
+        <p className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+          <Clock size={12} aria-hidden="true" />
+          Waktu
+        </p>
         <div className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
           {TIME_SPEEDS.map((speed, i) => (
             <button
@@ -93,6 +87,10 @@ export default function ControlDock({
           ))}
         </div>
       </div>
+      <p className="mt-1 whitespace-nowrap font-playfair text-xl italic leading-none text-white [@media(min-height:901px)]:text-2xl">
+        {formatDay(hours)}
+        <span className="ml-2 font-sans text-[11px] not-italic text-white/50">{formatElapsed(hours)}</span>
+      </p>
 
       {/* Muka air tanah */}
       <div className="relative mt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:901px)]:mt-5">

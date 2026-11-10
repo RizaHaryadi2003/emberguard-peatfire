@@ -47,7 +47,7 @@ export default function IgnitionPicker({ selected, onSelect, ignited, fizzled }:
       </div>
       <p className="mt-3 text-xs leading-relaxed text-white/70">
         {ignited
-          ? "Nyalanya sudah mati. Yang tersisa adalah bara di dalam gambut."
+          ? "Panasnya sudah masuk ke gambut. Setelah nyala ini habis, baranya tetap hidup."
           : fizzled
             ? "Titik panasnya hilang sendiri. Coba api yang bertahan lebih lama."
           : selected

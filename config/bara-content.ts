@@ -64,7 +64,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita, terus melebarkan rongga sampai atap tanahnya runtuh.",
     // Usup dkk. (2004), hlm. 13.
     lead: "Bara membakar di bawah dan menyisakan atap tanah. Atap bisa runtuh, dan bara muncul lagi di tempat lain.",
-    task: "Siram permukaan, lalu bandingkan tampilan permukaan dengan tampilan termal.",
+    task: "Siram permukaan, buka tampilan termal, lalu tunggu sampai bara muncul lagi.",
     // Usup dkk. (2004), hlm. 12.
     fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering (Usup dkk., 2004)" },
   },
@@ -166,10 +166,13 @@ export const SUPPRESSION_TEXT = {
 
 /** Kartu ringkasan yang muncul setelah bara berhasil dipadamkan. */
 export const BARA_SUMMARY = {
-  title: "Yang tersisa",
-  lead: "Bara berhasil dipadamkan. Ini jejak yang ditinggalkannya pada satu bongkahan gambut selebar 4,4 meter:",
-  closing:
-    "Semua ini dimulai dari satu sulutan di permukaan dan berlanjut karena gambutnya kering. Menjaga gambut tetap basah jauh lebih murah daripada memadamkannya.",
+  title: BARA_HOOK.question,
+  /** Menjawab pertanyaan pembuka dengan kejadian yang baru saja dilihat pembaca. */
+  answer: (depthCm: number, resurfaced: boolean) =>
+    `Dari bara tanpa api, sedalam ${depthCm} cm di dalam gambut. Ia berhenti di gambut yang masih basah${
+      resurfaced ? ", dan muncul lagi di tempat lain" : ""
+    }.`,
+  closing: "Makin kering gambutnya, makin dalam bara bisa hidup. Karena itu muka air tanah harus dijaga.",
 } as const;
 
 /** Nama keadaan sel untuk kartu pemeriksaan. */

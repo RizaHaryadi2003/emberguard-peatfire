@@ -160,7 +160,14 @@ lambat untuk bara permukaan. Kedalamannya melewati kisaran 20–50 cm.
 bara permukaan dan 1,25 cm/jam untuk bara dalam. Pada muka air 95 cm bara
 berhenti di 39–45 cm, pada 60 cm hanya 9 cm, dan pada 40 cm tidak dapat menyala.
 
-Asumsi model yang tidak bersumber dari acuan: arah rambat, peluang bara turun ke
+Batas kalibrasi yang harus ditulis di naskah: profil kadar air diukur di petak 1
+dan 2 pada 8 Agustus 2002, sedangkan muka air 95 cm berasal dari hutan alami pada
+bulan lain, jadi menggabungkan keduanya adalah asumsi. Bara yang tidak menyala
+pada muka air 40 cm adalah hasil kalibrasi itu, bukan bukti atas PP 57/2016.
+Siraman di simulasi juga tidak pernah memadamkan bara dalam, padahal Santoso dkk.
+(2022) mencatat air yang cukup dapat memadamkannya.
+
+Asumsi model yang tidak bersumber dari acuan: besar penurunan permukaan, arah rambat, peluang bara turun ke
 lapisan dalam, serta letak, lebar, dan syarat runtuh atap tanah.
 
 ---

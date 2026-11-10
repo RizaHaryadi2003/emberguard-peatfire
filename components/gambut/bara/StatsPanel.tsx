@@ -33,7 +33,7 @@ export default function StatsPanel({ stats, fact, compact }: Props) {
     [ArrowDownToLine, "Kedalaman bara", stats.frontDepth > 0 ? `${(stats.frontDepth * 100).toFixed(0)} cm` : "—"],
     [MoveHorizontal, "Laju rambat", stats.spreadCmPerDay > 0 ? `${stats.spreadCmPerDay.toFixed(0)} cm/hari` : "—"],
     [Flame, "Gambut habis", `${(stats.consumed * 100).toFixed(1)} %`],
-    [ChevronsDown, "Permukaan turun", stats.maxSubsidence > 0 ? `${(stats.maxSubsidence * 100).toFixed(0)} cm` : "—"],
+    [ChevronsDown, "Permukaan turun (model)", stats.maxSubsidence > 0 ? `${(stats.maxSubsidence * 100).toFixed(0)} cm` : "—"],
     [Cloud, "Asap di permukaan", stats.surfaceSmoke > 0.02 ? `${Math.round(stats.surfaceSmoke * 100)} %` : "tidak terlihat"],
   ];
 

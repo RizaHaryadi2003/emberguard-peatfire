@@ -28,10 +28,12 @@ const HOOK_VENTS: Hot[] = [
   { x: -0.95, depth: 0.25 },
   { x: 0.15, depth: 0.2 },
   { x: 1.2, depth: 0.3 },
+  { x: -0.35, depth: 0.15 },
+  { x: 0.7, depth: 0.2 },
 ];
 
-/** Kepekatan asap pada layar pembuka (0–1). */
-const HOOK_SMOKE = 0.7;
+/** Pengali kepekatan asap pada layar pembuka; di atas 1 agar terbaca di latar kelabu. */
+const HOOK_SMOKE = 1.5;
 
 type Particle = { x: number; z: number; y: number; vy: number; life: number; maxLife: number; seed: number };
 
@@ -184,7 +186,8 @@ export default function SmokePlumes({
       // lalu menipis dan memucat ke atas.
       sprite.position.set(p.x + Math.sin(t * 0.3 + p.seed) * 0.25 * k + k * k * 0.6, p.y, p.z);
       sprite.scale.setScalar(0.3 + k * 2.4);
-      const pale = 0.34 + k * 0.28;
+      // Asap pembuka dibuat lebih terang agar terpisah dari latar hutan yang kelabu.
+      const pale = 0.34 + k * 0.28 + hookSmoke.current * 0.14;
       mat.color.setRGB(pale + steam * 0.45, pale * 0.95 + steam * 0.47, pale * 0.9 + steam * 0.5);
       mat.opacity = Math.pow(Math.sin(Math.PI * Math.pow(k, 0.6)), 1.4) * 0.4 * Math.max(smokeLevel, steam * 0.8);
       mat.rotation = p.seed + t * 0.05;
