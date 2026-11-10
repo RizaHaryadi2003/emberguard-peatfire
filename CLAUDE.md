@@ -13,6 +13,14 @@ rancangan. Jangan mengasumsikan apa pun dari isi proyek sebelumnya.
 - Dokumen skripsi, berkas administrasi, dan arsip pihak ketiga di dalam docs/
   tidak diikutsertakan ke repositori. Jangan mendaftarkannya secara paksa.
 
+## Perangkat
+
+- Laptop adalah tampilan utama. Rancangan, tata letak, dan pemeriksaan dimulai
+  dari sana.
+- Tablet dan ponsel mendapat tampilan terbatas dengan sengaja. Teks atau panel
+  boleh diringkas atau disembunyikan agar tidak tumpang tindih. Bagian yang
+  hilang di sana bukan kesalahan, jadi cek dulu di laptop sebelum memperbaikinya.
+
 ## Bahasa
 
 - Teks yang dilihat pengguna: Bahasa Indonesia.

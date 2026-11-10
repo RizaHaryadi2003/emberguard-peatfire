@@ -502,7 +502,23 @@ export default function BaraModule() {
           >
             {current.body}
           </p>
-          <p className="act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3">
+          {/* Inti penjelasan, tepat pada tinggi layar yang tidak memuat paragraf
+              di atasnya, jadi selalu ada satu penjelasan yang terbaca. Pada
+              babak padat ia menggantikan baris tugas, yang bunyinya sudah sama
+              dengan arahan di atas panah lanjut, sehingga tingginya tidak
+              bertambah dan tidak menyentuh panel kendali. */}
+          <p
+            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${
+              dense ? "[@media(max-height:860px)]:sm:block" : "[@media(max-height:700px)]:sm:block"
+            }`}
+          >
+            {current.lead}
+          </p>
+          <p
+            className={`act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3 ${
+              dense ? "[@media(max-height:860px)]:sm:hidden" : ""
+            }`}
+          >
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
           </p>

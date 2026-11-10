@@ -15,6 +15,11 @@ export type BaraAct = {
   title: string;
   /** Kalimat pengantar babak. */
   body: string;
+  /**
+   * Inti penjelasan dalam dua baris, untuk layar yang tidak muat `body`.
+   * Panjangnya dijaga agar tidak mendorong teks ke panel kendali.
+   */
+  lead: string;
   /** Tugas yang harus dilakukan pembaca agar babak berikutnya terbuka. */
   task: string;
   /** Angka kunci babak ini. */
@@ -38,29 +43,37 @@ export const BARA_ACTS: readonly BaraAct[] = [
     number: "01",
     title: "Api yang tinggal cukup lama",
     body: "Kebakaran gambut paling sering berawal dari api pembukaan lahan. Api yang besar saja tidak cukup: titik panas di gambut baru berkembang bila panasnya bertahan satu sampai dua jam. Kalau tidak, titik itu hilang sendiri. Yang bertahan masuk ke gambut dan berubah menjadi bara.",
+    // Usup dkk. (2004), hlm. 11.
+    lead: "Api harus menahan panasnya 1–2 jam di satu titik. Kalau tidak, titik panas di gambut hilang sendiri.",
     task: "Pilih cara api membakar, lalu klik permukaan gambut.",
     // Suhu sulut arang: Usup dkk. (2004), Tabel 1. Puncak lapangan: Santoso dkk. (2022).
-    fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C" },
+    fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C (Usup dkk., 2004; Santoso dkk., 2022)" },
   },
   {
     number: "02",
     title: "Merambat dalam gelap",
     body: "Bara menjalar ke samping dan turun ke dalam. Mula-mula cepat di 20 cm teratas, lalu sebagian masuk ke lapisan dalam dan melambat sampai separuh atau sepertiganya. Majukan waktu dan geser muka air tanah untuk melihat sampai sedalam apa bara masih bisa hidup.",
+    // Usup dkk. (2004), hlm. 10–13.
+    lead: "Bara cepat di 20 cm teratas, lalu melambat di lapisan dalam. Ia berhenti di gambut yang masih basah.",
     task: "Majukan waktu sampai bara berumur dua hari.",
-    fact: { value: "Berminggu-minggu", caption: "Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama" },
+    fact: { value: "Berminggu-minggu", caption: "Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama (Santoso dkk., 2022)" },
   },
   {
     number: "03",
     title: "Tak terlihat dari atas",
     body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita, terus melebarkan rongga sampai atap tanahnya runtuh.",
+    // Usup dkk. (2004), hlm. 13.
+    lead: "Bara membakar di bawah dan menyisakan atap tanah. Atap bisa runtuh, dan bara muncul lagi di tempat lain.",
     task: "Siram permukaan, lalu bandingkan tampilan permukaan dengan tampilan termal.",
     // Usup dkk. (2004), hlm. 12.
-    fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering" },
+    fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering (Usup dkk., 2004)" },
   },
   {
     number: "04",
     title: "Airnya harus sampai ke bara",
     body: "Bara berhenti bila air benar-benar sampai ke tempatnya. Di lahan gambut, rambatan bara dalam berhenti saat muka air tanah naik di akhir musim kering. Naikkan muka air tanah melewati kedalaman bara dan perhatikan baranya mati.",
+    // Usup dkk. (2004), hlm. 12–13.
+    lead: "Hujan saja sulit memadamkan bara dalam. Rambatannya berhenti saat muka air tanah naik sampai ke bara.",
     task: "Naikkan muka air tanah sampai seluruh bara padam.",
     fact: { value: "≤ 0,4 m", caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016)" },
   },
