@@ -8,6 +8,7 @@ import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
 import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
 import { BLOCK_WIDTH, type BaraState, type Subsidence } from "./baraState";
+import { readingArea } from "./viewFit";
 
 // Keterangan yang menempel pada bendanya di dalam adegan.
 //
@@ -202,10 +203,10 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     const water = sim.getWaterTable();
     if (water < PROFILE_DEPTH - 0.2) {
       list.push({
-        // Diletakkan di luar tepi kanan bongkahan supaya tidak menutupi
-        // penampang yang justru sedang dijelaskannya.
+        // Duduk di dekat tepi kanan penampang, sebab bongkahan yang dibesarkan
+        // sudah mengisi ruang sampai kolom teks di sebelahnya.
         id: "air",
-        x: narrow ? bounds.right - 0.15 : bounds.right + 0.75,
+        x: narrow ? bounds.right - 0.15 : bounds.right - 0.85,
         y: -water,
         text: narrow ? `Muka air −${Math.round(water * 100)} cm` : `Muka air tanah −${Math.round(water * 100)} cm`,
         tone: "water",
@@ -345,10 +346,11 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     // keduanya melebar ke seluruh lebar, dan yang tersisa hanyalah pita
     // mendatar di antara teks pengantar dan panel kendali — kira-kira sejajar
     // badan bongkahan.
-    const minX = size.width * (narrow ? 0.04 : 0.27);
-    const maxX = size.width * (narrow ? 0.96 : 0.82);
-    const minY = size.height * (narrow ? 0.38 : 0.1);
-    const maxY = size.height * (narrow ? 0.62 : 0.84);
+    const area = readingArea(size.width, size.height);
+    const minX = area ? area.left : size.width * (narrow ? 0.04 : 0.27);
+    const maxX = area ? area.right : size.width * (narrow ? 0.96 : 0.82);
+    const minY = area ? area.top : size.height * (narrow ? 0.38 : 0.1);
+    const maxY = area ? area.bottom : size.height * (narrow ? 0.62 : 0.84);
 
     const taken: { l: number; r: number; t: number; b: number }[] = [];
     const visible: Marker[] = [];

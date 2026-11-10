@@ -7,6 +7,7 @@ import { PEAT_LAYERS } from "@/lib/peat";
 import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { getAtmosphere } from "@/lib/atmosphere";
 import { interfaceY } from "@/components/gambut/scene/terrain";
+import { createNoiseTexture } from "@/components/gambut/scene/noiseTexture";
 import {
   createFaceGrid,
   createHalfBody,
@@ -156,7 +157,8 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
 
     const contents = createLayerContentsTexture(CONTENTS_WIDTH[quality], anisotropy);
     const faceGeom = createFaceGrid();
-    const faceMaterial = createFaceMaterial(colors, normals, field, contents, sunDir);
+    const noiseTexture = createNoiseTexture();
+    const faceMaterial = createFaceMaterial(colors, normals, field, contents, noiseTexture, sunDir, quality === "high");
     faceMaterial.uniforms.uUvScale.value = UV_PER_METER;
 
     // Lapisan penutup gelap di belakang bidang potong. Memakai geometri bidang
@@ -167,7 +169,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
     // dan sela itu harus terbaca sebagai bayangan di dalam tanah.
     const backingMaterial = new THREE.MeshBasicMaterial({ color: "#1d150f" });
 
-    return { colors, normals, bodies, ribbon, contents, faceGeom, faceMaterial, backingMaterial };
+    return { colors, normals, bodies, ribbon, contents, noiseTexture, faceGeom, faceMaterial, backingMaterial };
   }, [textures, field, sunDir, anisotropy, quality]);
 
   useEffect(
@@ -181,6 +183,7 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
       res.ribbon.geom.dispose();
       res.ribbon.material.dispose();
       res.contents.dispose();
+      res.noiseTexture.dispose();
       res.faceGeom.dispose();
       res.faceMaterial.dispose();
       res.backingMaterial.dispose();
@@ -329,8 +332,6 @@ export default function CutBlock({ sim, stateRef, field, subsidence, quality, on
         material={res.faceMaterial}
         position-z={FACE_Z}
         onClick={handleProbe}
-        onPointerOver={() => void (document.body.style.cursor = "crosshair")}
-        onPointerOut={() => void (document.body.style.cursor = "")}
       />
 
       {/* Penutup gelap di belakang penampang, supaya rongga abu tidak bolong ke

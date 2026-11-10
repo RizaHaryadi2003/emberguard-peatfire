@@ -29,8 +29,8 @@ const KIND_ORDER: ContentKind[] = ["grain", "fiber", "leaf", "root", "twig", "pe
 
 /** Banyaknya benda per meter persegi bidang potong. */
 const DENSITY: Record<PeatLayerId, Partial<Record<ContentKind, number>>> = {
-  fibrik: { fiber: 110, leaf: 10, root: 4, twig: 3 },
-  hemik: { grain: 40, fiber: 60, leaf: 2, twig: 1 },
+  fibrik: { fiber: 110, leaf: 4, root: 4, twig: 3 },
+  hemik: { grain: 40, fiber: 60, leaf: 1, twig: 1 },
   saprik: { grain: 150, fiber: 6 },
   mineral: { grain: 260, pebble: 28 },
 };
@@ -40,10 +40,10 @@ const INTACT: Record<PeatLayerId, number> = { fibrik: 1, hemik: 0.45, saprik: 0.
 
 const PALETTE: Record<PeatLayerId, Partial<Record<ContentKind, string[]>>> = {
   fibrik: {
-    fiber: ["#c9a36b", "#b58a52", "#d9bd8a", "#8f6a3c"],
-    leaf: ["#7a5a2c", "#5f4a22", "#8d6a35"],
-    root: ["#6e4a2b", "#7d5733"],
-    twig: ["#4f3420", "#5d3f27"],
+    fiber: ["#a98a5e", "#94754c", "#b89b70", "#7c5e3a"],
+    leaf: ["#6a5230", "#574428", "#755a36"],
+    root: ["#634630", "#705038"],
+    twig: ["#4a3424", "#553c2a"],
   },
   hemik: {
     grain: ["#2a1c12", "#3a281a"],
@@ -152,7 +152,7 @@ function makeItem(kind: ContentKind, layer: PeatLayer, width: number, rand: Rand
       break;
     case "fiber":
       points = wander(x, d, lying, (0.12 + rand() * 0.28) * intact, 5, 0.7, rand, layer, width);
-      lineWidth = 0.008 + rand() * 0.006;
+      lineWidth = 0.005 + rand() * 0.006;
       break;
     case "leaf":
       points = leaf(x, d, 0.07 + rand() * 0.05, 0.03 + rand() * 0.02, lying, layer, width);
@@ -221,6 +221,15 @@ export function createLayerContentsTexture(canvasWidth: number, anisotropy: numb
     return path;
   };
 
+  /** Garis yang menipis ke kedua ujungnya, seperti serat dan akar sungguhan. */
+  const strokeTapered = (points: [number, number][], width: number) => {
+    for (let i = 1; i < points.length; i++) {
+      const along = (i - 0.5) / (points.length - 1);
+      ctx.lineWidth = width * (0.45 + 0.55 * Math.sin(Math.PI * along));
+      ctx.stroke(trace([points[i - 1], points[i]], false));
+    }
+  };
+
   for (const item of generateLayerContents()) {
     const isLine = LINE_KINDS.has(item.kind);
     const path = trace(item.points, !isLine);
@@ -229,37 +238,21 @@ export function createLayerContentsTexture(canvasWidth: number, anisotropy: numb
     if (item.kind !== "grain") {
       ctx.save();
       ctx.translate(shadowShift, shadowShift);
-      ctx.strokeStyle = ctx.fillStyle = "rgba(12, 7, 4, 0.6)";
-      if (isLine) {
-        ctx.lineWidth = item.width * scale * 1.35;
-        ctx.stroke(path);
-      } else {
-        ctx.fill(path);
-      }
+      ctx.strokeStyle = ctx.fillStyle = "rgba(12, 7, 4, 0.5)";
+      if (isLine) strokeTapered(item.points, item.width * scale * 1.3);
+      else ctx.fill(path);
       ctx.restore();
     }
 
     ctx.strokeStyle = ctx.fillStyle = item.color;
-    if (isLine) {
-      ctx.lineWidth = item.width * scale;
-      ctx.stroke(path);
-    } else {
-      ctx.fill(path);
-    }
+    if (isLine) strokeTapered(item.points, item.width * scale);
+    else ctx.fill(path);
 
-    if (item.kind === "root" || item.kind === "twig") {
-      ctx.strokeStyle = "rgba(255, 225, 180, 0.16)";
-      ctx.lineWidth = item.width * scale * 0.35;
-      ctx.stroke(path);
-    } else if (item.kind === "leaf") {
-      ctx.strokeStyle = "rgba(20, 12, 6, 0.45)";
-      ctx.lineWidth = Math.max(1, scale * 0.003);
-      ctx.stroke(trace([item.points[0], item.points[5]], false));
-    } else if (item.kind === "pebble") {
+    if (item.kind === "pebble") {
       // Sisi kerikil yang kena cahaya.
       const cx = item.points.reduce((sum, p) => sum + p[0], 0) / item.points.length;
       const cd = item.points.reduce((sum, p) => sum + p[1], 0) / item.points.length;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
       ctx.fill(
         trace(
           item.points.map(([x, d]): [number, number] => [cx + (x - cx) * 0.55 - 0.008, cd + (d - cd) * 0.55 - 0.01]),

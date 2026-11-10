@@ -250,7 +250,10 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
     const dryness = Math.min(1, Math.max(0, (sim.getWaterTable() - 0.2) / 0.7));
     res.dry.opacity = THREE.MathUtils.damp(res.dry.opacity, dryness * (1 - s.thermal), s.reducedMotion ? 30 : 2, dt);
     // Lantai hutan juga mendingin pada citra termal.
-    res.wet.color.setRGB(0.725, 0.761, 0.643).lerp(cold, s.thermal * 0.92);
+    // Tanah yang baru tersiram menggelap dan sedikit berkilap, lalu kembali pudar.
+    const soaked = sim.getDouse();
+    res.wet.roughness = 1 - soaked * 0.5;
+    res.wet.color.setRGB(0.725, 0.761, 0.643).multiplyScalar(1 - soaked * 0.35).lerp(cold, s.thermal * 0.92);
 
     const t = state.clock.elapsedTime;
     plants.forEach((p, i) => {
@@ -303,8 +306,6 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
           const local = e.object.worldToLocal(e.point.clone());
           onSurfaceClick((local.x + BLOCK_WIDTH / 2) / BLOCK_WIDTH);
         }}
-        onPointerOver={() => void (document.body.style.cursor = "pointer")}
-        onPointerOut={() => void (document.body.style.cursor = "")}
       />
       <mesh geometry={res.geom} material={res.dry} position-y={0.018} receiveShadow />
 

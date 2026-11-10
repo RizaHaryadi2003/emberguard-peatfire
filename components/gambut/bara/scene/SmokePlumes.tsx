@@ -154,10 +154,13 @@ export default function SmokePlumes({
       p.y += p.vy * dt;
       const k = p.life / p.maxLife;
       sprite.visible = true;
-      sprite.position.set(p.x + Math.sin(t * 0.3 + p.seed) * 0.25 * k, p.y, p.z);
-      sprite.scale.setScalar(0.35 + k * 1.9);
-      mat.color.setRGB(0.55 + steam * 0.4, 0.51 + steam * 0.42, 0.48 + steam * 0.45);
-      mat.opacity = Math.sin(Math.PI * k) * 0.4 * Math.max(smokeLevel, steam * 0.8);
+      // Asap melebar sambil naik dan makin terbawa angin, pekat dekat sumbernya
+      // lalu menipis dan memucat ke atas.
+      sprite.position.set(p.x + Math.sin(t * 0.3 + p.seed) * 0.25 * k + k * k * 0.6, p.y, p.z);
+      sprite.scale.setScalar(0.3 + k * 2.4);
+      const pale = 0.34 + k * 0.28;
+      mat.color.setRGB(pale + steam * 0.45, pale * 0.95 + steam * 0.47, pale * 0.9 + steam * 0.5);
+      mat.opacity = Math.pow(Math.sin(Math.PI * Math.pow(k, 0.6)), 1.4) * 0.4 * Math.max(smokeLevel, steam * 0.8);
       mat.rotation = p.seed + t * 0.05;
     });
 

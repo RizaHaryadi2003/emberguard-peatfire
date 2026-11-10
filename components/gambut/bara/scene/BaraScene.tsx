@@ -15,6 +15,8 @@ import { GRID_COLS, GRID_ROWS, smoothField, type SmolderSim, type SmolderStats }
 import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
 import WallDetails from "./WallDetails";
+import SurfaceFlame from "./SurfaceFlame";
+import { CAMERA_FOV, fitView, type ViewFit } from "./viewFit";
 import SmokePlumes from "./SmokePlumes";
 import WaterSpray from "./WaterSpray";
 import SceneLabels from "./SceneLabels";
@@ -53,6 +55,9 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
   const look = useRef(new THREE.Vector3(...CAMERA_POSES[0].target));
   const wantPos = useMemo(() => new THREE.Vector3(), []);
   const wantTarget = useMemo(() => new THREE.Vector3(), []);
+  const offset = useRef({ x: 0, y: 0 });
+  // Ukuran dihitung sekali per ukuran layar, bukan tiap bingkai.
+  const fits = useRef<{ key: string; list: (ViewFit | null)[] }>({ key: "", list: [] });
 
   useFrame((state, delta) => {
     const s = stateRef.current;
@@ -60,16 +65,20 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     const dt = Math.min(delta, 0.05);
     const pose = CAMERA_POSES[s.act] ?? CAMERA_POSES[0];
 
-    // Layar sempit butuh kamera lebih jauh agar penampang utuh terlihat.
-    // Angkanya sama dengan Modul 01, begitu pula paralaks kursornya.
-    const aspect = state.size.width / Math.max(1, state.size.height);
-    const zoom = aspect < 0.8 ? 1.7 : aspect < 1.3 ? 1.25 : 1;
-    const parallax = s.reducedMotion ? 0 : 1;
+    const { width, height } = state.size;
+    const key = `${width}x${height}`;
+    if (fits.current.key !== key) {
+      fits.current = { key, list: CAMERA_POSES.map((_, i) => fitView(i, width, height)) };
+    }
+    const fit = fits.current.list[s.act] ?? fits.current.list[0];
+
+    // Layar lebar memakai ukuran terbesar yang tidak menyentuh teks; layar
+    // sempit butuh kamera lebih jauh agar penampang utuh terlihat.
+    const aspect = width / Math.max(1, height);
+    const zoom = fit ? fit.zoom : aspect < 0.8 ? 1.7 : aspect < 1.3 ? 1.25 : 1;
 
     wantTarget.set(...pose.target);
     wantPos.set(...pose.pos).sub(wantTarget).multiplyScalar(zoom).add(wantTarget);
-    wantPos.x += state.pointer.x * 0.35 * parallax;
-    wantPos.y += state.pointer.y * 0.2 * parallax;
 
     const k = s.reducedMotion ? 30 : 2.2;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, wantPos.x, k, dt);
@@ -78,14 +87,25 @@ function CameraRig({ stateRef }: { stateRef: RefObject<BaraState> }) {
     look.current.lerp(wantTarget, 1 - Math.exp(-k * dt));
     camera.lookAt(look.current);
 
-    // Di layar lebar, gambar digeser ke kanan agar tidak tertutup panel teks.
+    // Gambar digeser ke tengah ruang yang bebas dari panel teks.
     const cam = camera as THREE.PerspectiveCamera;
-    const { width, height } = state.size;
-    const shift = aspect > 1.3 ? -width * 0.035 : 0;
+    const wantX = fit ? fit.offsetX : aspect > 1.3 ? -width * 0.035 : 0;
+    const wantY = fit ? fit.offsetY : 0;
+    const o = offset.current;
+    o.x = THREE.MathUtils.damp(o.x, wantX, k, dt);
+    o.y = THREE.MathUtils.damp(o.y, wantY, k, dt);
+    if (Math.abs(o.x - wantX) < 0.25) o.x = wantX;
+    if (Math.abs(o.y - wantY) < 0.25) o.y = wantY;
+
     const current = cam.view?.enabled ? cam.view : null;
-    if (shift && (current?.offsetX !== shift || current.fullHeight !== height)) {
-      cam.setViewOffset(width, height, shift, 0, width, height);
-    } else if (!shift && current) {
+    if (o.x || o.y) {
+      const same =
+        current?.offsetX === o.x &&
+        current?.offsetY === o.y &&
+        current?.fullWidth === width &&
+        current?.fullHeight === height;
+      if (!same) cam.setViewOffset(width, height, o.x, o.y, width, height);
+    } else if (current) {
       cam.clearViewOffset();
     }
   });
@@ -143,7 +163,7 @@ function Simulation({
 
     // Nyala permukaan surut sendiri setelah penyulutan; begitu pula semburan air.
     s.flame = Math.max(0, s.flame - dt * s.flameDecay);
-    s.spray = Math.max(0, s.spray - dt * 0.5);
+    s.spray = Math.max(0, s.spray - dt * 0.22);
 
     // Tampilan termal & kabut asap bergerak halus.
     const wantThermal = s.view === "termal" ? 1 : 0;
@@ -226,7 +246,7 @@ export default function BaraScene({
       shadows={profile.softShadow ? "percentage" : "basic"}
       dpr={[1, maxDpr]}
       frameloop={active ? "demand" : "never"}
-      camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
+      camera={{ fov: CAMERA_FOV, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
       gl={{ antialias: profile.antialias, powerPreference: "default" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -286,6 +306,7 @@ export default function BaraScene({
               />
               <WallDetails stateRef={stateRef} subsidence={subsidence} />
             </Suspense>
+            <SurfaceFlame stateRef={stateRef} />
             <SmokePlumes sim={sim} stateRef={stateRef} quality={quality} />
             <WaterSpray stateRef={stateRef} subsidence={subsidence} />
             <SceneLabels sim={sim} stateRef={stateRef} subsidence={subsidence} />
