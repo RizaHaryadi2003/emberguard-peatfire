@@ -96,7 +96,8 @@ function lajuPita(atas: number, bawah: number, jam: number) {
 
 describe("sesuai pengukuran lapangan", () => {
   it("bara permukaan merambat seperti rata-rata Usup dkk.", () => {
-    const laju = lajuPita(0, SURFACE_PEAT_DEPTH, 36);
+    // Pendek saja, sebelum bara permukaan tertahan atap tanah.
+    const laju = lajuPita(0, SURFACE_PEAT_DEPTH, 16);
     expect(laju).toBeGreaterThan(MEASURED_SPREAD_CM_PER_HOUR.surface * 0.85);
     expect(laju).toBeLessThan(MEASURED_SPREAD_CM_PER_HOUR.surface * 1.15);
   });
@@ -120,6 +121,84 @@ describe("sesuai pengukuran lapangan", () => {
 
   it("tidak dapat menyala bila muka air dijaga 40 cm", () => {
     expect(ignited(0.4).lit).toBe(false);
+  });
+});
+
+describe("atap tanah dan bara yang muncul lagi", () => {
+  /** Jalankan per jam sampai `syarat` terpenuhi; `selama` dipanggil tiap jam. */
+  function sampai(sim: SmolderSim, syarat: () => boolean, selama?: () => void) {
+    for (let jam = 0; jam < 15 * 24; jam++) {
+      sim.advance(1);
+      sim.collect();
+      if (syarat()) return true;
+      selama?.();
+    }
+    return false;
+  }
+
+  const baru = (benih: number) => {
+    const sim = new SmolderSim(benih);
+    sim.setWaterTable(0.95);
+    sim.ignite(0.5);
+    return sim;
+  };
+
+  /** Benih pertama yang atapnya runtuh; tidak semua percobaan mencapainya. */
+  const benihRuntuh = () =>
+    [17, 34, 51, 68, 85, 102].find((benih) => {
+      const sim = baru(benih);
+      return sampai(sim, () => sim.stats.collapseX !== null);
+    })!;
+
+  it("permukaan tertahan atap sampai atap itu runtuh", () => {
+    const kolomAtap = [Math.round(0.27 * GRID_COLS), Math.round(0.73 * GRID_COLS)];
+    const sim = baru(benihRuntuh());
+    const runtuh = sampai(
+      sim,
+      () => sim.stats.collapseX !== null,
+      () => kolomAtap.forEach((col) => expect(sim.subsidenceAt(col)).toBe(0)),
+    );
+    expect(runtuh).toBe(true);
+    const col = Math.round((sim.stats.collapseX! + 2.2) / CELL_W);
+    expect(sim.subsidenceAt(col)).toBeGreaterThan(0);
+  });
+
+  it("bara muncul lagi di seberang atap pada sebagian besar percobaan", () => {
+    let muncul = 0;
+    for (let n = 1; n <= 30; n++) {
+      const sim = baru(n * 17);
+      if (sampai(sim, () => sim.stats.resurfaceX !== null)) {
+        muncul++;
+        expect(Math.abs(sim.stats.resurfaceX!)).toBeGreaterThan(1);
+      }
+    }
+    expect(muncul).toBeGreaterThanOrEqual(20);
+  });
+
+  it("tidak terjadi bila air terlalu dangkal untuk bara dalam", () => {
+    const sim = new SmolderSim(17);
+    sim.setWaterTable(0.6);
+    sim.ignite(0.5);
+    sampai(sim, () => !sim.stats.alive);
+    expect(sim.stats.resurfaceX).toBeNull();
+    expect(sim.stats.collapseX).toBeNull();
+  });
+
+  it("sulutan di atas atap tetap hidup", () => {
+    const sim = new SmolderSim(17);
+    sim.setWaterTable(0.95);
+    sim.ignite(0.27);
+    jalan(sim, 1);
+    expect(sim.stats.alive).toBe(true);
+  });
+
+  it("dikembalikan saat simulasi diulang", () => {
+    const sim = baru(benihRuntuh());
+    sampai(sim, () => sim.stats.collapseX !== null);
+    expect(sim.stats.collapseX).not.toBeNull();
+    sim.reset();
+    expect(sim.stats.collapseX).toBeNull();
+    expect(sim.stats.resurfaceX).toBeNull();
   });
 });
 

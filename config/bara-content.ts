@@ -146,7 +146,9 @@ export const SUPPRESSION_TEXT = {
       "Bara yang terkepung air jenuh mendingin dan mati, meninggalkan gambut hangus. Airnya sudah sampai ke tempat bara berada.",
   },
   collapse:
-    "Rongga abu di bawah pohon itu terlalu lebar. Permukaannya ambruk dan pohonnya tumbang — bahaya yang sering menimpa petugas di lahan gambut yang terbakar.",
+    "Rongga di bawahnya terlalu lebar, dan atap tanahnya runtuh. Di lahan yang terbakar, tanah seperti ini bisa amblas saat diinjak.",
+  resurface:
+    "Bara muncul lagi di tempat lain. Ia menyeberang di bawah tanah yang tidak terbakar, lalu naik dan memulai api baru di permukaan.",
 } as const;
 
 /** Kartu ringkasan yang muncul setelah bara berhasil dipadamkan. */

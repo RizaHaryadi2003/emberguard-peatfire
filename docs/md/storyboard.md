@@ -47,7 +47,7 @@ aturan itu dipecah menjadi lima unsur yang **wajib ada pada setiap babak**:
 | **A2** | **Aksi** | Apa yang pembaca lakukan dengan tangannya? | Memilih kartu, lalu mengeklik titik di permukaan 3D |
 | **A3** | **Animasi** | Apa yang bergerak sebagai jawaban? | Nyala api muncul di titik klik, meredup, berubah jadi titik bara |
 | **A4** | **Akibat** | Keadaan apa yang berubah dan tetap berubah? | Simulasi mulai berjalan; ada sel membara yang tidak bisa dibatalkan |
-| **A5** | **Angka** | Fakta terukur apa yang muncul dari kejadian itu? | "± 500 °C — suhu bara gambut" |
+| **A5** | **Angka** | Fakta terukur apa yang muncul dari kejadian itu? | "340–369 °C — suhu arang gambut mulai menyala" |
 
 ### Uji kelayakan satu babak
 
@@ -104,7 +104,7 @@ berbeda, dan tidak boleh dua babak berurutan memakai tingkat yang sama.
 
 | Babak | Ajakan | Tingkat | 5A lengkap? |
 |---|---|---|---|
-| 01 Satu sulutan kecil | Pilih sumber, klik permukaan | 3 | ✅ |
+| 01 Api yang tinggal cukup lama | Pilih cara api membakar, klik permukaan | 3 | ✅ |
 | 02 Merambat dalam gelap | Majukan waktu sampai dua hari | 5 + 2 | ✅ |
 | 03 Tak terlihat dari atas | Siram, lalu bandingkan dengan termal | 1 + 1 | ✅ |
 | 04 Basahi kembali | Naikkan muka air sampai bara padam | 2 | ✅ |

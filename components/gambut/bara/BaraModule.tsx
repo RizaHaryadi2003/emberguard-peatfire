@@ -101,6 +101,7 @@ export default function BaraModule() {
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
   const hintRef = useRef<LayerHintHandle>(null);
   const pausedOnce = useRef(false);
+  const announced = useRef({ collapse: false, resurface: false });
 
   // Salurkan keadaan antarmuka ke adegan 3D (dibaca tiap bingkai).
   useEffect(() => {
@@ -204,7 +205,7 @@ export default function BaraModule() {
     { scope: textRef, dependencies: [act, hookOpen], revertOnUpdate: true },
   );
 
-  // Pesan kejadian (hasil penyiraman, pohon tumbang) hilang sendiri.
+  // Pesan kejadian (hasil penyiraman, atap runtuh) hilang sendiri.
   useEffect(() => {
     if (!message) return;
     const timer = window.setTimeout(() => setMessage(null), 11000);
@@ -283,11 +284,6 @@ export default function BaraModule() {
     setMessage(SUPPRESSION_TEXT.rewet.result);
   }, []);
 
-  const handleCollapse = useCallback(() => {
-    setCollapsed(true);
-    setMessage(SUPPRESSION_TEXT.collapse);
-  }, []);
-
   const handleView = useCallback((next: ViewMode) => {
     setView(next);
     if (next === "termal") setThermalSeen(true);
@@ -303,6 +299,7 @@ export default function BaraModule() {
     setFizzled(false);
     setSpeedIndex(0);
     pausedOnce.current = false;
+    announced.current = { collapse: false, resurface: false };
     setWaterCm(START_WATER_CM);
     setView("permukaan");
     setProbe(null);
@@ -379,6 +376,15 @@ export default function BaraModule() {
       pausedOnce.current = true;
       setSpeedIndex(0);
     }
+    if (next.collapseX !== null && !announced.current.collapse) {
+      announced.current.collapse = true;
+      setCollapsed(true);
+      setMessage(SUPPRESSION_TEXT.collapse);
+    }
+    if (next.resurfaceX !== null && !announced.current.resurface) {
+      announced.current.resurface = true;
+      setMessage(SUPPRESSION_TEXT.resurface);
+    }
   }, []);
   const handleReady = useCallback(() => setReady(true), []);
 
@@ -405,7 +411,6 @@ export default function BaraModule() {
             onStats={handleStats}
             onProbe={handleProbe}
             onSurfaceClick={handleSurfaceClick}
-            onCollapse={handleCollapse}
             onReady={handleReady}
           />
         )}
@@ -621,7 +626,7 @@ export default function BaraModule() {
 
       {/* Peringatan bila muka air dinaikkan melebihi jangkauan pengatur */}
       <span className="sr-only">
-        Rentang pengatur muka air tanah 0 sampai {WATER_MAX_CM} sentimeter. Pohon tumbang: {collapsed ? "sudah terjadi" : "belum"}.
+        Rentang pengatur muka air tanah 0 sampai {WATER_MAX_CM} sentimeter. Tanah amblas: {collapsed ? "sudah terjadi" : "belum"}.
       </span>
     </div>
   );

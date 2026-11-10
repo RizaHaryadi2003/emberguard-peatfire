@@ -101,6 +101,35 @@ const SPREAD_WEIGHT = { down: 0.6, side: 1, up: 0.3 };
  */
 const DEEP_ENTRY = 0.04;
 
+/** Lebar bagian tanah yang tidak dilewati bara permukaan (m), asumsi model. */
+const ROOF_WIDTH = 0.5;
+
+/** Letak tengah bagian itu pada lebar bongkahan (0–1), asumsi model. */
+const ROOF_AT = [0.27, 0.73];
+
+/** Bagian kolom yang harus berongga di bawahnya sebelum atap runtuh (0–1), asumsi model. */
+const ROOF_COLLAPSE_SHARE = 0.7;
+
+/** Baris teratas yang dianggap sudah muncul di permukaan. */
+const RESURFACE_ROWS = 2;
+
+/**
+ * Atap tanah. Usup dkk. (2004, hlm. 12–13) mencatat api sering membakar di bawah
+ * dan menyisakan bagian atas yang bisa runtuh, lalu muncul lagi menjadi api baru,
+ * dan menyebut kadar air serta susunan bahan bakar sebagai penentunya. Bagian
+ * ini mewakili tempat yang tidak dilewati bara permukaan, sehingga bara hanya
+ * dapat menyeberang lewat lapisan dalam.
+ */
+const ROOF_COLS = Math.round(ROOF_WIDTH / CELL_W);
+const ROOFS = ROOF_AT.map((fraction) => {
+  const from = Math.round(fraction * GRID_COLS - ROOF_COLS / 2);
+  return { from, to: from + ROOF_COLS - 1 };
+});
+/** Nomor atap tiap kolom; -1 bila bukan atap. */
+const ROOF_OF_COL = Array.from({ length: GRID_COLS }, (_, col) => ROOFS.findIndex((r) => col >= r.from && col <= r.to));
+/** Nomor ruas tiap kolom, dipisahkan oleh atap-atap itu. */
+const SEGMENT_OF_COL = Array.from({ length: GRID_COLS }, (_, col) => ROOFS.filter((r) => r.to < col).length);
+
 /**
  * Bagian volume yang hilang saat gambut menjadi abu. Rongga inilah yang
  * membuat permukaan gambut turun (subsiden) dan kadang ambruk.
@@ -154,6 +183,10 @@ export type SmolderStats = {
   extinguished: boolean;
   /** Penurunan permukaan terdalam akibat rongga abu (m). */
   maxSubsidence: number;
+  /** Posisi atap tanah terakhir yang runtuh (m); `null` bila belum ada. */
+  collapseX: number | null;
+  /** Posisi bara terakhir yang muncul lagi di permukaan (m); `null` bila belum ada. */
+  resurfaceX: number | null;
 };
 
 function emptyStats(): SmolderStats {
@@ -170,6 +203,8 @@ function emptyStats(): SmolderStats {
     alive: false,
     extinguished: false,
     maxSubsidence: 0,
+    collapseX: null,
+    resurfaceX: null,
   };
 }
 
@@ -205,6 +240,12 @@ export class SmolderSim {
   private waterTable = 0.85;
   private douse = 0;
   private everBurned = false;
+  /** Ruas yang permukaannya sudah pernah disentuh bara. */
+  private readonly segmentLit = new Uint8Array(ROOFS.length + 1);
+  /** Atap yang sudah runtuh. */
+  private readonly roofFallen = new Uint8Array(ROOFS.length);
+  private collapseX: number | null = null;
+  private resurfaceX: number | null = null;
 
   stats: SmolderStats = emptyStats();
 
@@ -250,6 +291,10 @@ export class SmolderSim {
     this.carry = 0;
     this.douse = 0;
     this.everBurned = false;
+    this.segmentLit.fill(0);
+    this.roofFallen.fill(0);
+    this.collapseX = null;
+    this.resurfaceX = null;
     this.state.fill(CELL_INTACT);
     this.progress.fill(0);
     this.wetTime.fill(0);
@@ -294,7 +339,7 @@ export class SmolderSim {
    * permukaan, tempat bahan kering bertemu udara).
    */
   ignite(xFraction: number, depthM = CELL_H * 0.5, radiusM = 0.09): boolean {
-    const centerCol = Math.round(xFraction * (GRID_COLS - 1));
+    const centerCol = this.outsideRoof(Math.round(xFraction * (GRID_COLS - 1)));
     const centerRow = Math.max(0, Math.min(GRID_ROWS - 1, Math.round(depthM / CELL_H)));
     const rc = Math.max(1, Math.round(radiusM / CELL_W));
     const rr = Math.max(1, Math.round(radiusM / CELL_H));
@@ -314,6 +359,7 @@ export class SmolderSim {
     }
     if (lit) {
       this.everBurned = true;
+      this.segmentLit[SEGMENT_OF_COL[Math.max(0, Math.min(GRID_COLS - 1, centerCol))]] = 1;
       this.collect();
     }
     return lit;
@@ -366,7 +412,49 @@ export class SmolderSim {
     if (this.rand() < chance * this.drynessOf(m)) {
       this.state[i] = CELL_SMOLDER;
       this.wetTime[i] = 0;
+      // Bara mencapai permukaan di ruas yang belum pernah terbakar: ia muncul lagi.
+      if (row < RESURFACE_ROWS && ROOF_OF_COL[col] < 0 && !this.segmentLit[SEGMENT_OF_COL[col]]) {
+        this.segmentLit[SEGMENT_OF_COL[col]] = 1;
+        this.resurfaceX = this.xOfCol(col);
+      }
     }
+  }
+
+  /**
+   * Geser titik sulut yang jatuh pada atap ke tepi terdekatnya. Bara permukaan
+   * tidak dapat merambat di sana, jadi tanpa ini ia cepat padam sebelum sempat
+   * turun ke lapisan dalam.
+   */
+  private outsideRoof(col: number): number {
+    const n = ROOF_OF_COL[Math.max(0, Math.min(GRID_COLS - 1, col))];
+    if (n === undefined || n < 0) return col;
+    const { from, to } = ROOFS[n];
+    return col - from < to - col ? from - 1 : to + 1;
+  }
+
+  /** Apakah bara dapat berpindah mendatar dari `col` ke `target` pada lapisan ini. */
+  private canSpreadSide(col: number, target: number, deep: boolean): boolean {
+    if (deep) return true;
+    return ROOF_OF_COL[col] < 0 && (target < 0 || target >= GRID_COLS || ROOF_OF_COL[target] < 0);
+  }
+
+  /** Runtuhkan atap yang bagian bawahnya sudah cukup berongga. */
+  private updateRoofs(): void {
+    ROOFS.forEach((roof, n) => {
+      if (this.roofFallen[n]) return;
+      let hollow = 0;
+      for (let col = roof.from; col <= roof.to; col++) {
+        for (let row = 0; row < GRID_ROWS; row++) {
+          if (this.rowDeep[row] && this.state[this.index(col, row)] === CELL_ASH) {
+            hollow++;
+            break;
+          }
+        }
+      }
+      if (hollow < ROOF_COLS * ROOF_COLLAPSE_SHARE) return;
+      this.roofFallen[n] = 1;
+      this.collapseX = this.xOfCol(Math.round((roof.from + roof.to) / 2));
+    });
   }
 
   /** Satu langkah simulasi tetap sebesar `STEP_HOURS`. */
@@ -385,6 +473,7 @@ export class SmolderSim {
     // Sel yang membara pada awal langkah ini. Ikut dihitung pula sel yang
     // justru padam di langkah ini: jam itu ia memang masih menyala.
     let burning = 0;
+    let newAsh = false;
     for (let row = 0; row < GRID_ROWS; row++) {
       const burn = this.rowDeep[row] ? ZONE_BURN.deep : ZONE_BURN.surface;
       for (let col = 0; col < GRID_COLS; col++) {
@@ -409,6 +498,7 @@ export class SmolderSim {
           this.progress[i] = 1;
           this.state[i] = CELL_ASH;
           this.fuel[i] = 0;
+          newAsh = true;
         }
         if (this.progress[i] >= IGNITE_THRESHOLD) spreaders[count++] = i;
       }
@@ -422,10 +512,14 @@ export class SmolderSim {
       const k = (deep ? ZONE_BURN.deep : ZONE_BURN.surface).spreadPerHour * dt;
       const entersDeep = !deep && row + 1 < GRID_ROWS && this.rowDeep[row + 1];
       this.trySpread(col, row + 1, k * SPREAD_WEIGHT.down * (entersDeep ? DEEP_ENTRY : 1));
-      this.trySpread(col - 1, row, k * SPREAD_WEIGHT.side);
-      this.trySpread(col + 1, row, k * SPREAD_WEIGHT.side);
-      this.trySpread(col, row - 1, k * SPREAD_WEIGHT.up);
+      if (this.canSpreadSide(col, col - 1, deep)) this.trySpread(col - 1, row, k * SPREAD_WEIGHT.side);
+      if (this.canSpreadSide(col, col + 1, deep)) this.trySpread(col + 1, row, k * SPREAD_WEIGHT.side);
+      // Atap hanya hilang saat runtuh, tidak terbakar dari bawah.
+      const intoRoof = row > 0 && ROOF_OF_COL[col] >= 0 && !this.rowDeep[row - 1];
+      if (!intoRoof) this.trySpread(col, row - 1, k * SPREAD_WEIGHT.up);
     }
+
+    if (newAsh) this.updateRoofs();
 
     this.stats.hours += dt;
     if (burning > 0) this.stats.burningHours += dt;
@@ -510,11 +604,16 @@ export class SmolderSim {
       alive: active > 0,
       extinguished: this.everBurned && active === 0,
       maxSubsidence: this.maxSubsidence(),
+      collapseX: this.collapseX,
+      resurfaceX: this.resurfaceX,
     };
   }
 
   /** Penurunan permukaan pada kolom `col` (m) akibat rongga abu di bawahnya. */
   subsidenceAt(col: number): number {
+    // Atap menahan permukaan sampai runtuh, walau di bawahnya sudah berongga.
+    const roof = ROOF_OF_COL[col];
+    if (roof >= 0 && !this.roofFallen[roof]) return 0;
     let ash = 0;
     for (let row = 0; row < GRID_ROWS; row++) {
       if (this.state[this.index(col, row)] === CELL_ASH) ash++;

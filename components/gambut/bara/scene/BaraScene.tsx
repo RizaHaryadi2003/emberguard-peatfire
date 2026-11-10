@@ -205,7 +205,6 @@ type Props = {
   onStats: (stats: SmolderStats) => void;
   onProbe: (col: number, row: number) => void;
   onSurfaceClick: (xFraction: number) => void;
-  onCollapse: () => void;
   onReady: () => void;
   /** Perangkat tetap kewalahan pada resolusi terendah. */
   onOverload: () => void;
@@ -220,7 +219,6 @@ export default function BaraScene({
   onStats,
   onProbe,
   onSurfaceClick,
-  onCollapse,
   onReady,
   onOverload,
 }: Props) {
@@ -306,7 +304,6 @@ export default function BaraScene({
                 stateRef={stateRef}
                 subsidence={subsidence}
                 quality={quality}
-                onCollapse={onCollapse}
                 onSurfaceClick={onSurfaceClick}
               />
               <WallDetails stateRef={stateRef} subsidence={subsidence} />

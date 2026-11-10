@@ -53,6 +53,8 @@ const NEAR_X = 1.4;
  */
 const PRIORITY = [
   "bara",
+  "muncul",
+  "runtuh",
   "abu",
   "air",
   "siram",
@@ -241,6 +243,27 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         y: yAt(d, x) + 0.24,
         text: narrow ? "Rongga abu" : "Rongga abu — gambut sudah habis",
         tone: "ash",
+      });
+    }
+
+    // Dua kejadian dari catatan Usup dkk. (2004): atap tanah yang runtuh, dan
+    // bara yang muncul lagi di tempat lain.
+    if (stats.collapseX !== null) {
+      list.push({
+        id: "runtuh",
+        x: stats.collapseX,
+        y: yAt(0, stats.collapseX) + 0.22,
+        text: narrow ? "Tanah amblas" : "Atap tanah runtuh",
+        tone: "ash",
+      });
+    }
+    if (stats.resurfaceX !== null && emberN > 0) {
+      list.push({
+        id: "muncul",
+        x: stats.resurfaceX,
+        y: yAt(0, stats.resurfaceX) + 0.5,
+        text: narrow ? "Muncul lagi" : "Bara muncul lagi di sini",
+        tone: "ember",
       });
     }
 

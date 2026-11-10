@@ -20,7 +20,7 @@ import { BLOCK_WIDTH, DRAG_THRESHOLD, QUALITY_PROFILE, type BaraState, type Qual
 // Permukaan hutan rawa di atas bongkahan yang dipotong. Tumbuhan memakai model
 // pindaian yang sama dengan Modul 01 (Poly Haven, CC0 — lihat
 // public/models/gambut/SUMBER.md). Di modul ini permukaan ikut melesak ke dalam
-// rongga abu, tumbuhannya menghangus, dan pohon di atas rongga terlebar tumbang.
+// rongga abu dan tumbuhannya menghangus.
 
 // Tumbuhan yang sama letaknya dengan Modul 01; yang berdiri di separuh depan
 // ikut hilang bersama tanah yang dipotong.
@@ -29,8 +29,6 @@ const UNDERSTORY_SPOTS = DIORAMA_UNDERSTORY_SPOTS.filter(([, z]) => z < 0);
 
 /** Penurunan permukaan yang membuat tumbuhan menghangus habis (m). */
 const SCORCH_FULL = 0.16;
-/** Penurunan permukaan yang membuat penopang hilang dan pohon tumbang (m). */
-const COLLAPSE_AT = 0.3;
 
 function heightOf(obj: THREE.Object3D) {
   return new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3()).y;
@@ -67,29 +65,23 @@ type Plant = {
   object: THREE.Object3D;
   x: number;
   z: number;
-  /** Rotasi awal agar kemiringan tumbangnya menambah, bukan menggantikan. */
+  /** Rotasi awal, supaya goyangannya menambah dan bukan menggantikan. */
   baseRotation: THREE.Euler;
   materials: { mat: THREE.MeshStandardMaterial; base: THREE.Color }[];
-  isTree: boolean;
-  /** Nilai teranimasi: tingkat hangus & tingkat tumbang (0–1). */
+  /** Nilai teranimasi: tingkat hangus (0–1). */
   scorch: number;
-  fall: number;
-  /** Arah tumbang, agar tiap pohon jatuh ke sisi yang berbeda. */
-  side: number;
 };
 
 type Props = {
   sim: SmolderSim;
   stateRef: RefObject<BaraState>;
   subsidence: Subsidence;
-  /** Dipanggil sekali saat pohon pertama tumbang karena permukaannya ambruk. */
-  onCollapse: () => void;
   /** Dipanggil saat pembaca mengklik permukaan (untuk menyulut pada babak 01). */
   onSurfaceClick: (xFraction: number) => void;
   quality: Quality;
 };
 
-export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCollapse, onSurfaceClick }: Props) {
+export default function SurfaceCover({ sim, stateRef, subsidence, quality, onSurfaceClick }: Props) {
   const profile = QUALITY_PROFILE[quality];
   const [treeG, fernG, calatheaG, anthuriumG] = useLoader(GLTFLoader, [
     "/models/gambut/pohon_pachira.glb",
@@ -161,7 +153,7 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
       anthurium: collectVariants(anthuriumG.scene, (n) => n, false),
     };
 
-    const make = (template: THREE.Object3D, x: number, z: number, height: number, ry: number, isTree: boolean): Plant => {
+    const make = (template: THREE.Object3D, x: number, z: number, height: number, ry: number): Plant => {
       const object = template.clone();
       object.scale.setScalar(height / Math.max(heightOf(template), 0.01));
       object.position.set(x, 0, z);
@@ -180,22 +172,19 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         z,
         baseRotation: object.rotation.clone(),
         materials,
-        isTree,
         scorch: 0,
-        fall: 0,
-        side: rand() < 0.5 ? -1 : 1,
       };
     };
 
     const list: Plant[] = [];
     TREE_SPOTS.filter(([x, z]) => isInsideFootprint(x, z, 0.25)).forEach(([x, z, h, ry], i) => {
-      list.push(make(trees[i % trees.length], x, z, h, ry, true));
+      list.push(make(trees[i % trees.length], x, z, h, ry));
     });
     UNDERSTORY_SPOTS.slice(0, profile.understory)
       .filter(([x, z]) => isInsideFootprint(x, z, 0.15))
       .forEach(([x, z, kind, h]) => {
         const variants = understory[kind];
-        list.push(make(variants[Math.floor(rand() * variants.length)], x, z, h * (0.85 + rand() * 0.3), rand() * Math.PI * 2, false));
+        list.push(make(variants[Math.floor(rand() * variants.length)], x, z, h * (0.85 + rand() * 0.3), rand() * Math.PI * 2));
       });
     return list;
   }, [treeG, fernG, calatheaG, anthuriumG, profile.understory]);
@@ -215,7 +204,6 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
   const cold = useMemo(() => new THREE.Color("#0a1030"), []);
   const straw = useMemo(() => new THREE.Color("#a07a3e"), []);
   const built = useRef(-1);
-  const collapsed = useRef(false);
 
   /** Bentuk ulang permukaan & warna hangusnya mengikuti rongga di bawahnya. */
   const rebuild = () => {
@@ -260,9 +248,7 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
       const drop = subsidence.fn(p.x);
       // Gambut di bawah tumbuhan yang masih basah tidak menghanguskan apa pun.
       const scorchTarget = Math.min(1, drop / SCORCH_FULL);
-      const fallTarget = drop > COLLAPSE_AT ? 1 : 0;
       p.scorch = THREE.MathUtils.damp(p.scorch, scorchTarget, s.reducedMotion ? 30 : 1.4, dt);
-      p.fall = THREE.MathUtils.damp(p.fall, fallTarget, s.reducedMotion ? 30 : 0.9, dt);
 
       // Warna: menguning saat kering, lalu menghitam saat tersentuh bara.
       const wilt = Math.min(0.75, dryness * 0.6);
@@ -271,19 +257,13 @@ export default function SurfaceCover({ sim, stateRef, subsidence, quality, onCol
         mat.color.copy(base).lerp(straw, wilt).lerp(charcoal, p.scorch * 0.95).lerp(cold, s.thermal * 0.92);
       });
 
-      // Permukaan turun, jadi tumbuhan ikut turun; yang penopangnya hilang tumbang.
-      const y = surfaceYAt(p.x, p.z, subsidence.fn) + 0.012;
-      p.object.position.y = y - p.fall * 0.12;
+      // Permukaan turun, jadi tumbuhan ikut turun.
+      p.object.position.y = surfaceYAt(p.x, p.z, subsidence.fn) + 0.012;
       p.object.rotation.set(
         p.baseRotation.x + (s.reducedMotion ? 0 : Math.cos(t * 0.6 + i) * 0.01),
         p.baseRotation.y,
-        p.baseRotation.z + p.fall * 1.25 * p.side + (s.reducedMotion ? 0 : Math.sin(t * 0.8 + i * 1.7) * 0.012),
+        p.baseRotation.z + (s.reducedMotion ? 0 : Math.sin(t * 0.8 + i * 1.7) * 0.012),
       );
-
-      if (p.isTree && p.fall > 0.5 && !collapsed.current) {
-        collapsed.current = true;
-        onCollapse();
-      }
     });
   });
 

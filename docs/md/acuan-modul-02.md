@@ -1,8 +1,9 @@
 # Acuan Riset Modul 02 — Bara di Bawah Tanah
 
 Dokumen ini menetapkan dasar riset Modul 02 dan mencatat bagian modul yang
-belum sesuai dengannya. Kode belum diubah. Perubahan menunggu keputusan pada
-bagian 8.
+belum sesuai dengannya. Keputusan A–D dan F pada bagian 8 sudah diterapkan
+pada 10 November 2026 dengan pilihan yang disarankan. Keputusan E menunggu
+tesis Frandsen. Bagian 6 dan 7 mencatat keadaan sebelum penerapan.
 
 - Tanggal: 10 November 2026 (menggantikan draf yang berdasar Santoso dkk. 2022)
 - Berlaku untuk: Modul 02 (`/gambut/bara`)
@@ -108,7 +109,8 @@ terbakar belum dipakai sampai artikel lengkapnya terbaca.
 > dan di mana ia muncul lagi?**
 
 Jawabannya hanya ada bila kedua acuan digabung. Frandsen memberi **ambang**
-(± 110%), Usup memberi **profil kadar air Borneo** (± 100–120% sampai 40 cm,
+(110% untuk gambut umumnya, 130% untuk permukaan hutan rawa gambut; simulasi
+memakai 130% karena bara teramati hidup pada ± 120%), Usup memberi **profil kadar air Borneo** (± 100–120% sampai 40 cm,
 lalu ± 220%). Hasilnya, bara dapat hidup di lapisan atas dan terhalang di
 lapisan yang masih basah, sejalan dengan bara dalam yang teramati pada 20–50 cm.
 
@@ -152,7 +154,18 @@ lambat untuk bara permukaan. Kedalamannya melewati kisaran 20–50 cm.
 
 ---
 
-## 7. Isi Modul Sekarang Dibandingkan dengan Acuan
+### Sesudah kalibrasi
+
+`lib/smolder.test.ts` mengunci hasil berikut. Laju mendatar 3,5 cm/jam untuk
+bara permukaan dan 1,25 cm/jam untuk bara dalam. Pada muka air 95 cm bara
+berhenti di 39–45 cm, pada 60 cm hanya 9 cm, dan pada 40 cm tidak dapat menyala.
+
+Asumsi model yang tidak bersumber dari acuan: arah rambat, peluang bara turun ke
+lapisan dalam, serta letak, lebar, dan syarat runtuh atap tanah.
+
+---
+
+## 7. Isi Modul Sebelum Penerapan Dibandingkan dengan Acuan
 
 | # | Keadaan sekarang | Kata acuan | Tindakan |
 |---|---|---|---|
