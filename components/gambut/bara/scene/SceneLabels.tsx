@@ -225,7 +225,7 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         y: yAt(d, x) - 0.2,
         text: narrow
           ? `Bara ${Math.round(stats.frontDepth * 100)} cm`
-          : `Bara ±500 °C · sedalam ${Math.round(stats.frontDepth * 100)} cm`,
+          : `Bara sedalam ${Math.round(stats.frontDepth * 100)} cm`,
         tone: "ember",
       });
     }
@@ -251,9 +251,8 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         id: "siram",
         x,
         y: yAt(DOUSE_DEPTH, x),
-        text: narrow
-          ? `Air meresap ${Math.round(DOUSE_DEPTH * 100)} cm`
-          : `Air hanya meresap ±${Math.round(DOUSE_DEPTH * 100)} cm`,
+        // Tanpa angka: kedalaman resapan siraman tidak dilaporkan oleh acuan.
+        text: narrow ? "Batas siraman" : "Air siraman berhenti di sini",
         tone: "water",
       });
     }

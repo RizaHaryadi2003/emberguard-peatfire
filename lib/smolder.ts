@@ -545,7 +545,8 @@ export class SmolderSim {
     const r = Math.max(0, Math.min(GRID_ROWS - 1, row));
     const i = this.index(c, r);
     const st = this.state[i] as CellState;
-    // Suhu ilustratif: bara gambut jauh lebih dingin daripada api nyala.
+    // Suhu ilustratif, di dalam rentang lapangan: arang gambut menyala pada
+    // 340–369 °C (Usup dkk., 2004) dan puncaknya 470–700 °C (Santoso dkk., 2022).
     const temperature =
       st === CELL_SMOLDER
         ? Math.round(420 + Math.sin(Math.PI * Math.min(1, this.progress[i])) * 180)

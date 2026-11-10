@@ -39,7 +39,8 @@ export const BARA_ACTS: readonly BaraAct[] = [
     title: "Satu sulutan kecil",
     body: "Kebakaran gambut hampir selalu berawal di permukaan, dari sesuatu yang tampak sepele. Nyala di rumput kering hanya bertahan beberapa menit, tetapi panasnya cukup untuk menyulut gambut kering di bawahnya. Sejak titik itu api tidak lagi butuh nyala: ia berubah menjadi bara.",
     task: "Pilih satu sumber sulutan, lalu klik permukaan gambut untuk menyulutnya.",
-    fact: { value: "± 500 °C", caption: "Suhu bara gambut. Tanpa lidah api, tetapi cukup panas untuk terus membakar bahan organik di sekitarnya" },
+    // Suhu sulut arang: Usup dkk. (2004), Tabel 1. Puncak lapangan: Santoso dkk. (2022).
+    fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C" },
   },
   {
     number: "02",
@@ -51,16 +52,17 @@ export const BARA_ACTS: readonly BaraAct[] = [
   {
     number: "03",
     title: "Tak terlihat dari atas",
-    body: "Di permukaan, kebakaran gambut sering hanya berupa asap tipis yang keluar dari tanah. Menyiram permukaan membuat asap itu hilang dan lahan tampak aman, padahal baranya masih hidup beberapa puluh sentimeter di bawah kaki kita, terus melebarkan rongga sampai permukaannya ambruk.",
+    body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita, terus melebarkan rongga sampai atap tanahnya runtuh.",
     task: "Siram permukaan, lalu bandingkan tampilan permukaan dengan tampilan termal.",
-    fact: { value: "0 asap", caption: "Bukan berarti padam. Bara di bawah muka tanah tidak menghasilkan asap yang terlihat jika lapisan atasnya basah" },
+    // Usup dkk. (2004), hlm. 12.
+    fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering" },
   },
   {
     number: "04",
-    title: "Satu-satunya jalan: basahi kembali",
-    body: "Bara hanya berhenti bila gambut di sekelilingnya kembali jenuh air. Karena itu pemadaman kebakaran gambut berarti menaikkan muka air tanah, bukan menyiram permukaan: air harus sampai ke kedalaman tempat bara berada. Naikkan muka air tanah melewati kedalaman bara dan perhatikan baranya mati.",
+    title: "Airnya harus sampai ke bara",
+    body: "Bara berhenti bila air benar-benar sampai ke tempatnya. Di lahan gambut, rambatan bara dalam berhenti saat muka air tanah naik di akhir musim kering. Naikkan muka air tanah melewati kedalaman bara dan perhatikan baranya mati.",
     task: "Naikkan muka air tanah sampai seluruh bara padam.",
-    fact: { value: "≤ 0,4 m", caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016) — sekaligus kunci agar bara tidak mungkin hidup" },
+    fact: { value: "≤ 0,4 m", caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016)" },
   },
 ];
 
@@ -109,7 +111,7 @@ export const TIME_SPEEDS: readonly { label: string; hoursPerSecond: number }[] =
 export const VIEW_TEXT = {
   permukaan: {
     label: "Permukaan",
-    hint: "Yang terlihat oleh mata: hanya asap tipis dari tanah.",
+    hint: "Yang terlihat oleh mata: hanya asap yang keluar dari tanah.",
   },
   termal: {
     label: "Termal",
@@ -133,13 +135,13 @@ export const SUPPRESSION_TEXT = {
     label: "Siram permukaan",
     running: "Air disemprotkan ke permukaan…",
     result:
-      "Asap hilang dan permukaan tampak padam. Namun air hanya meresap beberapa sentimeter; bara di bawahnya tidak tersentuh dan akan muncul kembali setelah lapisan atas mengering.",
+      "Asap surut dan permukaan tampak padam. Namun siraman sedikit tidak sampai ke bara di lapisan dalam, dan bara itu tetap merambat setelah lapisan atas mengering.",
   },
   rewet: {
     label: "Pembasahan (naikkan muka air)",
     running: "Muka air tanah dinaikkan…",
     result:
-      "Bara yang terkepung air jenuh mendingin dan mati, meninggalkan gambut hangus. Inilah pemadaman yang benar-benar menghentikan kebakaran gambut.",
+      "Bara yang terkepung air jenuh mendingin dan mati, meninggalkan gambut hangus. Airnya sudah sampai ke tempat bara berada.",
   },
   collapse:
     "Rongga abu di bawah pohon itu terlalu lebar. Permukaannya ambruk dan pohonnya tumbang — bahaya yang sering menimpa petugas di lahan gambut yang terbakar.",
