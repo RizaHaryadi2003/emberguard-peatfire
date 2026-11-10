@@ -33,7 +33,7 @@ const HOOK_VENTS: Hot[] = [
 ];
 
 /** Pengali kepekatan asap pada layar pembuka; di atas 1 agar terbaca di latar kelabu. */
-const HOOK_SMOKE = 1.5;
+const HOOK_SMOKE = 2.4;
 
 type Particle = { x: number; z: number; y: number; vy: number; life: number; maxLife: number; seed: number };
 
@@ -174,7 +174,7 @@ export default function SmokePlumes({
         return;
       }
       p.life += dt;
-      if (p.life > p.maxLife) spawn(p, steam > 0.3 ? 0.4 : 0.16, steam > 0.3 ? [2.5, 4] : [5, 9]);
+      if (p.life > p.maxLife) spawn(p, steam > 0.3 ? 0.4 : s.hookOpen ? 0.34 : 0.16, steam > 0.3 ? [2.5, 4] : [5, 9]);
       if (p.maxLife <= 0) {
         sprite.visible = false;
         return;
@@ -185,11 +185,12 @@ export default function SmokePlumes({
       // Asap melebar sambil naik dan makin terbawa angin, pekat dekat sumbernya
       // lalu menipis dan memucat ke atas.
       sprite.position.set(p.x + Math.sin(t * 0.3 + p.seed) * 0.25 * k + k * k * 0.6, p.y, p.z);
-      sprite.scale.setScalar(0.3 + k * 2.4);
+      // Pada layar pembuka asapnya lebih ramping, agar terbaca sebagai kepulan dari tanah.
+      sprite.scale.setScalar(s.hookOpen ? 0.2 + k * 1.3 : 0.3 + k * 2.4);
       // Asap pembuka dibuat lebih terang agar terpisah dari latar hutan yang kelabu.
-      const pale = 0.34 + k * 0.28 + hookSmoke.current * 0.14;
+      const pale = 0.34 + k * 0.28 + hookSmoke.current * 0.12;
       mat.color.setRGB(pale + steam * 0.45, pale * 0.95 + steam * 0.47, pale * 0.9 + steam * 0.5);
-      mat.opacity = Math.pow(Math.sin(Math.PI * Math.pow(k, 0.6)), 1.4) * 0.4 * Math.max(smokeLevel, steam * 0.8);
+      mat.opacity = Math.min(0.85, Math.pow(Math.sin(Math.PI * Math.pow(k, 0.6)), 1.4) * 0.4 * Math.max(smokeLevel, steam * 0.8));
       mat.rotation = p.seed + t * 0.05;
     });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDown } from "lucide-react";
+import LaptopNudge from "./LaptopNudge";
 
 type Props = {
   open: boolean;
@@ -23,7 +24,7 @@ export default function ModuleHook({ open, kicker, setup, question, cta, scrollH
   return (
     <div
       inert={!open}
-      className={`absolute inset-0 z-20 flex items-center bg-gradient-to-r from-black/85 via-black/45 to-transparent transition-[opacity,visibility] duration-700 motion-reduce:transition-none ${
+      className={`absolute inset-0 z-20 flex items-center bg-gradient-to-r max-md:items-end max-md:pb-24 from-black/85 via-black/45 to-transparent transition-[opacity,visibility] duration-700 motion-reduce:transition-none ${
         open ? "visible opacity-100" : "invisible opacity-0"
       }`}
     >
@@ -54,6 +55,7 @@ export default function ModuleHook({ open, kicker, setup, question, cta, scrollH
           </button>
           <span className="text-xs text-white/50">{scrollHint}</span>
         </div>
+        <LaptopNudge className="hero-anim hero-fade mt-4 flex" />
       </div>
     </div>
   );

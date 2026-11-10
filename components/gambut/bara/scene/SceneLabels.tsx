@@ -68,8 +68,8 @@ const PRIORITY = [
 ];
 
 /** Letak petunjuk keterangan lapisan: lebar bidang potong (0–1) dan kedalaman (m). */
-const HOVER_PROMPT_AT = 0.36;
-const HOVER_PROMPT_DEPTH = 1.7;
+const HOVER_PROMPT_AT = 0.5;
+const HOVER_PROMPT_DEPTH = 2.2;
 
 /**
  * Kedalaman yang diberi angka pada penggaris di tepi kiri (m).

@@ -17,9 +17,11 @@ rancangan. Jangan mengasumsikan apa pun dari isi proyek sebelumnya.
 
 - Laptop adalah tampilan utama. Rancangan, tata letak, dan pemeriksaan dimulai
   dari sana.
-- Tablet dan ponsel mendapat tampilan terbatas dengan sengaja. Teks atau panel
-  boleh diringkas atau disembunyikan agar tidak tumpang tindih. Bagian yang
-  hilang di sana bukan kesalahan, jadi cek dulu di laptop sebelum memperbaikinya.
+- Ponsel dan tablet mendapat tampilan sederhana tetapi utuh, karena tautan dari
+  media sosial dibuka di ponsel. Alur dan penjelasan tetap lengkap, sedangkan
+  teks atau panel lain boleh diringkas agar tidak tumpang tindih.
+- Tampilan sempit mengajak pengguna mencoba versi lengkap di laptop. Bagian yang
+  sengaja diringkas di sana bukan kesalahan, jadi cek dulu di laptop.
 
 ## Bahasa
 

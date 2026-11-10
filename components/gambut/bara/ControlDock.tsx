@@ -93,7 +93,10 @@ export default function ControlDock({
       </p>
 
       {/* Muka air tanah */}
-      <div className="relative mt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:901px)]:mt-5">
+      {/* Di layar sempit tiap babak hanya memuat kendali yang dibutuhkannya: panel
+          yang lengkap menutupi hampir seluruh bongkahan. Babak 03 tidak memakai
+          muka air, dan Babak 04 tidak memakai siraman maupun tampilan termal. */}
+      <div className={`relative mt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:901px)]:mt-5 ${showDouse && !showRewet ? "max-md:hidden" : ""}`}>
         <div className="flex items-baseline justify-between">
           <label htmlFor="bara-water" className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
             <Droplets size={12} aria-hidden="true" />
@@ -143,7 +146,7 @@ export default function ControlDock({
           pernah menemukan bantahannya. Tempatnya sekarang tepat di sebelah
           tombol yang baru saja ia tekan. */}
       {showDouse && (
-        <div className="mt-2 border-t border-white/10 pt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:651px)]:pt-3 [@media(min-height:901px)]:mt-5 [@media(min-height:901px)]:pt-4">
+        <div className={`mt-2 border-t border-white/10 pt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:651px)]:pt-3 [@media(min-height:901px)]:mt-5 [@media(min-height:901px)]:pt-4 ${showRewet ? "max-md:hidden" : ""}`}>
           <div className="flex gap-1 rounded-full border border-white/15 bg-black/30 p-1">
             {(Object.keys(VIEW_TEXT) as ViewMode[]).map((mode) => {
               const urge = urgeThermal && mode === "termal";
@@ -171,7 +174,7 @@ export default function ControlDock({
           {/* Keterangan tampilan dilepas pada layar sangat pendek; bunyinya
               sama dengan atribut title kedua tombol di atasnya, jadi masih
               terbaca saat kursor berhenti di sana. */}
-          <p className="mt-2 hidden text-[10px] leading-snug text-white/45 [@media(min-height:701px)]:block">
+          <p className="mt-2 hidden text-[10px] leading-snug text-white/45 max-md:!hidden [@media(min-height:701px)]:block">
             {VIEW_TEXT[view].hint}
           </p>
         </div>
@@ -185,7 +188,7 @@ export default function ControlDock({
               type="button"
               onClick={onDouse}
               disabled={dousing}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-300/35 bg-sky-400/15 px-3.5 py-2 text-xs font-medium text-sky-100 transition-colors hover:bg-sky-400/25 disabled:cursor-not-allowed disabled:opacity-45"
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-300/35 bg-sky-400/15 px-3.5 py-2 text-xs font-medium text-sky-100 transition-colors hover:bg-sky-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${showRewet ? "max-md:hidden" : ""}`}
             >
               <ShowerHead size={14} />
               {dousing ? SUPPRESSION_TEXT.douse.running : SUPPRESSION_TEXT.douse.label}

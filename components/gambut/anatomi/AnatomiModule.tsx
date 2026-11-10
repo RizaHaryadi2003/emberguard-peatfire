@@ -12,6 +12,7 @@ import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
+import LaptopNudge from "@/components/gambut/LaptopNudge";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import ResultCardDialog from "./ResultCardDialog";
 import StepAdvance from "@/components/gambut/StepAdvance";
@@ -610,9 +611,12 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
         >
           {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
           {lastStep && (
-            <div className="absolute bottom-full right-0 mb-3 flex items-end gap-2 md:hidden">
-              {restartButton}
-              <StepAdvance {...BACK_TO_MODULE_LIST} />
+            <div className="absolute bottom-full right-0 mb-3 flex flex-col items-end gap-2 md:hidden">
+              <div className="flex items-end gap-2">
+                {restartButton}
+                <StepAdvance {...BACK_TO_MODULE_LIST} />
+              </div>
+              <LaptopNudge />
             </div>
           )}
           <WaterControl

@@ -53,7 +53,7 @@ const HOOK_SWIPE = 30;
 const ACT_HINT = [
   "Sulut permukaan untuk melanjutkan.",
   "Butuh dua hari perjalanan waktu untuk melanjutkan.",
-  "Siram, buka tampilan termal, lalu tunggu sampai bara muncul lagi.",
+  "Siram, buka termal, lalu tunggu bara muncul lagi.",
   "Naikkan muka air tanah sampai seluruh bara padam.",
 ];
 
@@ -515,7 +515,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
               dengan arahan di atas panah lanjut, sehingga tingginya tidak
               bertambah dan tidak menyentuh panel kendali. */}
           <p
-            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${
+            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${finished ? "" : "max-sm:block"} ${
               dense ? "[@media(max-height:860px)]:sm:block" : "[@media(max-height:700px)]:sm:block"
             }`}
           >
@@ -524,7 +524,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           <p
             className={`act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3 ${
               dense ? "[@media(max-height:860px)]:sm:hidden" : ""
-            }`}
+            } ${finished ? "max-sm:!hidden" : ""}`}
           >
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
@@ -546,7 +546,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
               ia yang menjelaskan babaknya. */}
           <div
             className={`act-anim mt-3 hidden items-baseline gap-4 border-t border-white/10 pt-3 [@media(min-height:901px)]:mt-4 [@media(min-height:901px)]:pt-4 ${
-              dense ? "[@media(min-height:1011px)]:max-lg:flex" : "[@media(min-height:760px)]:max-lg:flex"
+              dense ? "[@media(min-height:1011px)]:sm:max-lg:flex" : "[@media(min-height:760px)]:sm:max-lg:flex"
             }`}
           >
             <span className="shrink-0 font-playfair text-2xl italic text-[#f0a060]">{current.fact.value}</span>
@@ -560,8 +560,14 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
           menindih. Di layar sempit navigasi itu tidak ada, jadi panelnya turun
           dan panah lanjut duduk di atasnya, sama dengan Modul 01. */}
-      <div inert={hookOpen} className={`absolute bottom-6 left-5 right-5 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
-        <div className="absolute bottom-full right-0 mb-3 md:hidden">{advance}</div>
+      <div inert={hookOpen} className={`absolute bottom-6 left-5 right-5 z-30 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
+        <div className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
+          {/* Kolom kanan tidak ada di layar sempit, jadi pesannya tampil di sini. */}
+          {message && !finished && (
+            <p className="w-full rounded-2xl border border-[#e8702a]/30 bg-black/80 p-3 text-xs leading-relaxed text-white/85 lg:hidden">{message}</p>
+          )}
+          <div className="pointer-events-auto md:hidden">{advance}</div>
+        </div>
         {finished ? (
           <SummaryCard stats={stats} onReset={handleReset} />
         ) : probe ? (

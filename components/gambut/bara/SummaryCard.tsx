@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RotateCcw, Share2 } from "lucide-react";
+import LaptopNudge from "@/components/gambut/LaptopNudge";
 import ShareCardDialog from "@/components/gambut/ShareCardDialog";
 import { BARA_SUMMARY } from "@/config/bara-content";
 import { baraCardImagePath, baraShareLink, getBaraCard, type SharedBurn } from "@/lib/baraCard";
@@ -70,6 +71,8 @@ export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; o
           <RotateCcw size={14} /> Coba lagi dari awal
         </button>
       </div>
+
+      <LaptopNudge className="mt-3 flex" />
 
       {cardOpen && <BaraCardDialog burn={burn} onClose={() => setCardOpen(false)} />}
     </div>
