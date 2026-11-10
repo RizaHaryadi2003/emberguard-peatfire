@@ -1,12 +1,11 @@
 "use client";
 
-import { Cigarette, Flame, Zap } from "lucide-react";
+import { Flame, Wind } from "lucide-react";
 import { IGNITION_SOURCES, type IgnitionSource } from "@/config/bara-content";
 
 const ICONS = {
-  puntung: Cigarette,
-  pembakaran: Flame,
-  percikan: Zap,
+  lintas: Wind,
+  kayu: Flame,
 } as const;
 
 type Props = {
@@ -14,14 +13,16 @@ type Props = {
   onSelect: (source: IgnitionSource) => void;
   /** Sudah menyulut: kartu berubah menjadi keterangan, bukan pilihan. */
   ignited: boolean;
+  /** Percobaan terakhir padam sendiri karena panasnya tidak bertahan. */
+  fizzled: boolean;
 };
 
-/** Babak 01: tiga sumber sulutan yang dapat diklik. */
-export default function IgnitionPicker({ selected, onSelect, ignited }: Props) {
+/** Babak 01: dua cara api membakar yang dapat dipilih. */
+export default function IgnitionPicker({ selected, onSelect, ignited, fizzled }: Props) {
   return (
     <div className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-5">
-      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Sumber sulutan</p>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Cara api membakar</p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {IGNITION_SOURCES.map((source) => {
           const Icon = ICONS[source.id];
           const active = selected === source.id;
@@ -47,9 +48,11 @@ export default function IgnitionPicker({ selected, onSelect, ignited }: Props) {
       <p className="mt-3 text-xs leading-relaxed text-white/70">
         {ignited
           ? "Nyalanya sudah mati. Yang tersisa adalah bara di dalam gambut."
+          : fizzled
+            ? "Titik panasnya hilang sendiri. Coba api yang bertahan lebih lama."
           : selected
             ? "Sekarang klik permukaan gambut untuk menyulut di titik yang Anda pilih."
-            : "Pilih salah satu sumber sulutan di atas."}
+            : "Pilih salah satu cara di atas."}
       </p>
     </div>
   );

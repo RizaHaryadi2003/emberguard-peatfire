@@ -80,6 +80,7 @@ export default function BaraModule() {
   const [stats, setStats] = useState<SmolderStats>(() => sim.stats);
   const [source, setSource] = useState<IgnitionSource | null>(null);
   const [ignited, setIgnited] = useState(false);
+  const [fizzled, setFizzled] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(0);
   const [waterCm, setWaterCm] = useState(START_WATER_CM);
   const [view, setView] = useState<ViewMode>("permukaan");
@@ -214,17 +215,30 @@ export default function BaraModule() {
 
   // --- Tindakan pembaca -----------------------------------------------------
 
+  const handleSelectSource = useCallback((next: IgnitionSource) => {
+    setSource(next);
+    setFizzled(false);
+  }, []);
+
   /** Klik permukaan pada babak 01: sulut di titik itu. */
   const handleSurfaceClick = useCallback(
     (xFraction: number) => {
       if (act !== 0) return;
       const chosen = source ?? IGNITION_SOURCES[0];
       if (!source) setSource(chosen);
-      const lit = sim.ignite(Math.min(0.92, Math.max(0.08, xFraction)));
+      const x = Math.min(0.92, Math.max(0.08, xFraction));
       const s = stateRef.current;
-      s.flameX = Math.min(0.92, Math.max(0.08, xFraction));
+      s.flameX = x;
       s.flame = 1;
       s.flameDecay = 1 / chosen.flameSeconds;
+      // Api yang cepat lewat tetap terlihat menyala, tetapi tidak menyulut gambut.
+      if (!chosen.holdsHeat) {
+        setFizzled(true);
+        setMessage(chosen.after);
+        return;
+      }
+      setFizzled(false);
+      const lit = sim.ignite(x);
       if (!lit) {
         setMessage("Gambut di titik itu masih terlalu basah untuk menyala. Turunkan muka air tanah lebih dulu.");
         return;
@@ -286,6 +300,7 @@ export default function BaraModule() {
     setAct(0);
     setSource(null);
     setIgnited(false);
+    setFizzled(false);
     setSpeedIndex(0);
     pausedOnce.current = false;
     setWaterCm(START_WATER_CM);
@@ -506,7 +521,7 @@ export default function BaraModule() {
         ) : probe ? (
           <ProbeCard probe={probe} onClose={() => setProbe(null)} />
         ) : act === 0 ? (
-          <IgnitionPicker selected={source?.id ?? null} onSelect={setSource} ignited={ignited} />
+          <IgnitionPicker selected={source?.id ?? null} onSelect={handleSelectSource} ignited={ignited} fizzled={fizzled} />
         ) : (
           <ControlDock
             hours={stats.hours}

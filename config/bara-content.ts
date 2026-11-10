@@ -36,9 +36,9 @@ export const BARA_HOOK = {
 export const BARA_ACTS: readonly BaraAct[] = [
   {
     number: "01",
-    title: "Satu sulutan kecil",
-    body: "Kebakaran gambut hampir selalu berawal di permukaan, dari sesuatu yang tampak sepele. Nyala di rumput kering hanya bertahan beberapa menit, tetapi panasnya cukup untuk menyulut gambut kering di bawahnya. Sejak titik itu api tidak lagi butuh nyala: ia berubah menjadi bara.",
-    task: "Pilih satu sumber sulutan, lalu klik permukaan gambut untuk menyulutnya.",
+    title: "Api yang tinggal cukup lama",
+    body: "Kebakaran gambut paling sering berawal dari api pembukaan lahan. Api yang besar saja tidak cukup: titik panas di gambut baru berkembang bila panasnya bertahan satu sampai dua jam. Kalau tidak, titik itu hilang sendiri. Yang bertahan masuk ke gambut dan berubah menjadi bara.",
+    task: "Pilih cara api membakar, lalu klik permukaan gambut.",
     // Suhu sulut arang: Usup dkk. (2004), Tabel 1. Puncak lapangan: Santoso dkk. (2022).
     fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C" },
   },
@@ -66,37 +66,39 @@ export const BARA_ACTS: readonly BaraAct[] = [
   },
 ];
 
+/**
+ * Dua cara api membakar saat lahan dibuka. Menurut Usup dkk. (2004, hlm. 10–11),
+ * pembukaan lahan dengan api adalah penyebab utama, tetapi titik di gambut hanya
+ * berkembang bila panasnya bertahan 1–2 jam. Kalau tidak, titik itu hilang sendiri.
+ */
 export type IgnitionSource = {
-  id: "puntung" | "pembakaran" | "percikan";
+  id: "lintas" | "kayu";
   label: string;
   caption: string;
   /** Kalimat yang tampil setelah sumber ini dipakai menyulut. */
   after: string;
-  /** Lama nyala di permukaan sebelum berubah menjadi bara (detik animasi). */
+  /** Lama nyala di permukaan sebelum surut (detik animasi). */
   flameSeconds: number;
+  /** Panasnya bertahan cukup lama untuk menyulut gambut. */
+  holdsHeat: boolean;
 };
 
 export const IGNITION_SOURCES: readonly IgnitionSource[] = [
   {
-    id: "puntung",
-    label: "Puntung rokok",
-    caption: "Dibuang dari jalan setapak",
-    after: "Puntung rokok jatuh di serasah kering. Nyalanya kecil dan hanya sebentar, tetapi panasnya sudah cukup menyulut gambut di bawahnya.",
-    flameSeconds: 1.6,
-  },
-  {
-    id: "pembakaran",
-    label: "Pembakaran lahan",
-    caption: "Membuka lahan dengan api",
-    after: "Api pembakaran lahan padam setelah rumputnya habis. Yang tertinggal adalah bara di dalam gambut, yang justru baru mulai bekerja.",
-    flameSeconds: 2.6,
-  },
-  {
-    id: "percikan",
-    label: "Percikan mesin",
-    caption: "Dari alat berat atau mesin pompa",
-    after: "Satu percikan dari mesin mendarat di gambut kering yang terbuka. Tidak ada nyala besar, langsung menjadi bara.",
+    id: "lintas",
+    label: "Api cepat lewat",
+    caption: "Semak tebasan, habis dalam menit",
+    after: "Apinya besar, tetapi cepat lewat. Panasnya tidak bertahan cukup lama, jadi titik di gambut itu perlahan hilang.",
     flameSeconds: 1,
+    holdsHeat: false,
+  },
+  {
+    id: "kayu",
+    label: "Kayu terbakar lama",
+    caption: "Panas 1–2 jam di satu titik",
+    after: "Kayu sisa tebasan terbakar lama di satu titik. Panasnya masuk ke gambut, dan setelah apinya habis baranya tetap hidup.",
+    flameSeconds: 2.6,
+    holdsHeat: true,
   },
 ];
 
