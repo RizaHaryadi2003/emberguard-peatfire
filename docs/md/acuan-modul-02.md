@@ -170,6 +170,24 @@ Siraman di simulasi juga tidak pernah memadamkan bara dalam, padahal Santoso dkk
 Asumsi model yang tidak bersumber dari acuan: besar penurunan permukaan, arah rambat, peluang bara turun ke
 lapisan dalam, serta letak, lebar, dan syarat runtuh atap tanah.
 
+### Perubahan Babak 03 (11 November 2026)
+
+Uji di ponsel menunjukkan permukaan yang sudah disiram masih tampak menyala,
+sehingga pesan "dari atas tampak padam" tidak terbaca. Babak 03 kini berurutan
+siram → padam di atas → masih membara di bawah → menyala lagi dari bawah.
+
+| Perilaku | Dasar |
+|---|---|
+| Bara dalam jangkauan siraman langsung padam | Asumsi penyajian. Sebelumnya bara itu baru padam setelah 3 jam simulasi |
+| Siraman membasahi dari permukaan yang terbuka, termasuk dasar lubang bekas lapisan atas yang habis | Asumsi model, mengikuti logika air hujan yang jatuh ke lubang |
+| Jangkauan siraman 25 cm (`DOUSE_DEPTH`) | **Asumsi model.** Kedalaman resapan tidak dilaporkan acuan, jadi label di layar tidak memberi angka |
+| Air siraman menguap habis dalam 60 jam (`DOUSE_DECAY_HOURS`) | **Asumsi model** |
+| Bara naik dan menyalakan permukaan lagi sesudah lapisan siraman kering (`rekindleX`) | Sintesis dari Usup dkk. (2004, hlm. 12–13): bara sulit padam walau hujan lebat, dan muncul lagi menjadi api baru |
+| Bara menyeberang atap lalu muncul di ruas lain (`resurfaceX`) | Usup dkk. (2004, hlm. 12–13). Tetap ada, tetapi tidak lagi menjadi syarat selesai Babak 03 karena sering sudah terjadi di Babak 02 |
+
+Syarat selesai Babak 03 sekarang: sudah menyiram, sudah membuka termal, dan
+bara sudah menyala lagi sesudah siraman (atau sudah padam seluruhnya).
+
 ---
 
 ## 7. Isi Modul Sebelum Penerapan Dibandingkan dengan Acuan
