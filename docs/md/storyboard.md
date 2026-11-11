@@ -120,7 +120,21 @@ tiga hal yang harus ditiru modul lain:
 3. **Akibat tak terbalik** — gambut yang jadi abu tidak kembali. Ada yang
    dipertaruhkan.
 
-### Modul 01 — Anatomi Gambut ⚠️ **disusun ulang menurut acuan**
+### Modul 01 — Anatomi Gambut ✅ **desain dipertahankan, acuan disesuaikan**
+
+> **Pembaruan 11 November 2026.** Riza memutuskan desain Modul 01 tetap. Papan
+> cerita "baru" di bawah (tiga fase laju, penampang lanskap, uji gosok) **tidak
+> dipakai** dan disimpan hanya sebagai catatan. Acuan yang kini dipakai ada di
+> bagian 0 `docs/md/acuan-modul-01.md` (Anshari dkk., 2026). Satu-satunya
+> tambahan adalah uji peras pada Tahap 3, sehingga keempat tahap memenuhi
+> Pola 5A:
+>
+> | Tahap | Aksi |
+> |---|---|
+> | 1 Hutan di atas spons | Seret pengatur umur |
+> | 2 Lapis demi lapis | Klik lapisan |
+> | 3 Menyimpan air | Tekan-tahan untuk memeras contoh dari dua lapisan |
+> | 4 Saat air surut | Geser muka air tanah |
 
 > **Acuan:** Andriesse, J. P. (1988). *Nature and Management of Tropical Peat
 > Soils.* FAO Soils Bulletin 59. Rincian temuan, angka, dan kutipan tiap tahap

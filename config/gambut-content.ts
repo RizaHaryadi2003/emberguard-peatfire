@@ -48,7 +48,7 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
   {
     title: "Menyimpan air",
-    body: "Gambut bekerja seperti spons. Sebagian besar volumenya berupa pori, dan dalam keadaan alami pori itu penuh berisi air. Satu kilogram gambut fibrik kering dapat menahan 8,5 sampai lebih dari 30 kg air, sedangkan saprik yang lebih matang dan rapat kurang dari 4,5 kg. Muka air tanah berada dekat permukaan, sehingga gambut tetap basah sepanjang tahun, bahkan saat kemarau.",
+    body: "Gambut bekerja seperti spons. Sebagian besar volumenya berupa pori, dan dalam keadaan alami pori itu penuh berisi air. Tapi tidak semua lapisan menahan air sama banyak. Ambil contoh dari dua lapisan, lalu peras dan bandingkan airnya.",
     fact: { value: "± 90%", caption: "Bagian volume gambut fibrik yang berupa pori, terisi air saat jenuh (Boelter 1974, dalam Andriesse 1988)" },
   },
   {
@@ -135,3 +135,26 @@ export const GROWTH_STATUS_TEXT: Record<GrowthStatus, { label: string; message: 
     message: "Timbunan sudah melewati 50 cm. Pada profil ini, bahan yang lebih dulu tertimbun di bawah sudah lebih hancur dan lebih matang.",
   },
 };
+
+/**
+ * Teks panel uji peras pada tahap "Menyimpan air". Angka daya tampung air
+ * berasal dari `SQUEEZE_SAMPLES` di lib/peat.ts (Andriesse 1988, Tabel 17),
+ * warna dan sifat air perasannya dari Tabel 16.
+ */
+export const SQUEEZE_TEXT = {
+  title: "Uji peras",
+  pick: "Pilih contoh lapisan",
+  hold: "Tekan dan tahan untuk memeras",
+  holding: "Memeras…",
+  done: "Sudah diperas",
+  scale: "air yang ditahan 1 kg gambut kering saat jenuh",
+  before: "Peras contoh ini untuk melihat banyak dan warna airnya.",
+  remaining: (n: number) => `Peras ${n} contoh lagi untuk membandingkan.`,
+  compared: "Bandingkan: makin matang gambutnya, makin sedikit air yang ia tahan.",
+  samples: {
+    fibrik: { name: "Fibrik", water: "Air perasannya jernih kekuningan. Seratnya utuh dan menahan air paling banyak." },
+    hemik: { name: "Hemik", water: "Air perasannya coklat keruh. Sebagian serat sudah hancur." },
+    saprik: { name: "Saprik", water: "Air perasannya pekat, dan bahan gambutnya ikut lolos di sela jari." },
+  },
+} as const;
+

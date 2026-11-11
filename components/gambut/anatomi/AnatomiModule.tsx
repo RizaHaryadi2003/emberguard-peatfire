@@ -7,7 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { ANATOMI_HOOK, ANATOMI_STEPS, BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
-import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
+import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, SQUEEZE_REQUIRED, type OrganicLayerId, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
@@ -15,9 +15,10 @@ import LayerDetail from "./LayerDetail";
 import LaptopNudge from "@/components/gambut/LaptopNudge";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import ResultCardDialog from "./ResultCardDialog";
+import SqueezeTest from "./SqueezeTest";
 import StepAdvance from "@/components/gambut/StepAdvance";
 import WaterControl from "./WaterControl";
-import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
+import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, SQUEEZE_STEP, type Quality, type SceneState } from "./scene/sceneState";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -53,18 +54,21 @@ const MODULE = GAMBUT_MODULES[0];
 
 /**
  * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
- * berikutnya terbuka. Tahap "Menyimpan air" tidak menuntut apa pun, jadi
- * arahannya kosong dan panahnya langsung dapat diklik.
+ * berikutnya terbuka. Tahap terakhir tidak punya tahap sesudahnya.
  */
 const STEP_HINT = [
   `Seret pengatur umur sampai ${formatYears(PEAT_MAX_YEARS)} tahun untuk melanjutkan.`,
   "Klik salah satu lapisan untuk melihatnya lebih dekat.",
-  "",
+  `Peras contoh dari ${SQUEEZE_REQUIRED} lapisan berbeda untuk melanjutkan.`,
   "",
 ];
 
-/** Tahap yang tidak menuntut tindakan apa pun; panahnya terbuka begitu tiba. */
-const STEP_FREE = [false, false, true, true];
+/**
+ * Tahap yang tidak menuntut tindakan apa pun; panahnya terbuka begitu tiba.
+ * "Menyimpan air" dahulu termasuk di sini. Kini ia meminta uji peras, sehingga
+ * setiap tahap punya satu aksi pembaca seperti yang diminta pembimbing.
+ */
+const STEP_FREE = [false, false, false, true];
 
 /**
  * Modul 01 — Anatomi Gambut.
@@ -109,6 +113,10 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
+  /** Contoh lapisan yang sudah diperas pada tahap "Menyimpan air". */
+  const [squeezed, setSqueezed] = useState<OrganicLayerId[]>([]);
+  /** Bertambah tiap kali modul diulang, agar panel uji peras dipasang ulang dari kosong. */
+  const [round, setRound] = useState(0);
 
   /**
    * Buka tahap sesudah `i`. Sekali terbuka tetap terbuka: pembaca yang
@@ -119,11 +127,21 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     setUnlocked((u) => Math.max(u, Math.min(i + 1, STEP_COUNT - 1)));
   }, []);
 
+  /** Satu contoh selesai diperas; tahap berikutnya terbuka setelah cukup contoh dibandingkan. */
+  const handleSqueezed = useCallback(
+    (id: OrganicLayerId) => {
+      const next = squeezed.includes(id) ? squeezed : [...squeezed, id];
+      setSqueezed(next);
+      if (next.length >= SQUEEZE_REQUIRED) unlockAfter(SQUEEZE_STEP);
+    },
+    [squeezed, unlockAfter],
+  );
+
   const waterCm = hookOpen ? HOOK_WATER_CM : step === INTERACTIVE_STEP ? userWaterCm : STEP_WATER_CM[step];
   // Di luar tahap pertumbuhan, gambut selalu ditampilkan utuh.
   const years = !hookOpen && step === GROWTH_STEP ? userYears : PEAT_MAX_YEARS;
   /** Tahap yang memunculkan panel pengatur di sudut kiri bawah. */
-  const hasPanel = step === GROWTH_STEP || step === INTERACTIVE_STEP;
+  const hasPanel = step === GROWTH_STEP || step === SQUEEZE_STEP || step === INTERACTIVE_STEP;
 
   const sceneState = useRef<SceneState>({
     step: 0,
@@ -375,6 +393,8 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     setUserYears(0);
     setUserWaterCm(DEFAULT_WATER_CM);
     setWaterTouched(false);
+    setSqueezed([]);
+    setRound((r) => r + 1);
     setHovered(null);
     setFocused(null);
     setUrgent(false);
@@ -600,6 +620,27 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
             />
           </div>
           <GrowthControl years={userYears} onChange={applyYears} onInteract={stopGrowthDemo} />
+        </div>
+
+        {/* Uji peras (tahap "Menyimpan air") */}
+        <div
+          className={`absolute bottom-6 left-1/2 w-[min(560px,calc(100%-2.5rem))] -translate-x-1/2 md:bottom-20 md:left-14 md:w-[400px] md:translate-x-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step === SQUEEZE_STEP && !hookOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"
+          }`}
+          inert={step !== SQUEEZE_STEP || hookOpen}
+        >
+          {/* Sama dengan panel umur: di layar sempit panah duduk di atas panel. */}
+          <div className="absolute bottom-full right-0 mb-3 md:hidden">
+            <StepAdvance
+              nextTitle={ANATOMI_STEPS[SQUEEZE_STEP + 1].title}
+              label="Tahap berikutnya"
+              hint={STEP_HINT[SQUEEZE_STEP]}
+              locked={locked}
+              urgent={urgent}
+              onAdvance={advance}
+            />
+          </div>
+          <SqueezeTest key={round} squeezed={squeezed} onSqueezed={handleSqueezed} reducedMotion={reducedMotion} />
         </div>
 
         {/* Pengatur muka air (tahap interaktif) */}

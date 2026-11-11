@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatHoldKg,
   formatMeters,
   formatWaterDepth,
   formatYears,
@@ -17,6 +18,8 @@ import {
   PEAT_MIN_YEARS,
   PEAT_THICKNESS,
   PROFILE_DEPTH,
+  SQUEEZE_SAMPLES,
+  SQUEEZE_SCALE_KG,
 } from "./peat";
 
 describe("PEAT_LAYERS", () => {
@@ -180,5 +183,25 @@ describe("getGrowthStatus", () => {
     expect(getGrowthStatus(0.49)).toBe("belum");
     expect(getGrowthStatus(0.5)).toBe("gambut");
     expect(getGrowthStatus(PEAT_THICKNESS)).toBe("gambut");
+  });
+});
+
+describe("uji peras", () => {
+  it("nilai gelas ukur selalu di dalam rentang Tabel 17", () => {
+    for (const s of SQUEEZE_SAMPLES) {
+      if (s.holdKg.min !== null) expect(s.shownKg).toBeGreaterThanOrEqual(s.holdKg.min);
+      if (s.holdKg.max !== null) expect(s.shownKg).toBeLessThanOrEqual(s.holdKg.max);
+      expect(s.shownKg).toBeLessThanOrEqual(SQUEEZE_SCALE_KG);
+    }
+  });
+
+  it("makin matang, makin sedikit air yang ditahan", () => {
+    const [fibrik, hemik, saprik] = SQUEEZE_SAMPLES;
+    expect(fibrik.shownKg).toBeGreaterThan(hemik.shownKg);
+    expect(hemik.shownKg).toBeGreaterThan(saprik.shownKg);
+  });
+
+  it("menulis rentang dengan angka Indonesia", () => {
+    expect(SQUEEZE_SAMPLES.map(formatHoldKg)).toEqual(["8,5 – > 30 kg", "4,5 – 8,5 kg", "< 4,5 kg"]);
   });
 });

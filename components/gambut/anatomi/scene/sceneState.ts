@@ -56,5 +56,8 @@ export const GROWTH_STEP = 0;
 /** Tahap yang memakai tampilan lapisan terurai. */
 export const EXPLODE_STEP = 1;
 
+/** Tahap uji peras: pembaca memeras contoh dari tiap lapisan. */
+export const SQUEEZE_STEP = 2;
+
 /** Tahap yang memberi kendali muka air kepada pengguna. */
 export const INTERACTIVE_STEP = 3;
