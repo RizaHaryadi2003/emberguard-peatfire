@@ -192,6 +192,11 @@ export type SmolderStats = {
   collapseX: number | null;
   /** Posisi bara terakhir yang muncul lagi di permukaan (m); `null` bila belum ada. */
   resurfaceX: number | null;
+  /**
+   * Posisi bara yang menyalakan permukaan lagi sesudah disiram (m); `null`
+   * bila belum terjadi sejak siraman terakhir.
+   */
+  rekindleX: number | null;
 };
 
 function emptyStats(): SmolderStats {
@@ -211,6 +216,7 @@ function emptyStats(): SmolderStats {
     maxSubsidence: 0,
     collapseX: null,
     resurfaceX: null,
+    rekindleX: null,
   };
 }
 
@@ -253,6 +259,11 @@ export class SmolderSim {
   private collapseX: number | null = null;
   private maxDepth = 0;
   private resurfaceX: number | null = null;
+  /** Bara yang naik lagi ke permukaan sesudah disiram; dipantau sejak siraman. */
+  private rekindleX: number | null = null;
+  private rekindleArmed = false;
+  /** Banyak baris abu terbuka di puncak tiap kolom (lubang bekas atap runtuh). */
+  private readonly openRows: Uint16Array = new Uint16Array(GRID_COLS);
 
   stats: SmolderStats = emptyStats();
 
@@ -310,6 +321,9 @@ export class SmolderSim {
     this.roofFallen.fill(0);
     this.collapseX = null;
     this.resurfaceX = null;
+    this.rekindleX = null;
+    this.rekindleArmed = false;
+    this.openRows.fill(0);
     this.maxDepth = 0;
     this.state.fill(CELL_INTACT);
     this.progress.fill(0);
@@ -341,7 +355,43 @@ export class SmolderSim {
    */
   douseSurface(): void {
     this.douse = 1;
+    // Mulai sekarang dipantau: kapan bara dari bawah menyalakan permukaan lagi.
+    this.rekindleArmed = true;
+    this.rekindleX = null;
     this.updateMoisture();
+    // Bara yang benar-benar tersentuh air siraman langsung padam menjadi
+    // gambut hangus. Dahulu ia masih menunggu QUENCH_HOURS seperti bara yang
+    // perlahan terkepung air tanah, sehingga di layar permukaan yang baru
+    // disiram tetap berpijar dan menjalar beberapa saat — terbaca seolah
+    // siramannya tidak berpengaruh sama sekali. Yang tidak tersentuh air,
+    // yaitu bara di bawah jangkauan siraman, tetap hidup seperti sebelumnya.
+    let quenched = false;
+    for (let i = 0; i < this.state.length; i++) {
+      if (this.state[i] !== CELL_SMOLDER || this.moisture[i] < MOISTURE_LIMIT) continue;
+      this.state[i] = CELL_QUENCHED;
+      this.progress[i] = Math.min(this.progress[i], 0.85);
+      quenched = true;
+    }
+    if (quenched) {
+      this.revision++;
+      this.collect();
+    }
+  }
+
+  /**
+   * Kedalaman lapisan atas yang masih terlalu basah untuk dilalui bara akibat
+   * siraman (m), atau 0 bila siramannya sudah menguap. Lapisan ini menipis
+   * dari bawah seiring air menguap, dan itulah jalan bara naik kembali.
+   */
+  dousedDepth(): number {
+    if (this.douse <= 0) return 0;
+    let depth = 0;
+    for (let row = 0; row < GRID_ROWS; row++) {
+      const d = this.depthOfRow(row);
+      if (d >= DOUSE_DEPTH) break;
+      if (this.moistureAtDepth(d) >= MOISTURE_LIMIT) depth = d + CELL_H / 2;
+    }
+    return depth;
   }
 
   /** Sisa pengaruh siraman permukaan (0–1). */
@@ -382,8 +432,13 @@ export class SmolderSim {
     return lit;
   }
 
-  /** Kadar air (fraksi berat kering) pada kedalaman `depth` untuk keadaan air saat ini. */
-  moistureAtDepth(depth: number): number {
+  /**
+   * Kadar air (fraksi berat kering) pada kedalaman `depth` untuk keadaan air
+   * saat ini. `soakDepth` adalah jarak titik itu dari permukaan yang terbuka ke
+   * langit: di dasar lubang bekas atap runtuh, air siraman jatuh langsung ke
+   * gambut yang tersingkap di sana, bukan ke permukaan asal yang sudah hilang.
+   */
+  moistureAtDepth(depth: number, soakDepth = depth): number {
     // Di bawah muka air tanah gambut jenuh; di atasnya menurun sejauh air
     // tanah masih sampai, lalu mendatar pada kadar air lapisan tak jenuh.
     const above = this.waterTable - depth;
@@ -395,7 +450,10 @@ export class SmolderSim {
       if (depth < DRY_TOP_DEPTH) base -= (MOISTURE_UNSATURATED - MOISTURE_DRIEST) * (1 - depth / DRY_TOP_DEPTH);
     }
     // Air siraman hanya membasahi lapisan tipis paling atas.
-    const wetted = depth < DOUSE_DEPTH ? this.douse * (1 - depth / DOUSE_DEPTH) * (MOISTURE_SATURATED - MOISTURE_DRIEST) : 0;
+    const wetted =
+      soakDepth >= 0 && soakDepth < DOUSE_DEPTH
+        ? this.douse * (1 - soakDepth / DOUSE_DEPTH) * (MOISTURE_SATURATED - MOISTURE_DRIEST)
+        : 0;
     return Math.min(MOISTURE_SATURATED, base + wetted);
   }
 
@@ -413,9 +471,25 @@ export class SmolderSim {
   }
 
   private updateMoisture(): void {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      const m = this.moistureAtDepth(this.depthOfRow(row));
-      for (let col = 0; col < GRID_COLS; col++) this.moisture[this.index(col, row)] = m;
+    if (this.douse <= 0) {
+      for (let row = 0; row < GRID_ROWS; row++) {
+        const m = this.moistureAtDepth(this.depthOfRow(row));
+        for (let col = 0; col < GRID_COLS; col++) this.moisture[this.index(col, row)] = m;
+      }
+      return;
+    }
+    // Selama air siraman masih ada, kadar airnya dihitung per kolom dari
+    // permukaan yang terbuka. Rongga abu yang masih beratap tidak dihitung:
+    // air tidak menembus atapnya.
+    for (let col = 0; col < GRID_COLS; col++) {
+      let open = 0;
+      while (open < GRID_ROWS && this.state[this.index(col, open)] === CELL_ASH) open++;
+      this.openRows[col] = open;
+      const top = open * CELL_H;
+      for (let row = 0; row < GRID_ROWS; row++) {
+        const d = this.depthOfRow(row);
+        this.moisture[this.index(col, row)] = this.moistureAtDepth(d, d - top);
+      }
     }
   }
 
@@ -433,6 +507,12 @@ export class SmolderSim {
       if (row < RESURFACE_ROWS && ROOF_OF_COL[col] < 0 && !this.segmentLit[SEGMENT_OF_COL[col]]) {
         this.segmentLit[SEGMENT_OF_COL[col]] = 1;
         this.resurfaceX = this.xOfCol(col);
+      }
+      // Sesudah disiram: begitu lapisan atas kering lagi dan bara dari bawah
+      // mencapai permukaan yang terbuka, permukaan itu menyala lagi.
+      if (this.rekindleArmed && this.douse < 1 && row < this.openRows[col] + RESURFACE_ROWS) {
+        this.rekindleArmed = false;
+        this.rekindleX = this.xOfCol(col);
       }
     }
   }
@@ -627,6 +707,7 @@ export class SmolderSim {
       maxSubsidence: this.maxSubsidence(),
       collapseX: this.collapseX,
       resurfaceX: this.resurfaceX,
+      rekindleX: this.rekindleX,
     };
   }
 
@@ -751,11 +832,16 @@ export function smoothField(src: Uint8Array, dst: Uint8Array): void {
 }
 
 /**
- * Bara sudah sempat muncul lagi, atau sudah habis sehingga tidak akan muncul.
- * Syarat kedua mencegah pembaca terkunci di Babak 03 bila bara tidak menyeberang.
+ * Sesudah disiram, bara sudah naik dan menyalakan permukaan lagi, atau sudah
+ * habis sehingga tidak akan naik lagi. Syarat kedua mencegah pembaca terkunci
+ * di Babak 03 bila bara padam sebelum sempat naik.
+ *
+ * Dahulu syaratnya bara yang menyeberang atap (`resurfaceX`). Uji di peramban
+ * menunjukkan penyeberangan itu sering sudah terjadi di Babak 02, sehingga
+ * Babak 03 selesai sebelum pembaca melihat apa pun sesudah siramannya.
  */
 export function resurfacingSettled(stats: SmolderStats): boolean {
-  return stats.resurfaceX !== null || stats.extinguished;
+  return stats.rekindleX !== null || stats.extinguished;
 }
 
 export function formatDay(hours: number): string {

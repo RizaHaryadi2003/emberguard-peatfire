@@ -196,6 +196,8 @@ export const SUPPRESSION_TEXT = {
   },
   collapse:
     "Rongga di bawahnya terlalu lebar, dan atap tanahnya runtuh. Di lahan yang terbakar, tanah seperti ini bisa amblas saat diinjak.",
+  rekindle:
+    "Lapisan atas sudah kering lagi. Bara yang bertahan di bawah merambat naik dan menyalakan permukaan sekali lagi, beberapa hari setelah disiram.",
   resurface:
     "Bara muncul lagi di tempat lain. Ia menyeberang di bawah tanah yang tidak terbakar, lalu naik dan memulai api baru di permukaan.",
 } as const;

@@ -55,6 +55,14 @@ const SUMMARY_DELAY_MS = 4000;
 /** Lebar layar (piksel) mulai dari mana kartu hasil tidak lagi menutupi bongkahan. */
 const NARROW_MAX = 768;
 
+/**
+ * Lama waktu berhenti sesudah penyiraman (milidetik). Pada kecepatan "Lambat"
+ * air siraman menguap dalam ± 25 detik nyata, dan bara langsung merambat naik
+ * lagi. Tanpa jeda, saat permukaan padam terlewat begitu saja, padahal itulah
+ * separuh pertama dari pelajaran babak ini: dari atas tampak padam.
+ */
+const DOUSE_PAUSE_MS = 4000;
+
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;
 
@@ -116,7 +124,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
   const hintRef = useRef<LayerHintHandle>(null);
   const pausedOnce = useRef(false);
-  const announced = useRef({ collapse: false, resurface: false });
+  const announced = useRef({ collapse: false, resurface: false, rekindle: false });
 
   // Salurkan keadaan antarmuka ke adegan 3D (dibaca tiap bingkai).
   useEffect(() => {
@@ -313,12 +321,28 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     [act, sim],
   );
 
+  const dousePause = useRef<number | null>(null);
   const handleDouse = useCallback(() => {
     sim.douseSurface();
+    setStats({ ...sim.stats });
     stateRef.current.spray = 1;
     setDousedOnce(true);
+    announced.current.rekindle = false;
     setMessage(SUPPRESSION_TEXT.douse.result);
-  }, [sim]);
+    // Waktu berhenti sebentar supaya permukaan yang padam sempat dilihat,
+    // lalu berjalan lagi dengan kecepatan yang sedang dipakai pembaca.
+    // Bila pembaca mengubah kecepatan selama jeda, pilihannya yang dipakai.
+    const resume = speedIndex === 0 ? ACT_SPEED[2] : speedIndex;
+    if (dousePause.current !== null) window.clearTimeout(dousePause.current);
+    setSpeedIndex(0);
+    dousePause.current = window.setTimeout(() => {
+      dousePause.current = null;
+      setSpeedIndex((now) => (now === 0 ? resume : now));
+    }, DOUSE_PAUSE_MS);
+  }, [sim, speedIndex]);
+  useEffect(() => () => {
+    if (dousePause.current !== null) window.clearTimeout(dousePause.current);
+  }, []);
 
   const handleRewet = useCallback(() => {
     // Muka air dinaikkan sampai di atas bara terdalam, dengan batas aman 40 cm.
@@ -334,6 +358,8 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   }, []);
 
   const handleReset = useCallback(() => {
+    if (dousePause.current !== null) window.clearTimeout(dousePause.current);
+    dousePause.current = null;
     sim.reset();
     sim.setWaterTable(START_WATER_CM / 100);
     setStats({ ...sim.stats });
@@ -343,7 +369,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     setFizzled(false);
     setSpeedIndex(0);
     pausedOnce.current = false;
-    announced.current = { collapse: false, resurface: false };
+    announced.current = { collapse: false, resurface: false, rekindle: false };
     setWaterCm(START_WATER_CM);
     setView("permukaan");
     setProbe(null);
@@ -470,6 +496,10 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     if (next.resurfaceX !== null && !announced.current.resurface) {
       announced.current.resurface = true;
       setMessage(SUPPRESSION_TEXT.resurface);
+    }
+    if (next.rekindleX !== null && !announced.current.rekindle) {
+      announced.current.rekindle = true;
+      setMessage(SUPPRESSION_TEXT.rekindle);
     }
   }, []);
   const handleReady = useCallback(() => setReady(true), []);

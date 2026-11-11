@@ -5,6 +5,7 @@ import {
   CELL_QUENCHED,
   CELL_SMOLDER,
   CELL_W,
+  DOUSE_DECAY_HOURS,
   DOUSE_DEPTH,
   formatDay,
   formatElapsed,
@@ -193,6 +194,41 @@ describe("atap tanah dan bara yang muncul lagi", () => {
     expect(sim.stats.alive).toBe(true);
   });
 
+  it("air siraman membasahi gambut yang tersingkap di dasar lubang", () => {
+    const sim = baru(benihRuntuh());
+    sampai(sim, () => sim.stats.collapseX !== null);
+    // Kolom dengan lubang abu terbuka paling dalam, di sekitar titik sulut.
+    let col = 0;
+    let open = 0;
+    for (let c = 0; c < GRID_COLS; c++) {
+      let o = 0;
+      while (o < GRID_ROWS && sim.state[sim.index(c, o)] === CELL_ASH) o++;
+      if (o > open) [col, open] = [c, o];
+    }
+    // Lubangnya cukup dalam sehingga dasarnya di luar jangkauan siraman asal.
+    expect(sim.depthOfRow(open)).toBeGreaterThan(DOUSE_DEPTH);
+    sim.douseSurface();
+    // Sel pertama di bawah lubang kini terlalu basah untuk membara.
+    expect(sim.probe(col, open).moisture).toBeGreaterThanOrEqual(MOISTURE_LIMIT);
+  });
+
+  it("bara menyalakan permukaan lagi sesudah lapisan siraman kering", () => {
+    let nyala = 0;
+    for (let n = 1; n <= 20; n++) {
+      const sim = baru(n * 17);
+      jalan(sim, 2);
+      if (!sim.stats.alive) continue;
+      sim.douseSurface();
+      expect(sim.stats.rekindleX).toBeNull();
+      // Selama lapisan atas masih basah, permukaan belum menyala lagi.
+      sim.advance(12, 10_000);
+      sim.collect();
+      expect(sim.stats.rekindleX).toBeNull();
+      if (sampai(sim, () => sim.stats.rekindleX !== null)) nyala++;
+    }
+    expect(nyala).toBeGreaterThanOrEqual(10);
+  });
+
   it("dikembalikan saat simulasi diulang", () => {
     const sim = baru(benihRuntuh());
     sampai(sim, () => sim.stats.collapseX !== null);
@@ -237,10 +273,12 @@ describe("angka untuk antarmuka", () => {
     }
   });
 
-  it("menganggap Babak 03 selesai saat bara muncul lagi atau sudah habis", () => {
+  it("menganggap Babak 03 selesai saat bara menyala lagi sesudah disiram atau sudah habis", () => {
     const { sim } = ignited(0.95);
     expect(resurfacingSettled(sim.stats)).toBe(false);
-    expect(resurfacingSettled({ ...sim.stats, resurfaceX: 1.4 })).toBe(true);
+    // Penyeberangan atap sebelum disiram tidak lagi cukup.
+    expect(resurfacingSettled({ ...sim.stats, resurfaceX: 1.4 })).toBe(false);
+    expect(resurfacingSettled({ ...sim.stats, rekindleX: 1.4 })).toBe(true);
     expect(resurfacingSettled({ ...sim.stats, extinguished: true })).toBe(true);
   });
 });
@@ -370,6 +408,36 @@ describe("pemadaman", () => {
     jalan(sim, 1);
     expect(sim.stats.alive).toBe(true);
     expect(sim.stats.consumed).toBeGreaterThan(sebelum);
+  });
+
+  it("siraman langsung memadamkan bara di lapisan yang tersentuh air", () => {
+    const { sim } = ignited();
+    jalan(sim, 2);
+    sim.douseSurface();
+    const basah = sim.dousedDepth();
+    expect(basah).toBeGreaterThan(0.1);
+    expect(basah).toBeLessThanOrEqual(DOUSE_DEPTH);
+    // Tanpa memajukan waktu: tidak ada lagi sel membara di dalam lapisan basah.
+    for (let row = 0; row < GRID_ROWS; row++) {
+      if (sim.depthOfRow(row) >= basah) break;
+      for (let col = 0; col < GRID_COLS; col++) {
+        expect(sim.state[sim.index(col, row)]).not.toBe(CELL_SMOLDER);
+      }
+    }
+    // Bara di bawahnya tidak tersentuh.
+    expect(sim.stats.alive).toBe(true);
+  });
+
+  it("lapisan basah siraman menipis dari bawah lalu habis", () => {
+    const { sim } = ignited();
+    sim.douseSurface();
+    const awal = sim.dousedDepth();
+    sim.advance(DOUSE_DECAY_HOURS / 2, 10_000);
+    const tengah = sim.dousedDepth();
+    expect(tengah).toBeGreaterThan(0);
+    expect(tengah).toBeLessThan(awal);
+    sim.advance(DOUSE_DECAY_HOURS, 10_000);
+    expect(sim.dousedDepth()).toBe(0);
   });
 
   it("pembasahan sampai atas titik bara memadamkan seluruhnya", () => {

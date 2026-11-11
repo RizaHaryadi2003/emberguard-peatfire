@@ -98,6 +98,7 @@ uniform float uSunIntensity;
 uniform vec3 uAmbient;
 uniform float uWaterDepth;  // muka air tanah (m di bawah permukaan)
 uniform float uDouse;       // sisa air siraman permukaan (0–1)
+uniform float uDousedDepth; // tebal lapisan atas yang dipadamkan siraman (m)
 uniform float uThermal;     // 0 = tampilan nyata, 1 = citra termal
 uniform float uCavity;
 uniform float uFlicker;     // 0 bila pengguna meminta gerak dikurangi
@@ -201,6 +202,12 @@ void main() {
   float soak = max(0.0, vDepth + ragged * 0.16);
   float doused = soak < ${DOUSE_DEPTH.toFixed(3)} ? uDouse * (1.0 - soak / ${DOUSE_DEPTH.toFixed(3)}) : 0.0;
   float moisture = clamp(wet + doused, 0.0, 1.0);
+  // Lapisan yang dipadamkan siraman: basah sampai jenuh, dan tidak ada pijar
+  // yang boleh tampak di dalamnya. Tanpa batas tegas ini, cahaya bara tepat di
+  // bawahnya merembes naik dan permukaan yang sudah padam terbaca masih
+  // menyala. Lapisannya menipis dari bawah seiring air menguap.
+  float soaked = uDousedDepth > 0.0 ? 1.0 - smoothstep(uDousedDepth - 0.03, uDousedDepth + 0.005, soak) : 0.0;
+  moisture = max(moisture, soaked);
 
   // --- Warna dasar gambut: campuran empat tekstur lapisan menurut kedalaman.
   // Koordinatnya dibelokkan oleh derau lebar, dan tiap lapisan diputar sendiri,
@@ -365,7 +372,7 @@ void main() {
   float breathe = 1.0 - uFlicker * 0.17 * (noise(vUv * 3.2 + uTime * 0.22) + noise(vUv * 6.5 - uTime * 0.41) - 1.0);
   // Pijar mengikuti jaringan retakan, bukan satu pita rata.
   float vein = 1.0 - abs(fbm(vLocal * 6.5 + 2.0) * 2.0 - 1.0);
-  float glow = heat * breathe * (0.35 + 1.1 * smoothstep(0.62, 0.96, vein));
+  float glow = heat * breathe * (0.35 + 1.1 * smoothstep(0.62, 0.96, vein)) * (1.0 - soaked);
 
   // Kedua, rembesan panasnya. Diperlebar dari dua sel ke tiga, dan bobotnya
   // dinaikkan: daerah membara harus terbaca sebagai zona panas yang meluas
@@ -373,7 +380,7 @@ void main() {
   float halo = max(max(sampleField(fuv + vec2(uTexel.x * 3.0, 0.0)).g,
                        sampleField(fuv - vec2(uTexel.x * 3.0, 0.0)).g),
                    max(sampleField(fuv + vec2(0.0, uTexel.y * 3.0)).g,
-                       sampleField(fuv - vec2(0.0, uTexel.y * 3.0)).g));
+                       sampleField(fuv - vec2(0.0, uTexel.y * 3.0)).g)) * (1.0 - soaked);
 
   // Ketiga, warnanya. Puncaknya dahulu nyaris putih kekuningan — warna nyala,
   // bukan warna bara. Sekarang berhenti di jingga, dengan dasar merah tua
@@ -405,6 +412,11 @@ void main() {
   float band = (1.0 - smoothstep(0.0, 0.16, abs(vDepth - uWaterDepth))) * step(uWaterDepth, vDepth);
   color += vec3(0.33, 0.68, 0.93) * (line * 0.5 + band * 0.05);
 
+  // --- Batas bawah lapisan yang dipadamkan siraman: garis putus-putus biru,
+  // dibedakan dari garis muka air tanah yang utuh.
+  float douseLine = (1.0 - smoothstep(0.0, 0.014, abs(soak - uDousedDepth))) * step(0.45, fract(vUv.x * 36.0)) * step(0.001, uDousedDepth);
+  color += vec3(0.33, 0.68, 0.93) * douseLine * 0.55;
+
   // --- Penggaris kedalaman di tepi kiri: tanda tiap 0,5 m, lebih panjang
   // tiap 1 m. Pembaca jadi dapat menyebut kedalaman baranya, bukan menebak
   // dari tinggi gambar. Hanya tampil pada tampilan nyata karena citra termal
@@ -431,12 +443,16 @@ void main() {
     (noise(vUv * vec2(260.0, 180.0)) - 0.5) * 0.05 +
     (noise(vLocal * 3.1) - 0.5) * 0.06;
   float tv = clamp(0.1 + 0.34 * warmth * (1.0 - moisture * 0.72) + grain + heat * 0.92 + ash * 0.05, 0.0, 1.0);
+  // Lapisan yang baru disiram dingin oleh air: tampil biru, kontras dengan
+  // bara yang masih panas tepat di bawahnya.
+  tv = mix(tv, min(tv, 0.08), soaked);
   vec3 thermal = thermalRamp(tv);
   // Penggaris kedalaman memakai tanda tepi yang sama dengan tampilan nyata.
   // Sebelumnya berupa garis mendatar selebar penampang, yang justru menambah
   // kesan bidang datar yang dibagi-bagi.
   thermal += vec3(0.45, 0.52, 0.6) * tick * 0.45;
   thermal += vec3(0.2, 0.55, 0.8) * line * 0.8;
+  thermal += vec3(0.2, 0.55, 0.8) * douseLine * 0.6;
   color = mix(color, thermal, uThermal);
 
   gl_FragColor = vec4(color, 1.0);
@@ -456,6 +472,7 @@ export type FaceUniforms = {
   uAmbient: { value: THREE.Color };
   uWaterDepth: { value: number };
   uDouse: { value: number };
+  uDousedDepth: { value: number };
   uThermal: { value: number };
   uFlicker: { value: number };
   uHotspot: { value: number };
@@ -507,6 +524,7 @@ export function createFaceMaterial(
         uAmbient: { value: new THREE.Color(0.32, 0.34, 0.36) },
         uWaterDepth: { value: 0.85 },
         uDouse: { value: 0 },
+        uDousedDepth: { value: 0 },
         uThermal: { value: 0 },
         uCavity: { value: CAVITY_DEPTH },
         uFlicker: { value: 1 },

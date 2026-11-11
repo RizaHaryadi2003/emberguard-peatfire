@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { PROFILE_DEPTH } from "@/lib/peat";
-import { CELL_ASH, CELL_SMOLDER, DOUSE_DEPTH, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
+import { CELL_ASH, CELL_SMOLDER, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
 import { faceBounds, profileY, sinkAt, surfaceRelief, FACE_Z } from "./crossSection";
 import { BLOCK_WIDTH, type BaraState, type Subsidence } from "./baraState";
 import { isTouchOnly } from "./layerHint";
@@ -53,6 +53,7 @@ const NEAR_X = 1.4;
  */
 const PRIORITY = [
   "bara",
+  "nyala",
   "muncul",
   "runtuh",
   "abu",
@@ -191,6 +192,8 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     }
 
     const list: Marker[] = [];
+    const wetDepth = sim.dousedDepth();
+    const doused = wetDepth > 0.02;
     const bounds = faceBounds(0);
 
     // Sebelum disulut, yang perlu dikenali hanya permukaannya.
@@ -227,15 +230,24 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         x,
         // Sedikit di bawah titik beratnya, supaya tidak menutupi pijarnya.
         y: yAt(d, x) - 0.2,
-        text: narrow
-          ? `Bara ${Math.round(stats.frontDepth * 100)} cm`
-          : `Bara sedalam ${Math.round(stats.frontDepth * 100)} cm`,
+        // Selama lapisan atas masih basah oleh siraman, label ini menegaskan
+        // bahwa yang padam hanya bagian atas.
+        text: doused
+          ? narrow
+            ? "Masih membara di bawah"
+            : `Masih membara di bawah · ${Math.round(stats.frontDepth * 100)} cm`
+          : narrow
+            ? `Bara ${Math.round(stats.frontDepth * 100)} cm`
+            : `Bara sedalam ${Math.round(stats.frontDepth * 100)} cm`,
         tone: "ember",
       });
     }
 
     // Rongga abu baru diberi nama setelah cukup lebar untuk dikenali.
-    if (ashN > GRID_COLS * 0.5) {
+    // Selama siraman masih basah, label rongga abu disimpan dulu: sudut kiri
+    // atas sudah diisi label siraman, bara, dan atap runtuh, sementara rongga
+    // abu bukan bagian dari cerita siram–padam–muncul lagi.
+    if (ashN > GRID_COLS * 0.5 && !doused) {
       const x = ashX / ashN;
       const d = ashD / ashN;
       list.push({
@@ -259,7 +271,21 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
         tone: "ash",
       });
     }
-    if (stats.resurfaceX !== null && emberN > 0) {
+    // Sesudah disiram: titik tempat bara dari bawah menyalakan permukaan lagi.
+    if (stats.rekindleX !== null && emberN > 0) {
+      list.push({
+        id: "nyala",
+        x: stats.rekindleX,
+        y: yAt(0, stats.rekindleX) + 0.5,
+        text: narrow ? "Menyala lagi" : "Menyala lagi dari bawah",
+        tone: "ember",
+      });
+    }
+    // Penyeberangan atap yang terjadi sebelum disiram tidak diberi label lagi
+    // sesudah siraman: ceritanya kini siram–padam–menyala lagi, dan dua label
+    // "muncul" yang berdampingan terbaca sebagai satu kejadian yang sama.
+    const afterDouse = sim.getDouse() > 0 || stats.rekindleX !== null;
+    if (stats.resurfaceX !== null && emberN > 0 && !afterDouse) {
       list.push({
         id: "muncul",
         x: stats.resurfaceX,
@@ -269,13 +295,14 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
       });
     }
 
-    // Sesudah disiram: sejauh mana air benar-benar masuk.
-    if (sim.getDouse() > 0.05) {
+    // Sesudah disiram: sejauh mana air benar-benar masuk. Label menempel pada
+    // garis putus-putus batas lapisan basah, yang naik seiring air menguap.
+    if (doused) {
       const x = bounds.left + 0.12;
       list.push({
         id: "siram",
         x,
-        y: yAt(DOUSE_DEPTH, x),
+        y: yAt(wetDepth, x),
         // Tanpa angka: kedalaman resapan siraman tidak dilaporkan oleh acuan.
         text: narrow ? "Batas siraman" : "Air siraman berhenti di sini",
         tone: "water",

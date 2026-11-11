@@ -428,6 +428,10 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
     u.uTime.value = state.clock.elapsedTime;
     u.uWaterDepth.value = water.current;
     u.uDouse.value = sim.getDouse();
+    // Diperhalus agar batas lapisan basah turun-naik dengan lembut, bukan
+    // melompat per sel kisi simulasi.
+    const dousedDepth = sim.dousedDepth();
+    u.uDousedDepth.value = dousedDepth === 0 || u.uDousedDepth.value === 0 ? dousedDepth : THREE.MathUtils.damp(u.uDousedDepth.value, dousedDepth, 3, dt);
     u.uThermal.value = s.thermal;
     u.uFlicker.value = s.reducedMotion ? 0 : 1;
     u.uHotspot.value = s.flame;
