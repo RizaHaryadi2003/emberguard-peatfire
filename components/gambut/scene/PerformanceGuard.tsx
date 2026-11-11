@@ -21,6 +21,8 @@ const INPUT_EVENTS = ["pointermove", "pointerdown", "wheel", "scroll", "keydown"
 export default function PerformanceGuard({ maxDpr, onOverload }: { maxDpr: number; onOverload: () => void }) {
   const setDpr = useThree((s) => s.setDpr);
   const invalidate = useThree((s) => s.invalidate);
+  const setFrameloop = useThree((s) => s.setFrameloop);
+  const get = useThree((s) => s.get);
   const lastInput = useRef(-Infinity);
   const acc = useRef({ time: 0, frames: 0, warmup: 3, dpr: maxDpr, slowWindows: 0, cap: FRAME_CAP.idle as number });
 
@@ -34,7 +36,23 @@ export default function PerformanceGuard({ maxDpr, onOverload }: { maxDpr: numbe
     let nextAt = 0;
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
-      const clock = advanceFrameClock(now, nextAt, getFrameCap(now - lastInput.current));
+      // Kanvas yang sedang disembunyikan ("never") tidak boleh dibangunkan.
+      const loop = get().frameloop;
+      if (loop === "never") return;
+      const cap = getFrameCap(now - lastInput.current);
+      // Selama pembaca berinteraksi, kanvas menggambar tiap kali layar
+      // menyegarkan diri. Sebelumnya batas 60 dicapai dengan invalidate() dari
+      // loop ini, tetapi loop milik react-three-fiber berjalan terpisah: tiap
+      // permintaan baru dikerjakan pada bingkai berikutnya, dan permintaan
+      // sesudahnya jatuh tepat saat loop itu berhenti. Akibatnya adegan hanya
+      // tergambar tiap bingkai kedua — diukur 30 fps saat bongkahan diseret
+      // pada layar 60 Hz, di Modul 01 maupun 02.
+      if (cap === FRAME_CAP.active) {
+        if (loop !== "always") setFrameloop("always");
+        return;
+      }
+      if (loop !== "demand") setFrameloop("demand");
+      const clock = advanceFrameClock(now, nextAt, cap);
       nextAt = clock.nextAt;
       if (clock.due) invalidate();
     };
@@ -44,7 +62,7 @@ export default function PerformanceGuard({ maxDpr, onOverload }: { maxDpr: numbe
       cancelAnimationFrame(frame);
       for (const name of INPUT_EVENTS) window.removeEventListener(name, markInput, { capture: true });
     };
-  }, [invalidate]);
+  }, [invalidate, setFrameloop, get]);
 
   useFrame((_, delta) => {
     const a = acc.current;
