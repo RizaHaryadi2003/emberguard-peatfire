@@ -431,17 +431,18 @@ export default function KanalModule() {
               dan mengandalkan elemen di belakangnya, seperti di Modul 01 —
               tetapi di modul ini elemen itu tidak pernah dipasang, sehingga
               yang terlihat hanya bulatan putih tanpa jalur. Bagian yang sudah
-              digali berwarna biru, dan garis tegak menandai 100 cm yang
-              diminta babak 01. */}
+              digali diwarnai seperti penggeser muka air Modul 01 — biru
+              (basah) ke jingga (kering) — dan garis tegak menandai 100 cm
+              yang diminta babak 01. */}
           <div className="relative mt-2">
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/15">
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#6fb6d8] to-[#8fcce8] transition-[width] duration-150"
+                className="h-full rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-[#e8702a]"
                 style={{ width: `${(canalDepthCm / (CANAL_DEPTH_MAX_M * 100)) * 100}%` }}
               />
             </div>
             <div
-              className="pointer-events-none absolute top-1/2 h-4 w-px -translate-y-1/2 bg-white/60"
+              className="pointer-events-none absolute top-1/2 h-4 w-px -translate-y-1/2 bg-white/70"
               style={{ left: `${(ACT1_DEPTH_CM / (CANAL_DEPTH_MAX_M * 100)) * 100}%` }}
               title={`${ACT1_DEPTH_CM} cm`}
             />
@@ -636,27 +637,17 @@ export default function KanalModule() {
                 title={locked ? current.hint : a.title}
                 className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                {/* Penanda babak ikut mengisi biru: babak yang sudah dilewati
-                    penuh, babak yang sedang dikerjakan terisi sejauh
-                    kemajuannya, dan penuh begitu tugasnya selesai. Babak yang
-                    sudah dilewati dihitung dari urutannya, bukan dari
+                {/* Sama dengan Modul 01, 03, dan 04: putih untuk babak yang
+                    sedang dibuka, jingga untuk babak yang sudah dilewati.
+                    "Sudah dilewati" dihitung dari urutannya, bukan dari
                     `actDone`: syarat itu dihitung ulang dari keadaan sekarang,
                     jadi mendangkalkan kanal di babak 03 akan memudarkan
                     babak 01 seolah pekerjaannya batal. */}
                 <span
-                  className={`relative h-0.5 w-12 overflow-hidden rounded-full transition-colors duration-500 ${
-                    locked ? "bg-white/12" : i === act ? "bg-white/40" : "bg-white/25 group-hover:bg-white/50"
+                  className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${
+                    i === act ? "bg-white" : i < act ? "bg-[#e8702a]" : locked ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
                   }`}
-                >
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-[#6fb6d8] transition-[width] duration-500"
-                    style={{
-                      width: `${
-                        i < act ? 100 : i === act ? (actDone[act] ? 100 : Math.round((progressRatio ?? 0) * 100)) : 0
-                      }%`,
-                    }}
-                  />
-                </span>
+                />
                 <span className={`text-[11px] tabular-nums transition-colors ${i === act ? "text-white" : "text-white/40"}`}>
                   {a.number}
                 </span>
