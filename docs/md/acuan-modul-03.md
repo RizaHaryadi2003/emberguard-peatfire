@@ -2,8 +2,18 @@
 
 Dokumen ini memeriksa kesesuaian Modul 03 dengan temanya, menetapkan
 pengetahuan intinya, mencatat acuan riset, lalu mengkalibrasi isi modul yang
-sudah ada terhadap acuan itu. Belum ada kode yang diubah; keputusan di
-bagian 7 menunggu Riza.
+sudah ada terhadap acuan itu.
+
+**Keadaan 11 November 2026.** Riza menyetujui semua saran. Sudah diterapkan:
+layar pembuka parit Pontianak, fakta keempat babak diganti dengan temuan
+Wösten, Ritzema, dan Hooijer, dan fakta `1 mm/tahun` dibuang dari Babak 04.
+**Belum diterapkan: kalibrasi tetapan model** (`lib/drainage.ts`). Kalibrasi
+lurus ke Hooijer membuat permukaan mengejar muka air dalam ± 10–15 tahun,
+sehingga daerah rawan tampak menyusut ke nol. Masalah ini sudah ada di model
+lama (kanal 1 m: nol pada tahun ke-25) karena muka air kanal dianggap tetap,
+padahal Hooijer mencatat lesak tetap ± 5 cm/tahun selama 18 tahun pada muka
+air yang dijaga ± 0,7 m. Memperbaikinya butuh hubungan muka air–lesak dari
+teks lengkap Hooijer (PDF), yang belum terbaca.
 
 - Tanggal: 11 November 2026
 - Berlaku untuk: Modul 03 (`/gambut/kanal`), model di `lib/drainage.ts`

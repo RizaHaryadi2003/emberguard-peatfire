@@ -4,16 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, MousePointerClick, Pause, RotateCcw } from "lucide-react";
 import {
-  ANCHOR,
-  DEPTH_PROBE_TEXT,
+  BURN_REFERENCE_NOTE,
+  BURN_REFERENCES,
   FIGURE_NOTE,
   KARBON_ACTS,
+  KARBON_HOOK,
   KARBON_TEXT,
   LIMIT_NOTES,
   MATCH_TEXT,
   TIME_SPEEDS,
 } from "@/config/karbon-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
+import ModuleHook from "@/components/gambut/ModuleHook";
 import {
   AREA_MAX_HA,
   AREA_MIN_HA,
@@ -30,7 +32,6 @@ import {
   matchSolved,
   type CarbonStats,
 } from "@/lib/carbon";
-import { depthSolved, judgeDepth, probeAge } from "./depthProbe";
 import { createKarbonState, type KarbonState, type Quality } from "./scene/karbonState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -42,24 +43,24 @@ const MODULE = GAMBUT_MODULES[3];
  * Babak paling awal yang sudah menampilkan tiap alat.
  *
  * Mengikuti pola Modul 02 dan 03: alat sebuah babak baru muncul ketika
- * babaknya tiba. Babak 01 karena itu hanya punya penanda kedalaman pada
- * bidang potong — tidak ada pengatur sama sekali di panel kendali, dan itu
- * disengaja: babak itu meminta pembaca membaca, bukan menyetel.
+ * babaknya tiba, lalu tetap ada di babak sesudahnya.
  */
-const TOOL_FROM = { burn: 1, area: 2, time: 3 } as const;
+const TOOL_FROM = { burn: 0, area: 1, time: 2 } as const;
 
-/** Kedalaman terbakar yang harus dicapai babak 02 (m). */
-const ACT2_BURN_M = 0.5;
+/** Kedalaman terbakar yang harus dicapai babak "Sekali bakar" (m). */
+const BURN_TARGET_M = 0.5;
 
-/** Lama pemulihan yang harus dijalankan babak 04 (tahun). */
-const ACT4_YEARS = 100;
+/** Lama pemulihan yang harus dijalankan babak terakhir (tahun). */
+const RECOVERY_TARGET_YEARS = 100;
+
+/** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
+const HOOK_SWIPE = 30;
 
 /**
  * Modul 04 — Gudang Karbon.
  *
  * Bongkahan gambut yang sama dengan Modul 01 dan 02, dibaca ulang sebagai
- * dua hal sekaligus: kalender (satu milimeter satu tahun) dan gudang karbon.
- * Pembaca menandai umur, membakarnya sendiri, menukar luas dengan kedalaman,
+ * gudang karbon. Pembaca membakarnya sendiri, menukar luas dengan kedalaman,
  * lalu mencoba menimbunnya kembali dan menemukan berapa lama itu.
  */
 export default function KarbonModule() {
@@ -67,23 +68,20 @@ export default function KarbonModule() {
 
   const sim = useMemo(() => new CarbonSim(), []);
 
+  const [hookOpen, setHookOpen] = useState(true);
   const [act, setAct] = useState(0);
   const [stats, setStats] = useState<CarbonStats>(() => sim.stats);
   const [burnCm, setBurnCm] = useState(0);
   const [areaHa, setAreaHa] = useState(1);
   const [speedIndex, setSpeedIndex] = useState(0);
-  /** Kedalaman yang ditandai pembaca pada bidang potong (m) — tugas babak 01. */
-  const [probeM, setProbeM] = useState<number | null>(null);
   /**
-   * Pembaca pernah menandai umur dan luas-kedalaman dengan benar.
+   * Pembaca pernah menyamakan luas-kedalaman dengan benar.
    *
-   * Diingat, bukan dihitung ulang. Penanda babak 01 dibersihkan begitu
-   * babaknya ditinggalkan, dan pengatur babak 03 masih dapat digeser di babak
-   * 04 — tanpa kunci ini, penanda babak yang sudah selesai akan berubah
-   * kelabu lagi seolah pekerjaannya batal. Pola dan alasannya sama dengan
-   * `probeSolvedOnce` pada Modul 03.
+   * Diingat, bukan dihitung ulang: pengaturnya masih dapat digeser di babak
+   * terakhir, dan tanpa kunci ini penanda babak yang sudah selesai akan
+   * berubah kelabu lagi seolah pekerjaannya batal. Pola dan alasannya sama
+   * dengan `probeSolvedOnce` pada Modul 03.
    */
-  const [ageSolvedOnce, setAgeSolvedOnce] = useState(false);
   const [matchSolvedOnce, setMatchSolvedOnce] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -100,10 +98,33 @@ export default function KarbonModule() {
       act,
       burnDepthM: burnCm / 100,
       yearsPerSecond: TIME_SPEEDS[speedIndex].yearsPerSecond,
-      probeDepthM: probeM,
       reducedMotion,
     });
-  }, [act, burnCm, speedIndex, probeM, reducedMotion]);
+  }, [act, burnCm, speedIndex, reducedMotion]);
+
+  // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
+  // usapan ke atas, sama dengan Modul 02 dan 03.
+  useEffect(() => {
+    if (!hookOpen) return;
+    let startY: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY > 0) setHookOpen(false);
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (startY !== null && startY - e.touches[0].clientY > HOOK_SWIPE) setHookOpen(false);
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [hookOpen]);
 
   // Luas tidak mengubah bentuk apa pun, hanya angkanya — jadi ia dikirim
   // langsung ke simulasi, bukan lewat keadaan bersama yang dibaca tiap bingkai.
@@ -145,19 +166,7 @@ export default function KarbonModule() {
   const handleReady = useCallback(() => setReady(true), []);
 
   /**
-   * Pembaca menandai satu kedalaman pada bidang potong.
-   *
-   * Kuncinya dipasang di sini, di tempat pekerjaannya benar-benar terjadi,
-   * bukan di dalam `useEffect` yang mengawasi penandanya — alasannya sama
-   * dengan `handleProbe` pada Modul 03.
-   */
-  const handleProbe = useCallback((depthM: number) => {
-    setProbeM(depthM);
-    if (depthSolved(judgeDepth(depthM))) setAgeSolvedOnce(true);
-  }, []);
-
-  /**
-   * Pembaca menggeser salah satu dari dua pengatur babak 03.
+   * Pembaca menggeser salah satu dari dua pengatur babak 02.
    *
    * Keduanya menentukan jawaban yang sama — karbon yang lepas adalah luas
    * dikali kedalaman — jadi keduanya memanggil penangan ini, dan kuncinya
@@ -177,8 +186,6 @@ export default function KarbonModule() {
     setBurnCm(0);
     setAreaHa(1);
     setSpeedIndex(0);
-    setProbeM(null);
-    setAgeSolvedOnce(false);
     setMatchSolvedOnce(false);
     Object.assign(stateRef.current, createKarbonState());
   }, [sim]);
@@ -188,21 +195,14 @@ export default function KarbonModule() {
   // Tiap syarat harus berupa pekerjaan yang benar-benar dikerjakan pembaca di
   // babak itu, bukan keadaan yang kebetulan sudah benar — aturan yang dibayar
   // mahal di Modul 03 dan tidak boleh dilanggar lagi di sini. Perhatikan
-  // bahwa syarat babak 03 tidak mungkin terpenuhi oleh pekerjaan babak 02:
-  // babak 02 meminta 50 cm pada satu hektare, yang menghasilkan karbon jauh
+  // bahwa syarat babak 02 tidak mungkin terpenuhi oleh pekerjaan babak 01:
+  // babak 01 meminta 50 cm pada satu hektare, yang menghasilkan karbon jauh
   // di bawah angka beritanya dan luas yang tidak pernah disentuh.
   const burnM = burnCm / 100;
-  const ageVerdict = judgeDepth(probeM);
   const matchVerdict = judgeMatch(areaHa, burnM);
-  const ageFound = depthSolved(ageVerdict) || ageSolvedOnce;
   const matchFound = matchSolved(matchVerdict) || matchSolvedOnce;
 
-  const actDone = [
-    ageFound,
-    stats.burnDepthM >= ACT2_BURN_M,
-    matchFound,
-    stats.years >= ACT4_YEARS,
-  ];
+  const actDone = [stats.burnDepthM >= BURN_TARGET_M, matchFound, stats.years >= RECOVERY_TARGET_YEARS];
 
   /**
    * Sisa pekerjaan babak ini, satu baris, dengan angka yang hidup.
@@ -210,22 +210,16 @@ export default function KarbonModule() {
    * Pola yang sama dengan Modul 03: pembaca harus tahu seberapa jauh ia dari
    * selesai, bukan hanya bahwa ia belum.
    */
-  const probeYears = probeAge(probeM);
   const progress: string = [
-    ageFound
-      ? `Umur ${ANCHOR.name} sudah ditemukan`
-      : probeM === null
-        ? "Bidang potong belum ditandai"
-        : `Penanda di ${formatThickness(probeM)} — ${formatYearCount(probeYears ?? 0)}`,
-    stats.burnDepthM >= ACT2_BURN_M
+    stats.burnDepthM >= BURN_TARGET_M
       ? `Terbakar ${formatThickness(stats.burnDepthM)}`
-      : `Baru terbakar ${formatThickness(stats.burnDepthM)} dari ${ACT2_BURN_M * 100} cm`,
+      : `Baru terbakar ${formatThickness(stats.burnDepthM)} dari ${BURN_TARGET_M * 100} cm`,
     matchFound
       ? "Karbonnya sudah disamakan"
       : `${formatTonnes(stats.co2T)} dari ${formatTonnes(HEADLINE_CO2_T)}`,
-    stats.years >= ACT4_YEARS
+    stats.years >= RECOVERY_TARGET_YEARS
       ? `${formatYearCount(stats.years)} berlalu`
-      : `Baru ${formatYearCount(stats.years)} dari ${ACT4_YEARS} tahun`,
+      : `Baru ${formatYearCount(stats.years)} dari ${RECOVERY_TARGET_YEARS} tahun`,
   ][act];
   const canAdvance = actDone[act] && act < KARBON_ACTS.length - 1;
 
@@ -233,13 +227,13 @@ export default function KarbonModule() {
     if (next > act && !actDone[act]) return;
     setAct(next);
     setSpeedIndex(0);
-    // Penanda hanya berarti di babak 01. Dibiarkan menyala di babak lain, ia
-    // menjadi garis tanpa keterangan di tengah bidang potong.
-    if (next !== 0) setProbeM(null);
   };
 
   const current = KARBON_ACTS[act];
-  const dense = act >= 2;
+  const dense = act >= 1;
+
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01–03. */
+  const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   return (
     <div ref={rootRef} id="modul-karbon" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
@@ -252,11 +246,21 @@ export default function KarbonModule() {
             quality={quality}
             onOverload={handleOverload}
             onStats={handleStats}
-            onProbe={handleProbe}
             onReady={handleReady}
+            showLabels={!hookOpen}
           />
         )}
       </div>
+
+      <ModuleHook
+        open={hookOpen}
+        kicker={`Modul ${MODULE.number} · ${MODULE.title}`}
+        setup={KARBON_HOOK.setup}
+        question={KARBON_HOOK.question}
+        cta={KARBON_HOOK.cta}
+        scrollHint={KARBON_HOOK.scrollHint}
+        onStart={() => setHookOpen(false)}
+      />
 
       {/* Tirai pemuatan */}
       <div
@@ -274,7 +278,7 @@ export default function KarbonModule() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/75 to-transparent" />
 
       {/* Panel cerita babak (kiri atas) */}
-      <div className="pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24">
+      <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
@@ -317,38 +321,9 @@ export default function KarbonModule() {
       </div>
 
       {/* Panel kendali (kiri bawah) */}
-      <div className="absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20">
+      <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
-          {/* Babak 01: bacaan penanda kedalaman.
-              Penandanya sendiri berada di atas bidang potong, bukan di sini —
-              pembaca menyeretnya langsung pada gambutnya. Yang ada di panel
-              ini hanya bacaannya, sebab umur tidak dapat dibaca dari gambar. */}
-          {act === 0 && (
-            <div>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
-                  {DEPTH_PROBE_TEXT.label}
-                </span>
-                <span className="font-playfair text-xl italic tabular-nums text-white">
-                  {probeM === null ? "—" : formatYearCount(probeYears ?? 0)}
-                </span>
-              </div>
-              {probeM !== null && (
-                <p className="mt-1 text-[11px] tabular-nums text-white/45">
-                  Kedalaman {formatThickness(probeM)} · {ANCHOR.note}
-                </p>
-              )}
-              <p
-                className={`mt-2 text-xs leading-relaxed ${
-                  ageVerdict === "found" ? "text-[#7fd4a8]" : "text-white/60"
-                }`}
-              >
-                {DEPTH_PROBE_TEXT[ageVerdict]}
-              </p>
-            </div>
-          )}
-
-          {/* Kedalaman terbakar — muncul pada babak 02, babak yang membakarnya. */}
+          {/* Kedalaman terbakar — sejak babak pertama, babak yang membakarnya. */}
           {act >= TOOL_FROM.burn && (
             <div>
               <div className="flex items-baseline justify-between">
@@ -374,6 +349,20 @@ export default function KarbonModule() {
                 aria-valuetext={`Terbakar sedalam ${burnCm} sentimeter, yaitu ${Math.round(burnCm * 10)} tahun penimbunan`}
                 className="water-slider relative z-10 mt-2 w-full"
               />
+              {/* Kedalaman yang pernah diukur pada kebakaran sungguhan. */}
+              <div className="relative mt-0.5 h-4" aria-hidden="true">
+                {BURN_REFERENCES.map((r) => (
+                  <span
+                    key={r.label}
+                    className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                    style={{ left: `${(r.depthM / BURN_DEPTH_MAX_M) * 100}%` }}
+                  >
+                    <span className="h-1.5 w-px bg-[#e0a265]" />
+                    <span className="text-[9px] leading-none tabular-nums text-[#e0a265]/80">{r.label}</span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1 hidden text-[10px] leading-snug text-white/40 sm:block">{BURN_REFERENCE_NOTE}</p>
               <p className="mt-1 text-[11px] tabular-nums text-white/45">
                 {burnCm === 0
                   ? "Gambutnya masih utuh."
@@ -382,7 +371,7 @@ export default function KarbonModule() {
             </div>
           )}
 
-          {/* Luas terbakar — babak 03. */}
+          {/* Luas terbakar — babak 02. */}
           {act >= TOOL_FROM.area && (
             <div className="mt-3 border-t border-white/10 pt-3">
               <div className="flex items-baseline justify-between">
@@ -406,7 +395,7 @@ export default function KarbonModule() {
                 aria-valuetext={`Terbakar seluas ${areaHa} hektare`}
                 className="water-slider relative z-10 mt-2 w-full"
               />
-              {act === 2 && (
+              {act === TOOL_FROM.area && (
                 <p
                   className={`mt-1.5 text-[11px] leading-snug ${
                     matchVerdict === "matched" ? "text-[#7fd4a8]" : "text-white/55"
@@ -418,7 +407,7 @@ export default function KarbonModule() {
             </div>
           )}
 
-          {/* Waktu pemulihan — babak 04. */}
+          {/* Waktu pemulihan — babak 03. */}
           {act >= TOOL_FROM.time && (
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
               <div className="min-w-0">
@@ -479,7 +468,7 @@ export default function KarbonModule() {
 
       {/* Kolom kanan: angka hidup dan keterangan. Tingginya dibatasi sejak
           awal, jadi ia tidak pernah dapat menjulur melewati tepi layar. */}
-      <div className="absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0">
+      <div inert={hookOpen} className={`absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
         {/* Angka kunci babak */}
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <p className="font-playfair text-2xl italic leading-none text-[#e0a265]">{current.fact.value}</p>
@@ -511,7 +500,7 @@ export default function KarbonModule() {
             ))}
           </dl>
 
-          {/* Babak 03: angka yang harus disamai, dicetak berdampingan dengan
+          {/* Babak 02: angka yang harus disamai, dicetak berdampingan dengan
               angka yang sedang disetel pembaca. Tanpa keduanya terlihat
               sekaligus, tugasnya berubah menjadi menebak. */}
           {act === TOOL_FROM.area && (
@@ -526,7 +515,7 @@ export default function KarbonModule() {
             </div>
           )}
 
-          {/* Babak 04: sisa takik dan sisa waktunya. */}
+          {/* Babak 03: sisa takik dan sisa waktunya. */}
           {act === TOOL_FROM.time && stats.burnDepthM > 0 && (
             <div className="mt-3 space-y-2 border-t border-white/10 pt-2.5">
               <div className="flex items-baseline justify-between gap-3">
@@ -556,7 +545,7 @@ export default function KarbonModule() {
       </div>
 
       {/* Navigasi babak (bawah) */}
-      <nav aria-label="Babak modul" className="absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14">
+      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14 ${panelFade}`}>
         <div className="flex gap-2">
           {KARBON_ACTS.map((a, i) => {
             const locked = i > act && !actDone[act];

@@ -36,7 +36,7 @@ export default function SceneLabels() {
           ketiga angka ini menempati pita selebar tujuh puluh piksel di luar
           bongkahan — pita yang harus dikosongkan kamera, dan karena itu
           diambil dari besar gambarnya — dan pita itu jatuh persis di atas
-          panel kendali begitu panel itu tumbuh pada babak 04, sehingga
+          panel kendali begitu panel itu tumbuh pada babak 03, sehingga
           angkanya tertimbun. Pelajaran yang sama sudah dibayar di Modul 03.
           Diikatkan ke permukaan asal, bukan ke permukaan yang sedang berlaku:
           umur suatu lapisan tidak berubah hanya karena lapisan di atasnya
@@ -44,7 +44,7 @@ export default function SceneLabels() {
           dapat dibaca langsung sebagai berapa abad yang hilang. */}
       {AGE_TICKS_M.map((d) => (
         <group key={d} position={[LEFT_X + AGE_RULER_GAP, originalTopY(LEFT_X, FACE_Z) - d, FACE_Z + 0.02]}>
-          <Html center zIndexRange={[20, 10]}>
+          <Html center zIndexRange={[10, 0]}>
             <span className="pointer-events-none hidden whitespace-nowrap rounded-sm bg-black/45 px-1 text-[10px] tabular-nums leading-tight text-white/70 backdrop-blur-[2px] md:inline">
               {formatYearCount(ageAtDepth(d))}
             </span>
@@ -55,7 +55,7 @@ export default function SceneLabels() {
       {/* Lebar bongkahan: patokan ukuran, dan satu-satunya keterangan yang
           menyatakan bahwa petak ini petak yang sama dengan Modul 01 dan 02. */}
       <group position={[0, originalTopY(0, FACE_Z) + 0.72, FACE_Z]}>
-        <Html center zIndexRange={[20, 10]}>
+        <Html center zIndexRange={[10, 0]}>
           <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm">
             Bongkahan · lebar {BLOCK_W} m
           </span>

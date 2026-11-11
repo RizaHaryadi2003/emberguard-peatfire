@@ -16,8 +16,8 @@
 // lain tanpa pernah dipertemukan:
 //
 //   1. Gambut menumpuk satu milimeter setahun (`PEAT_GROWTH_MM_PER_YEAR` di
-//      peat.ts, dipakai Modul 01 saat pembaca menyeret waktu, dan dikutip
-//      Modul 03 sebagai angka kunci babak 04). Artinya satu meter gambut
+//      peat.ts, dipakai Modul 01 saat pembaca menyeret waktu; rata-rata inti
+//      SF61, Anshari dkk. 2026). Artinya satu meter gambut
 //      adalah seribu tahun penimbunan — bidang potong yang dilihat pembaca
 //      sejak Modul 01 sebenarnya sebuah kalender.
 //   2. Gambut yang terbakar melepaskan karbonnya sebagai CO2. Yang menentukan
@@ -52,6 +52,11 @@ import { PEAT_GROWTH_MM_PER_YEAR, PEAT_THICKNESS } from "./peat";
 /**
  * Kerapatan lindak gambut tropis kering (kg per m³).
  *
+ * Bersama `CARBON_FRACTION` menghasilkan 55 kg C per m³, sama dengan
+ * persamaan Warren dkk. (2012, Biogeosciences 9:4477–4485) untuk gambut
+ * tropis berkadar karbon organik di atas 40%: Cd = 495,14 × BD + 5,41, yang
+ * pada BD 0,10 g/cm³ memberi 54,9 kg C/m³.
+ *
  * Gambut hampir seluruhnya air dan rongga; yang tersisa setelah airnya
  * menguap sangat ringan. Kisaran yang umum dikutip untuk gambut tropis
  * Indonesia 80-120 kg/m³, dan dipakai angka bulat di tengahnya supaya
@@ -81,11 +86,14 @@ export const CO2_PER_CARBON = 44 / 12;
 /**
  * Emisi CO2 rata-rata satu orang Indonesia dalam setahun (ton).
  *
+ * 2,79 t pada 2024, menurut Global Carbon Budget yang diolah Our World in
+ * Data (emisi CO2 per kapita, tanpa perubahan guna lahan).
+ *
  * Dipakai sebagai pembanding, bukan sebagai angka yang diajarkan. Ton karbon
  * tidak berarti apa-apa bagi siapa pun yang belum pernah menimbangnya;
  * "sebanyak yang dikeluarkan sekian ribu orang dalam setahun" berarti.
  */
-export const PERSON_T_CO2_PER_YEAR = 2.3;
+export const PERSON_T_CO2_PER_YEAR = 2.8;
 
 // ---------------------------------------------------------------------------
 //  SIMPANAN KARBON
@@ -189,7 +197,7 @@ export const BURN_DEPTH_MAX_M = 1;
 
 /** Rentang luas kebakaran yang dapat disetel pembaca (ha). */
 export const AREA_MIN_HA = 1;
-export const AREA_MAX_HA = 150;
+export const AREA_MAX_HA = 30;
 
 /** Luas awal yang dipakai sebelum pembaca menyentuh pengaturnya (ha). */
 export const AREA_DEFAULT_HA = 1;
@@ -210,42 +218,44 @@ export const RECOVERY_MAX_YEARS = 500;
 // ---------------------------------------------------------------------------
 
 /**
- * Angka kebakaran yang menjadi soal babak 03.
+ * Kebakaran yang menjadi soal babak "Hektare bukan ukurannya".
  *
- * Bentuknya sengaja seperti yang muncul di berita: luas dalam hektare, dan
- * tidak satu pun keterangan tentang sedalam apa gambutnya terbakar. Justru
- * ketiadaan itu yang menjadi pelajarannya.
+ * Luasnya dari berita sungguhan: Kepala BPBD Kota Pontianak menyebut 5–10
+ * hektare lahan gambut terbakar di Pontianak pada kemarau 2019 (ANTARA
+ * Kalbar, 13 Agustus 2019). Seperti hampir semua berita kebakaran, tidak ada
+ * keterangan sedalam apa gambutnya terbakar, dan ketiadaan itulah
+ * pelajarannya.
  *
- * Angkanya bukan kutipan dari satu kejadian tertentu — kedalaman bakar
- * jarang sekali diukur dan dilaporkan — melainkan susunan yang besarannya
- * masuk akal dan yang hasil kalinya menghasilkan soal yang dapat dikerjakan.
+ * Kedalamannya karena itu diambil dari rata-rata terukur, bukan dari berita:
+ * 0,33 m, rata-rata kedalaman bekas terbakar kebakaran 2006 di Kalimantan
+ * Tengah yang diukur dengan LiDAR (Ballhorn dkk., 2009, PNAS 106:21213).
  */
 export const HEADLINE_FIRE = {
-  areaHa: 120,
-  /** Kedalaman gambut yang benar-benar habis terbakar (m). */
-  depthM: 0.08,
+  areaHa: 10,
+  /** Kedalaman gambut yang habis terbakar (m), rata-rata Ballhorn dkk. (2009). */
+  depthM: 0.33,
 } as const;
 
 /** CO2 yang dilepaskan kebakaran yang diberitakan itu (ton). */
 export const HEADLINE_CO2_T = co2ReleasedT(HEADLINE_FIRE.areaHa, HEADLINE_FIRE.depthM);
 
 /**
- * Luas terbesar yang masih dianggap "jauh lebih sempit" pada babak 03 (ha).
+ * Luas terbesar yang masih dianggap "jauh lebih sempit" pada babak 02 (ha).
  *
- * Tanpa batas ini, jawaban babak 03 yang paling mudah adalah menyalin
- * angkanya sendiri — 120 ha sedalam 8 cm — dan pembaca lulus tanpa pernah
+ * Tanpa batas ini, jawaban babak itu yang paling mudah adalah menyalin
+ * angkanya sendiri — 10 ha sedalam 33 cm — dan pembaca lulus tanpa pernah
  * menemukan apa pun. Dengan batas ini ia harus menukar luas dengan
- * kedalaman, dan pertukaran itulah seluruh isi babaknya.
+ * kedalaman: lahan separuhnya harus terbakar dua kali lebih dalam.
  */
-export const NARROW_AREA_HA = 25;
+export const NARROW_AREA_HA = 5;
 
-/** Selisih yang masih dianggap sama besar pada babak 03 (bagian, 0-1). */
+/** Selisih yang masih dianggap sama besar pada babak 02 (bagian, 0-1). */
 export const MATCH_TOLERANCE = 0.04;
 
 export type MatchVerdict = "idle" | "tooLittle" | "tooMuch" | "tooWide" | "matched";
 
 /**
- * Nilai jawaban babak 03.
+ * Nilai jawaban babak 02.
  *
  * Tiga keadaan yang berbeda dipisahkan, bukan dijadikan satu "belum benar",
  * sebab ketiganya menyuruh pembaca melakukan hal yang berbeda: menambah,
@@ -261,7 +271,7 @@ export function judgeMatch(areaHa: number, depthM: number): MatchVerdict {
   return gap < 0 ? "tooLittle" : "tooMuch";
 }
 
-/** Jawaban babak 03 sudah benar. */
+/** Jawaban babak 02 sudah benar. */
 export function matchSolved(verdict: MatchVerdict): boolean {
   return verdict === "matched";
 }
@@ -353,7 +363,7 @@ export class CarbonSim {
    *
    * Mengubahnya mengembalikan waktu pemulihan ke nol: pembaca sedang menyetel
    * kebakaran yang baru, bukan membakar ulang petak yang sedang pulih.
-   * Tanpa ini, menggeser pengatur pada babak 04 akan memperlihatkan takik
+   * Tanpa ini, menggeser pengatur pada babak 03 akan memperlihatkan takik
    * yang sudah separuh tertimbun oleh tahun-tahun kebakaran sebelumnya.
    */
   setBurnDepth(depthM: number): void {
@@ -451,7 +461,7 @@ export function formatCenturies(years: number): string {
 /**
  * Massa CO2, mis. 1008 → "1.008 t"; 19360 → "19.360 t".
  *
- * Tidak pernah dibulatkan menjadi "ribu ton" atau sejenisnya: pada babak 03
+ * Tidak pernah dibulatkan menjadi "ribu ton" atau sejenisnya: pada babak 02
  * pembaca membandingkan dua angka yang berselisih beberapa persen, dan
  * pembulatan yang ramah justru membuat soalnya mustahil dibaca.
  */

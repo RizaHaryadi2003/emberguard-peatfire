@@ -26,7 +26,8 @@ import { GROWTH_M_PER_YEAR } from "@/lib/carbon";
 //      bawahnya timbunan lama yang berumur ribuan. Dalam geologi batas
 //      semacam ini disebut hiatus — catatan yang hilang — dan tidak ada
 //      istilah yang lebih tepat untuk apa yang terjadi di sini.
-//   3. Penanda kedalaman yang digeser pembaca pada babak 01.
+//   3. Penanda kedalaman yang dahulu digeser pembaca pada babak "Arsip di
+//      bawah kaki" (dicabut 11 November 2026); kini tidak pernah menyala.
 //
 // Tidak ada tekstur keadaan sama sekali, tidak seperti Modul 02 dan 03:
 // seluruh isi modul ini dapat dinyatakan dengan empat angka, jadi keempatnya
@@ -144,7 +145,7 @@ const FACE_DIFFUSE = /* glsl */ `
 
   // Timbunan baru dibuat lebih terang dan lebih hangat daripada gambut tua di
   // bawahnya. Bedanya harus terbaca sekali lihat: justru selisih keduanya —
-  // beberapa abad melawan beberapa ribu tahun — yang menjadi isi babak 04.
+  // beberapa abad melawan beberapa ribu tahun — yang menjadi isi babak 03.
   kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.32, 1.18, 0.86), kFresh * 0.9);
 
   // --- Penggaris abad -------------------------------------------------------

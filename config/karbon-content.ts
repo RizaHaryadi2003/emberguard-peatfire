@@ -3,13 +3,13 @@
  *  TEKS MODUL 04 — GUDANG KARBON — GANTI DI SINI
  * ============================================================================
  *  Modul ini membaca bidang potong gambut yang sudah dikenal pembaca sejak
- *  Modul 01 sebagai dua hal sekaligus: sebuah kalender (satu milimeter satu
- *  tahun) dan sebuah gudang (lima puluh lima kilogram karbon tiap meter
- *  kubik). Keduanya bertemu pada satu kalimat — yang lepas dalam beberapa
- *  minggu dikumpulkan selama berabad-abad.
+ *  Modul 01 sebagai gudang karbon (± 55 kg karbon tiap meter kubik). Tiga
+ *  babaknya: sedalam apa api gambut menghabiskannya, mengapa kedalaman sama
+ *  pentingnya dengan luas, dan berapa lama yang hilang ditabung kembali.
  *
- *  Angka pada `fact` mengikuti tetapan di `lib/carbon.ts`, yang semuanya
- *  masih menunggu sumber. Periksa ulang sebelum dipakai di naskah.
+ *  Babak "Arsip di bawah kaki" (mencari gambut seumur Borobudur) dicabut pada
+ *  11 November 2026 karena mengulang pelajaran Modul 01 Tahap 1. Acuan tiap
+ *  angka ada di docs/md/acuan-modul-04.md.
  * ============================================================================
  */
 
@@ -18,6 +18,7 @@ import {
   BURN_DEPTH_MAX_M,
   HEADLINE_FIRE,
   NARROW_AREA_HA,
+  PERSON_T_CO2_PER_YEAR,
   RECOVERY_MAX_YEARS,
 } from "@/lib/carbon";
 
@@ -37,64 +38,41 @@ export type KarbonAct = {
   fact: { value: string; caption: string };
 };
 
-/**
- * Patokan sejarah untuk babak 01.
- *
- * Satu saja, bukan daftar. Tugas babak itu mengubah tahun menjadi kedalaman,
- * dan satu patokan yang benar-benar dikenal semua orang Indonesia lebih
- * berguna daripada lima patokan yang harus dibaca dulu satu per satu.
- *
- * Angkanya dibulatkan dengan sengaja: Borobudur dibangun pada pertengahan
- * abad ke-8 sampai awal abad ke-9, jadi "sekitar 1.200 tahun lalu" benar
- * tanpa harus memilih satu tahun yang tidak pernah pasti.
- */
-export const ANCHOR = {
-  name: "Borobudur",
-  years: 1200,
-  /** Kalimat lengkapnya, untuk kartu babak 01. */
-  note: "Candi Borobudur dibangun sekitar 1.200 tahun yang lalu.",
-  /** Selisih yang masih diterima sebagai jawaban benar (m). */
-  toleranceM: 0.1,
+/** Layar pembuka: pertanyaan yang dijawab oleh babak 01. */
+export const KARBON_HOOK = {
+  setup: "Asap kebakaran gambut bisa bertahan berminggu-minggu.",
+  question: "Apa sebenarnya yang terbakar?",
+  cta: "Cari tahu",
+  scrollHint: "atau gulir ke bawah",
 };
 
 export const KARBON_ACTS: readonly KarbonAct[] = [
   {
     number: "01",
-    title: "Arsip di bawah kaki",
-    body: "Gambut menumpuk satu milimeter setahun, dan tidak pernah lebih cepat. Artinya bidang potong ini bukan sekadar tanah bertingkat: ia sebuah kalender. Satu meter ke bawah berarti seribu tahun ke belakang, dan setiap lapisan di dalamnya adalah hutan yang pernah berdiri di tempat yang sama.",
-    task: `Geser penanda sampai menemukan gambut yang seumur ${ANCHOR.name}.`,
-    hint: `Tandai kedalaman gambut yang seumur ${ANCHOR.name} untuk melanjutkan.`,
+    title: "Sekali bakar",
+    body: "Gambut adalah gudang karbon: sekitar separuh bobot keringnya adalah karbon. Yang terbakar pada kebakaran gambut bukan hanya yang di permukaan. Api masuk ke dalam dan menghabiskan lapisan demi lapisan, dan setiap meter yang hilang dari satu hektare melepas sekitar 2.000 ton karbon dioksida.",
+    task: "Bakar gambutnya sampai sedalam 50 cm, lalu baca yang hilang.",
+    hint: "Bakar gambutnya sampai sedalam setengah meter.",
     fact: {
-      value: "1 mm/tahun",
-      caption: "Laju penumpukan gambut tropis — seribu tahun untuk satu meter",
+      value: "33–50 cm",
+      caption: "Rata-rata gambut yang habis terbakar di Kalimantan Tengah, diukur dengan LiDAR pada 2006 dan di lapangan pada 1997 (Ballhorn dkk., 2009; Page dkk., 2002)",
     },
   },
   {
     number: "02",
-    title: "Sekali bakar",
-    body: "Yang terbakar pada kebakaran gambut bukan hanya yang di permukaan. Api masuk ke dalam dan menghabiskan lapisan demi lapisan, dan setiap sentimeter yang hilang adalah sepuluh tahun penimbunan yang lepas ke udara sebagai karbon dioksida.",
-    task: "Bakar gambutnya sampai sedalam 50 cm, lalu baca yang hilang.",
-    hint: "Bakar gambutnya sampai sedalam setengah meter.",
-    fact: {
-      value: "± 2.000 t",
-      caption: "CO₂ yang lepas dari satu hektare gambut yang terbakar sedalam satu meter",
-    },
-  },
-  {
-    number: "03",
     title: "Hektare bukan ukurannya",
     body: "Berita kebakaran selalu menyebut luasnya dalam hektare, dan hampir tidak pernah menyebut sedalam apa gambutnya terbakar. Padahal keduanya masuk dengan bobot yang persis sama: lahan sepersepuluh luas yang terbakar sepuluh kali lebih dalam melepaskan karbon yang sama banyaknya.",
     task: `Setel luas dan kedalaman sampai karbonnya sama besar, dengan luas di bawah ${NARROW_AREA_HA} ha.`,
     hint: "Samakan karbonnya dengan kebakaran yang diberitakan, tetapi pada lahan yang jauh lebih sempit.",
     fact: {
       value: `${HEADLINE_FIRE.areaHa} ha`,
-      caption: "Yang tertulis di berita — tanpa satu pun keterangan sedalam apa gambutnya terbakar",
+      caption: "Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD (ANTARA, 13 Agustus 2019), tanpa satu pun keterangan sedalam apa",
     },
   },
   {
-    number: "04",
+    number: "03",
     title: "Seribu tahun untuk satu meter",
-    body: "Gambut yang terbakar tidak kembali dalam satu musim tanam. Ia menumpuk dengan laju yang sama seperti dahulu — satu milimeter setahun — sehingga takik yang ditinggalkan api dalam beberapa minggu baru tertutup setelah berabad-abad. Jalankan waktunya dan lihat sendiri seberapa jauh ia sampai.",
+    body: "Gambut yang terbakar tidak kembali dalam satu musim tanam. Ia menumpuk dengan laju yang sama seperti dahulu, rata-rata satu milimeter setahun, sehingga takik yang ditinggalkan api dalam beberapa minggu baru tertutup setelah berabad-abad. Jalankan waktunya dan lihat sendiri seberapa jauh ia sampai.",
     task: "Jalankan waktu sampai sedikitnya satu abad berlalu.",
     hint: "Jalankan waktu pemulihannya sampai satu abad.",
     fact: {
@@ -108,7 +86,7 @@ export const KARBON_ACTS: readonly KarbonAct[] = [
  * Pilihan kecepatan waktu pemulihan.
  *
  * Yang paling cepat pun menghabiskan lima abad dalam tujuh detik, dan itu
- * disengaja. Babak 04 justru tentang betapa lambatnya penimbunan kembali;
+ * disengaja. Babak terakhir justru tentang betapa lambatnya penimbunan kembali;
  * kecepatan yang menyelesaikannya dalam sekejap akan membantah kalimat yang
  * sedang dibacanya.
  */
@@ -118,6 +96,19 @@ export const TIME_SPEEDS: readonly { label: string; yearsPerSecond: number }[] =
   { label: "Sedang", yearsPerSecond: 28 },
   { label: "Cepat", yearsPerSecond: 70 },
 ];
+
+/**
+ * Kedalaman terbakar yang pernah diukur, ditandai pada pengatur bakar supaya
+ * pembaca dapat membandingkan bakarannya dengan kebakaran sungguhan:
+ * rata-rata 0,33 m pada 2006 (LiDAR, Ballhorn dkk., 2009) dan lebih dari
+ * 0,5 m pada 1997 (43 lokasi, Page dkk., 2002), keduanya di Kalimantan Tengah.
+ */
+export const BURN_REFERENCES: readonly { depthM: number; label: string }[] = [
+  { depthM: 0.33, label: "2006" },
+  { depthM: 0.5, label: "1997" },
+];
+
+export const BURN_REFERENCE_NOTE = "Tanda jingga: rata-rata gambut yang habis terbakar di Kalimantan Tengah pada 2006 dan 1997.";
 
 export const KARBON_TEXT = {
   burnLabel: "Kedalaman terbakar",
@@ -131,22 +122,7 @@ export const KARBON_TEXT = {
     "Takiknya tertutup — tetapi perhatikan berapa tahun yang dibutuhkannya, dan bandingkan dengan berapa minggu api menghabiskannya.",
 };
 
-/**
- * Teks penanda kedalaman pada bidang potong — tugas babak 01.
- *
- * Bentuknya mengikuti `PROBE_TEXT` Modul 03: satu kalimat untuk tiap keadaan,
- * dan tiap kalimat menyuruh pembaca melakukan hal yang berbeda. "Belum benar"
- * saja tidak memberi tahu ia harus naik atau turun.
- */
-export const DEPTH_PROBE_TEXT = {
-  label: "Penanda kedalaman",
-  idle: "Geser penanda di sepanjang bidang potong.",
-  tooShallow: `Gambut di sini masih lebih muda daripada ${ANCHOR.name}. Coba lebih dalam.`,
-  tooDeep: `Gambut di sini sudah lebih tua daripada ${ANCHOR.name}. Coba lebih dangkal.`,
-  found: `Tepat — gambut di kedalaman ini tertimbun ketika ${ANCHOR.name} dibangun.`,
-};
-
-/** Teks penilaian jawaban babak 03. */
+/** Teks penilaian jawaban babak "Hektare bukan ukurannya". */
 export const MATCH_TEXT = {
   label: "Karbon yang lepas",
   idle: "Belum ada yang terbakar.",
@@ -172,8 +148,8 @@ export const FIGURE_NOTE = {
 
 /** Keterangan skala yang wajib tampil pada gambar. */
 export const SCALE_NOTE = {
-  density: "Kerapatan gambut kering 100 kg/m³, kadar karbon 55%",
-  person: "Pembanding: emisi CO₂ rata-rata satu orang Indonesia, 2,3 t/tahun",
+  density: "Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³ (Warren dkk., 2012)",
+  person: `Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun (Global Carbon Budget, 2024)`,
   burn: (maxM: number) => `Kedalaman terbakar dibatasi ${maxM * 100} cm`,
   area: (maxHa: number) => `Luas dibatasi ${maxHa} ha`,
   time: (maxYears: number) => `Waktu pemulihan dibatasi ${maxYears} tahun`,

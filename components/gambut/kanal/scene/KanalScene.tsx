@@ -734,11 +734,16 @@ type Props = {
   quality: Quality;
   onStats: (stats: DrainageStats) => void;
   onReady: () => void;
+  /**
+   * Label 3D baru dipasang setelah layar pembuka ditutup. Elemen HTML-nya
+   * tidak ikut tertutup oleh latar layar pembuka yang tembus pandang.
+   */
+  showLabels: boolean;
   /** Perangkat tetap kewalahan pada resolusi terendah. */
   onOverload: () => void;
 };
 
-export default function KanalScene({ sim, stateRef, active, quality, onStats, onReady, onOverload }: Props) {
+export default function KanalScene({ sim, stateRef, active, quality, onStats, onReady, showLabels, onOverload }: Props) {
   const { texture: field, data } = useMemo(() => createFieldTexture(), []);
   const noise = useMemo(() => createNoiseTexture(), []);
   const subsidence = useMemo(() => createSubsidence(sim), [sim]);
@@ -799,7 +804,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
           subsidence={subsidence}
           quality={quality}
         />
-        <SceneLabels />
+        {showLabels && <SceneLabels />}
         <ReadySignal onReady={onReady} />
       </Suspense>
     </Canvas>

@@ -53,7 +53,7 @@ export default function SceneLabels() {
           yang harus dilewati mata. */}
       {DISTANCE_TICKS.map((m) => (
         <group key={m} position={[xOfDistance(m), base - TICK_GAP, FRONT_Z]}>
-          <Html center zIndexRange={[20, 10]}>
+          <Html center zIndexRange={[10, 0]}>
             <div className="pointer-events-none hidden -translate-y-1/2 whitespace-nowrap text-center md:block">
               <div className="mx-auto h-3 w-px bg-white/25" />
               <span className="mt-1 block text-[10px] tabular-nums text-white/55">
@@ -86,7 +86,7 @@ export default function SceneLabels() {
           dalam gambar, keduanya selesai sekaligus. */}
       {DEPTH_TICKS.map((d) => (
         <group key={d} position={[-HALF_WIDTH + 3.6, -d * V_SCALE, FRONT_Z + 0.05]}>
-          <Html center zIndexRange={[20, 10]}>
+          <Html center zIndexRange={[10, 0]}>
             <span className="pointer-events-none hidden whitespace-nowrap rounded-sm bg-black/45 px-1 text-[10px] tabular-nums leading-tight text-white/70 backdrop-blur-[2px] md:inline">
               {d} m
             </span>
@@ -97,7 +97,7 @@ export default function SceneLabels() {
       {/* Nama kanal, berikut lebarnya: lebar itu yang memberi ukuran pada
           seluruh gambar, jadi ia ditulis di tempat yang paling dilihat. */}
       <group position={[0, surfaceY(0) + 7.5, FRONT_Z]}>
-        <Html center zIndexRange={[20, 10]}>
+        <Html center zIndexRange={[10, 0]}>
           <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm">
             Kanal · lebar {CANAL_HALF_M * 2} m
           </span>

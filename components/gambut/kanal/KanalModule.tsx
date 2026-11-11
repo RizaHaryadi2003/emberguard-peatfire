@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, MousePointerClick, Pause, RotateCcw, Waves } from "lucide-react";
-import { CANAL_TEXT, FIGURE_NOTE, KANAL_ACTS, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
+import { CANAL_TEXT, FIGURE_NOTE, KANAL_ACTS, KANAL_HOOK, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
 import { GAMBUT_MODULES } from "@/config/gambut-content";
+import ModuleHook from "@/components/gambut/ModuleHook";
 import {
   CANAL_DEPTH_MAX_M,
   DrainageSim,
@@ -24,6 +25,9 @@ import { createKanalState, type KanalState, type Quality } from "./scene/kanalSt
 const KanalScene = dynamic(() => import("./scene/KanalScene"), { ssr: false });
 
 const MODULE = GAMBUT_MODULES[2];
+
+/** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
+const HOOK_SWIPE = 30;
 
 /**
  * Kecepatan waktu awal tiap babak (indeks pada TIME_SPEEDS). Nol di mana-mana.
@@ -66,6 +70,7 @@ export default function KanalModule() {
 
   const sim = useMemo(() => new DrainageSim(), []);
 
+  const [hookOpen, setHookOpen] = useState(true);
   const [act, setAct] = useState(0);
   const [stats, setStats] = useState<DrainageStats>(() => sim.stats);
   const [canalDepthCm, setCanalDepthCm] = useState(0);
@@ -109,6 +114,31 @@ export default function KanalModule() {
       reducedMotion,
     });
   }, [act, canalDepthCm, speedIndex, blocked, reducedMotion]);
+
+  // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
+  // usapan ke atas, sama dengan Modul 02: halaman ini dikunci setinggi layar,
+  // jadi gerakannya dibaca langsung.
+  useEffect(() => {
+    if (!hookOpen) return;
+    let startY: number | null = null;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY > 0) setHookOpen(false);
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (startY !== null && startY - e.touches[0].clientY > HOOK_SWIPE) setHookOpen(false);
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [hookOpen]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -227,6 +257,9 @@ export default function KanalModule() {
   const current = KANAL_ACTS[act];
   const dense = act >= 2;
 
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 02. */
+  const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+
   return (
     <div ref={rootRef} id="modul-kanal" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
       <div className="absolute inset-0">
@@ -239,9 +272,20 @@ export default function KanalModule() {
             onOverload={handleOverload}
             onStats={handleStats}
             onReady={handleReady}
+            showLabels={!hookOpen}
           />
         )}
       </div>
+
+      <ModuleHook
+        open={hookOpen}
+        kicker={`Modul ${MODULE.number} · ${MODULE.title}`}
+        setup={KANAL_HOOK.setup}
+        question={KANAL_HOOK.question}
+        cta={KANAL_HOOK.cta}
+        scrollHint={KANAL_HOOK.scrollHint}
+        onStart={() => setHookOpen(false)}
+      />
 
       {/* Tirai pemuatan */}
       <div
@@ -260,7 +304,7 @@ export default function KanalModule() {
 
       {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul 02:
           min-height, sehingga keadaan sempit menjadi keadaan dasar. */}
-      <div className="pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24">
+      <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
@@ -303,7 +347,7 @@ export default function KanalModule() {
       </div>
 
       {/* Panel kendali (kiri bawah) */}
-      <div className="absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20">
+      <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
           {/* Grafik untuk layar sempit.
               Panel kanan tersembunyi di bawah lebar lg, dan di sanalah grafik
@@ -431,7 +475,7 @@ export default function KanalModule() {
           sependek apa pun jendelanya. Kalau suatu saat isinya memang tidak
           muat, yang terjadi tumpukan ini bergulir sendiri — bukan separuh
           kartunya hilang tanpa tanda apa pun. */}
-      <div className="absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0">
+      <div inert={hookOpen} className={`absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
         {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
@@ -493,7 +537,7 @@ export default function KanalModule() {
       </div>
 
       {/* Navigasi babak (bawah) */}
-      <nav aria-label="Babak modul" className="absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14">
+      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 flex items-end gap-4 sm:left-10 md:left-14 ${panelFade}`}>
         <div className="flex gap-2">
           {KANAL_ACTS.map((a, i) => {
             const locked = i > act && !actDone[act];

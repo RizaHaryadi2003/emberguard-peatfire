@@ -61,7 +61,8 @@ describe("simpanan karbon", () => {
   });
 
   it("pembanding orang memakai emisi setahun, bukan seumur hidup", () => {
-    expect(peopleYearsEquivalent(23)).toBeCloseTo(10, 6);
+    // 2,8 t per orang per tahun (Global Carbon Budget lewat Our World in Data, 2024).
+    expect(peopleYearsEquivalent(28)).toBeCloseTo(10, 6);
   });
 });
 
@@ -101,9 +102,11 @@ describe("kalender gambut", () => {
 
 describe("soal babak 03", () => {
   it("angka beritanya hanya luas, kedalamannya dangkal", () => {
-    expect(HEADLINE_FIRE.areaHa).toBe(120);
-    expect(HEADLINE_FIRE.depthM).toBeLessThan(0.1);
-    expect(HEADLINE_CO2_T).toBeCloseTo(co2ReleasedT(120, 0.08), 6);
+    // Luas dari berita BPBD Pontianak (ANTARA, 2019), kedalaman dari rata-rata
+    // terukur Ballhorn dkk. (2009).
+    expect(HEADLINE_FIRE.areaHa).toBe(10);
+    expect(HEADLINE_FIRE.depthM).toBe(0.33);
+    expect(HEADLINE_CO2_T).toBeCloseTo(co2ReleasedT(10, 0.33), 6);
   });
 
   it("menyalin angka beritanya sendiri tidak diterima sebagai jawaban", () => {
@@ -123,16 +126,16 @@ describe("soal babak 03", () => {
   });
 
   it("membedakan kurang, lebih, dan terlalu luas", () => {
-    const pas = (HEADLINE_FIRE.areaHa * HEADLINE_FIRE.depthM) / 20;
-    expect(judgeMatch(20, pas)).toBe("matched");
-    expect(judgeMatch(20, pas * 0.5)).toBe("tooLittle");
-    expect(judgeMatch(20, pas * 1.5)).toBe("tooMuch");
+    const pas = (HEADLINE_FIRE.areaHa * HEADLINE_FIRE.depthM) / 4;
+    expect(judgeMatch(4, pas)).toBe("matched");
+    expect(judgeMatch(4, pas * 0.5)).toBe("tooLittle");
+    expect(judgeMatch(4, pas * 1.5)).toBe("tooMuch");
     expect(judgeMatch(NARROW_AREA_HA + 1, pas)).toBe("tooWide");
   });
 
   it("belum dinilai selama belum ada yang terbakar", () => {
-    expect(judgeMatch(20, 0)).toBe("idle");
-    expect(matchSolved(judgeMatch(20, 0))).toBe(false);
+    expect(judgeMatch(4, 0)).toBe("idle");
+    expect(matchSolved(judgeMatch(4, 0))).toBe(false);
   });
 
   it("hanya satu putusan yang dianggap selesai", () => {

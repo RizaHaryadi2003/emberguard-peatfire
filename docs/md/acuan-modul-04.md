@@ -2,8 +2,16 @@
 
 Dokumen ini memeriksa kesesuaian Modul 04 dengan temanya, menetapkan
 pengetahuan intinya, mencatat acuan riset, lalu mengkalibrasi isi modul yang
-sudah ada terhadap acuan itu. Belum ada kode yang diubah; keputusan di
-bagian 7 menunggu Riza.
+sudah ada terhadap acuan itu.
+
+**Keadaan 11 November 2026.** Riza menyetujui semua saran, dan semuanya sudah
+diterapkan: Babak "Arsip" dicabut (modul kini tiga babak), layar pembuka
+ditambahkan, kebakaran pembanding diganti 10 ha dari berita BPBD Pontianak
+(ANTARA, 13 Agustus 2019) dengan kedalaman 0,33 m dari Ballhorn dkk. (2009),
+batas "jauh lebih sempit" menjadi 5 ha dan luas maksimum 30 ha, emisi per
+orang menjadi 2,8 t (Global Carbon Budget lewat Our World in Data, 2024),
+tanda kedalaman terukur 2006 dan 1997 dipasang pada pengatur bakar, dan
+kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 
 - Tanggal: 11 November 2026
 - Berlaku untuk: Modul 04 (`/gambut/karbon`), model di `lib/carbon.ts`

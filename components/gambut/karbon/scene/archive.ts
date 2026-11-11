@@ -88,7 +88,7 @@ export function originalTopY(x: number, z: number): number {
  *
  * Turun sebanyak yang terbakar, lalu naik kembali sebanyak yang sudah
  * tertimbun ulang. Keduanya dipisah — bukan disimpan sebagai satu angka
- * bersih — karena babak 04 justru membandingkan keduanya: yang hilang dalam
+ * bersih — karena babak 03 justru membandingkan keduanya: yang hilang dalam
  * beberapa minggu melawan yang kembali dalam beberapa abad.
  */
 export function currentTopY(x: number, z: number, burnM: number, regrownM: number): number {

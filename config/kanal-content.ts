@@ -7,10 +7,19 @@
  *  mencoba memperbaikinya dengan sekat — dan menemukan bahwa yang kembali
  *  hanya airnya.
  *
- *  Angka pada `fact` mengikuti tetapan di `lib/drainage.ts`, yang semuanya
- *  masih menunggu sumber. Periksa ulang sebelum dipakai di naskah.
+ *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-03.md
+ *  (Wösten dkk. 2008, Ritzema dkk. 2014, Hooijer dkk. 2012). Tetapan model di
+ *  `lib/drainage.ts` belum dikalibrasi ulang; lihat bagian 7 dokumen itu.
  * ============================================================================
  */
+
+/** Layar pembuka: pertanyaan yang dijawab oleh babak 01. */
+export const KANAL_HOOK = {
+  setup: "Parit di sekitar rumahmu terus mengalirkan air, bahkan di musim kemarau.",
+  question: "Dari mana air itu datang?",
+  cta: "Cari tahu",
+  scrollHint: "atau gulir ke bawah",
+};
 
 export type KanalAct = {
   number: string;
@@ -36,8 +45,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     task: "Gali kanal sampai sedalam satu meter.",
     hint: "Gali kanalnya sampai sedalam satu meter untuk melanjutkan.",
     fact: {
-      value: "≤ 0,4 m",
-      caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016)",
+      value: "40 cm",
+      caption: "Muka air lebih dalam dari ini menaikkan risiko kebakaran gambut (Wösten dkk., 2008), dan kini menjadi batas PP 57/2016",
     },
   },
   {
@@ -51,8 +60,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     // yang sama berarti menjawabnya untuk dia. Yang ditampilkan panjang
     // peluruhannya — tetapan yang membuat jaraknya sejauh itu, bukan jaraknya.
     fact: {
-      value: "190 m",
-      caption: "Panjang pengaruh satu kanal untuk tiap satu meter kedalamannya",
+      value: "1 km",
+      caption: "Di Kalampangan, Kalimantan Tengah, muka air sejauh ini dari kanal masih 40–50 cm lebih dangkal daripada di tepinya (Ritzema dkk., 2014)",
     },
   },
   {
@@ -63,18 +72,18 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
     fact: {
       value: "± 5 cm/tahun",
-      caption: "Laju penurunan permukaan gambut yang dikeringkan sedalam satu meter",
+      caption: "Laju lesak gambut yang dikeringkan sampai muka air 0,7 m, setelah tahun-tahun pertama yang jauh lebih cepat (Hooijer dkk., 2012)",
     },
   },
   {
     number: "04",
     title: "Yang kembali hanya airnya",
-    body: "Sekat menahan air, muka airnya naik, dan lahan ini tidak lagi rawan terbakar. Tetapi tanah yang sudah melesak tidak kembali: gambut tumbuh satu milimeter per tahun. Garis putus-putus menunjukkan setinggi mana tanah ini dahulu.",
+    body: "Sekat menahan air, muka airnya naik, dan lahan ini tidak lagi rawan terbakar. Tetapi tanah yang sudah melesak tidak ikut naik. Garis putus-putus menunjukkan setinggi mana tanah ini dahulu. Airnya bisa dikembalikan, tanahnya tidak.",
     task: "Pasang sekat, lalu bandingkan dengan garis putus-putus.",
     hint: "Pasang sekat kanalnya.",
     fact: {
-      value: "1 mm/tahun",
-      caption: "Laju gambut tumbuh kembali — seribu tahun untuk satu meter",
+      value: "± 400 m",
+      caption: "Jangkauan sekat kanal menaikkan muka air di kiri dan kanan kanal Kalampangan (Ritzema dkk., 2014)",
     },
   },
 ];

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { PEAT_LAYERS } from "@/lib/peat";
 import { CarbonSim, type CarbonStats } from "@/lib/carbon";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
@@ -15,12 +15,10 @@ import {
   createLostGeometry,
   createTopGrid,
   currentTopY,
-  depthAt,
   updateFaceGrid,
   updateTopGrid,
   BLOCK_D,
   BLOCK_W,
-  FACE_Z,
   FLOOR_DEPTH_M,
   FLOOR_Y,
 } from "./archive";
@@ -190,9 +188,10 @@ function Simulation({
     s.drawnBurnM = THREE.MathUtils.damp(s.drawnBurnM, s.burnDepthM, k, dt);
     s.drawnRegrownM = THREE.MathUtils.damp(s.drawnRegrownM, sim.regrownM(), k, dt);
 
-    // Penggaris abad menyala penuh di babak yang memang tentang umur, lalu
-    // diredupkan — tidak dimatikan — sesudahnya.
-    const wantCalendar = s.act === 0 ? 1 : 0.55;
+    // Penggaris abad tampil redup sepanjang modul: ia pengingat bahwa tiap
+    // sentimeter yang hilang adalah sepuluh tahun penimbunan, bukan tugas.
+    // Babak yang dahulu memakainya penuh (mencari umur Borobudur) sudah dicabut.
+    const wantCalendar = 0.55;
     s.calendar = THREE.MathUtils.damp(s.calendar, wantCalendar, s.reducedMotion ? 30 : 3, dt);
 
     // Langit menyusul dalamnya kebakaran, perlahan: bahaya yang melompat
@@ -201,7 +200,7 @@ function Simulation({
     //
     // Dibatasi 0,7, dan lerengnya dilandaikan. Semula setengah meter bakar
     // sudah menghasilkan bahaya 0,83 — hampir asap pekat — sehingga seluruh
-    // layar berubah sepia begitu pembaca mengerjakan tugas babak 02, dan teks
+    // layar berubah sepia begitu pembaca mengerjakan tugas babak 01, dan teks
     // cerita di kiri kehilangan kontrasnya tepat ketika ia paling perlu
     // dibaca. Langit yang menguning di sini sambungan ke Modul 02, bukan
     // pokok ceritanya sendiri; ia harus terlihat, bukan mengambil alih.
@@ -220,15 +219,7 @@ function Simulation({
 }
 
 /** Bongkahan: bidang potong, hamparan permukaan, dinding, dan yang hilang. */
-function Block({
-  stateRef,
-  noise,
-  onProbe,
-}: {
-  stateRef: RefObject<KarbonState>;
-  noise: THREE.DataTexture;
-  onProbe: (depthM: number) => void;
-}) {
+function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: THREE.DataTexture }) {
   const colors = useLoader(
     THREE.TextureLoader,
     PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`),
@@ -360,24 +351,6 @@ function Block({
     }
   });
 
-  /**
-   * Pembaca menandai satu kedalaman pada bidang potong — tugas babak 01.
-   *
-   * Titik tumbukannya dalam ruang dunia, dan ruang dunia modul ini tidak
-   * digeser maupun diputar sama sekali, jadi kedalamannya dapat dibaca
-   * langsung dari y. Kalau suatu saat bongkahan ini dipindah atau diputar,
-   * di sinilah tempat yang harus diubah.
-   */
-  const handlePointer = (e: ThreeEvent<PointerEvent>) => {
-    const s = stateRef.current;
-    if (!s || s.act !== 0) return;
-    // Hanya menandai saat tombolnya ditekan, supaya melewatkan tetikus di
-    // atas bidang potong tidak diam-diam mengubah jawaban pembaca.
-    if (e.type === "pointermove" && e.buttons === 0) return;
-    e.stopPropagation();
-    onProbe(depthAt(e.point.x, FACE_Z, e.point.y));
-  };
-
   // Tinggi dinding dinyatakan sebagai skala pada grup, jadi geometrinya
   // setinggi satu satuan dengan titik tumpu di alas.
   const wallY = FLOOR_Y;
@@ -388,8 +361,6 @@ function Block({
         geometry={res.faceGeom}
         material={res.faceMaterial}
         receiveShadow
-        onPointerDown={handlePointer}
-        onPointerMove={handlePointer}
       />
       <mesh geometry={res.topGeom} material={res.topMaterial} receiveShadow castShadow />
 
@@ -430,8 +401,12 @@ type Props = {
   active: boolean;
   quality: Quality;
   onStats: (stats: CarbonStats) => void;
-  onProbe: (depthM: number) => void;
   onReady: () => void;
+  /**
+   * Label 3D baru dipasang setelah layar pembuka ditutup. Elemen HTML-nya
+   * tidak ikut tertutup oleh latar layar pembuka yang tembus pandang.
+   */
+  showLabels: boolean;
   /** Perangkat tetap kewalahan pada resolusi terendah. */
   onOverload: () => void;
 };
@@ -442,8 +417,8 @@ export default function KarbonScene({
   active,
   quality,
   onStats,
-  onProbe,
   onReady,
+  showLabels,
   onOverload,
 }: Props) {
   const noise = useMemo(() => createNoiseTexture(), []);
@@ -480,8 +455,8 @@ export default function KarbonScene({
       </Suspense>
       <Simulation sim={sim} stateRef={stateRef} onStats={onStats} />
       <Suspense fallback={null}>
-        <Block stateRef={stateRef} noise={noise} onProbe={onProbe} />
-        <SceneLabels />
+        <Block stateRef={stateRef} noise={noise} />
+        {showLabels && <SceneLabels />}
         <ReadySignal onReady={onReady} />
       </Suspense>
     </Canvas>

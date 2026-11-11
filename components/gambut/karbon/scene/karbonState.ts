@@ -29,19 +29,18 @@ export type KarbonState = {
   /**
    * Kedalaman penanda pembaca (m), atau null bila belum menandai.
    *
-   * Tugas babak 01. Dikirim ke peneduh sebagai angka negatif bila null,
-   * sebab GLSL tidak punya null — dan penjagaannya ada di satu tempat saja,
-   * di `KarbonScene`, supaya tidak ada yang lupa menerjemahkannya.
+   * Dipakai babak "Arsip di bawah kaki" yang dicabut pada 11 November 2026,
+   * jadi kini selalu null. Dibiarkan karena peneduhnya masih membacanya;
+   * dikirim sebagai angka negatif bila null, sebab GLSL tidak punya null.
    */
   probeDepthM: number | null;
   /**
    * Kekuatan penggaris abad (0-1), dihaluskan oleh adegan.
    *
-   * Dinyalakan penuh pada babak 01 — babak yang memang tentang umur — lalu
-   * diredupkan, tidak dimatikan, pada babak-babak sesudahnya. Dimatikan sama
-   * sekali, bidang potongnya kembali menjadi tanah biasa dan pembaca
-   * kehilangan satu-satunya hal yang membuat "50 cm" berarti "lima ratus
-   * tahun" pada babak 02.
+   * Tampil redup sepanjang modul, tidak dimatikan. Dimatikan sama sekali,
+   * bidang potongnya kembali menjadi tanah biasa dan pembaca kehilangan
+   * satu-satunya hal yang membuat "50 cm" berarti "lima ratus tahun" pada
+   * babak 01.
    */
   calendar: number;
   /**
