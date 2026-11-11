@@ -427,6 +427,24 @@ export default function KanalModule() {
               {canalDepthCm === 0 ? "belum digali" : `${canalDepthCm} cm`}
             </span>
           </div>
+          {/* Trek berwarna. `.water-slider` menyembunyikan trek bawaan peramban
+              dan mengandalkan elemen di belakangnya, seperti di Modul 01 —
+              tetapi di modul ini elemen itu tidak pernah dipasang, sehingga
+              yang terlihat hanya bulatan putih tanpa jalur. Bagian yang sudah
+              digali berwarna biru, dan garis tegak menandai 100 cm yang
+              diminta babak 01. */}
+          <div className="relative mt-2">
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#6fb6d8] to-[#8fcce8] transition-[width] duration-150"
+                style={{ width: `${(canalDepthCm / (CANAL_DEPTH_MAX_M * 100)) * 100}%` }}
+              />
+            </div>
+            <div
+              className="pointer-events-none absolute top-1/2 h-4 w-px -translate-y-1/2 bg-white/60"
+              style={{ left: `${(ACT1_DEPTH_CM / (CANAL_DEPTH_MAX_M * 100)) * 100}%` }}
+              title={`${ACT1_DEPTH_CM} cm`}
+            />
           <input
             id="kanal-depth"
             type="range"
@@ -439,8 +457,9 @@ export default function KanalModule() {
               if (Number(e.target.value) > 0) setBlocked(false);
             }}
             aria-valuetext={`Kanal sedalam ${canalDepthCm} sentimeter`}
-            className="water-slider relative z-10 mt-2 w-full"
+            className="water-slider relative z-10 w-full"
           />
+          </div>
           </div>
 
           {/* Waktu — baru muncul pada babak 03, babak yang memang tentang waktu. */}
@@ -617,11 +636,27 @@ export default function KanalModule() {
                 title={locked ? current.hint : a.title}
                 className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
+                {/* Penanda babak ikut mengisi biru: babak yang sudah dilewati
+                    penuh, babak yang sedang dikerjakan terisi sejauh
+                    kemajuannya, dan penuh begitu tugasnya selesai. Babak yang
+                    sudah dilewati dihitung dari urutannya, bukan dari
+                    `actDone`: syarat itu dihitung ulang dari keadaan sekarang,
+                    jadi mendangkalkan kanal di babak 03 akan memudarkan
+                    babak 01 seolah pekerjaannya batal. */}
                 <span
-                  className={`h-0.5 w-12 rounded-full transition-colors duration-500 ${
-                    i === act ? "bg-white" : actDone[i] ? "bg-[#6fb6d8]" : locked ? "bg-white/12" : "bg-white/25 group-hover:bg-white/50"
+                  className={`relative h-0.5 w-12 overflow-hidden rounded-full transition-colors duration-500 ${
+                    locked ? "bg-white/12" : i === act ? "bg-white/40" : "bg-white/25 group-hover:bg-white/50"
                   }`}
-                />
+                >
+                  <span
+                    className="absolute inset-y-0 left-0 rounded-full bg-[#6fb6d8] transition-[width] duration-500"
+                    style={{
+                      width: `${
+                        i < act ? 100 : i === act ? (actDone[act] ? 100 : Math.round((progressRatio ?? 0) * 100)) : 0
+                      }%`,
+                    }}
+                  />
+                </span>
                 <span className={`text-[11px] tabular-nums transition-colors ${i === act ? "text-white" : "text-white/40"}`}>
                   {a.number}
                 </span>
