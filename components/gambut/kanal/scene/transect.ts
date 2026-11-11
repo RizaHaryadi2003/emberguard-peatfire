@@ -7,7 +7,7 @@ import {
   type DrainageSim,
 } from "@/lib/drainage";
 
-// Bentuk bongkahan lanskap Modul 03: sepetak gambut yang dibelah kanal,
+// Bentuk bongkahan lanskap Modul 02: sepetak gambut yang dibelah kanal,
 // dilihat dari sudut isometrik.
 //
 // --- Mengapa bukan penampang satu kilometer --------------------------------
@@ -361,7 +361,7 @@ export function createFaceGrid(): THREE.BufferGeometry {
  *
  * Hanya `position` dan `aDepth` yang ditulis; `uv` tidak pernah berubah.
  * Normal titik sengaja tidak dihitung — peneduh bidang potong tidak
- * membacanya, sama seperti pada Modul 02.
+ * membacanya, sama seperti pada Modul 03.
  */
 export function updateFaceGrid(
   geom: THREE.BufferGeometry,
@@ -557,13 +557,12 @@ export function createCanalGeometry(): THREE.BufferGeometry {
  * Perbarui bentuk kanal untuk kedalaman `canalDepthM`, pada tanah yang sudah
  * melesak sebanyak `dropM`.
  *
- * Dasar kanal diikatkan ke permukaan asal, tepi atasnya ke permukaan saat
- * ini. Itu bukan kerapian, melainkan isi pelajarannya: yang melesak adalah
- * tanah di sekitar kanal, sedangkan galiannya tetap di tempatnya. Setelah
- * tiga puluh tahun, kanal yang semula sedalam tiga meter karena itu tinggal
- * sedalam satu — bukan karena ia ditimbun, melainkan karena tanahnya yang
- * turun menyusulnya. Diikatkan keduanya ke permukaan asal, dinding kanal
- * justru akan tampak menonjol ke atas seperti tanggul beton.
+ * Tepi atas dan dasar kanal sama-sama ikut turun bersama tanah di tepinya:
+ * kanal dan parit terus dikeruk, sehingga dalamnya terhadap permukaan tetap.
+ * Itulah keadaan pada pengukuran Hooijer dkk. (2012), yang mencatat lesak
+ * tetap selama 18 tahun pada muka air yang dijaga. `canalDepthM` di sini
+ * adalah kedalaman yang masih berpengaruh (`DrainageSim.effectiveCanalDepth`),
+ * yang tidak pernah menembus dasar profil gambut.
  */
 export function updateCanalGeometry(
   geom: THREE.BufferGeometry,
@@ -572,7 +571,7 @@ export function updateCanalGeometry(
 ): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
-  const floor = surfaceY(0) - canalDepthM * V_SCALE;
+  const floor = surfaceY(0) - (dropM + canalDepthM) * V_SCALE;
   // Dasar lebih sempit daripada mulutnya, sebanding dengan dalamnya.
   const bedHalf = canalBedHalf(canalDepthM);
   const front = BLOCK_DEPTH / 2;
@@ -769,7 +768,7 @@ export function createCanalWaterGeometry(): THREE.BufferGeometry {
 // ---------------------------------------------------------------------------
 
 /**
- * Pelacak penurunan permukaan, sejajar dengan `createSubsidence` pada Modul 02.
+ * Pelacak penurunan permukaan, sejajar dengan `createSubsidence` pada Modul 03.
  *
  * Nilainya dibaca dari simulasi lewat satu fungsi, dan `version` bertambah
  * setiap kali bentuknya perlu dibentuk ulang — sehingga geometri tidak

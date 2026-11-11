@@ -16,7 +16,7 @@ import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, originalTopY } from "./arc
 // tempatnya memang di sana. Yang ditulis sebagai teks hanya angka tiap seribu
 // tahun — sebab dua puluh delapan angka pada tepi gambar akan saling
 // bertindihan menjadi gumpalan, dan pelajaran itu sudah dibayar mahal di
-// Modul 03.
+// Modul 02.
 //
 // Angkanya ditulis sebagai DOM lewat `Html`, bukan sebagai geometri teks,
 // supaya tetap tajam pada resolusi berapa pun dan dapat dibaca pembaca layar.
@@ -37,7 +37,7 @@ export default function SceneLabels() {
           bongkahan — pita yang harus dikosongkan kamera, dan karena itu
           diambil dari besar gambarnya — dan pita itu jatuh persis di atas
           panel kendali begitu panel itu tumbuh pada babak 03, sehingga
-          angkanya tertimbun. Pelajaran yang sama sudah dibayar di Modul 03.
+          angkanya tertimbun. Pelajaran yang sama sudah dibayar di Modul 02.
           Diikatkan ke permukaan asal, bukan ke permukaan yang sedang berlaku:
           umur suatu lapisan tidak berubah hanya karena lapisan di atasnya
           sudah habis terbakar. Justru itu yang membuat takik bekas bakar
@@ -53,7 +53,7 @@ export default function SceneLabels() {
       ))}
 
       {/* Lebar bongkahan: patokan ukuran, dan satu-satunya keterangan yang
-          menyatakan bahwa petak ini petak yang sama dengan Modul 01 dan 02. */}
+          menyatakan bahwa petak ini petak yang sama dengan Modul 01 dan 03. */}
       <group position={[0, originalTopY(0, FACE_Z) + 0.72, FACE_Z]}>
         <Html center zIndexRange={[10, 0]}>
           <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm">

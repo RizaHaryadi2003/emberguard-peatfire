@@ -6,7 +6,7 @@ import { GROWTH_M_PER_YEAR } from "@/lib/carbon";
 
 // Bahan tanah Modul 04.
 //
-// Rangkanya sama dengan Modul 03: `MeshStandardMaterial` yang warna dasarnya
+// Rangkanya sama dengan Modul 02: `MeshStandardMaterial` yang warna dasarnya
 // diambil alih lewat `onBeforeCompile`, sehingga bayangan, peta lingkungan
 // langit, dan kabut tetap dikerjakan three.js pada jalur yang sudah
 // dioptimalkan. Alasannya ditulis panjang di
@@ -32,7 +32,7 @@ import { GROWTH_M_PER_YEAR } from "@/lib/carbon";
 // Tidak ada tekstur keadaan sama sekali, tidak seperti Modul 02 dan 03:
 // seluruh isi modul ini dapat dinyatakan dengan empat angka, jadi keempatnya
 // cukup dikirim sebagai uniform. Peneduhnya karena itu jauh lebih murah
-// daripada peneduh Modul 03.
+// daripada peneduh Modul 02.
 
 /** Rona satu lapisan sebagai tetapan GLSL, dibaca dari daftar bersama. */
 function tintGlsl(id: PeatLayerId): string {

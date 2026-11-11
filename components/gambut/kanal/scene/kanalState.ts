@@ -7,7 +7,7 @@ export { QUALITY_PROFILE, type Quality } from "@/components/gambut/scene/diorama
  *
  * Disimpan dalam ref dan dibaca tiap bingkai, sehingga menggeser pengatur
  * kedalaman kanal tidak memicu render ulang seluruh kanvas — pola yang sama
- * dengan `BaraState` pada Modul 02.
+ * dengan `BaraState` pada Modul 03.
  */
 export type KanalState = {
   /** Babak aktif (0-3). */
@@ -36,7 +36,7 @@ export type KanalState = {
    * Diambil dari bagian penampang yang muka airnya sudah melewati batas 40 cm.
    * Jadi langit di modul ini menguning bukan karena ada yang terbakar —
    * tidak ada api di sini — melainkan karena lahannya sudah siap terbakar.
-   * Itu disengaja: inilah sambungan ke Modul 02, dan pembaca melihatnya di
+   * Itu disengaja: inilah sambungan ke Modul 03, dan pembaca melihatnya di
    * langit sebelum ia membacanya di mana pun.
    */
   danger: number;

@@ -21,10 +21,18 @@ export type GambutModule = {
   available: boolean;
 };
 
+/**
+ * Urutan modul mengikuti rantai sebab-akibat yang terjadi di lapangan:
+ * gambut alami yang basah (01), dikeringkan oleh kanal (02), lalu terbakar
+ * membara dan sulit padam (03), dan karbonnya hilang (04). Tiap modul hanya
+ * memakai pengetahuan yang sudah diajarkan modul sebelumnya. Kanal dan Bara
+ * ditukar pada 11 November 2026: Modul Bara memakai muka air 95 cm sebagai
+ * titik awal, padahal penyebab turunnya baru dijelaskan di Modul Kanal.
+ */
 export const GAMBUT_MODULES: readonly GambutModule[] = [
   { href: "/gambut/anatomi", number: "01", title: "Anatomi Gambut", caption: "Kupas lapisannya satu per satu", available: true },
-  { href: "/gambut/bara", number: "02", title: "Bara di Bawah Tanah", caption: "Api yang merambat tanpa terlihat", available: true },
-  { href: "/gambut/kanal", number: "03", title: "Kanal & Pengeringan", caption: "Saat air dialirkan keluar", available: true },
+  { href: "/gambut/kanal", number: "02", title: "Kanal & Pengeringan", caption: "Saat air dialirkan keluar", available: true },
+  { href: "/gambut/bara", number: "03", title: "Bara di Bawah Tanah", caption: "Api yang merambat tanpa terlihat", available: true },
   { href: "/gambut/karbon", number: "04", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar", available: true },
 ];
 

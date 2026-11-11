@@ -9,7 +9,7 @@ tersendiri (`docs/md/acuan-modul-XX.md`). Dokumen inilah yang mengatur
 **bentuk** interaksinya (Pola 5A), sedangkan dokumen acuan mengatur **isinya**.
 
 - Tanggal: 30 September 2026, direvisi 8 November 2026
-- Berlaku untuk: seluruh bagian, termasuk Modul 01 dan 02 yang sudah jadi
+- Berlaku untuk: seluruh bagian, termasuk Modul 01 dan 03 yang sudah jadi
 
 | Modul | Acuan utama | Dokumen |
 |---|---|---|
@@ -20,11 +20,11 @@ tersendiri (`docs/md/acuan-modul-XX.md`). Dokumen inilah yang mengatur
 
 ## 1. Masalah yang Dipecahkan Dokumen Ini
 
-Modul 01 dirancang sambil jalan dan Modul 02 menyusul dengan bentuk yang
+Modul 01 dirancang sambil jalan dan Modul 03 menyusul dengan bentuk yang
 berbeda. Keduanya berjalan baik, tetapi belum ada aturan tertulis yang
 menyatakan **mengapa** bentuknya seperti itu. Akibatnya:
 
-- Modul 03 dan 04 tidak punya patokan, dan berisiko memakai bentuk ketiga yang
+- Modul 02 dan 04 tidak punya patokan, dan berisiko memakai bentuk ketiga yang
   berbeda lagi.
 - Bagian Simulasi, Dampak, dan Pencegahan masih kosong tanpa arah.
 - Sulit menjawab pertanyaan penguji: "apa yang membuat ini interaktif?"
@@ -41,7 +41,7 @@ Dokumen ini menutup ketiganya.
 Itulah inti yang disampaikan pembimbing. Supaya dapat diperiksa satu per satu,
 aturan itu dipecah menjadi lima unsur yang **wajib ada pada setiap babak**:
 
-| | Unsur | Pertanyaan pemeriksa | Contoh dari Modul 02 Babak 01 |
+| | Unsur | Pertanyaan pemeriksa | Contoh dari Modul 03 Babak 01 |
 |---|---|---|---|
 | **A1** | **Ajakan** | Apa yang diminta dari pembaca, dalam satu kalimat? | "Pilih satu sumber sulutan, lalu klik permukaan gambut." |
 | **A2** | **Aksi** | Apa yang pembaca lakukan dengan tangannya? | Memilih kartu, lalu mengeklik titik di permukaan 3D |
@@ -100,7 +100,7 @@ berbeda, dan tidak boleh dua babak berurutan memakai tingkat yang sama.
 
 ## 3. Audit Dua Modul yang Sudah Jadi
 
-### Modul 02 — Bara di Bawah Tanah ⭐ **jadikan patokan**
+### Modul 03 — Bara di Bawah Tanah ⭐ **jadikan patokan**
 
 | Babak | Ajakan | Tingkat | 5A lengkap? |
 |---|---|---|---|
@@ -175,10 +175,10 @@ BERANDA
         │
         ▼
 BAGIAN 01 — GAMBUT                              [ KENALI ]
-  Modul 01  Anatomi Gambut        apa itu gambut      ⚠️ disesuaikan ke acuan
-  Modul 02  Bara di Bawah Tanah   mengapa sulit padam ✅ selesai
-  Modul 03  Kanal & Pengeringan   mengapa jadi kering ⬜
-  Modul 04  Gudang Karbon         apa yang hilang     ⬜
+  Modul 01  Anatomi Gambut        apa itu gambut          ✅ selesai
+  Modul 02  Kanal & Pengeringan   mengapa jadi kering     ✅ dikalibrasi ke acuan
+  Modul 03  Bara di Bawah Tanah   bagaimana ia terbakar   ✅ selesai
+  Modul 04  Gudang Karbon         apa yang hilang         ✅ dikalibrasi ke acuan
         │
         ▼
 BAGIAN 02 — SIMULASI                            [ KENDALIKAN ]
@@ -194,6 +194,12 @@ BAGIAN 04 — PENCEGAHAN                          [ CEGAH ]
   Semua yang tadi dilihat, dibalik menjadi tindakan.
 ```
 
+**Urutan modul Gambut** (ditetapkan 11 November 2026) memakai tiga kriteria:
+satu pertanyaan per modul; tiap modul hanya memakai pengetahuan yang sudah
+diajarkan sebelumnya; dan urutannya mengikuti rantai sebab-akibat di lapangan
+— gambut alami basah, dikeringkan kanal, terbakar membara, karbonnya hilang.
+Karena itu Kanal (dahulu 03) dan Bara (dahulu 02) ditukar.
+
 **Alasan urutannya begitu:** pembaca tidak boleh diberi tahu cara mencegah
 sebelum ia merasakan sendiri betapa sulitnya memadamkan. Bagian 04 hanya terasa
 penting kalau Bagian 02 sudah membuatnya gagal sekali.
@@ -207,7 +213,7 @@ bagian 2.
 
 ---
 
-### 5.1 Modul 03 — Kanal & Pengeringan
+### 5.1 Modul 02 — Kanal & Pengeringan
 
 > *"Saat air dialirkan keluar"*
 
@@ -320,7 +326,7 @@ menekan semua tombol:
 
 | Tindakan | Aksi | Biaya | Hasil sebenarnya |
 |---|---|---|---|
-| Siram dari darat | Klik titik | Murah | Asap hilang, bara **tidak** padam *(pelajaran Modul 02)* |
+| Siram dari darat | Klik titik | Murah | Asap hilang, bara **tidak** padam *(pelajaran Modul 03)* |
 | Bom air helikopter | Klik titik | Mahal, ada jeda isi ulang | Padam di permukaan saja |
 | Sekat kanal | Seret di kanal | Sedang, **lambat** | Muka air naik → satu-satunya yang benar-benar memadamkan |
 | Sekat bakar | Seret garis | Sedang | Menahan api permukaan, **tidak** menahan bara bawah tanah |
@@ -389,8 +395,8 @@ memperbaiki.
 
 | Babak | Masalah yang diingatkan | Ajakan | Tingkat | Animasi |
 |---|---|---|---|---|
-| **01** Jaga airnya | Modul 03: kanal mengeringkan lahan | "Pasang sekat sampai seluruh lahan kembali aman." | 3 | Sekat dipasang; peta berubah merah → biru; penghitung "luas aman" naik sampai 100% |
-| **02** Buka lahan tanpa bakar | Modul 02: satu sulutan cukup | "Pilih cara membuka lahan." | 1 | Dua jalur bersanding: dengan api → bara menjalar; tanpa api → lahan bersih, bara nol |
+| **01** Jaga airnya | Modul 02: kanal mengeringkan lahan | "Pasang sekat sampai seluruh lahan kembali aman." | 3 | Sekat dipasang; peta berubah merah → biru; penghitung "luas aman" naik sampai 100% |
+| **02** Buka lahan tanpa bakar | Modul 03: satu sulutan cukup | "Pilih cara membuka lahan." | 1 | Dua jalur bersanding: dengan api → bara menjalar; tanpa api → lahan bersih, bara nol |
 | **03** Temukan lebih awal | Bagian 02: api menyebar saat terlambat | "Periksa titik panas hari ini." | 3 | Peta titik panas; klik untuk memverifikasi; yang ditemukan hari ke-1 padam dengan satu regu, hari ke-7 butuh helikopter |
 | **04** Kita yang menjaga | Bagian 03: asap mencapai kota | "Susun regu pemadaman desamu." | 3 + 2 | Menaruh anggota MPA, menara pantau, dan embung di peta desa; menjalankan satu musim kemarau untuk melihat hasilnya |
 
@@ -428,7 +434,7 @@ Dan satu aturan pemrograman yang berlaku di semua modul:
 > **Babak berikutnya hanya terbuka setelah syaratnya terpenuhi**, dan syarat itu
 > dibaca dari **keadaan simulasi**, bukan dari "tombol sudah ditekan".
 
-Modul 02 sudah menerapkannya lewat larik `ACT_HINT` dan pemeriksaan keadaan.
+Modul 03 sudah menerapkannya lewat larik `ACT_HINT` dan pemeriksaan keadaan.
 Bedanya besar: memeriksa `sim.stats.frontDepth > 1.0` berarti pembaca benar-benar
 membuat baranya turun sedalam satu meter, sedangkan memeriksa "tombol ditekan"
 hanya berarti ia menekan tombol.
@@ -479,9 +485,9 @@ Diurutkan berdasarkan **manfaat dibagi kesulitan**, bukan berdasarkan nomor.
 
 | Urutan | Pekerjaan | Kesulitan | Alasan didahulukan |
 |---|---|---|---|
-| ~~1~~ | ~~Selesaikan Babak 04 Modul 02~~ | Kecil | **Selesai** |
+| ~~1~~ | ~~Selesaikan Babak 04 Modul 03~~ | Kecil | **Selesai** |
 | 2 | Susun ulang Modul 01 menurut `acuan-modul-01.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
-| ~~3~~ | ~~**Modul 03 — Kanal**~~ | Sedang | **Selesai** |
+| ~~3~~ | ~~**Modul 02 — Kanal**~~ | Sedang | **Selesai** |
 | ~~5~~ | ~~Modul 04 — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
 | 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |
 | 6 | Bagian 03 — Dampak | Sedang | Sebagian besar sudah tersedia lewat `getAtmosphere` |

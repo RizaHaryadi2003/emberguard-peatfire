@@ -3,7 +3,7 @@ import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
 import { footprintRadius, interfaceY, radiusAt, radiusFrom } from "@/components/gambut/scene/terrain";
 
-// Bentuk bongkahan gambut Modul 02: bongkahan yang sama seperti Modul 01,
+// Bentuk bongkahan gambut Modul 03: bongkahan yang sama seperti Modul 01,
 // tetapi dipotong tepat di tengah (bidang z = 0) dan hanya separuh belakang
 // yang disisakan. Bidang potongnya menghadap kamera, sehingga seluruh kejadian
 // di bawah tanah — bara, rongga abu, muka air — terlihat langsung.
@@ -114,7 +114,7 @@ const FOOTPRINT_RIGHT = footprintRadius(0);
  * sepanjang 4,4 m — penyebab utama bongkahan tampak seperti kue yang
  * dipotong, bukan tanah yang digali.
  *
- * Hanya dipakai Modul 02. `interfaceY` pada `terrain.ts` sengaja tidak diubah
+ * Hanya dipakai Modul 03. `interfaceY` pada `terrain.ts` sengaja tidak diubah
  * agar tampilan Modul 01 yang sudah jadi tidak bergeser.
  */
 export function surfaceRelief(x: number, z: number): number {

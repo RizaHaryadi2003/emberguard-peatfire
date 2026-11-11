@@ -27,7 +27,7 @@ export type BaraAct = {
 };
 
 /**
- * Pembuka Modul 02. Berangkat dari yang sering dilihat pembaca saat musim kabut
+ * Pembuka Modul 03. Berangkat dari yang sering dilihat pembaca saat musim kabut
  * asap: asap tebal tanpa api. Tidak memuat angka; klaim bahwa bara gambut
  * berasap tanpa nyala sama dengan isi Babak 01 dan Babak 03 di bawah.
  */

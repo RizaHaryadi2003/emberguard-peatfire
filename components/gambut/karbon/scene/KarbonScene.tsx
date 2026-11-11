@@ -30,13 +30,13 @@ import {
 } from "./archiveMaterial";
 import SceneLabels from "./SceneLabels";
 
-// Kanvas 3D Modul 04: bongkahan gambut yang sama dengan Modul 01 dan 02,
+// Kanvas 3D Modul 04: bongkahan gambut yang sama dengan Modul 01 dan 03,
 // dibaca sebagai arsip dan sebagai gudang karbon.
 
 /**
  * Kamera ortografik isometrik ringan.
  *
- * Ortografik, dengan alasan yang sama seperti Modul 03: seluruh modul ini
+ * Ortografik, dengan alasan yang sama seperti Modul 02: seluruh modul ini
  * perbandingan kedalaman, dan kamera perspektif membuat sepuluh sentimeter di
  * bagian atas bidang potong tergambar lebih tebal daripada sepuluh sentimeter
  * di bagian bawah. Pada bidang potong yang dibaca sebagai penggaris tahun,
@@ -61,7 +61,7 @@ const CAMERA_AZIMUTH = (20 * Math.PI) / 180;
  * memutih menjadi bidang kelabu, dan bongkahan tanah yang satu sisinya
  * kelabu polos berhenti terbaca sebagai tanah.
  *
- * Jebakan yang sama sudah tercatat pada Modul 03 dan tetap terulang di sini,
+ * Jebakan yang sama sudah tercatat pada Modul 02 dan tetap terulang di sini,
  * sebab di sana angkanya terasa kecil (150 untuk petak 80 m) dan di sini
  * terasa besar (40 untuk bongkahan 4,4 m) — padahal yang menentukan nisbahnya
  * terhadap kerapatan kabut, bukan terhadap ukuran bongkahannya. Aturannya:
@@ -82,7 +82,7 @@ const CONTENT_HEIGHT =
 /**
  * Ruang kosong di layar yang boleh dipakai gambar: [kiri, kanan, atas, bawah].
  *
- * Angkanya sama dengan Modul 03 dan diukur dari tata letak yang sama: panel
+ * Angkanya sama dengan Modul 02 dan diukur dari tata letak yang sama: panel
  * cerita dan panel kendali di kiri berakhir di x 460 pada layar 1440, kolom
  * angka di kanan mulai di x 1164. Disamakan dengan sengaja — kedua modul
  * memakai kerangka antarmuka yang sama, jadi gambarnya harus berdiri di
@@ -100,7 +100,7 @@ const PANEL_BREAKPOINT = 1024;
 /**
  * Batas resolusi render khusus modul ini.
  *
- * Lebih longgar daripada Modul 03 (1,25) karena peneduhnya jauh lebih murah:
+ * Lebih longgar daripada Modul 02 (1,25) karena peneduhnya jauh lebih murah:
  * tidak ada tekstur keadaan yang dibaca tiap piksel, tidak ada simulasi yang
  * berjalan tiap bingkai, dan bongkahannya hanya menempati sepertiga layar.
  * Yang mahal di sini justru ketajaman garis abad, dan garis setipis itu
@@ -202,7 +202,7 @@ function Simulation({
     // sudah menghasilkan bahaya 0,83 — hampir asap pekat — sehingga seluruh
     // layar berubah sepia begitu pembaca mengerjakan tugas babak 01, dan teks
     // cerita di kiri kehilangan kontrasnya tepat ketika ia paling perlu
-    // dibaca. Langit yang menguning di sini sambungan ke Modul 02, bukan
+    // dibaca. Langit yang menguning di sini sambungan ke Modul 03, bukan
     // pokok ceritanya sendiri; ia harus terlihat, bukan mengambil alih.
     const wantDanger = Math.min(0.7, s.drawnBurnM / 1.3);
     s.danger = THREE.MathUtils.damp(s.danger, wantDanger, 1.5, dt);
@@ -447,7 +447,7 @@ export default function KarbonScene({
       <CameraRig />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       {/* Langit, kabut, dan matahari yang sama dengan modul lain. Bongkahan
-          ini sebesar bongkahan Modul 01 dan 02, jadi skala dunianya 1 —
+          ini sebesar bongkahan Modul 01 dan 03, jadi skala dunianya 1 —
           tidak ada yang perlu disetel ulang. */}
       <SkyLighting stateRef={stateRef} quality={quality} backgroundDim={0.6} />
       <Suspense fallback={null}>

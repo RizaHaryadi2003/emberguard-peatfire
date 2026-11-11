@@ -26,7 +26,8 @@ gsap.registerPlugin(useGSAP);
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
 const BaraScene = dynamic(() => import("./scene/BaraScene"), { ssr: false });
 
-const MODULE = GAMBUT_MODULES[1];
+// Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
+const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/bara")!;
 
 /**
  * Muka air tanah awal (cm): sedalam yang terendah pada catatan 1993–2002 di
@@ -75,7 +76,7 @@ const ACT_HINT = [
 ];
 
 /**
- * Modul 02 — Bara di Bawah Tanah.
+ * Modul 03 — Bara di Bawah Tanah.
  *
  * Berbeda dari Modul 01 yang bercerita mengikuti gulir halaman, modul ini
  * adalah ruang uji: bongkahan gambut dipotong sehingga penampangnya menghadap

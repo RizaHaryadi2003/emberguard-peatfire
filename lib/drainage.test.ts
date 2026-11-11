@@ -20,6 +20,7 @@ import {
   SIM_MAX_YEARS,
   waterDepthAt,
   WATER_LIMIT_M,
+  CALIBRATED_WATER_DEPTH_MAX_M,
 } from "./drainage";
 
 /** Majukan simulasi sejumlah tahun dalam langkah kecil, seperti tiap bingkai. */
@@ -92,11 +93,13 @@ describe("kurva penurunan muka air", () => {
     expect(tepi(CANAL_DEPTH_MAX_M)).toBe(TRANSECT_LENGTH_M);
   });
 
-  it("permukaan yang melesak mendekati airnya, tidak menembusnya", () => {
-    const tanpaLesak = waterDepthAt(0, 2);
-    expect(waterDepthAt(0, 2, 0.5)).toBeCloseTo(tanpaLesak - 0.5, 6);
-    // Lesak yang sangat besar tidak membuat muka air menjadi negatif.
-    expect(waterDepthAt(0, 2, 99)).toBe(0);
+  it("muka air tidak lebih dalam daripada sisa gambut di bawah permukaan", () => {
+    // Drainase dianggap dijaga, jadi lesak tidak mendangkalkan muka air;
+    // yang membatasinya hanya gambut yang sudah habis.
+    expect(waterDepthAt(0, 2)).toBeCloseTo(2, 6);
+    expect(waterDepthAt(0, 2, 0.5)).toBeCloseTo(0.5, 6);
+    expect(waterDepthAt(0, 2, 0)).toBe(0);
+    expect(waterDepthAt(0, 2, -1)).toBe(0);
   });
 
   it("tidak pernah melaporkan muka air lebih dalam daripada profilnya", () => {
@@ -111,11 +114,30 @@ describe("laju penurunan dan emisi", () => {
     expect(emissionPerYear(NATURAL_WATER_DEPTH_M)).toBe(0);
   });
 
-  it("bertambah sebanding dengan tebal lapisan kering di atas muka air", () => {
-    const a = subsidenceRatePerYear(0.6);
-    const b = subsidenceRatePerYear(1.1);
+  it("bertambah lurus dengan kedalaman muka air di dalam rentang data Hooijer", () => {
+    const a = subsidenceRatePerYear(0.4);
+    const b = subsidenceRatePerYear(0.7);
     expect(b).toBeCloseTo(a * 2, 6);
-    expect(emissionPerYear(1.1)).toBeCloseTo(emissionPerYear(0.6) * 2, 6);
+    expect(emissionPerYear(0.7)).toBeCloseTo(emissionPerYear(0.4) * 2, 6);
+  });
+
+  it("tidak dinaikkan lagi di luar rentang data, lebih dalam dari 1 m", () => {
+    expect(subsidenceRatePerYear(CALIBRATED_WATER_DEPTH_MAX_M + 0.8)).toBeCloseTo(
+      subsidenceRatePerYear(CALIBRATED_WATER_DEPTH_MAX_M),
+      9,
+    );
+  });
+
+  it("mengikuti Hooijer dkk. (2012): 7,06 cm dan 98 t CO2 per meter muka air", () => {
+    const wd = 0.6;
+    const kering = wd - NATURAL_WATER_DEPTH_M;
+    expect(subsidenceRatePerYear(wd) * 100).toBeCloseTo(7.06 * kering, 6);
+    expect(emissionPerYear(wd)).toBeCloseTo(98 * kering, 6);
+  });
+
+  it("oksidasi menyumbang ± 75% lesak lima tahun pertama", () => {
+    expect(5 / (averageCompactionBoost(0, 5) * 5)).toBeCloseTo(0.75, 6);
+    expect(COMPACTION_YEARS).toBe(1);
   });
 
   it("pemampatan mempercepat tahun-tahun pertama, lalu berhenti", () => {
@@ -152,9 +174,11 @@ describe("penampang yang dipotong kanal", () => {
     const sim = new DrainageSim();
     sim.setCanalDepth(2);
     jalan(sim, 20);
+    // Titik dekat kanal yang muka airnya lebih dalam dari 1 m melesak sama
+    // cepat (batas rentang data Hooijer), jadi pembandingnya diambil di luar.
     const dekat = sim.subsidenceAtDistance(10);
-    const sedang = sim.subsidenceAtDistance(150);
-    const jauh = sim.subsidenceAtDistance(450);
+    const sedang = sim.subsidenceAtDistance(400);
+    const jauh = sim.subsidenceAtDistance(700);
     expect(dekat).toBeGreaterThan(sedang);
     expect(sedang).toBeGreaterThan(jauh);
     expect(jauh).toBeGreaterThan(0);
@@ -228,17 +252,29 @@ describe("penampang yang dipotong kanal", () => {
     expect(dalam.stats.riskShare).toBeGreaterThan(dangkal.stats.riskShare);
   });
 
-  it("pengeringan melambat sendiri karena permukaannya ikut turun", () => {
-    // Bukan karena membaik, melainkan karena tanahnya sudah habis turun.
-    // Tanpa umpan balik ini, penurunan menjadi garis lurus tanpa akhir.
+  it("lesak berlanjut tetap selama drainasenya dijaga", () => {
+    // Hooijer dkk. (2012) mencatat lesak tetap ± 5 cm/tahun selama 18 tahun
+    // pada muka air yang dijaga. Dasawarsa kedua dan ketiga karena itu sama,
+    // dan daerah rawannya tidak menyusut sendiri.
+    const sim = new DrainageSim();
+    sim.setCanalDepth(1);
+    jalan(sim, 10);
+    const rawanAwal = sim.stats.riskShare;
+    const a = sim.stats.maxSubsidenceM;
+    jalan(sim, 10);
+    const b = sim.stats.maxSubsidenceM;
+    jalan(sim, 10);
+    const c = sim.stats.maxSubsidenceM;
+    expect(c - b).toBeCloseTo(b - a, 3);
+    expect(sim.stats.riskShare).toBeCloseTo(rawanAwal, 6);
+  });
+
+  it("kanal tidak dapat menembus dasar profil gambut", () => {
     const sim = new DrainageSim();
     sim.setCanalDepth(3);
-    jalan(sim, 10);
-    const dasawarsaPertama = sim.stats.maxSubsidenceM;
-    jalan(sim, 10);
-    const dasawarsaKedua = sim.stats.maxSubsidenceM - dasawarsaPertama;
-    expect(dasawarsaKedua).toBeGreaterThan(0);
-    expect(dasawarsaKedua).toBeLessThan(dasawarsaPertama);
+    jalan(sim, 30);
+    expect(sim.stats.maxSubsidenceM).toBeLessThan(PROFILE_DEPTH_M);
+    expect(sim.effectiveCanalDepth()).toBeLessThanOrEqual(PROFILE_DEPTH_M - sim.subsidenceAt(0) + 1e-9);
   });
 
   it("langkah besar dan banyak langkah kecil memberi hasil yang praktis sama", () => {

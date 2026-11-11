@@ -49,7 +49,8 @@ const HOOK_WATER_CM = 90;
  */
 const DEMO_YEARS = 620;
 
-const MODULE = GAMBUT_MODULES[0];
+// Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
+const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/anatomi")!;
 
 /**
  * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
@@ -655,7 +656,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
             } hidden md:inline-flex`}
             // Di layar sempit tombol ini selalu disembunyikan, sama dengan
-            // Modul 02. Dahulu ia hanya disembunyikan saat panel pengatur
+            // Modul 03. Dahulu ia hanya disembunyikan saat panel pengatur
             // tampil; pada tahap tanpa panel ia berbagi baris dengan panah
             // lanjut dan arahannya, dan di layar 390 px baris itu selebar
             // 385 px sehingga tombolnya terdorong keluar tepi kiri layar.

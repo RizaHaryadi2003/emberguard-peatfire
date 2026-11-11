@@ -24,7 +24,8 @@ import { createKanalState, type KanalState, type Quality } from "./scene/kanalSt
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
 const KanalScene = dynamic(() => import("./scene/KanalScene"), { ssr: false });
 
-const MODULE = GAMBUT_MODULES[2];
+// Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
+const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/kanal")!;
 
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;
@@ -43,7 +44,7 @@ const ACT_SPEED = [0, 0, 0, 0];
 /**
  * Babak paling awal yang sudah menampilkan tiap alat.
  *
- * Mengikuti pola Modul 02 (`showDouse={act >= 2}`, `showRewet={act >= 3}`):
+ * Mengikuti pola Modul 03 (`showDouse={act >= 2}`, `showRewet={act >= 3}`):
  * alat sebuah babak baru muncul ketika babaknya tiba. Sebelum ini ketiganya
  * tersedia sejak babak 01, sehingga pembaca dapat memasang sekat — pekerjaan
  * babak 04 — sebelum ia sempat tahu bahwa ada empat babak, dan keempat
@@ -58,7 +59,7 @@ const ACT3_SUBSIDENCE_M = 0.5;
 const ACT1_DEPTH_CM = 100;
 
 /**
- * Modul 03 — Kanal & Pengeringan.
+ * Modul 02 — Kanal & Pengeringan.
  *
  * Penampang lanskap sepanjang satu kilometer, bukan bongkahan seperti dua
  * modul sebelumnya: pengeringan tidak terjadi pada skala beberapa meter.
@@ -84,7 +85,7 @@ export default function KanalModule() {
    * Diingat, bukan dihitung ulang dari penandanya. Penanda itu dibersihkan
    * begitu babak 02 ditinggalkan — ia tidak berarti apa-apa di babak lain —
    * sehingga `actDone[1]` kembali palsu dan penanda babak 02 pada navigasi
-   * berubah kelabu lagi, seolah pekerjaannya batal. Modul 02 memakai cara
+   * berubah kelabu lagi, seolah pekerjaannya batal. Modul 03 memakai cara
    * yang sama untuk hal yang sama: `dousedOnce`, `thermalSeen`, `rewetOnce`.
    *
    * Dikunci di dalam penangan geseran, bukan di dalam `useEffect` yang
@@ -116,7 +117,7 @@ export default function KanalModule() {
   }, [act, canalDepthCm, speedIndex, blocked, reducedMotion]);
 
   // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
-  // usapan ke atas, sama dengan Modul 02: halaman ini dikunci setinggi layar,
+  // usapan ke atas, sama dengan Modul 03: halaman ini dikunci setinggi layar,
   // jadi gerakannya dibaca langsung.
   useEffect(() => {
     if (!hookOpen) return;
@@ -224,7 +225,7 @@ export default function KanalModule() {
   /**
    * Sisa pekerjaan babak ini, satu baris.
    *
-   * Modul 02 hanya menyimpan petunjuknya di atribut `title` penanda babak,
+   * Modul 03 hanya menyimpan petunjuknya di atribut `title` penanda babak,
    * yang hanya terlihat kalau pembaca kebetulan menunda tetikusnya di sana.
    * Di sini syaratnya ditulis terus-menerus dan angkanya hidup, sehingga
    * pembaca tahu seberapa jauh ia dari selesai — bukan hanya bahwa ia belum.
@@ -257,7 +258,7 @@ export default function KanalModule() {
   const current = KANAL_ACTS[act];
   const dense = act >= 2;
 
-  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 02. */
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 03. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   return (
@@ -302,7 +303,7 @@ export default function KanalModule() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/75 to-transparent" />
 
-      {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul 02:
+      {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul 03:
           min-height, sehingga keadaan sempit menjadi keadaan dasar. */}
       <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
@@ -469,7 +470,7 @@ export default function KanalModule() {
       </div>
 
       {/* Kolom kanan: angka hidup dan keterangan skala. Satu tumpukan yang
-          ditambatkan ke tepi atas, seperti perbaikan pada Modul 02. */}
+          ditambatkan ke tepi atas, seperti perbaikan pada Modul 03. */}
       {/* `bottom-24` bukan hiasan: ia yang menjamin tumpukan ini tidak pernah
           lagi menjulur melewati tepi bawah layar, berapa pun isinya dan
           sependek apa pun jendelanya. Kalau suatu saat isinya memang tidak

@@ -1,25 +1,25 @@
-// Hidrologi kanal gambut untuk Modul 03 "Kanal & Pengeringan".
+// Hidrologi kanal gambut untuk Modul 02 "Kanal & Pengeringan".
 //
 // Dipisah dari komponen 3D agar mudah diuji dan dirujuk di naskah skripsi,
-// sama seperti `peat.ts` untuk Modul 01 dan `smolder.ts` untuk Modul 02.
+// sama seperti `peat.ts` untuk Modul 01 dan `smolder.ts` untuk Modul 03.
 //
 // --- Pergeseran skala, dan mengapa perlu -----------------------------------
 //
-// Modul 01 dan 02 memakai bongkahan tanah selebar 4,4 m. Pengeringan tidak
+// Modul 01 dan 03 memakai bongkahan tanah selebar 4,4 m. Pengeringan tidak
 // terjadi pada skala itu: satu kanal menurunkan muka air tanah bukan hanya di
 // tepinya, melainkan dalam kerucut penurunan yang membentang ratusan meter ke
 // dalam kubah gambut. Digambarkan pada bongkahan 4,4 m, kerucut itu akan
 // tampak sebagai garis datar — tidak ada yang bisa dipelajari dari sana.
 //
-// Karena itu Modul 03 menarik kamera ke belakang: penampang lanskap sepanjang
+// Karena itu Modul 02 menarik kamera ke belakang: penampang lanskap sepanjang
 // satu kilometer, sedalam profil gambut yang sama. Lapisan, rona, dan teksturnya tetap
 // yang dipakai dua modul sebelumnya, sehingga pembaca mengenali tanah yang
 // sama — hanya dilihat dari jauh.
 //
 // --- Yang ingin disampaikan -------------------------------------------------
 //
-// Modul 02 memperlihatkan kerusakan yang tidak terlihat karena tersembunyi di
-// dalam *ruang*: bara di bawah permukaan. Modul 03 memperlihatkan kerusakan
+// Modul 03 memperlihatkan kerusakan yang tidak terlihat karena tersembunyi di
+// dalam *ruang*: bara di bawah permukaan. Modul 02 memperlihatkan kerusakan
 // yang tidak terlihat karena tersembunyi di dalam *waktu*: satu kanal bekerja
 // pelan, bertahun-tahun, jauh dari kanalnya sendiri. Dan ketika akhirnya
 // diperbaiki, yang dapat dikembalikan hanya airnya — tanahnya tidak.
@@ -27,68 +27,70 @@
 import { PROFILE_DEPTH } from "./peat";
 
 // ---------------------------------------------------------------------------
-//  TETAPAN YANG MASIH BUTUH SUMBER
+//  TETAPAN DAN SUMBERNYA
 // ---------------------------------------------------------------------------
 //
-// Keenam tetapan di bawah ini menentukan seluruh angka yang dilihat pembaca.
-// Nilainya dipilih dari kisaran yang umum dikutip untuk gambut tropis
-// Indonesia, tetapi daftar referensi skripsi ini belum memuat satu pun sumber
-// hidrologi gambut — isinya metodologi dan media pembelajaran. Jadi semuanya
-// dikumpulkan di sini, bukan disebar ke dalam kode, supaya dapat diganti
-// sekaligus begitu sumbernya ada, tanpa menyentuh bagian lain.
+// Laju lesak, emisi, dan pemampatan dikalibrasi ke Hooijer dkk. (2012),
+// Biogeosciences 9:1053–1071, bagian 3.7–3.8, untuk hutan gambut yang
+// dikeringkan (lanskap di modul ini memang hutan):
 //
-// Yang perlu dicari sumbernya, berurutan menurut besar pengaruhnya pada
-// kesimpulan yang dibawa pembaca pulang:
-//   1. SUBSIDENCE_CM_PER_YEAR_PER_M  — menentukan "berapa lesak dalam 20 tahun"
-//   2. INFLUENCE_LENGTH_PER_M        — menentukan "sejauh apa dari kanal"
-//   3. EMISSION_T_PER_HA_PER_M       — menentukan angka karbon
+//   lesak (cm/tahun)              S  = 7,06 × WD   (R² = 0,80; WD 0–0,7 m)
+//   kehilangan karbon (t CO2eq/ha/tahun) CL = 98 × WD
+//
+// WD adalah kedalaman muka air rata-rata di bawah permukaan (m). Hooijer
+// menyatakan hubungan lurus ini berlaku sampai sedikitnya 1 m dan mungkin
+// berbeda di bawahnya, jadi di sini WD dibatasi pada 1 m.
+//
+// Panjang pengaruh kanal (INFLUENCE_LENGTH_PER_M) dan muka air alami adalah
+// asumsi model; rinciannya di docs/md/acuan-modul-03.md.
 // ---------------------------------------------------------------------------
-
-/**
- * Panjang pengaruh kanal (m) per 1 m kedalaman kanal.
- *
- * Jarak tempat penurunan muka air tinggal 37% (1/e) dari penurunan di tepi
- * kanal. Kanal sedalam 2 m karena itu masih terasa sampai ratusan meter.
- */
-export const INFLUENCE_LENGTH_PER_M = 190;
-
-/**
- * Laju penurunan permukaan (cm/tahun) per 1 m muka air tanah di bawah
- * permukaan.
- *
- * Gambut yang kering tidak hanya mudah terbakar; ia juga menyusut dan
- * teroksidasi sendiri, tanpa api sama sekali. Inilah bagian yang paling sering
- * tidak diketahui pembaca.
- */
-export const SUBSIDENCE_CM_PER_YEAR_PER_M = 5;
-
-/**
- * Emisi karbon (ton CO2 per hektar per tahun) per 1 m muka air tanah di bawah
- * permukaan. Dipakai hanya untuk angka di antarmuka, tidak mempengaruhi bentuk.
- */
-export const EMISSION_T_PER_HA_PER_M = 80;
 
 /**
  * Muka air tanah alami gambut yang belum dikeringkan (m di bawah permukaan).
  *
  * Di kubah gambut yang utuh, air hampir selalu berada di dekat permukaan
- * sepanjang tahun. Itulah yang menjaganya tidak dapat terbakar.
+ * sepanjang tahun. Itulah yang menjaganya tidak dapat terbakar. Asumsi model,
+ * di dalam rentang yang dianjurkan Wösten dkk. (2008): antara 40 cm di bawah
+ * dan 100 cm di atas permukaan.
  */
 export const NATURAL_WATER_DEPTH_M = 0.1;
 
 /**
- * Bagian penurunan permukaan yang terjadi pada tahun-tahun pertama akibat
- * pemampatan, bukan oksidasi (0-1).
+ * Panjang pengaruh kanal (m) per 1 m kedalaman kanal. **Asumsi model.**
+ *
+ * Jarak tempat penurunan muka air tinggal 37% (1/e) dari penurunan di tepi
+ * kanal. Kanal sedalam 2 m karena itu masih terasa sampai ratusan meter,
+ * sejalan dengan pengamatan Ritzema dkk. (2014) bahwa pengaruh kanal di
+ * Kalampangan masih terasa sampai jarak 1.000 m.
+ */
+export const INFLUENCE_LENGTH_PER_M = 190;
+
+/** Lesak (cm/tahun) per 1 m kedalaman muka air, hutan yang dikeringkan (Hooijer dkk., 2012). */
+export const SUBSIDENCE_CM_PER_YEAR_PER_M = 7.06;
+
+/** Kehilangan karbon (t CO2eq/ha/tahun) per 1 m kedalaman muka air (Hooijer dkk., 2012). */
+export const EMISSION_T_PER_HA_PER_M = 98;
+
+/**
+ * Kedalaman muka air terdalam yang masih tercakup hubungan lurus Hooijer
+ * dkk. (2012) (m). Lebih dalam dari ini, laju tidak dinaikkan lagi.
+ */
+export const CALIBRATED_WATER_DEPTH_MAX_M = 1;
+
+/**
+ * Bagian lesak lima tahun pertama yang berasal dari pemampatan, bukan
+ * oksidasi (0–1). Hooijer dkk. (2012): oksidasi ± 75%, jadi pemampatan ± 25%.
+ */
+export const CONSOLIDATION_SHARE_5Y = 0.25;
+
+/**
+ * Lama pemampatan awal berlangsung (tahun).
  *
  * Begitu air keluar, gambut langsung memampat karena kehilangan daya angkat
- * air di pori-porinya. Penurunan tahun pertama karena itu selalu lebih cepat
- * daripada tahun-tahun sesudahnya, dan itu terjadi walau kanalnya segera
- * disekat kembali.
+ * air di pori-porinya. Hooijer dkk. (2012) mendapati pemampatan ini hanya
+ * berarti pada tahun pertama, dan terjadi walau kanalnya segera disekat.
  */
-export const COMPACTION_SHARE = 0.3;
-
-/** Lama pemampatan awal berlangsung (tahun). */
-export const COMPACTION_YEARS = 2;
+export const COMPACTION_YEARS = 1;
 
 // ---------------------------------------------------------------------------
 //  GEOMETRI LANSKAP
@@ -117,7 +119,7 @@ export const CANAL_WIDTH_M = 8;
 export const CANAL_DEPTH_MIN_M = 0;
 export const CANAL_DEPTH_MAX_M = 3;
 
-/** Kedalaman profil gambut, sama dengan Modul 01 dan 02 (m). */
+/** Kedalaman profil gambut, sama dengan Modul 01 dan 03 (m). */
 export const PROFILE_DEPTH_M = PROFILE_DEPTH;
 
 /**
@@ -170,40 +172,49 @@ export function influenceLength(canalDepthM: number): number {
  * persamaan Darcy dan bergantung pada daya hantar tiap lapisan — tetapi
  * bentuknya benar: paling dalam di tepi kanal, lalu pulih menuju keadaan
  * alami, dan panjang pemulihannya bertambah bila kanalnya lebih dalam.
- * Penyederhanaan ini dipilih supaya dapat dijelaskan dalam satu kalimat pada
- * naskah skripsi.
  *
- * `surfaceDropM` adalah penurunan permukaan yang sudah terjadi di titik itu.
- * Ia mengurangi kedalaman muka air, bukan menambahnya: permukaan yang melesak
- * ikut turun mendekati airnya. Umpan balik ini yang membuat pengeringan
- * melambat sendiri setelah beberapa dasawarsa — bukan karena membaik,
- * melainkan karena tanahnya sudah habis turun.
+ * Kedalamannya diukur dari permukaan saat itu dan tidak berkurang walau
+ * tanahnya melesak: drainasenya dianggap dijaga, seperti kanal dan parit yang
+ * terus dikeruk. Itulah keadaan pada pengukuran Hooijer dkk. (2012), yang
+ * mencatat lesak tetap ± 5 cm/tahun selama 18 tahun pada muka air yang
+ * dijaga. Model sebelumnya menganggap muka air kanal tetap di tempatnya,
+ * sehingga tanah yang melesak lambat laun mengejar airnya dan daerah rawan
+ * tampak menyusut sendiri, sesuatu yang tidak teramati.
+ *
+ * Satu-satunya batas adalah gambutnya sendiri: muka air tidak dapat lebih
+ * dalam daripada sisa profil di bawah permukaan (`remainingM`).
  */
-export function waterDepthAt(distanceM: number, canalDepthM: number, surfaceDropM = 0): number {
-  if (canalDepthM <= 0) return NATURAL_WATER_DEPTH_M;
+export function waterDepthAt(distanceM: number, canalDepthM: number, remainingM = PROFILE_DEPTH_M): number {
+  const room = Math.max(0, Math.min(PROFILE_DEPTH_M, remainingM));
+  if (canalDepthM <= 0) return Math.min(room, NATURAL_WATER_DEPTH_M);
   const atCanal = Math.max(NATURAL_WATER_DEPTH_M, canalDepthM);
   const decay = Math.exp(-distanceM / influenceLength(canalDepthM));
   const depth = NATURAL_WATER_DEPTH_M + (atCanal - NATURAL_WATER_DEPTH_M) * decay;
-  // Permukaan yang sudah melesak mendekati muka air; tidak pernah menembusnya.
-  return Math.max(0, Math.min(PROFILE_DEPTH_M, depth - surfaceDropM));
+  return Math.max(0, Math.min(room, depth));
+}
+
+/**
+ * Kedalaman lapisan kering yang dipakai rumus Hooijer (m): kedalaman muka air
+ * di atas keadaan alami, dibatasi pada rentang yang tercakup datanya.
+ */
+function drainedDepth(waterDepthM: number): number {
+  return Math.max(0, Math.min(waterDepthM, CALIBRATED_WATER_DEPTH_MAX_M) - NATURAL_WATER_DEPTH_M);
 }
 
 /**
  * Laju penurunan permukaan (m/tahun) pada muka air tanah `waterDepthM`.
  *
- * Nol selama gambut masih jenuh sampai ke permukaan: tanpa udara yang masuk,
- * tidak ada yang teroksidasi. Sesudah itu laju bertambah sebanding dengan
- * ketebalan lapisan kering di atas muka air.
+ * Nol selama gambut masih jenuh sampai ke muka air alaminya: tanpa udara yang
+ * masuk, tidak ada yang teroksidasi. Sesudah itu laju bertambah lurus dengan
+ * kedalaman muka air (Hooijer dkk., 2012).
  */
 export function subsidenceRatePerYear(waterDepthM: number): number {
-  const drained = Math.max(0, waterDepthM - NATURAL_WATER_DEPTH_M);
-  return (drained * SUBSIDENCE_CM_PER_YEAR_PER_M) / 100;
+  return (drainedDepth(waterDepthM) * SUBSIDENCE_CM_PER_YEAR_PER_M) / 100;
 }
 
 /** Emisi karbon (ton CO2/ha/tahun) pada muka air tanah `waterDepthM`. */
 export function emissionPerYear(waterDepthM: number): number {
-  const drained = Math.max(0, waterDepthM - NATURAL_WATER_DEPTH_M);
-  return drained * EMISSION_T_PER_HA_PER_M;
+  return drainedDepth(waterDepthM) * EMISSION_T_PER_HA_PER_M;
 }
 
 /**
@@ -220,8 +231,17 @@ export function compactionBoost(years: number): number {
   return 1 + COMPACTION_GAIN * left;
 }
 
-/** Tambahan laju pada tahun ke-nol akibat pemampatan. */
-const COMPACTION_GAIN = COMPACTION_SHARE / (1 - COMPACTION_SHARE);
+/**
+ * Tambahan laju pada tahun ke-nol akibat pemampatan.
+ *
+ * Pemampatan menambah lesak setara `extra` tahun laju dasar, dipilih supaya
+ * oksidasi menyumbang (1 − CONSOLIDATION_SHARE_5Y) dari lesak lima tahun
+ * pertama: 5 / (5 + extra) = 0,75, jadi extra = 5/3 tahun. Tambahan itu
+ * menurun lurus sepanjang COMPACTION_YEARS, sehingga luasnya extra =
+ * GAIN × COMPACTION_YEARS / 2.
+ */
+const COMPACTION_EXTRA_YEARS = (5 * CONSOLIDATION_SHARE_5Y) / (1 - CONSOLIDATION_SHARE_5Y);
+const COMPACTION_GAIN = (2 * COMPACTION_EXTRA_YEARS) / COMPACTION_YEARS;
 
 /**
  * Rata-rata pengali pemampatan sepanjang selang [`from`, `to`] tahun.
@@ -308,22 +328,17 @@ export const STEP_YEARS = 0.05;
 /**
  * Batas waktu yang dapat dimajukan pembaca (tahun).
  *
- * Ada dua alasan, dan yang kedua lebih penting.
+ * Tiga dasawarsa memang rentang sejarahnya: pembukaan kanal besar di gambut
+ * Indonesia berlangsung sejak awal 1990-an, jadi satu generasi adalah lama
+ * yang benar untuk pertanyaan "lalu bagaimana sekarang?". Pengukuran Hooijer
+ * dkk. (2012) sendiri mencakup 18 tahun sesudah pengeringan, jadi rentang ini
+ * sudah sedikit melampaui datanya.
  *
- * Pertama, tiga dasawarsa memang rentang sejarahnya: pembukaan kanal besar
- * di gambut Indonesia berlangsung sejak awal 1990-an, jadi satu generasi
- * adalah lama yang benar untuk pertanyaan "lalu bagaimana sekarang?".
- *
- * Kedua, dan ini yang menentukan: di luar rentang itu modelnya mulai
- * menyesatkan. Permukaan yang melesak mendekati muka airnya sendiri, sehingga
- * bagian penampang yang rawan terbakar justru menyusut — pada 50 tahun ia
- * mencapai nol. Dibaca apa adanya, pembaca akan menyimpulkan keadaannya
- * membaik dengan sendirinya. Yang sebenarnya terjadi kebalikannya: tanahnya
- * sudah turun sampai sejajar muka air sungai, lalu tergenang permanen dan
- * hilang sebagai lahan. Menggambarkan akhir itu dengan jujur butuh ketinggian
- * kubah gambut di atas muka air sungai, dan angka itu belum ada sumbernya
- * (lihat daftar tetapan di awal berkas). Sampai ada, waktunya dibatasi pada
- * rentang yang masih dapat dipertanggungjawabkan.
+ * Di luar itu modelnya tidak lagi dapat dipertanggungjawabkan: tanah yang
+ * terus melesak akhirnya turun sampai sejajar muka air sungai, tidak dapat
+ * dikeringkan lagi, lalu tergenang permanen. Menggambarkan akhir itu dengan
+ * jujur butuh ketinggian kubah gambut di atas muka air sungai, dan angka itu
+ * belum ada sumbernya.
  */
 export const SIM_MAX_YEARS = 30;
 
@@ -382,14 +397,25 @@ export class DrainageSim {
     if (this.canalDepth > 0) this.blocked = true;
   }
 
-  /** Kedalaman kanal yang masih berpengaruh: nol bila sudah disekat. */
+  /**
+   * Kedalaman kanal yang masih berpengaruh: nol bila sudah disekat, dan tidak
+   * pernah lebih dalam daripada sisa gambut di tepinya. Kanal yang dikeruk
+   * terus mengikuti tanah yang melesak, tetapi tidak dapat menembus dasar
+   * profilnya.
+   */
   effectiveCanalDepth(): number {
-    return this.blocked ? 0 : this.canalDepth;
+    if (this.blocked) return 0;
+    return Math.min(this.canalDepth, this.remainingAt(0));
+  }
+
+  /** Sisa profil gambut di bawah permukaan kolom ke-`col` (m). */
+  private remainingAt(col: number): number {
+    return Math.max(0, PROFILE_DEPTH_M - this.drop[col]);
   }
 
   /** Muka air tanah pada kolom ke-`col` (m di bawah permukaan saat itu). */
   waterDepthAtColumn(col: number): number {
-    return waterDepthAt(distanceOfColumn(col), this.effectiveCanalDepth(), this.drop[col]);
+    return waterDepthAt(distanceOfColumn(col), this.effectiveCanalDepth(), this.remainingAt(col));
   }
 
   /** Penurunan permukaan pada kolom ke-`col` (m). */
@@ -410,11 +436,12 @@ export class DrainageSim {
    * Majukan waktu `years` tahun, dalam langkah tetap sebesar STEP_YEARS.
    *
    * Langkahnya dipatok, bukan memakai pecahan tahun yang datang dari pemanggil.
-   * Penurunan permukaan mengurangi kedalaman muka airnya sendiri, jadi lajunya
-   * bergantung pada keadaan yang baru saja ia ubah — dan dengan langkah
-   * sebesar apa pun yang kebetulan diberikan bingkai, hasil 20 tahun berselisih
-   * 0,7% antara peramban yang lancar dan yang tersendat. Pembaca tidak boleh
-   * mendapat angka yang berbeda karena perangkatnya berbeda.
+   * Pemampatan tahun pertama dan sisa gambut yang menipis membuat lajunya
+   * bergantung pada waktu dan pada keadaan yang baru saja ia ubah, jadi
+   * langkah sebesar apa pun yang kebetulan diberikan bingkai akan memberi
+   * hasil yang sedikit berbeda antara peramban yang lancar dan yang
+   * tersendat. Pembaca tidak boleh mendapat angka yang berbeda karena
+   * perangkatnya berbeda.
    *
    * Sisa waktu yang belum genap satu langkah disimpan untuk pemanggilan
    * berikutnya, termasuk sisa akibat batas `maxSteps`, sehingga waktu tidak
@@ -435,7 +462,7 @@ export class DrainageSim {
     const depth = this.effectiveCanalDepth();
     const boost = averageCompactionBoost(this.years, this.years + dt);
     for (let col = 0; col < COLUMNS; col++) {
-      const water = waterDepthAt(distanceOfColumn(col), depth, this.drop[col]);
+      const water = waterDepthAt(distanceOfColumn(col), depth, this.remainingAt(col));
       const rate = subsidenceRatePerYear(water) * boost;
       this.drop[col] += rate * dt;
       this.emitted += (emissionPerYear(water) * dt) / COLUMNS;
@@ -453,7 +480,7 @@ export class DrainageSim {
     const depth = this.effectiveCanalDepth();
     for (let col = 0; col < COLUMNS; col++) {
       const drop = this.drop[col];
-      const water = waterDepthAt(distanceOfColumn(col), depth, drop);
+      const water = waterDepthAt(distanceOfColumn(col), depth, this.remainingAt(col));
       const o = col * 4;
       target[o] = Math.round(Math.min(1, drop / PROFILE_DEPTH_M) * 255);
       target[o + 1] = Math.round(Math.min(1, water / PROFILE_DEPTH_M) * 255);
@@ -473,7 +500,7 @@ export class DrainageSim {
       const d = this.drop[col];
       if (d > max) max = d;
       sum += d;
-      const water = waterDepthAt(distanceOfColumn(col), depth, d);
+      const water = waterDepthAt(distanceOfColumn(col), depth, this.remainingAt(col));
       if (water > WATER_LIMIT_M) {
         risk++;
         reach = Math.max(reach, distanceOfColumn(col));
@@ -488,8 +515,8 @@ export class DrainageSim {
       riskReachM: reach,
       riskShare: risk / COLUMNS,
       emittedTPerHa: this.emitted,
-      waterAtCanalM: waterDepthAt(0, depth, this.drop[0]),
-      waterAtFarEndM: waterDepthAt(TRANSECT_LENGTH_M, depth, this.drop[COLUMNS - 1]),
+      waterAtCanalM: waterDepthAt(0, depth, this.remainingAt(0)),
+      waterAtFarEndM: waterDepthAt(TRANSECT_LENGTH_M, depth, this.remainingAt(COLUMNS - 1)),
       atTimeLimit: this.years >= SIM_MAX_YEARS - STEP_YEARS,
     };
   }

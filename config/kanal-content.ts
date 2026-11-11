@@ -71,8 +71,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     task: "Jalankan waktu sampai permukaan turun 50 cm.",
     hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
     fact: {
-      value: "± 5 cm/tahun",
-      caption: "Laju lesak gambut yang dikeringkan sampai muka air 0,7 m, setelah tahun-tahun pertama yang jauh lebih cepat (Hooijer dkk., 2012)",
+      value: "7 cm/tahun",
+      caption: "Lesak hutan gambut yang dikeringkan untuk tiap satu meter muka air turun, dan terus berlangsung selama drainasenya dijaga (Hooijer dkk., 2012)",
     },
   },
   {
@@ -159,5 +159,5 @@ export const KANAL_SUMMARY = {
   title: "Yang ditinggalkan satu kanal",
   lead: "Tiga puluh tahun berlalu, dan kanal itu masih bekerja setiap hari tanpa ada yang menyalakannya.",
   closing:
-    "Gambut yang kering inilah yang dibahas modul sebelumnya: begitu ada satu sulutan, ia tidak lagi butuh nyala untuk terus membakar.",
+    "Gambut yang kering inilah yang akan kamu sulut di modul berikutnya: begitu ada satu sulutan, ia tidak lagi butuh nyala untuk terus membakar.",
 };

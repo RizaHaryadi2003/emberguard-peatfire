@@ -21,8 +21,8 @@ import * as THREE from "three";
 // peneduh bidang potong memanggil `kNoise` tiga kali, sehingga tiap piksel
 // tanah membayar tiga sampai lima puluh `sin`.
 //
-// Pada Modul 01 dan 02 biaya itu tidak pernah terasa: bongkahannya hanya
-// menempati sebagian kecil layar. Modul 03 menutupi hampir separuh layar
+// Pada Modul 01 dan 03 biaya itu tidak pernah terasa: bongkahannya hanya
+// menempati sebagian kecil layar. Modul 02 menutupi hampir separuh layar
 // dengan tanah, jadi biaya per piksel itulah seluruh anggarannya.
 //
 // Tekstur derau satu kali baca menggantikan semuanya. Teksturnya 128×128,

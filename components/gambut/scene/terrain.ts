@@ -46,7 +46,7 @@ function wallRelief(theta: number, y: number): number {
  * tiga pemangkatan: saat satu irisan dibentuk, nilainya cukup dihitung sekali
  * per kolom, bukan sekali per titik.
  *
- * Diekspor agar Modul 02 dapat memakai penghematan yang sama: bidang potong
+ * Diekspor agar Modul 03 dapat memakai penghematan yang sama: bidang potong
  * dan badan separuhnya dibentuk ulang tiap kali permukaan melesak, dan di
  * sana pun bentuk tapaknya tetap.
  */

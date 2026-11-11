@@ -1,5 +1,5 @@
 // Ukuran, rupa, dan penempatan diorama gambut yang dipakai bersama oleh semua
-// modul section Gambut, sehingga bongkahan tanah pada Modul 01 dan Modul 02
+// modul section Gambut, sehingga bongkahan tanah pada Modul 01 dan Modul 03
 // benar-benar sama dan dapat dibandingkan langsung oleh pembaca.
 
 import type { PeatLayerId } from "@/lib/peat";
@@ -20,7 +20,7 @@ export const MAX_ROTATION = 0.9;
 /** Sudut hadap awal diorama pada sumbu tegak (radian), sebelum diseret. */
 export const DIORAMA_BASE_YAW = -0.18;
 
-/** Posisi kamera & titik bidik tiap tahap, dipakai bersama Modul 01 dan Modul 02. */
+/** Posisi kamera & titik bidik tiap tahap, dipakai bersama Modul 01 dan Modul 03. */
 export const DIORAMA_CAMERA_POSES: { pos: [number, number, number]; target: [number, number, number] }[] = [
   { pos: [8.6, 3.2, 10.6], target: [0, -0.8, 0] },
   { pos: [7.8, 1.4, 11.8], target: [0, -0.5, 0] },
@@ -69,11 +69,11 @@ export const DIORAMA_UNDERSTORY_SPOTS: [number, number, "fern" | "calathea" | "a
 /**
  * Rona pengali warna tekstur tiap lapisan.
  *
- * Satu daftar untuk semua modul. Modul 02 dahulu memakai daftarnya sendiri
+ * Satu daftar untuk semua modul. Modul 03 dahulu memakai daftarnya sendiri
  * yang lebih gelap — hemik dan terutama saprik diturunkan agar strata terbaca
  * pada satu bidang datar. Akibatnya bongkahan yang seharusnya sama justru
  * tampak sebagai dua tanah yang berbeda, dan separuh bawah penampang jatuh ke
- * hampir hitam. Pemisah antarlapisan di Modul 02 sekarang dikerjakan oleh
+ * hampir hitam. Pemisah antarlapisan di Modul 03 sekarang dikerjakan oleh
  * garis batas dan guratan pengendapan pada peneduhnya, bukan dengan
  * menggelapkan tanahnya.
  */

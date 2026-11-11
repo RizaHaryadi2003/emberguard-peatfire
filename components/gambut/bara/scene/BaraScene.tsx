@@ -30,7 +30,7 @@ import {
   type Quality,
 } from "./baraState";
 
-// Kanvas 3D Modul 02. Kamera, cahaya, dan gerak bongkahannya sama dengan Modul
+// Kanvas 3D Modul 03. Kamera, cahaya, dan gerak bongkahannya sama dengan Modul
 // 01; bedanya hanya bongkahan ini dipotong sehingga isinya terlihat.
 
 /**

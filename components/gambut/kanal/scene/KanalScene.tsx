@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { PEAT_LAYERS } from "@/lib/peat";
-import { DrainageSim, type DrainageStats } from "@/lib/drainage";
+import { DrainageSim, PROFILE_DEPTH_M, type DrainageStats } from "@/lib/drainage";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
@@ -34,6 +34,7 @@ import {
   NATURAL_CANAL_WATER_M,
   NEAR_LENGTH_M,
   SURFACE_ROWS,
+  V_SCALE,
   WING_COLS,
 } from "./transect";
 import {
@@ -47,7 +48,7 @@ import { createPlantField } from "./vegetation";
 import { createWeir } from "./weir";
 import SceneLabels from "./SceneLabels";
 
-// Kanvas 3D Modul 03: sepetak gambut yang dibelah kanal, dilihat isometrik.
+// Kanvas 3D Modul 02: sepetak gambut yang dibelah kanal, dilihat isometrik.
 //
 // Susunannya cermin terhadap sumbu kanal. Satu sayap dibangun, lalu digambar
 // dua kali — sekali apa adanya, sekali dengan skala x negatif. Kedua sisi
@@ -87,7 +88,7 @@ const CAMERA_AZIMUTH = (21 * Math.PI) / 180;
 const CAMERA_DISTANCE = 150;
 
 /**
- * Berapa kali petak ini lebih besar daripada diorama 4,4 m Modul 01 dan 02.
+ * Berapa kali petak ini lebih besar daripada diorama 4,4 m Modul 01 dan 03.
  *
  * Dipakai `SkyLighting` untuk menyetel kerapatan kabut, jarak matahari, dan
  * jangkauan peta bayangan. Petaknya selebar 80 m, jadi angkanya 16 — dan
@@ -132,8 +133,8 @@ const PLANTING = {
 /**
  * Batas resolusi render khusus modul ini, di atas batas bersama.
  *
- * Modul 01 dan 02 memotret bongkahan kecil yang menempati sebagian layar;
- * sisanya latar foto yang tidak berbiaya apa-apa. Modul 03 menutupi hampir
+ * Modul 01 dan 03 memotret bongkahan kecil yang menempati sebagian layar;
+ * sisanya latar foto yang tidak berbiaya apa-apa. Modul 02 menutupi hampir
  * separuh layar dengan tanah yang tiap pikselnya menjalankan peneduh berisi
  * empat peta warna, empat peta normal, derau berlapis, dan seluruh jalur PBR
  * dengan peta lingkungan serta bayangan. Pada 1,5× resolusi perangkat, layar
@@ -374,7 +375,7 @@ function Block({
     PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`),
   );
   // Peta normal tiap lapisan. Berkasnya sudah ada di repositori untuk Modul 01
-  // dan 02; Modul 03 tidak memakainya sama sekali sebelum ini, dan itulah
+  // dan 03; Modul 02 (Kanal) tidak memakainya sama sekali sebelum ini, dan itulah
   // sebabnya tanahnya rata seperti kain bercorak.
   const normals = useLoader(
     THREE.TextureLoader,
@@ -384,7 +385,7 @@ function Block({
     "/textures/gambut/permukaan_kering_color.webp",
     "/textures/gambut/permukaan_kering_normal.webp",
   ]);
-  // Model pindaian yang sama dengan Modul 01 dan 02, sehingga pembaca
+  // Model pindaian yang sama dengan Modul 01 dan 03, sehingga pembaca
   // mengenali tumbuhan yang sama — hanya dilihat dari jauh.
   const [treeGltf, fernGltf] = useLoader(GLTFLoader, [
     "/models/gambut/pohon_pachira.glb",
@@ -538,13 +539,16 @@ function Block({
     // Kanal dibentuk ulang bila kedalaman gambarnya berubah, atau bila tanah
     // di tepinya sudah melesak cukup jauh untuk terlihat.
     const dropAtCanal = subsidence.fn(0);
+    // Kanal yang dikeruk mengikuti tanah yang melesak, tetapi tidak dapat
+    // menembus dasar profil gambut (lihat `DrainageSim.effectiveCanalDepth`).
+    const canalDepthDrawn = Math.min(s.drawnCanalDepthM, Math.max(0, PROFILE_DEPTH_M - dropAtCanal));
     if (
-      Math.abs(s.drawnCanalDepthM - drawnDepth.current) > 0.002 ||
+      Math.abs(canalDepthDrawn - drawnDepth.current) > 0.002 ||
       Math.abs(dropAtCanal - drawnDrop.current) > 0.004
     ) {
-      drawnDepth.current = s.drawnCanalDepthM;
+      drawnDepth.current = canalDepthDrawn;
       drawnDrop.current = dropAtCanal;
-      updateCanalGeometry(res.canalGeom, s.drawnCanalDepthM, dropAtCanal);
+      updateCanalGeometry(res.canalGeom, canalDepthDrawn, dropAtCanal);
     }
 
     // Jalur kanal ditutup tanah selama belum ada yang menggalinya. Tanpa ini,
@@ -573,7 +577,7 @@ function Block({
     // Tinggi muka air kanal dihitung dari dasar dan tepinya, bukan dari
     // permukaan asal: setelah tanahnya melesak, "sedikit di bawah permukaan"
     // berarti permukaan yang sekarang.
-    const canalBottom = surfaceY(0) - s.drawnCanalDepthM * 2;
+    const canalBottom = surfaceY(0) - (dropAtCanal + canalDepthDrawn) * V_SCALE;
     // Bibir kanal di tengah bongkahan, lengkap dengan reliefnya: itulah yang
     // dilihat pembaca sebagai "setinggi apa airnya dibanding tanahnya".
     const canalTop = surfaceYAt(0, 0, dropAtCanal, s.drawnCanalDepthM);
@@ -773,7 +777,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
     >
       <CameraRig />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
-      {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 02.
+      {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 03.
           Petak ini enam belas kali lebih besar daripada diorama di sana, dan
           skalanya dinyatakan supaya kabut serta peta bayangannya ikut
           menyesuaikan — bukan disalin lalu diubah angkanya satu per satu. */}

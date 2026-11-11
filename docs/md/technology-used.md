@@ -186,8 +186,8 @@ Isi `lib/`:
 
 | Berkas | Baris | Isi |
 |---|---|---|
-| `smolder.ts` | 622 | Model sel-otomata perambatan bara gambut (Modul 02) |
-| `drainage.ts` | 519 | Hidrologi kanal: kerucut penurunan muka air, subsiden, emisi (Modul 03) |
+| `smolder.ts` | 622 | Model sel-otomata perambatan bara gambut (Modul 03) |
+| `drainage.ts` | 519 | Hidrologi kanal: kerucut penurunan muka air, subsiden, emisi (Modul 02) |
 | `carbon.ts` | 475 | Cadangan karbon, CO₂ yang lepas, umur menurut kedalaman, pemulihan (Modul 04) |
 | `peat.ts` | 228 | Profil lapisan gambut, status muka air, indeks bahaya (Modul 01) |
 | `ambientSound.ts` | 168 | Sintesis suara suasana lewat Web Audio API |
@@ -289,10 +289,10 @@ detik).
 | `lib/drainage.test.ts` | 25 | Panjang pengaruh kanal, subsiden, emisi, pemadatan |
 | `lib/smolder.test.ts` | 23 | Penyalaan, perambatan, pemadaman, subsiden |
 | `components/gambut/bara/scene/crossSection.test.ts` | 12 | Pemetaan sel simulasi ke geometri penampang |
-| `components/gambut/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 03 |
+| `components/gambut/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 02 |
 | `components/gambut/karbon/depthProbe.test.ts` | 8 | Penilaian penanda kedalaman babak 01 Modul 04 |
 | `lib/spotlight.test.ts` | 7 | Interpolasi dan penghalusan kursor |
-| `components/gambut/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 02 |
+| `components/gambut/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 03 |
 | `lib/atmosphere.test.ts` | 4 | Peralihan suasana langit |
 | `lib/ambientSound.test.ts` | 2 | Laju derak bara dan peluang kicau burung |
 
@@ -411,8 +411,8 @@ Sumber dan lisensi tercatat pada `public/models/gambut/SUMBER.md` dan
 |---|---|
 | Beranda, Navbar, halaman `/gambut` | Selesai |
 | Modul 01 — Anatomi Gambut | Selesai |
-| Modul 02 — Bara di Bawah Tanah | Selesai — empat babak berjalan dengan gerbangnya |
-| Modul 03 — Kanal & Pengeringan | Selesai — empat babak berjalan dengan gerbangnya |
+| Modul 03 — Bara di Bawah Tanah | Selesai — empat babak berjalan dengan gerbangnya |
+| Modul 02 — Kanal & Pengeringan | Selesai — empat babak berjalan dengan gerbangnya |
 | Modul 04 — Gudang Karbon | Selesai — empat babak berjalan dengan gerbangnya |
 | `/simulasi`, `/dampak`, `/pencegahan` | Halaman penanda |
 

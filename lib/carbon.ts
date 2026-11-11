@@ -1,8 +1,8 @@
 // Gudang karbon gambut untuk Modul 04 "Gudang Karbon".
 //
 // Dipisah dari komponen 3D agar mudah diuji dan dirujuk di naskah skripsi,
-// sama seperti `peat.ts` untuk Modul 01, `smolder.ts` untuk Modul 02, dan
-// `drainage.ts` untuk Modul 03.
+// sama seperti `peat.ts` untuk Modul 01, `smolder.ts` untuk Modul 03, dan
+// `drainage.ts` untuk Modul 02.
 //
 // --- Yang ingin disampaikan -------------------------------------------------
 //
@@ -260,7 +260,7 @@ export type MatchVerdict = "idle" | "tooLittle" | "tooMuch" | "tooWide" | "match
  * Tiga keadaan yang berbeda dipisahkan, bukan dijadikan satu "belum benar",
  * sebab ketiganya menyuruh pembaca melakukan hal yang berbeda: menambah,
  * mengurangi, atau mempersempit. Pola yang sama dengan `judgeProbe` pada
- * Modul 03 (`components/gambut/kanal/probe.ts`).
+ * Modul 02 (`components/gambut/kanal/probe.ts`).
  */
 export function judgeMatch(areaHa: number, depthM: number): MatchVerdict {
   if (depthM <= 0) return "idle";

@@ -18,10 +18,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title, description, openGraph: { title, description, images: [{ url: image, ...CARD_SIZE.og }] }, twitter: { card: "summary_large_image" } };
 }
 
-// Halaman Modul 02: satu layar penuh, tanpa gulir.
+// Halaman Modul 03: satu layar penuh, tanpa gulir.
 //
 // Modul 01 memakai panggung `sticky` sehingga gulirnya adalah bagian dari
-// cerita: tiap tahap terbuka saat pembaca menggulir. Modul 02 tidak begitu —
+// cerita: tiap tahap terbuka saat pembaca menggulir. Modul 03 tidak begitu —
 // babaknya berpindah lewat tombol, sehingga gulir hanya menyingkap pita hitam
 // kosong di bawah adegan. Karena itu `ModuleFooter` tidak dipakai di sini dan
 // halaman dikunci setinggi layar.

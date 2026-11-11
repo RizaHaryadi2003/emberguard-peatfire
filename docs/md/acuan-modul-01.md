@@ -41,7 +41,7 @@ jadi lebih dekat ke sasaran pengguna daripada data Sarawak dalam Andriesse.
 | Pori ± 90% pada fibrik | Boelter (1974) dalam Andriesse (1988) | Tidak berubah |
 | Batas 50 cm dan 0,4 m | PP 71/2014, PP 57/2016 | Tidak berubah |
 
-Laju 1 mm/tahun juga dipakai Modul 03 dan 04 (`lib/carbon.ts`), jadi tidak ada
+Laju 1 mm/tahun juga dipakai Modul 02 dan 04 (`lib/carbon.ts`), jadi tidak ada
 angka di modul lain yang ikut berubah. Laju akumulasi karbon SF61 menurut
 artikel yang sama adalah 63 g C m⁻² tahun⁻¹, yang dapat dipakai saat Modul 04
 ditinjau.
@@ -147,7 +147,7 @@ menyampaikan klaim ilmiah.
 
 **Pelajaran yang didapat dari yang dilihat:** gambut bukan tanah yang
 "ditaruh"; ia tumbuh sendiri, makin lama makin lambat, dan pada akhirnya hanya
-bergantung pada hujan. Fakta terakhir inilah yang membuat kanal (Modul 03)
+bergantung pada hujan. Fakta terakhir inilah yang membuat kanal (Modul 02)
 begitu merusak.
 
 ---
@@ -246,7 +246,7 @@ Tabel 16, tanpa menyebut nomor H.
    sejalan dengan batas **0,4 m** pada **PP 57/2016**.
 5. **Api.** Pembakaran saat membuka lahan "can lead to intensive peat fires
    when not properly controlled. Controlling peat fires is extremely
-   difficult" (§7.2.3). Kalimat ini menjadi jembatan ke Modul 02.
+   difficult" (§7.2.3). Kalimat ini menjadi jembatan ke Modul 03.
 
 ### Konversi ke animasi
 
@@ -261,7 +261,7 @@ Tabel 16, tanpa menyebut nomor H.
 
 **Pelajaran:** air dapat dikembalikan, tetapi gambut yang sudah kering tidak.
 Pembaca menemukannya sendiri karena **ia sendiri yang mencoba membatalkan**.
-Kalimat ini juga menyiapkan pesan penutup Modul 03.
+Kalimat ini juga menyiapkan pesan penutup Modul 02.
 
 **Catatan:** angka "400 tahun → < 10 tahun" berasal dari kajian radiokarbon
 umum di Bab 7, bukan khusus Sarawak, sehingga lajunya (± 0,75 mm/tahun) tidak

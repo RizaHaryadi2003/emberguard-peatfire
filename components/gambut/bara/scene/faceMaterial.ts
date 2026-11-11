@@ -4,7 +4,7 @@ import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaCo
 import { NOISE_GLSL } from "@/components/gambut/scene/noiseTexture";
 import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder";
 
-// Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul 02 ditentukan
+// Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul 03 ditentukan
 // di sini: strata gambut dari tekstur foto, gelap-terangnya gambut basah,
 // jaringan bara yang berpijar, rongga abu yang melesak ke dalam, sampai mode
 // termal. Semua dibaca dari satu tekstur data hasil simulasi `SmolderSim`

@@ -136,12 +136,12 @@ export const MATCH_TEXT = {
  * Keterangan yang menjelaskan apa yang sedang dilihat pembaca.
  *
  * Modul ini memperlihatkan satu bongkahan tetapi menghitung satu hektare, dan
- * dua hal itu harus dikatakan, bukan dibiarkan ditebak. Modul 03 belajar
+ * dua hal itu harus dikatakan, bukan dibiarkan ditebak. Modul 02 belajar
  * mahal soal ini: dua gambar berbeda skala tanpa keterangan membuat keduanya
  * tidak dapat dibaca sama sekali.
  */
 export const FIGURE_NOTE = {
-  block: "Gambar: bongkahan 4,4 m — petak yang sama dengan Modul 01 dan 02",
+  block: "Gambar: bongkahan 4,4 m — petak yang sama dengan Modul 01 dan 03",
   area: "Angka karbon dihitung untuk seluruh luas yang disetel, bukan untuk bongkahan ini",
   calendar: "Alur pada bidang potong: tiap garis 100 tahun, garis tebal 500 tahun",
 };

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TRANSECT_LENGTH_M, WATER_LIMIT_M, waterDepthAt } from "@/lib/drainage";
 import { judgeProbe, probeSolved, PROBE_END_M, PROBE_TOLERANCE_M } from "./probe";
 
-// Syarat lulus babak 02 Modul 03.
+// Syarat lulus babak 02 Modul 02.
 //
 // Diuji terpisah dari tampilannya karena inilah yang menentukan pembaca boleh
 // melanjutkan atau tidak, dan karena cacat yang diperbaikinya dahulu tidak

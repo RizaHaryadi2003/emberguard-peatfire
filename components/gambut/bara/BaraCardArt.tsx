@@ -1,4 +1,4 @@
-// Tampilan gambar kartu Modul 02, digambar di server oleh ImageResponse (Satori).
+// Tampilan gambar kartu Modul 03, digambar di server oleh ImageResponse (Satori).
 // Satori hanya mendukung sebagian CSS: semua tata letak memakai flexbox dan
 // gaya sebaris, sama dengan kartu Modul 01.
 

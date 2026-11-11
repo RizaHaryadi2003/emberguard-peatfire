@@ -36,8 +36,8 @@ kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
   kalender, 2,8 m = 2.800 tahun" sudah dibawa Modul 01 Tahap 1. Ini
   pengulangan.
 - **Babak 04 "Seribu tahun untuk satu meter"** berbagi pelajaran "tidak
-  kembali" dengan Modul 03 Babak 04. Bedanya jelas dan layak dipertahankan:
-  Modul 03 tentang **tanah** yang melesak, Modul 04 tentang **karbon** yang
+  kembali" dengan Modul 02 Babak 04. Bedanya jelas dan layak dipertahankan:
+  Modul 02 tentang **tanah** yang melesak, Modul 04 tentang **karbon** yang
   butuh berabad-abad untuk ditabung lagi.
 
 ## 2. Pengetahuan inti (satu kalimat)
@@ -51,7 +51,7 @@ kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 
 | Peran | Karya | Status pembacaan |
 |---|---|---|
-| **Kedalaman terbakar, lapangan (Borneo)** | Page, S. E., Siegert, F., Rieley, J. O., Boehm, H.-D. V., Jaya, A., & Limin, S. (2002). The amount of carbon released from peat and forest fires in Indonesia during 1997. *Nature*, 420, 61–65. <https://doi.org/10.1038/nature01131> | Abstrak; sudah tercatat di acuan Modul 02 |
+| **Kedalaman terbakar, lapangan (Borneo)** | Page, S. E., Siegert, F., Rieley, J. O., Boehm, H.-D. V., Jaya, A., & Limin, S. (2002). The amount of carbon released from peat and forest fires in Indonesia during 1997. *Nature*, 420, 61–65. <https://doi.org/10.1038/nature01131> | Abstrak; sudah tercatat di acuan Modul 03 |
 | **Kedalaman terbakar, LiDAR (Borneo)** | Ballhorn, U., Siegert, F., Mason, M., & Limin, S. (2009). Derivation of burn scar depths and estimation of carbon emissions with LIDAR in Indonesian peatlands. *PNAS*, 106, 21213–21218. | Abstrak dan ringkasan |
 | **Karbon per volume gambut** | Warren, M. W., Kauffman, J. B., Murdiyarso, D., dkk. (2012). A cost-efficient method to assess carbon stocks in tropical peat soil. *Biogeosciences*, 9, 4477–4485. <https://doi.org/10.5194/bg-9-4477-2012> | Abstrak; teks lengkap terbuka |
 | **Laju menabung karbon (Kalimantan Barat)** | Anshari dkk. (2026), *Scientific Reports*, 16, 5496 (acuan Modul 01) | Terbaca |

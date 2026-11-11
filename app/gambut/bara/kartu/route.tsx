@@ -4,7 +4,7 @@ import { parseSharedBurn } from "@/lib/baraCard";
 import { CARD_FONTS } from "@/lib/cardFonts";
 import { CARD_SIZE, parseCardFormat } from "@/lib/resultCard";
 
-/** Gambar kartu hasil Modul 02 (PNG), sumber yang sama dengan Modul 01. */
+/** Gambar kartu hasil Modul 03 (PNG), sumber yang sama dengan Modul 01. */
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const format = parseCardFormat(params.get("format"));

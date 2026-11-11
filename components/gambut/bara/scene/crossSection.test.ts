@@ -126,7 +126,7 @@ describe("profileY", () => {
   });
 
   it("menjaga garis muka air tetap mendatar di rentang yang menjadi pelajaran", () => {
-    // Inti Modul 02 berada pada muka air 30 cm ke bawah — batas 40 cm menurut
+    // Inti Modul 03 berada pada muka air 30 cm ke bawah — batas 40 cm menurut
     // PP No. 57 Tahun 2016 ada di dalamnya. Di rentang itu titik bidang potong
     // harus hampir setia pada kedalaman nominal, supaya garis muka air tidak
     // tampak bergelombang; di alam permukaan air selalu datar.
