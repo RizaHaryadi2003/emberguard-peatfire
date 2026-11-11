@@ -41,14 +41,6 @@ jadi lebih dekat ke sasaran pengguna daripada data Sarawak dalam Andriesse.
 | Pori ± 90% pada fibrik | Boelter (1974) dalam Andriesse (1988) | Tidak berubah |
 | Batas 50 cm dan 0,4 m | PP 71/2014, PP 57/2016 | Tidak berubah |
 
-**Tahap 3 (uji peras).** Diterapkan 11 November 2026 mengikuti bagian 5 di
-bawah, dengan dua penyederhanaan: pembaca memilih contoh fibrik, hemik, atau
-saprik langsung dari panel (tanpa uji gosok), dan nomor skala von Post tidak
-ditampilkan. Panel menulis rentang Tabel 17 (fibrik 8,5 – > 30 kg, hemik
-4,5–8,5 kg, saprik < 4,5 kg air per 1 kg kering); isi gelas hanya posisi
-ilustratif di dalam rentang itu. Tahap berikutnya terbuka setelah dua contoh
-berbeda diperas.
-
 Laju 1 mm/tahun juga dipakai Modul 03 dan 04 (`lib/carbon.ts`), jadi tidak ada
 angka di modul lain yang ikut berubah. Laju akumulasi karbon SF61 menurut
 artikel yang sama adalah 63 g C m⁻² tahun⁻¹, yang dapat dipakai saat Modul 04

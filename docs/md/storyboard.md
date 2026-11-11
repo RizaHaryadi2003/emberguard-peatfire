@@ -123,18 +123,17 @@ tiga hal yang harus ditiru modul lain:
 ### Modul 01 — Anatomi Gambut ✅ **desain dipertahankan, acuan disesuaikan**
 
 > **Pembaruan 11 November 2026.** Riza memutuskan desain Modul 01 tetap. Papan
-> cerita "baru" di bawah (tiga fase laju, penampang lanskap, uji gosok) **tidak
-> dipakai** dan disimpan hanya sebagai catatan. Acuan yang kini dipakai ada di
-> bagian 0 `docs/md/acuan-modul-01.md` (Anshari dkk., 2026). Satu-satunya
-> tambahan adalah uji peras pada Tahap 3, sehingga keempat tahap memenuhi
-> Pola 5A:
+> cerita "baru" di bawah (tiga fase laju, penampang lanskap, uji gosok, uji
+> peras) **tidak dipakai** dan disimpan hanya sebagai catatan. Acuan yang kini
+> dipakai ada di bagian 0 `docs/md/acuan-modul-01.md` (Anshari dkk., 2026).
 >
-> | Tahap | Aksi |
-> |---|---|
-> | 1 Hutan di atas spons | Seret pengatur umur |
-> | 2 Lapis demi lapis | Klik lapisan |
-> | 3 Menyimpan air | Tekan-tahan untuk memeras contoh dari dua lapisan |
-> | 4 Saat air surut | Geser muka air tanah |
+> Uji peras sempat dipasang di Tahap 3 demi memenuhi Pola 5A, lalu dicabut:
+> fitur itu tidak menambah pengetahuan yang menjadi tema modul, dan pembaca
+> tidak mendapat perbedaan berarti antara sebelum dan sesudah memeras. Prinsip
+> yang dipegang: **setiap aksi harus membawa satu pengetahuan inti modul;
+> aksi yang tidak membawa pengetahuan lebih baik tidak ada.** Tahap 3 tetap
+> berupa penjelasan, dan akibatnya diperlihatkan oleh aksi Tahap 4 (basah aman,
+> kering rawan terbakar).
 
 > **Acuan:** Andriesse, J. P. (1988). *Nature and Management of Tropical Peat
 > Soils.* FAO Soils Bulletin 59. Rincian temuan, angka, dan kutipan tiap tahap

@@ -1,4 +1,4 @@
-import type { OrganicLayerId, PeatLayerId } from "@/lib/peat";
+import type { PeatLayerId } from "@/lib/peat";
 
 // Ukuran diorama, arah matahari, dan batas putaran dipakai bersama dengan modul
 // lain; diteruskan di sini agar berkas Modul 01 cukup mengimpor dari satu tempat.
@@ -31,10 +31,6 @@ export type SceneState = {
   focused: PeatLayerId | null;
   /** Pengguna meminta gerak dikurangi. */
   reducedMotion: boolean;
-  /** Uji peras: lapisan yang contohnya dipilih di panel, disorot di bongkahan. */
-  squeezeLayer: OrganicLayerId | null;
-  /** Uji peras sedang ditekan: air mengucur dari lapisan itu. */
-  squeezing: boolean;
   /** Putaran balok hasil seret pengguna (radian, sumbu Y). */
   rotation: number;
   /**
@@ -59,9 +55,6 @@ export const GROWTH_STEP = 0;
 
 /** Tahap yang memakai tampilan lapisan terurai. */
 export const EXPLODE_STEP = 1;
-
-/** Tahap uji peras: pembaca memeras contoh dari tiap lapisan. */
-export const SQUEEZE_STEP = 2;
 
 /** Tahap yang memberi kendali muka air kepada pengguna. */
 export const INTERACTIVE_STEP = 3;
