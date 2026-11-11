@@ -11,6 +11,43 @@ temuan itu diubah menjadi aksi dan animasi.
 
 ---
 
+## 0. Pembaruan 11 November 2026: desain dipertahankan, acuan disesuaikan
+
+Riza memutuskan desain Modul 01 dipertahankan, karena tampilannya sederhana
+dan sudah menjelaskan gambut dengan baik. Yang dicari adalah acuan yang tepat
+untuk desain itu. Bagian ini menggantikan butir 1–4 pada bagian 7 dan
+keputusan A–B pada bagian 8.
+
+### Acuan baru
+
+| Peran | Karya | Status pembacaan |
+|---|---|---|
+| **Profil dan laju tumbuh, Kalimantan Barat** | Anshari, G. Z., Ruwaimana, M., Ritonga, R. P., Gangga, A., Loisel, J., Galego-Sala, A. V., van der Kaars, S., & Novita, N. (2026). Peatland inception and development across Kalimantan, Indonesia. *Scientific Reports*, 16, 5496. <https://doi.org/10.1038/s41598-026-35152-x> | Teks HTML dan Tabel 1–2 terbaca; lampiran (Gbr. S1) belum |
+| Pembanding laju tumbuh | Dommain, R., Couwenberg, J., & Joosten, H. (2011). Development and carbon sequestration of tropical peat domes in south-east Asia. *Quaternary Science Reviews*, 30(7–8), 999–1010. <https://doi.org/10.1016/j.quascirev.2011.01.018> | Abstrak saja |
+| Batas kandungan serat | Soil Survey Staff (2014). *Keys to Soil Taxonomy* (edisi ke-12). USDA-NRCS. | Dari kutipan sekunder; **cocokkan dengan teks Keys aslinya** |
+
+Penulis utama Anshari adalah peneliti Jurusan Ilmu Tanah Universitas
+Tanjungpura, Pontianak. Inti-intinya berasal dari Mempawah dan Kapuas Hilir,
+jadi lebih dekat ke sasaran pengguna daripada data Sarawak dalam Andriesse.
+
+### Klaim desain dan dasarnya
+
+| Klaim di modul | Dasar | Catatan |
+|---|---|---|
+| Gambut tumbuh ± 1 mm/tahun; 2,8 m ≈ 2.800 tahun | Inti SF61: 682 cm, dasar 6.850–6.670 tahun kal. BP (Anshari dkk., 2026, Tabel 2) → ± 1,0 mm/tahun | Rata-rata seluruh inti. Lajunya tidak rata: 488–682 cm terbentuk relatif cepat. Kisaran Borneo 0,54–1,89 mm/tahun (Dommain dkk., 2011). Inti SBC1 di Mempawah: 853 cm, ± 7.300 tahun → ± 1,2 mm/tahun |
+| Fibrik di atas, saprik di bawah | SF61: "gradually transitioned from less decomposed near the surface to more decomposed toward the base" (Anshari dkk., 2026) | Ditulis sebagai **satu contoh profil**, bukan aturan umum. Andriesse (1988, §4.2.3) dan Najiyati dkk. (2005) mencatat lapisan atas sering lebih matang, terutama di lahan yang dikeringkan |
+| Tebal tiap lapisan (0,6 / 1,6 / 2,8 m) | Tidak ada | **Ilustrasi.** Artikel tidak membagi SF61 menjadi fibrik, hemik, dan saprik |
+| Fibrik > 3/4, hemik 1/6–3/4, saprik < 1/6 serat (setelah digosok) | Soil Survey Staff (2014) | Sebelumnya fibrik "> 2/3". Literatur Indonesia menulisnya > 75%, 17–75%, < 17% |
+| Pori ± 90% pada fibrik | Boelter (1974) dalam Andriesse (1988) | Tidak berubah |
+| Batas 50 cm dan 0,4 m | PP 71/2014, PP 57/2016 | Tidak berubah |
+
+Laju 1 mm/tahun juga dipakai Modul 03 dan 04 (`lib/carbon.ts`), jadi tidak ada
+angka di modul lain yang ikut berubah. Laju akumulasi karbon SF61 menurut
+artikel yang sama adalah 63 g C m⁻² tahun⁻¹, yang dapat dipakai saat Modul 04
+ditinjau.
+
+---
+
 ## 1. Acuan yang Dipakai
 
 > **Andriesse, J. P. (1988).** *Nature and Management of Tropical Peat Soils.*

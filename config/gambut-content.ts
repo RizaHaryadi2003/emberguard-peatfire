@@ -43,7 +43,7 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
   {
     title: "Lapis demi lapis",
-    body: "Semakin lama tertimbun, semakin matang gambutnya. Dari atas ke bawah, seratnya berangsur hilang, dari fibrik yang mentah, hemik yang setengah matang, hingga saprik yang halus. Klik salah satu lapisan untuk melihatnya lebih dekat.",
+    body: "Pada gambut di tepi Sungai Kapuas ini, makin ke bawah makin matang. Dari atas ke bawah, seratnya berangsur hilang, dari fibrik yang mentah, hemik yang setengah matang, hingga saprik yang halus. Klik salah satu lapisan untuk melihatnya lebih dekat.",
     fact: { value: "3", caption: "Tingkat kematangan gambut: fibrik, hemik, dan saprik" },
   },
   {
@@ -132,6 +132,6 @@ export const GROWTH_STATUS_TEXT: Record<GrowthStatus, { label: string; message: 
   },
   gambut: {
     label: "Lahan gambut",
-    message: "Timbunan sudah melewati 50 cm. Semakin ke bawah, bahan yang lebih dulu tertimbun menjadi semakin hancur dan semakin matang.",
+    message: "Timbunan sudah melewati 50 cm. Pada profil ini, bahan yang lebih dulu tertimbun di bawah sudah lebih hancur dan lebih matang.",
   },
 };

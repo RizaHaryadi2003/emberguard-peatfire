@@ -23,8 +23,17 @@ export type PeatLayer = {
 };
 
 /**
- * Profil gambut yang disederhanakan untuk ilustrasi.
- * Di alam urutan dan ketebalan lapisan bisa berbeda-beda.
+ * Satu contoh profil gambut Kalimantan Barat, disederhanakan.
+ *
+ * Urutannya mengikuti inti SF61 di Kapuas Hilir (682 cm): gambut "kurang
+ * terurai di dekat permukaan, makin terurai ke arah dasar" (Anshari dkk.,
+ * 2026). Batas kedalaman tiap lapisan adalah ilustrasi; artikel itu tidak
+ * membagi intinya menjadi fibrik, hemik, dan saprik. Di tempat lain urutannya
+ * bisa berbeda: pada lahan yang dikeringkan, lapisan atas justru sering lebih
+ * matang (Andriesse, 1988, §4.2.3).
+ *
+ * Batas kandungan serat setelah digosok mengikuti Soil Survey Staff (2014),
+ * Keys to Soil Taxonomy: fibrik ≥ 3/4, saprik < 1/6, hemik di antaranya.
  */
 export const PEAT_LAYERS: readonly PeatLayer[] = [
   {
@@ -34,7 +43,7 @@ export const PEAT_LAYERS: readonly PeatLayer[] = [
     bottom: 0.6,
     summary: "Gambut mentah. Serat akar, ranting, dan daun masih utuh dan mudah dikenali.",
     details: {
-      fiber: "Lebih dari 2/3 volume",
+      fiber: "Lebih dari 3/4 volume",
       color: "Coklat muda kemerahan",
       maturity: "Mentah (terurai sedikit)",
       note: "Paling berpori sehingga menyerap banyak air, tetapi juga paling cepat kering dan terbakar saat muka air turun.",
@@ -48,7 +57,7 @@ export const PEAT_LAYERS: readonly PeatLayer[] = [
     bottom: 1.6,
     summary: "Setengah matang. Sebagian serat sudah terurai menjadi massa coklat gelap.",
     details: {
-      fiber: "Antara 1/6 dan 2/3 volume",
+      fiber: "Antara 1/6 dan 3/4 volume",
       color: "Coklat tua",
       maturity: "Setengah matang",
       note: "Peralihan antara fibrik dan saprik. Sisa tumbuhan masih terlihat sebagian di antara bahan yang sudah halus.",
@@ -167,9 +176,15 @@ export const PEAT_THICKNESS = PEAT_LAYERS.find((l) => l.id === "mineral")!.top;
 /**
  * Laju penumpukan gambut (mm/tahun).
  *
- * Di gambut tropis laju ini berkisar 0,5–2 mm/tahun. Dipakai angka bulat 1
- * mm/tahun agar pembaca dapat menghitungnya sendiri di kepala: satu meter
- * gambut berarti seribu tahun.
+ * Inti SF61 di Kapuas Hilir, Kalimantan Barat, setebal 682 cm dengan umur
+ * dasar 6.850–6.670 tahun kalibrasi BP (Anshari dkk., 2026, Tabel 2): rata-rata
+ * ± 1,0 mm/tahun. Angka ini berada di dalam kisaran rata-rata Holosen gambut
+ * Borneo, 0,54 mm/tahun di Kalimantan Tengah sampai 1,77–1,89 mm/tahun di
+ * kubah pesisir dan Kutai (Dommain dkk., 2011). Lajunya tidak rata sepanjang
+ * waktu; yang dipakai adalah rata-rata seluruh inti.
+ *
+ * Angka bulatnya juga memudahkan pembaca berhitung sendiri: satu meter gambut
+ * berarti seribu tahun.
  */
 export const PEAT_GROWTH_MM_PER_YEAR = 1;
 
@@ -211,10 +226,10 @@ export function isPeatland(thicknessM: number): boolean {
 /**
  * Lapisan paling matang yang sudah terbentuk pada tebal tertentu.
  *
- * Kematangan gambut ditentukan oleh kedalaman timbunan di atasnya: bahan di
- * dasar lebih lama tertimbun sehingga lebih hancur. Karena itu selama
- * timbunannya masih tipis, seluruhnya masih fibrik; saprik baru muncul
- * setelah timbunan melewati batas bawah lapisan hemik.
+ * Mengikuti contoh profil di atas, yang makin matang ke arah dasar (inti
+ * SF61, Anshari dkk., 2026). Selama timbunannya masih tipis, seluruhnya masih
+ * fibrik; saprik baru muncul setelah timbunan melewati batas bawah lapisan
+ * hemik. Ini sifat profil contoh itu, bukan aturan untuk semua gambut.
  */
 export function getDeepestLayer(thicknessM: number): PeatLayer | undefined {
   if (thicknessM <= 0) return undefined;
