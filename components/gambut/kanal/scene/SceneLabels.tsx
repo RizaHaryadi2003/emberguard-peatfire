@@ -10,6 +10,8 @@ import {
   DEPTH_TICKS,
   DISTANCE_TICKS,
   HALF_WIDTH,
+  TAPER,
+  taperAt,
   V_SCALE,
 } from "./transect";
 
@@ -52,7 +54,9 @@ export default function SceneLabels() {
           kedua tidak menambah keterangan apa pun — ia hanya menambah tulisan
           yang harus dilewati mata. */}
       {DISTANCE_TICKS.map((m) => (
-        <group key={m} position={[xOfDistance(m), base - TICK_GAP, FRONT_Z]}>
+        // Dasar bidang potong kini menjorok ke dalam sejauh TAPER, jadi
+        // penandanya ikut mundur supaya tetap berada tepat di bawah tanah.
+        <group key={m} position={[xOfDistance(m), base - TICK_GAP, FRONT_Z - TAPER]}>
           <Html center zIndexRange={[10, 0]}>
             <div className="pointer-events-none hidden -translate-y-1/2 whitespace-nowrap text-center md:block">
               <div className="mx-auto h-3 w-px bg-white/25" />
@@ -85,7 +89,16 @@ export default function SceneLabels() {
           panel itu tumbuh pada babak 04, sehingga angkanya tertimbun. Di
           dalam gambar, keduanya selesai sekaligus. */}
       {DEPTH_TICKS.map((d) => (
-        <group key={d} position={[-HALF_WIDTH + 3.6, -d * V_SCALE, FRONT_Z + 0.05]}>
+        // Menempel pada bidang potong pada ketinggiannya sendiri: makin
+        // dalam, makin jauh bidang itu menjorok ke dalam.
+        <group
+          key={d}
+          position={[
+            -HALF_WIDTH + 3.6,
+            -d * V_SCALE,
+            FRONT_Z + 0.05 - taperAt((surfaceY(0) + d * V_SCALE) / (surfaceY(0) - base)),
+          ]}
+        >
           <Html center zIndexRange={[10, 0]}>
             <span className="pointer-events-none hidden whitespace-nowrap rounded-sm bg-black/45 px-1 text-[10px] tabular-nums leading-tight text-white/70 backdrop-blur-[2px] md:inline">
               {d} m

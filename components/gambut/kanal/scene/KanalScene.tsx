@@ -7,6 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { PEAT_LAYERS } from "@/lib/peat";
 import { DrainageSim, PROFILE_DEPTH_M, type DrainageStats } from "@/lib/drainage";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
+import FpsMeter, { wantsFpsMeter } from "@/components/gambut/scene/FpsMeter";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
@@ -17,15 +18,17 @@ import {
   createCanalGeometry,
   createCanalWaterGeometry,
   createFaceGrid,
+  createSkirtGeometry,
   createSubsidence,
   createSurfaceGrid,
-  floorY,
+  farDistance,
   surfaceY,
   surfaceYAt,
   updateBridgeGeometry,
   updateCanalFaceGeometry,
   updateCanalGeometry,
   updateFaceGrid,
+  updateSkirtGeometry,
   updateSurfaceGrid,
   BLOCK_DEPTH,
   BLOCK_HEIGHT,
@@ -410,6 +413,7 @@ function Block({
 
     return {
       faceGeom: createFaceGrid(),
+      skirtGeom: createSkirtGeometry(),
       // Bidang potong digambar dua kali dan salah satunya dicerminkan, jadi
       // urutan titiknya terbalik pada salinan itu. Peneduh ini tidak membaca
       // normal, sehingga menggambar kedua sisi lebih murah dan lebih benar
@@ -440,7 +444,6 @@ function Block({
       canalWaterMaterial: createCanalWaterMaterial(),
       // Dinding samping dan belakang: tanah yang teduh, bukan hitam — ia
       // bagian dari bongkahan yang sama, hanya tidak kena cahaya.
-      sideMaterial: new THREE.MeshStandardMaterial({ color: "#241b14", roughness: 1, metalness: 0 }),
       plants: createPlantField(
         treeGltf.scene,
         PLANTING[quality].ferns > 0 ? fernGltf.scene : null,
@@ -464,7 +467,7 @@ function Block({
       res.canalFaceGeom.dispose();
       res.canalWaterGeom.dispose();
       res.canalWaterMaterial.dispose();
-      res.sideMaterial.dispose();
+      res.skirtGeom.dispose();
       res.plants.dispose();
       res.weir.dispose();
     },
@@ -476,14 +479,36 @@ function Block({
   // kedalaman galian (yang berubah cepat saat pengatur diseret, sebab
   // tanggulnya ikut tumbuh). Keduanya dicatat, dan bentuknya dihitung ulang
   // hanya kalau salah satunya benar-benar berubah.
+  // --- Bayangan sesuai permintaan --------------------------------------------
+  //
+  // Peta bayangan semula digambar ulang pada tiap bingkai: seluruh hamparan,
+  // pohon, dan sekat dirender sekali lagi dari arah matahari, 30 sampai 60
+  // kali sedetik. Padahal matahari di modul ini tidak bergerak, dan benda
+  // yang menjatuhkan bayangan hanya berubah saat kanal digali, tanah melesak,
+  // pohon mengering, atau sekat dipasang. Jadi peta itu kini hanya digambar
+  // ulang pada saat-saat itu. Di antaranya, satu bingkai hanya berisi satu
+  // render, bukan dua.
+  const gl = useThree((st) => st.gl);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [gl, res]);
+  const markShadows = () => {
+    gl.shadowMap.needsUpdate = true;
+  };
+
   const built = useRef(-1);
   const builtDepth = useRef(-1);
   const rebuild = (canalDepthM = 0) => {
+    markShadows();
     builtDepth.current = canalDepthM;
     updateFaceGrid(res.faceGeom, subsidence.fn, canalDepthM);
     updateSurfaceGrid(res.surfaceGeom, subsidence.fn, canalDepthM);
     updateBridgeGeometry(res.bridgeGeom, subsidence.fn);
-    updateCanalFaceGeometry(res.canalFaceGeom, subsidence.fn);
+    updateSkirtGeometry(res.skirtGeom, subsidence.fn, canalDepthM);
     // Sedikit peneduhan di dekat tepi potong, supaya garis tepi bongkahan
     // terbaca sebagai sudut dan bukan sebagai jahitan antara dua gambar.
     const color = res.surfaceGeom.attributes.color as THREE.BufferAttribute;
@@ -506,13 +531,13 @@ function Block({
   const drawnDepth = useRef(-1);
   const bridgeRef = useRef<THREE.Mesh>(null);
   const canalRef = useRef<THREE.Mesh>(null);
-  const canalFaceRef = useRef<THREE.Mesh>(null);
   const drawnDrop = useRef(-1);
   const waterRef = useRef<THREE.Mesh>(null);
   const waterLevel = useRef(0);
   const treeClock = useRef(0);
   const weirShown = useRef(0);
-
+  /** Masukan pembaruan pohon terakhir; pohon hanya dihitung ulang bila berubah. */
+  const plantKey = useRef("");
   useFrame((_, delta) => {
     const s = stateRef.current;
     if (!s) return;
@@ -549,6 +574,7 @@ function Block({
       drawnDepth.current = canalDepthDrawn;
       drawnDrop.current = dropAtCanal;
       updateCanalGeometry(res.canalGeom, canalDepthDrawn, dropAtCanal);
+      updateCanalFaceGeometry(res.canalFaceGeom, dropAtCanal, canalDepthDrawn);
     }
 
     // Jalur kanal ditutup tanah selama belum ada yang menggalinya. Tanpa ini,
@@ -563,8 +589,6 @@ function Block({
     const undug = s.drawnCanalDepthM < 0.06;
     const bridge = bridgeRef.current;
     if (bridge) bridge.visible = undug;
-    const canalFace = canalFaceRef.current;
-    if (canalFace) canalFace.visible = undug;
     const canal = canalRef.current;
     if (canal) canal.visible = !undug;
 
@@ -606,12 +630,14 @@ function Block({
     // Sekat tumbuh dari dasar kanal saat dipasang, dan tidak pernah turun
     // lagi: yang sudah dikerjakan orang tidak dibatalkan oleh berjalannya
     // waktu.
+    const weirBefore = weirShown.current;
     weirShown.current = THREE.MathUtils.damp(
       weirShown.current,
       s.blocked ? 1 : 0,
       s.reducedMotion ? 30 : 2.2,
       dt,
     );
+    if (Math.abs(weirShown.current - weirBefore) > 1e-4) markShadows();
     res.weir.update(s.drawnCanalDepthM, dropAtCanal, weirShown.current);
 
     // Pohon tidak perlu dihitung ulang tiap bingkai: yang menggerakkannya
@@ -624,7 +650,16 @@ function Block({
       // sudah kembali. Yang kedua galian yang benar-benar ada di tanah, dan
       // itulah yang menentukan tinggi tanggul tempat pohon-pohon ini berdiri:
       // tanggulnya tidak hilang hanya karena kanalnya disekat.
-      res.plants.update(sim.effectiveCanalDepth(), subsidence.fn, s.drawnCanalDepthM);
+      // Bentuk pohon sepenuhnya ditentukan ketiga masukan ini, jadi bila
+      // tidak satu pun berubah, menghitung ulang dan mengunggah ulang matriks
+      // seluruh pohon hanya membuang waktu.
+      const effective = sim.effectiveCanalDepth();
+      const key = `${effective.toFixed(3)}|${subsidence.version}|${s.drawnCanalDepthM.toFixed(2)}`;
+      if (key !== plantKey.current) {
+        plantKey.current = key;
+        res.plants.update(effective, subsidence.fn, s.drawnCanalDepthM);
+        markShadows();
+      }
     }
   });
 
@@ -636,8 +671,12 @@ function Block({
   const ghost = useMemo(() => {
     const points: number[] = [];
     const z = BLOCK_DEPTH / 2 + 0.02;
+    // Sepanjang tepi depan sampai ujungnya yang bergelombang, bukan sampai
+    // NEAR_LENGTH_M: garis yang lebih panjang daripada tanahnya menggantung
+    // di udara.
+    const reach = farDistance(BLOCK_DEPTH / 2);
     for (let i = 0; i <= WING_COLS; i++) {
-      const distance = (i / WING_COLS) * NEAR_LENGTH_M;
+      const distance = (i / WING_COLS) * reach;
       // Mengikuti relief permukaan, bukan garis lurus: jejak ini menandai
       // tanah yang dahulu ada di situ, dan tanah itu pun bergundukan. Tanpa
       // tanggul galian — tanggulnya belum ada ketika tanah ini masih utuh.
@@ -674,8 +713,6 @@ function Block({
     ghost.material.opacity = THREE.MathUtils.damp(ghost.material.opacity, want, 3, Math.min(delta, 0.05));
   });
 
-  const base = floorY();
-
   return (
     <group>
       {/* Sayap kanan, lalu sayap kiri sebagai cerminannya. */}
@@ -683,22 +720,10 @@ function Block({
         <group key={side} scale={[side, 1, 1]}>
           <mesh geometry={res.faceGeom} material={res.faceMaterial} receiveShadow />
           <mesh geometry={res.surfaceGeom} material={res.surfaceMaterial} receiveShadow castShadow />
-          {/* Dinding ujung dan dinding belakang petak ini. Gelap rata: yang
-              harus dibaca bidang potong di depan, bukan sisi-sisinya. */}
-          <mesh
-            position={[HALF_WIDTH, base / 2 + 0.5, 0]}
-            rotation={[0, Math.PI / 2, 0]}
-            material={res.sideMaterial}
-          >
-            <planeGeometry args={[BLOCK_DEPTH, Math.abs(base) + 1]} />
-          </mesh>
-          <mesh
-            position={[(CANAL_HALF_M + HALF_WIDTH) / 2, base / 2 + 0.5, -BLOCK_DEPTH / 2]}
-            rotation={[0, Math.PI, 0]}
-            material={res.sideMaterial}
-          >
-            <planeGeometry args={[HALF_WIDTH - CANAL_HALF_M, Math.abs(base) + 1]} />
-          </mesh>
+          {/* Dinding ujung dan belakang: tanah berlapis yang menjorok ke
+              dalam, bukan lagi dua bidang gelap yang rata. Lihat
+              `updateSkirtGeometry`. */}
+          <mesh geometry={res.skirtGeom} material={res.faceMaterial} receiveShadow />
           <primitive object={side === 1 ? ghost.line : ghost.mirror} />
         </group>
       ))}
@@ -712,8 +737,8 @@ function Block({
         material={res.surfaceMaterial}
         receiveShadow
       />
+      {/* Penampang kanal pada muka depan — selalu tampil. */}
       <mesh
-        ref={canalFaceRef}
         geometry={res.canalFaceGeom}
         material={res.faceMaterial}
         receiveShadow
@@ -757,6 +782,8 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
 
   const profile = QUALITY_PROFILE[quality];
   const maxDpr = Math.min(profile.maxDpr, MODULE_MAX_DPR[quality]);
+  // Dibaca sekali saat kanvas dipasang; lihat `FpsMeter`.
+  const showFps = useMemo(() => wantsFpsMeter(), []);
 
   return (
     <Canvas
@@ -777,6 +804,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
     >
       <CameraRig />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
+      {showFps && <FpsMeter />}
       {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 03.
           Petak ini enam belas kali lebih besar daripada diorama di sana, dan
           skalanya dinyatakan supaya kabut serta peta bayangannya ikut

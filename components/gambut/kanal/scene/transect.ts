@@ -257,9 +257,144 @@ export function groundY(xScene: number, zM: number, dropM = 0, canalDepthM = 0):
     (naturalSurfaceM(distance) -
       dropM +
       microReliefM(Math.abs(xScene), zM) +
-      spoilM(distance, zM, canalDepthM)) *
+      spoilM(distance, zM, canalDepthM) -
+      edgeRoundM(xScene, zM)) *
     V_SCALE
   );
+}
+
+// ---------------------------------------------------------------------------
+//  TEPI BONGKAHAN YANG ALAMI
+// ---------------------------------------------------------------------------
+//
+// Bongkahan sebelumnya sebuah kotak: tepi luarnya garis lurus, sudutnya siku,
+// dan dinding samping serta belakangnya bidang gelap yang rata. Kotak itu
+// terbaca sebagai benda buatan — potongan kue — bukan sebagai sepetak tanah
+// yang diangkat dari lanskap, dan mata tertarik ke garis-garis lurus itu
+// alih-alih ke kanal dan lapisan di bidang potongnya.
+//
+// Bentuk yang baru mengikuti cara Modul 01 dan 03 (`scene/terrain.ts`):
+//   - tepi luar bergelombang landai di denah, tidak pernah lurus;
+//   - bahu permukaan membulat turun ke dinding, bukan bertemu pada siku;
+//   - dinding samping memperlihatkan lapisan gambut yang sama dengan bidang
+//     potong, dengan relief seperti tanah yang digali;
+//   - dasar menjorok ke dalam dan tepinya tidak rata, seperti bongkahan tanah
+//     yang dicungkil.
+//
+// Bidang potong di depan sengaja tetap hampir rata. Di sanalah pembaca
+// membaca lapisan, muka air, dan penanda kedalaman, dan relief yang besar di
+// sana akan mengaburkan semuanya. Reliefnya hanya beberapa sentimeter, cukup
+// untuk menghilangkan kesan kaca.
+
+/** Lebar bahu yang membulat di tepi luar (m). */
+const SHOULDER_M = 2.4;
+
+/** Seberapa jauh bahu itu turun tepat di tepinya (m sebelum dibesarkan). */
+const SHOULDER_DROP_M = 0.32;
+
+/** Seberapa jauh dasar dinding menjorok ke dalam (satuan adegan). */
+export const TAPER = 1.8;
+
+/** Jarak dari sudut depan tempat relief dinding mulai muncul (m). */
+const CORNER_BLEND_M = 2.5;
+
+function smoothstep01(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return c * c * (3 - 2 * c);
+}
+
+/**
+ * Kedudukan tepi ujung bongkahan (x adegan, sisi kanan) pada kedalaman z.
+ *
+ * Hanya bergelombang ke luar, tidak ke dalam: tumbuhan disebar sampai satu
+ * meter dari ujung petak, dan tepi yang masuk ke dalam akan meninggalkannya
+ * menggantung di udara.
+ */
+export function farEdgeX(zM: number): number {
+  return HALF_WIDTH - 0.3 + valueNoise(zM / 7 + 11.1, 7.7) * 1.8;
+}
+
+/**
+ * Kedudukan tepi belakang bongkahan (z adegan) pada kedudukan mendatar x.
+ *
+ * Dilandaikan menjadi lurus di dekat kanal: palung kanal berakhir rata di
+ * belakang, dan tepi yang bergelombang di sana akan memotong palungnya.
+ */
+export function backEdgeZ(xScene: number): number {
+  const ax = Math.abs(xScene);
+  const near = smoothstep01((ax - CANAL_HALF_M) / 4);
+  return -BLOCK_DEPTH / 2 - valueNoise(ax / 6 + 3.3, 1.9) * 1.8 * near;
+}
+
+/** Jarak dari tepi kanal ke ujung bongkahan pada kedalaman z (m). */
+export function farDistance(zM: number): number {
+  return distanceOfX(farEdgeX(zM));
+}
+
+/**
+ * Turunnya permukaan oleh bahu yang membulat (m), pada titik (x, z).
+ *
+ * Diambil dari tepi yang paling dekat — ujung atau belakang — sehingga sudut
+ * belakang membulat ke dua arah sekaligus. Tepi depan tidak ikut: di sana
+ * bidang potongnya, dan bidang itu harus memperlihatkan permukaan pada
+ * ketinggian yang sebenarnya.
+ */
+export function edgeRoundM(xScene: number, zM: number): number {
+  const toFar = farEdgeX(zM) - Math.abs(xScene);
+  const toBack = zM - backEdgeZ(xScene);
+  const s = 1 - Math.min(1, Math.max(0, Math.min(toFar, toBack) / SHOULDER_M));
+  return SHOULDER_DROP_M * s * s * (3 - s);
+}
+
+/**
+ * Seberapa jauh dinding menjorok ke dalam pada pecahan tinggi `t`
+ * (0 di permukaan, 1 di dasar). Tegak di atas, melengkung masuk di bawah.
+ */
+export function taperAt(t: number): number {
+  return TAPER * Math.pow(t, 2.4);
+}
+
+/** Dasar bongkahan pada titik (x, z): tidak rata, seperti tanah yang dicungkil. */
+export function floorAt(xScene: number, zM: number): number {
+  return floorY() + (valueNoise(Math.abs(xScene) / 4.5 + 2.1, zM / 4.5 + 9.4) - 0.5) * 0.9;
+}
+
+/**
+ * Relief dinding samping (satuan adegan, ke arah luar).
+ *
+ * Gumpalan lebar dan tonjolan mendatar: gambut yang digali mengelupas
+ * menurut lapisannya, jadi tonjolannya memanjang mendatar, bukan tegak.
+ */
+export function wallRelief(along: number, y: number): number {
+  return (
+    (valueNoise(along / 2.6 + 5.2, y / 1.1) - 0.5) * 0.7 +
+    (valueNoise(along / 0.9 + 1.7, y / 0.35 + 3.3) - 0.5) * 0.22
+  );
+}
+
+/** Relief bidang potong depan: jauh lebih kecil, lihat penjelasan di atas. */
+function faceRelief(x: number, y: number): number {
+  return (valueNoise(x / 1.8 + 41.3, y / 0.7) - 0.5) * 0.16;
+}
+
+/** Bobot relief menurut jarak dari sudut atau tepi kanal: nol di sana, penuh di luar. */
+export function cornerFade(distanceFromCornerM: number): number {
+  return smoothstep01(distanceFromCornerM / CORNER_BLEND_M);
+}
+
+/**
+ * Kedudukan denah titik kisi hamparan (i, j) pada satu sayap.
+ *
+ * Hamparan, dinding ujung, dan dinding belakang semuanya membaca titik
+ * tepinya dari fungsi ini, sehingga ketiganya bertemu tepat tanpa celah.
+ */
+export function surfacePoint(i: number, j: number): { x: number; z: number; distance: number } {
+  const front = BLOCK_DEPTH / 2;
+  const v = j / SURFACE_ROWS;
+  const distance = (i / WING_COLS) * farDistance(front - v * BLOCK_DEPTH);
+  const x = xOfDistance(distance);
+  const z = front - v * (front - backEdgeZ(x));
+  return { x, z, distance };
 }
 
 /** Seperti `groundY`, tetapi dinyatakan dengan jarak dari tepi kanal. */
@@ -359,9 +494,9 @@ export function createFaceGrid(): THREE.BufferGeometry {
 /**
  * Perbarui ketinggian titik-titik bidang potong.
  *
- * Hanya `position` dan `aDepth` yang ditulis; `uv` tidak pernah berubah.
- * Normal titik sengaja tidak dihitung — peneduh bidang potong tidak
- * membacanya, sama seperti pada Modul 03.
+ * Bidang ini tidak lagi rata sempurna: dasarnya menjorok ke dalam dan
+ * permukaannya beriak beberapa sentimeter (lihat "Tepi bongkahan yang
+ * alami"), jadi normalnya kini dihitung ulang tiap kali bentuknya berubah.
  */
 export function updateFaceGrid(
   geom: THREE.BufferGeometry,
@@ -371,28 +506,40 @@ export function updateFaceGrid(
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const field = geom.attributes.aField as THREE.BufferAttribute;
   const posArr = pos.array as Float32Array;
   const depthArr = depth.array as Float32Array;
   const uvArr = uv.array as Float32Array;
+  const fieldArr = field.array as Float32Array;
   const cols = WING_COLS + 1;
-  const bottom = floorY();
   const z = BLOCK_DEPTH / 2;
+  // Ujung bidang ini mengikuti tepi ujung yang bergelombang, jadi panjangnya
+  // dibaca dari tepi itu, bukan dari NEAR_LENGTH_M.
+  const reach = farDistance(z);
 
   for (let i = 0; i < cols; i++) {
-    const distance = (i / WING_COLS) * NEAR_LENGTH_M;
+    const distance = (i / WING_COLS) * reach;
     const x = xOfDistance(distance);
     // Garis atas bidang potong harus persis sama dengan baris terdepan
     // hamparan permukaan, jika tidak akan ada celah menganga sepanjang tepi
     // potong. Keduanya karena itu memanggil fungsi yang sama pada z yang sama.
     const top = surfaceYAt(distance, z, drop(distance), canalDepthM);
+    const bottom = floorAt(x, z);
+    // Relief nol di tepi kanal dan di sudut ujung, supaya bidang ini bertemu
+    // mulut kanal dan dinding ujung tanpa celah. Di sudut ujung, jorokannya
+    // juga dibagi ke arah x — dinding ujung menjorok ke arah yang sama.
+    const relief = cornerFade(distance) * cornerFade(reach - distance);
+    const corner = 1 - cornerFade(reach - distance);
     for (let j = 0; j <= FACE_ROWS; j++) {
       const t = j / FACE_ROWS;
       const y = top + (bottom - top) * t;
+      const inset = taperAt(t);
       const k = j * cols + i;
-      posArr[k * 3] = x;
+      posArr[k * 3] = x - inset * corner;
       posArr[k * 3 + 1] = y;
-      posArr[k * 3 + 2] = z;
+      posArr[k * 3 + 2] = z - inset + faceRelief(x, y) * relief * smoothstep01(t / 0.12);
       depthArr[k] = (top - y) / V_SCALE;
+      fieldArr[k] = fieldU(distance);
       // Tekstur diulang tiap 1,5 m lanskap. Lapisan gambut hanya setebal
       // beberapa meter, jadi pengulangan yang lebih longgar membuat serat
       // dan bongkahnya membesar sampai tidak lagi terbaca sebagai tanah.
@@ -403,6 +550,8 @@ export function updateFaceGrid(
   pos.needsUpdate = true;
   depth.needsUpdate = true;
   uv.needsUpdate = true;
+  field.needsUpdate = true;
+  geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }
 
@@ -456,18 +605,16 @@ export function updateSurfaceGrid(
   const posArr = pos.array as Float32Array;
   const uvArr = uv.array as Float32Array;
   const cols = WING_COLS + 1;
-  const front = BLOCK_DEPTH / 2;
 
   for (let i = 0; i < cols; i++) {
-    const distance = (i / WING_COLS) * NEAR_LENGTH_M;
-    const x = xOfDistance(distance);
-    const dropHere = drop(distance);
     for (let j = 0; j <= SURFACE_ROWS; j++) {
-      const z = front - (j / SURFACE_ROWS) * BLOCK_DEPTH;
+      // Denahnya dibaca dari `surfacePoint`, sumber yang sama dengan dinding
+      // ujung dan belakang, supaya tepinya bertemu tanpa celah.
+      const { x, z, distance } = surfacePoint(i, j);
       // Ketinggian dihitung per titik, bukan per kolom: reliefnya berubah ke
       // arah belakang bongkahan juga, dan justru perubahan itulah yang
       // membuat hamparan ini menangkap cahaya tidak rata.
-      const y = groundY(x, z, dropHere, canalDepthM);
+      const y = groundY(x, z, drop(distance), canalDepthM);
       const k = j * cols + i;
       posArr[k * 3] = x;
       posArr[k * 3 + 1] = y;
@@ -605,45 +752,63 @@ export function updateCanalGeometry(
 }
 
 /**
- * Bidang potong sepanjang jalur kanal, dipakai selama kanal belum digali.
+ * Bidang potong sepanjang jalur kanal: penampang kanal pada muka depan.
  *
- * Tanpa ini, bidang potong di depan berlubang selebar kanal sebelum ada yang
- * menggalinya — tanah yang utuh tampak sudah terbelah, dan babak 01 dibuka
- * dengan gambar yang membantah kalimatnya sendiri.
+ * Semula bidang ini hanya dipakai selama kanal belum digali, lalu
+ * disembunyikan. Akibatnya, begitu kanal digali, muka depan berlubang dari
+ * permukaan sampai dasar bongkahan — kanal sedalam tiga meter tergambar
+ * sebagai celah yang membelah tanah sampai ke alas mineral, dan pembaca tidak
+ * dapat melihat bentuk galiannya sama sekali.
  *
- * Atributnya sama persis dengan kisi bidang potong, sehingga keduanya dapat
- * memakai peneduh yang sama dan tidak pernah berbeda warna di sambungannya.
+ * Sekarang bidang ini selalu ada, dan garis atasnya mengikuti penampang
+ * kanal: tebing landai di kiri dan kanan, dasar rata di tengah. Di bawah
+ * dasar itu lapisan gambut berlanjut utuh, sebagaimana tanah yang memang
+ * tidak ikut tergali.
+ *
+ * Atributnya sama persis dengan kisi bidang potong, sehingga keduanya memakai
+ * peneduh yang sama dan tidak pernah berbeda warna di sambungannya.
  */
-/** Jumlah lajur titik yang melintasi mulut kanal. */
+/** Jumlah lajur titik yang melintasi penampang kanal: tebing, dasar, tebing. */
+const CUT_SEGMENTS = [3, 5, 3] as const;
+const CUT_COLS = CUT_SEGMENTS[0] + CUT_SEGMENTS[1] + CUT_SEGMENTS[2] + 1;
+
+/** Jumlah lajur titik penutup jalur kanal. */
 const MOUTH_COLS = 6;
 
-/** Kedudukan mendatar lajur ke-`i` pada mulut kanal (satuan adegan). */
+/** Kedudukan mendatar lajur ke-`i` pada penutup jalur kanal (satuan adegan). */
 function mouthX(i: number): number {
   return -CANAL_HALF_M + (i / (MOUTH_COLS - 1)) * CANAL_HALF_M * 2;
 }
 
+/**
+ * Kedudukan mendatar lajur ke-`i` pada penampang kanal. Lajurnya dipusatkan
+ * pada tepi dasar kanal, supaya patahan antara tebing dan dasar selalu jatuh
+ * tepat pada satu lajur, berapa pun dalamnya galian.
+ */
+function cutX(i: number, bedHalf: number): number {
+  const [a, b] = CUT_SEGMENTS;
+  if (i <= a) return -CANAL_HALF_M + (i / a) * (CANAL_HALF_M - bedHalf);
+  if (i <= a + b) return -bedHalf + ((i - a) / b) * bedHalf * 2;
+  return bedHalf + ((i - a - b) / CUT_SEGMENTS[2]) * (CANAL_HALF_M - bedHalf);
+}
+
 export function createCanalFaceGeometry(): THREE.BufferGeometry {
   const rows = FACE_ROWS + 1;
-  const total = MOUTH_COLS * rows;
+  const total = CUT_COLS * rows;
   const geom = new THREE.BufferGeometry();
-  const normals = new Float32Array(total * 3);
-  const field = new Float32Array(total);
-  for (let k = 0; k < total; k++) {
-    normals[k * 3 + 2] = 1;
-    field[k] = fieldU(0);
-  }
+  const field = new Float32Array(total).fill(fieldU(0));
 
   geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
-  geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
   geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
   geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
   geom.setAttribute("aField", new THREE.BufferAttribute(field, 1));
 
   const idx: number[] = [];
   for (let j = 0; j < FACE_ROWS; j++) {
-    for (let i = 0; i < MOUTH_COLS - 1; i++) {
-      const a = j * MOUTH_COLS + i;
-      idx.push(a, a + MOUTH_COLS, a + 1, a + 1, a + MOUTH_COLS, a + MOUTH_COLS + 1);
+    for (let i = 0; i < CUT_COLS - 1; i++) {
+      const a = j * CUT_COLS + i;
+      idx.push(a, a + CUT_COLS, a + 1, a + 1, a + CUT_COLS, a + CUT_COLS + 1);
     }
   }
   geom.setIndex(idx);
@@ -652,37 +817,167 @@ export function createCanalFaceGeometry(): THREE.BufferGeometry {
 }
 
 /**
- * Perbarui bidang potong jalur kanal.
+ * Perbarui penampang kanal pada muka depan.
  *
- * Garis atasnya harus mengikuti relief yang sama dengan penutup di atasnya,
- * jika tidak akan tampak takik di tepi potong tepat di tengah gambar.
+ * Garis atasnya dihitung dengan rumus yang sama dengan palung kanal
+ * (`updateCanalGeometry`) pada z yang sama, sehingga ujung depan palung itu
+ * duduk tepat di atasnya. Selama kanal belum digali, garis atasnya beralih
+ * ke relief permukaan supaya bertemu penutup jalur kanal tanpa takik.
  */
 export function updateCanalFaceGeometry(
   geom: THREE.BufferGeometry,
-  drop: DropFn = NO_DROP,
+  dropM = 0,
+  canalDepthM = 0,
 ): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
-  const bottom = floorY();
   const z = BLOCK_DEPTH / 2;
-  const dropHere = drop(0);
+  const dug = smoothstep01(canalDepthM / 0.06);
+  const bedHalf = canalBedHalf(canalDepthM);
+  const floor = surfaceY(0) - (dropM + canalDepthM) * V_SCALE;
+  const rim = Math.max(floor + 0.1, surfaceYAt(0, z, dropM, canalDepthM));
+  const siltAmp = 0.12 * V_SCALE * Math.min(1, canalDepthM);
+  const bed = floor + (valueNoise(z / 5 + 71.3, 2.5) - 0.5) * siltAmp;
 
-  for (let i = 0; i < MOUTH_COLS; i++) {
-    const x = mouthX(i);
-    const top = groundY(x, z, dropHere);
+  for (let i = 0; i < CUT_COLS; i++) {
+    const x = cutX(i, bedHalf);
+    const ax = Math.abs(x);
+    const ground = groundY(x, z, dropM);
+    const trough =
+      ax <= bedHalf ? bed : bed + (rim - bed) * ((ax - bedHalf) / Math.max(0.01, CANAL_HALF_M - bedHalf));
+    // Kedua lajur terluar harus sama tinggi dengan lajur pertama bidang
+    // potong di sebelahnya, yang membaca permukaan beserta tanggulnya.
+    const edge = i === 0 || i === CUT_COLS - 1;
+    const top = edge ? surfaceYAt(0, z, dropM, canalDepthM) : ground + (trough - ground) * dug;
+    const bottom = floorAt(x, z);
     for (let j = 0; j <= FACE_ROWS; j++) {
-      const y = top + (bottom - top) * (j / FACE_ROWS);
-      const k = j * MOUTH_COLS + i;
-      pos.setXYZ(k, x, y, z);
+      const t = j / FACE_ROWS;
+      const y = top + (bottom - top) * t;
+      const k = j * CUT_COLS + i;
+      pos.setXYZ(k, x, y, z - taperAt(t));
       uv.setXY(k, x / 1.5, y / 1.5);
-      depth.setX(k, (top - y) / V_SCALE);
+      // Kedalaman diukur dari permukaan asal, bukan dari dasar galian:
+      // lapisan di bawah kanal adalah lapisan yang sama dengan di kiri dan
+      // kanannya, dan harus berwarna sama pada ketinggian yang sama.
+      depth.setX(k, Math.max(0, (ground - y) / V_SCALE));
     }
   }
 
   pos.needsUpdate = true;
   uv.needsUpdate = true;
   depth.needsUpdate = true;
+  geom.computeVertexNormals();
+  geom.computeBoundingSphere();
+}
+
+// ---------------------------------------------------------------------------
+//  DINDING UJUNG DAN BELAKANG
+// ---------------------------------------------------------------------------
+
+/**
+ * Dinding ujung dan dinding belakang satu sayap, sebagai satu pita.
+ *
+ * Menggantikan dua bidang gelap yang rata. Pita ini berjalan dari sudut depan
+ * di ujung bongkahan, menyusuri tepi ujung ke belakang, lalu menyusuri tepi
+ * belakang sampai ke kanal. Titik atasnya dibaca dari `surfacePoint`, jadi
+ * selalu menempel pada tepi hamparan, dan bahannya bahan bidang potong,
+ * jadi lapisan gambutnya berlanjut mengitari sudut.
+ */
+const SKIRT_ROWS = 14;
+const SKIRT_POINTS = SURFACE_ROWS + 1 + WING_COLS;
+
+/** Titik atas pita ke-`k`: tepi ujung dulu, lalu tepi belakang. */
+function skirtTop(k: number): { x: number; z: number; distance: number } {
+  if (k <= SURFACE_ROWS) return surfacePoint(WING_COLS, k);
+  return surfacePoint(WING_COLS - (k - SURFACE_ROWS), SURFACE_ROWS);
+}
+
+export function createSkirtGeometry(): THREE.BufferGeometry {
+  const rows = SKIRT_ROWS + 1;
+  const total = SKIRT_POINTS * rows;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+  geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(total), 1));
+  geom.setAttribute("aField", new THREE.BufferAttribute(new Float32Array(total), 1));
+
+  const idx: number[] = [];
+  for (let r = 0; r < SKIRT_ROWS; r++) {
+    for (let k = 0; k < SKIRT_POINTS - 1; k++) {
+      const a = r * SKIRT_POINTS + k;
+      idx.push(a, a + SKIRT_POINTS, a + 1, a + 1, a + SKIRT_POINTS, a + SKIRT_POINTS + 1);
+    }
+  }
+  geom.setIndex(idx);
+  return geom;
+}
+
+const _tops: { x: number; z: number; y: number; distance: number }[] = [];
+
+/** Perbarui pita dinding mengikuti tepi hamparan saat ini. */
+export function updateSkirtGeometry(
+  geom: THREE.BufferGeometry,
+  drop: DropFn = NO_DROP,
+  canalDepthM = 0,
+): void {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const depth = geom.attributes.aDepth as THREE.BufferAttribute;
+  const field = geom.attributes.aField as THREE.BufferAttribute;
+
+  for (let k = 0; k < SKIRT_POINTS; k++) {
+    const p = skirtTop(k);
+    _tops[k] = { ...p, y: groundY(p.x, p.z, drop(p.distance), canalDepthM) };
+  }
+
+  // Pusat sayap, untuk memastikan arah "ke luar" memang ke luar.
+  const cx = xOfDistance(NEAR_LENGTH_M / 2);
+  let along = 0;
+  for (let k = 0; k < SKIRT_POINTS; k++) {
+    const p = _tops[k];
+    if (k > 0) along += Math.hypot(p.x - _tops[k - 1].x, p.z - _tops[k - 1].z);
+    const prev = _tops[Math.max(0, k - 1)];
+    const next = _tops[Math.min(SKIRT_POINTS - 1, k + 1)];
+    let nx = next.z - prev.z;
+    let nz = -(next.x - prev.x);
+    const len = Math.hypot(nx, nz) || 1;
+    nx /= len;
+    nz /= len;
+    if (nx * (p.x - cx) + nz * p.z < 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+    // Titik pertama adalah sudut depan: arahnya dipaksa tepat ke samping,
+    // sama dengan jorokan lajur terakhir bidang potong, supaya keduanya
+    // bertemu tanpa celah sampai ke dasar.
+    if (k === 0) {
+      nx = 1;
+      nz = 0;
+    }
+    const corner = 1 - cornerFade(along);
+    const relief = cornerFade(along) * cornerFade(p.distance);
+    const bottom = floorAt(p.x, p.z);
+
+    for (let r = 0; r <= SKIRT_ROWS; r++) {
+      const t = r / SKIRT_ROWS;
+      const y = p.y + (bottom - p.y) * t;
+      const inset = taperAt(t);
+      const out = wallRelief(along, y) * relief * smoothstep01(t / 0.1) - inset;
+      const v = r * SKIRT_POINTS + k;
+      pos.setXYZ(v, p.x + nx * out, y, p.z + nz * out - inset * corner);
+      uv.setXY(v, along / 1.5, y / 1.5);
+      depth.setX(v, (p.y - y) / V_SCALE);
+      field.setX(v, fieldU(p.distance));
+    }
+  }
+
+  pos.needsUpdate = true;
+  uv.needsUpdate = true;
+  depth.needsUpdate = true;
+  field.needsUpdate = true;
+  geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }
 
