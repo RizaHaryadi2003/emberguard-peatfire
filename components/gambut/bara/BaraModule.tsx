@@ -70,7 +70,7 @@ const HOOK_SWIPE = 30;
 const ACT_HINT = [
   "Sulut permukaan untuk melanjutkan.",
   "Butuh dua hari perjalanan waktu untuk melanjutkan.",
-  "Siram, buka termal, lalu tunggu bara muncul lagi.",
+  "Siram, buka termal, lalu tunggu permukaan menyala lagi.",
   "Naikkan muka air tanah sampai seluruh bara padam.",
 ];
 

@@ -97,10 +97,12 @@ export const BARA_ACTS: readonly BaraAct[] = [
   {
     number: "03",
     title: "Tak terlihat dari atas",
-    body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita, terus melebarkan rongga sampai atap tanahnya runtuh.",
-    // Usup dkk. (2004), hlm. 13.
-    lead: "Bara membakar di bawah dan menyisakan atap tanah. Atap bisa runtuh, dan bara muncul lagi di tempat lain.",
-    task: "Siram permukaan, buka tampilan termal, lalu tunggu sampai bara muncul lagi.",
+    body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita. Begitu tanah di atasnya kering lagi, bara itu naik dan permukaannya menyala kembali.",
+    // Usup dkk. (2004), hlm. 12–13: sulit padam walau hujan, lalu muncul lagi
+    // menjadi api baru. Naiknya bara sesudah siraman kering adalah sintesis
+    // model (lihat docs/md/acuan-modul-02.md, "Perubahan Babak 03").
+    lead: "Siraman hanya memadamkan permukaan. Bara di bawah tetap hidup, lalu naik lagi saat tanahnya kering.",
+    task: "Siram permukaan, buka tampilan termal, lalu tunggu sampai permukaan menyala lagi.",
     // Usup dkk. (2004), hlm. 12.
     fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering (Usup dkk., 2004)" },
   },
@@ -206,10 +208,10 @@ export const SUPPRESSION_TEXT = {
 export const BARA_SUMMARY = {
   title: BARA_HOOK.question,
   /** Menjawab pertanyaan pembuka dengan kejadian yang baru saja dilihat pembaca. */
-  answer: (depthCm: number, resurfaced: boolean) =>
-    `Dari bara tanpa api, sedalam ${depthCm} cm di dalam gambut. Ia berhenti di gambut yang masih basah${
-      resurfaced ? ", dan muncul lagi di tempat lain" : ""
-    }.`,
+  answer: (depthCm: number, rekindled: boolean, resurfaced: boolean) =>
+    `Dari bara tanpa api, sedalam ${depthCm} cm di dalam gambut.${
+      rekindled ? " Siraman hanya memadamkan permukaannya, dan bara itu naik lagi setelah tanahnya kering." : ""
+    } Ia baru berhenti di gambut yang masih basah${resurfaced ? ", setelah sempat muncul di tempat lain" : ""}.`,
   closing: "Makin kering gambutnya, makin dalam bara bisa hidup. Karena itu muka air tanah harus dijaga.",
 } as const;
 

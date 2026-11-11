@@ -41,7 +41,7 @@ export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; o
     <div className="pointer-events-auto rounded-3xl border border-white/12 bg-black/55 p-5 shadow-2xl shadow-black/60 backdrop-blur-xl">
       <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">{BARA_SUMMARY.title}</p>
       <p className="mt-2 text-sm leading-relaxed text-white/85">
-        {BARA_SUMMARY.answer(Math.round(stats.maxDepth * 100), stats.resurfaceX !== null)}
+        {BARA_SUMMARY.answer(Math.round(stats.maxDepth * 100), stats.rekindleX !== null, stats.resurfaceX !== null)}
       </p>
 
       <dl className="mt-4 grid grid-cols-2 gap-4 border-y border-white/10 py-4">
