@@ -371,11 +371,19 @@ export default function SceneLabels({ sim, stateRef, subsidence }: Props) {
     // keduanya melebar ke seluruh lebar, dan yang tersisa hanyalah pita
     // mendatar di antara teks pengantar dan panel kendali — kira-kira sejajar
     // badan bongkahan.
+    //
+    // Batas pita itu dahulu ditulis tetap, 38–62% tinggi layar. Uji di ponsel
+    // sungguhan menunjukkan angka tetap itu tidak cukup: arahan dan panah
+    // lanjut di atas panel kendali naik sampai sekitar 60% layar, sehingga
+    // label muka air jatuh di belakang pil arahan. Kini pitanya diukur dari
+    // tata letak yang sebenarnya (`labelBand`), dan angka tetap hanya menjadi
+    // cadangan sebelum ukuran pertama tersedia.
     const area = readingArea(size.width, size.height);
+    const band = narrow ? s.labelBand : null;
     const minX = area ? area.left : size.width * (narrow ? 0.04 : 0.27);
     const maxX = area ? area.right : size.width * (narrow ? 0.96 : 0.82);
-    const minY = area ? area.top : size.height * (narrow ? 0.38 : 0.1);
-    const maxY = area ? area.bottom : size.height * (narrow ? 0.62 : 0.84);
+    const minY = area ? area.top : band ? band.top : size.height * (narrow ? 0.38 : 0.1);
+    const maxY = area ? area.bottom : band ? band.bottom : size.height * (narrow ? 0.62 : 0.84);
 
     const taken: { l: number; r: number; t: number; b: number }[] = [];
     const visible: Marker[] = [];

@@ -55,6 +55,11 @@ export type BaraState = {
   hookOpen: boolean;
   /** Pembaca sudah pernah membuka keterangan lapisan; petunjuknya tidak perlu lagi. */
   layerHinted: boolean;
+  /**
+   * Pita tegak yang bebas dari teks dan panel di layar sempit (piksel dari
+   * atas kanvas), diukur langsung dari tata letak DOM. Kosong sebelum diukur.
+   */
+  labelBand: { top: number; bottom: number } | null;
   /** Nilai yang dihaluskan oleh adegan sendiri. */
   thermal: number;
   danger: number;
@@ -80,6 +85,7 @@ export function createBaraState(waterM: number): BaraState {
     dragging: false,
     hookOpen: false,
     layerHinted: false,
+    labelBand: null,
     thermal: 0,
     danger: 0,
   };

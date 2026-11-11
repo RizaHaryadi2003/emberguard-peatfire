@@ -46,6 +46,15 @@ const ACT_SPEED = [0, 1, 1, 1];
 /** Jam simulasi saat waktu dihentikan otomatis pada dua babak pertama. */
 const FIRST_PAUSE_HOURS = 48;
 
+/**
+ * Jeda sebelum kartu hasil muncul di layar sempit (milidetik): cukup untuk
+ * melihat bara terakhir mendingin dan membaca satu baris pesan hasilnya.
+ */
+const SUMMARY_DELAY_MS = 4000;
+
+/** Lebar layar (piksel) mulai dari mana kartu hasil tidak lagi menutupi bongkahan. */
+const NARROW_MAX = 768;
+
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;
 
@@ -69,6 +78,9 @@ const ACT_HINT = [
 export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+  const storyRef = useRef<HTMLDivElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const dockStackRef = useRef<HTMLDivElement>(null);
 
   // Simulasi dibuat sekali dan dipakai bersama antarmuka & adegan 3D.
   const sim = useMemo(() => {
@@ -92,6 +104,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const [thermalSeen, setThermalSeen] = useState(false);
   const [rewetOnce, setRewetOnce] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -207,6 +220,35 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     { scope: textRef, dependencies: [act, hookOpen], revertOnUpdate: true },
   );
 
+  // Ukur pita kosong di antara panel cerita (atas) dan panel kendali beserta
+  // arahan di atasnya (bawah), lalu serahkan ke label 3D agar label hanya
+  // tampil di sana. Diukur dengan offsetTop/offsetHeight, bukan
+  // getBoundingClientRect, supaya gerak masuk teks (geser naik) tidak ikut
+  // terhitung. ResizeObserver menangkap tiap perubahan tinggi: pesan yang
+  // muncul, babak yang berganti, atau layar yang diputar.
+  useEffect(() => {
+    const story = storyRef.current;
+    const dock = dockRef.current;
+    const stack = dockStackRef.current;
+    if (!story || !dock || !stack) return;
+    const GAP = 8;
+    const measure = () => {
+      const top = story.offsetTop + story.offsetHeight + GAP;
+      const bottom = Math.min(dock.offsetTop + stack.offsetTop, dock.offsetTop) - GAP;
+      // Bila pitanya habis, tetap diserahkan: tidak ada label yang lolos
+      // saringan, dan itu lebih baik daripada label yang menindih teks.
+      stateRef.current.labelBand = { top, bottom };
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    [story, dock, stack].forEach((el) => observer.observe(el));
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
   // Pesan kejadian (hasil penyiraman, atap runtuh) hilang sendiri.
   useEffect(() => {
     if (!message) return;
@@ -310,6 +352,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     setThermalSeen(false);
     setRewetOnce(false);
     setCollapsed(false);
+    setSummaryReady(false);
     Object.assign(stateRef.current, createBaraState(START_WATER_CM / 100));
   }, [sim]);
 
@@ -342,6 +385,27 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     stats.extinguished && rewetOnce,
   ];
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
+
+  // Kartu hasil menunggu sebentar di layar sempit. Di sana kartu itu
+  // menggantikan panel kendali dan cukup tinggi untuk menutupi bagian bawah
+  // bongkahan. Uji di ponsel sungguhan menunjukkan kartu yang langsung muncul
+  // merebut saat bara padam, padahal itulah jawaban modul ini. Selama jeda,
+  // pesan hasil pembasahan tetap tampil di panel cerita. Di layar lebar kartu
+  // duduk di kolom kiri dan tidak menutupi bongkahan, jadi tampil langsung.
+  useEffect(() => {
+    if (!finished) return;
+    const narrow = window.matchMedia(`(max-width: ${NARROW_MAX - 1}px)`).matches;
+    const timer = window.setTimeout(() => setSummaryReady(true), narrow ? SUMMARY_DELAY_MS : 0);
+    return () => window.clearTimeout(timer);
+  }, [finished]);
+  const showSummary = finished && summaryReady;
+
+  /**
+   * Pesan kejadian yang ditampilkan di panel cerita pada ponsel. Pada babak 01
+   * hasil penyulutan sudah tertulis di kartu "Cara api membakar", jadi pesan
+   * yang sama tidak diulang di atas.
+   */
+  const phoneMessage = message !== null && !showSummary && !(act === 0 && (ignited || fizzled));
 
   const goToAct = (next: number) => {
     if (next > act && !actDone[act]) return;
@@ -482,7 +546,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           adalah "tampilkan bila layarnya cukup tinggi", sehingga keadaan
           sempit menjadi keadaan dasar dan tidak ada rentang tinggi yang
           terlewat tanpa penanganan. */}
-      <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
+      <div ref={storyRef} inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
@@ -515,16 +579,25 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
               dengan arahan di atas panah lanjut, sehingga tingginya tidak
               bertambah dan tidak menyentuh panel kendali. */}
           <p
-            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${finished ? "" : "max-sm:block"} ${
+            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${showSummary || phoneMessage ? "" : "max-sm:block"} ${
               dense ? "[@media(max-height:860px)]:sm:block" : "[@media(max-height:700px)]:sm:block"
             }`}
           >
             {current.lead}
           </p>
+          {/* Pesan kejadian di ponsel. Uji di ponsel sungguhan menunjukkan
+              kotak pesan yang melayang di atas panah lanjut jatuh tepat di
+              tengah bongkahan dan menutupi bara yang sedang dibahasnya. Di
+              sini ia menggantikan sementara inti penjelasan dan baris tugas
+              (yang bunyinya sudah ada pada arahan di atas panah lanjut), jadi
+              tinggi panel hampir tidak berubah dan diorama tetap terbuka. */}
+          {phoneMessage && (
+            <p className="mt-2 border-l-2 border-[#e8702a]/70 pl-3 text-sm leading-snug text-white/90 sm:hidden">{message}</p>
+          )}
           <p
             className={`act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3 ${
               dense ? "[@media(max-height:860px)]:sm:hidden" : ""
-            } ${finished ? "max-sm:!hidden" : ""}`}
+            } ${showSummary || phoneMessage ? "max-sm:!hidden" : ""}`}
           >
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
@@ -560,15 +633,16 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
           menindih. Di layar sempit navigasi itu tidak ada, jadi panelnya turun
           dan panah lanjut duduk di atasnya, sama dengan Modul 01. */}
-      <div inert={hookOpen} className={`absolute bottom-6 left-5 right-5 z-30 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
-        <div className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
-          {/* Kolom kanan tidak ada di layar sempit, jadi pesannya tampil di sini. */}
-          {message && !finished && (
-            <p className="w-full rounded-2xl border border-[#e8702a]/30 bg-black/80 p-3 text-xs leading-relaxed text-white/85 lg:hidden">{message}</p>
+      <div ref={dockRef} inert={hookOpen} className={`absolute bottom-6 left-5 right-5 z-30 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
+        <div ref={dockStackRef} className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
+          {/* Kolom kanan tidak ada di bawah lg, jadi pesannya tampil di sini.
+              Di ponsel pesannya sudah pindah ke panel cerita di atas. */}
+          {message && !showSummary && (
+            <p className="hidden w-full rounded-2xl border border-[#e8702a]/30 bg-black/80 p-3 text-xs leading-relaxed text-white/85 sm:block lg:hidden">{message}</p>
           )}
           <div className="pointer-events-auto md:hidden">{advance}</div>
         </div>
-        {finished ? (
+        {showSummary ? (
           <SummaryCard stats={stats} onReset={handleReset} />
         ) : probe ? (
           <ProbeCard probe={probe} onClose={() => setProbe(null)} />
