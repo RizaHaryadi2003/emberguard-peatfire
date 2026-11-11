@@ -410,8 +410,25 @@ export default function WaterTableChart({
         <span>1.000 m</span>
       </div>
 
-      <div className="mt-1.5 flex items-baseline justify-between gap-2 text-[10px]">
-        <span className="text-[#f0a35e]/80">batas 40 cm</span>
+      {/* Keterangan warna. Tanpa ini pembaca harus menebak garis mana muka
+          air dan garis mana batasnya, padahal tugas babak 02 meminta ia
+          mencari tempat keduanya bertemu. */}
+      <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-white/50">
+        <li className="inline-flex items-center gap-1">
+          <span className="h-[2px] w-3 rounded-full bg-[#8fcce8]" />
+          muka air tanah
+        </li>
+        <li className="inline-flex items-center gap-1">
+          <span className="w-3 border-t border-dashed border-[#f0a35e]" />
+          batas aman 40 cm
+        </li>
+        <li className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-[2px] bg-[#e0a265]/60" />
+          gambut kering
+        </li>
+      </ul>
+
+      <div className="mt-1.5 flex items-baseline justify-end gap-2 text-[10px]">
         <span className="text-white/40">
           {!revealReach ? (
             "sampai jarak berapa?"

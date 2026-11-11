@@ -42,6 +42,14 @@ export type KanalAct = {
    */
   observe: string;
   /**
+   * Satu istilah yang dipakai babak ini, dijelaskan dalam satu kalimat.
+   *
+   * Pembaca 17 tahun belum tentu tahu apa itu "muka air tanah" atau "sekat
+   * kanal", padahal seluruh babak bertumpu pada istilah itu. Ditampilkan
+   * kecil di bawah cerita, jadi tidak bersaing dengan judul atau tugas.
+   */
+  term: { word: string; meaning: string };
+  /**
    * Petunjuk yang muncul saat pembaca mencoba melompat ke babak yang masih
    * terkunci. Satu kalimat perintah, bukan penjelasan.
    */
@@ -58,6 +66,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     task: "Geser Kedalaman kanal di panel bawah sampai 100 cm.",
     observe: "Lihat garis biru di gambar: muka air tanah turun paling dalam di tepi kanal, lalu melandai menjauhinya. Tanah di atas garis itu kini kering.",
     hint: "Gali kanalnya sampai sedalam satu meter untuk melanjutkan.",
+    term: { word: "Muka air tanah", meaning: "batas atas air yang tersimpan di dalam tanah. Gambut di bawahnya basah, gambut di atasnya kering." },
     fact: {
       value: "40 cm",
       caption: "Muka air lebih dalam dari ini menaikkan risiko kebakaran gambut (Wösten dkk., 2008), dan kini menjadi batas PP 57/2016",
@@ -70,6 +79,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     task: "Seret penanda di grafik muka air ke titik tempat garis biru memotong garis jingga putus-putus (batas 40 cm).",
     observe: "Dari kanal sampai sejauh itu, lapisan atas gambut kering dan mudah terbakar. Lahan yang dikeringkan jauh lebih luas daripada galiannya.",
     hint: "Tandai tempat muka airnya menyeberangi batas 40 cm pada grafik.",
+    term: { word: "Rawan terbakar", meaning: "muka air lebih dalam dari 40 cm, sehingga lapisan gambut di atasnya cukup kering untuk menyala." },
     // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
     // justru yang sedang dicari pembaca pada grafik, dan mencetaknya di panel
     // yang sama berarti menjawabnya untuk dia. Yang ditampilkan panjang
@@ -86,6 +96,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     task: "Pilih Sedang atau Cepat pada Waktu berjalan, lalu tunggu sampai permukaan turun 50 cm.",
     observe: "Garis putus-putus menandai permukaan semula. Tanahnya turun tanpa api sama sekali, dan karbon yang tersimpan di dalamnya terlepas ke udara.",
     hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
+    term: { word: "Lesak (subsidensi)", meaning: "permukaan gambut turun karena gambut yang kering mengempis dan perlahan terurai menjadi gas karbon." },
     fact: {
       value: "7 cm/tahun",
       caption: "Lesak hutan gambut yang dikeringkan untuk tiap satu meter muka air turun, dan terus berlangsung selama drainasenya dijaga (Hooijer dkk., 2012)",
@@ -99,6 +110,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     observe:
       "Muka air sudah pulih dan lahan ini tidak lagi rawan terbakar. Tetapi permukaannya tetap di tempatnya yang baru, di bawah garis putus-putus. Airnya bisa dikembalikan, tanahnya tidak.",
     hint: "Pasang sekat kanalnya.",
+    term: { word: "Sekat kanal", meaning: "bendung kecil di dalam kanal yang menahan air agar tidak terus mengalir keluar dari gambut." },
     fact: {
       value: "± 400 m",
       caption: "Jangkauan sekat kanal menaikkan muka air di kiri dan kanan kanal Kalampangan (Ritzema dkk., 2014)",

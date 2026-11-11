@@ -347,6 +347,12 @@ export default function KanalModule() {
           >
             {current.body}
           </p>
+          {/* Istilah babak ini. Selalu tampil, juga di layar pendek yang
+              menyembunyikan cerita di atasnya, karena tugas babak memakai
+              istilah ini. */}
+          <p className="mt-2 max-w-[404px] text-[11px] leading-snug text-white/60">
+            <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
+          </p>
           {/* Kartu tugas.
               Sebelumnya tugasnya satu baris kecil di bawah judul, dan alat
               yang dimaksud tidak ditunjuk sama sekali — pembaca membaca
@@ -558,20 +564,26 @@ export default function KanalModule() {
           <dl className="space-y-2">
             {(
               [
-                ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM)],
+                ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah tepat di samping kanal"],
                 [
                   "Jangkauan rawan",
                   // Disembunyikan selama babak 02: itu jawaban yang sedang
                   // dicari pembaca di grafik tepat di atasnya.
                   act === 1 ? "cari di grafik" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
+                  "Sejauh ini dari kanal, gambut rawan terbakar",
                 ],
-                ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—"],
-                ["Karbon terlepas", stats.emittedTPerHa >= 1 ? `${Math.round(stats.emittedTPerHa)} t/ha` : "—"],
-              ] as [string, string][]
-            ).map(([label, value]) => (
-              <div key={label} className="flex items-baseline justify-between gap-3">
-                <dt className="text-[11px] text-white/50">{label}</dt>
-                <dd className="text-xs font-medium tabular-nums text-white">{value}</dd>
+                ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—", "Tanah yang hilang karena gambut kering melesak"],
+                ["Karbon terlepas", stats.emittedTPerHa >= 1 ? `${Math.round(stats.emittedTPerHa)} t/ha` : "—", "Ton karbon ke udara dari tiap hektare lahan"],
+              ] as [string, string, string][]
+            ).map(([label, value, meaning]) => (
+              <div key={label}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-[11px] text-white/50">{label}</dt>
+                  <dd className="text-xs font-medium tabular-nums text-white">{value}</dd>
+                </div>
+                {/* Arti angkanya, hanya di layar yang cukup tinggi supaya
+                    kolom ini tetap tidak perlu digulir. */}
+                <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@media(min-height:801px)]:block">{meaning}</p>
               </div>
             ))}
           </dl>
