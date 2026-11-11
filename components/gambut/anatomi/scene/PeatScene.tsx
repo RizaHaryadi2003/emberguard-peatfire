@@ -7,6 +7,7 @@ import { getFireDanger, getPeatThickness, PEAT_LAYERS, PEAT_THICKNESS, type Peat
 import PeatBlock from "./PeatBlock";
 import Vegetation from "./Vegetation";
 import Embers from "./Embers";
+import SqueezeDrips from "./SqueezeDrips";
 import SkyLighting from "@/components/gambut/scene/SkyLighting";
 import Backdrop from "@/components/gambut/scene/Backdrop";
 import PerformanceGuard from "@/components/gambut/scene/PerformanceGuard";
@@ -22,6 +23,7 @@ import {
   EXPLODE_STEP,
   GROWTH_STEP,
   INTERACTIVE_STEP,
+  SQUEEZE_STEP,
   QUALITY_PROFILE,
   type Quality,
   type SceneState,
@@ -80,7 +82,7 @@ function CameraRig({ stateRef }: { stateRef: RefObject<SceneState> }) {
     // bongkahan. Pada tahap yang memakai panel, gambar diangkat sedikit supaya
     // yang berubah karena pengatur itu — timbunan yang tumbuh, muka air yang
     // turun — tetap terlihat oleh orang yang sedang menggesernya.
-    const panelStep = s.step === GROWTH_STEP || s.step === INTERACTIVE_STEP;
+    const panelStep = s.step === GROWTH_STEP || s.step === SQUEEZE_STEP || s.step === INTERACTIVE_STEP;
     const shiftY = aspect < 0.8 && panelStep ? height * 0.12 : 0;
     const current = cam.view?.enabled ? cam.view : null;
     if (shiftX || shiftY) {
@@ -146,6 +148,7 @@ function Diorama({
   return (
     <group ref={ref} position={[0, DIORAMA_Y, 0]}>
       <PeatBlock stateRef={stateRef} onHoverLayer={onHoverLayer} onSelectLayer={onSelectLayer} />
+      <SqueezeDrips stateRef={stateRef} />
       <group ref={surfaceRef}>
         <Vegetation stateRef={stateRef} />
         <Embers stateRef={stateRef} />

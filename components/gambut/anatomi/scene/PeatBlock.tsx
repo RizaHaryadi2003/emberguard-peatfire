@@ -9,7 +9,7 @@ import { createEmberTexture } from "@/components/gambut/scene/proceduralTextures
 import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab } from "@/components/gambut/scene/terrain";
 import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/gambut/scene/dioramaConstants";
 import { createWallDetails } from "@/components/gambut/scene/wallDetails";
-import { EXPLODE_GAP, EXPLODE_STEP, type SceneState } from "./sceneState";
+import { EXPLODE_GAP, EXPLODE_STEP, SQUEEZE_STEP, type SceneState } from "./sceneState";
 
 /** Seberapa jauh lapisan terpilih maju ke arah kamera, dan lapisan lain mundur (m). */
 const FOCUS_FORWARD = 1.0;
@@ -274,7 +274,10 @@ export default function PeatBlock({ stateRef, onHoverLayer, onSelectLayer }: Pro
       }
 
       // Sorotan lapisan: warna dicerahkan saat disorot, diredupkan saat mundur.
-      a.highlight[i] = THREE.MathUtils.damp(a.highlight[i], s.hovered === l.layer.id ? 1 : 0, 8, dt);
+      // Pada tahap uji peras, lapisan yang contohnya dipilih di panel ikut
+      // disorot, supaya jelas dari lapisan mana air itu diperas.
+      const picked = s.step === SQUEEZE_STEP && s.squeezeLayer === l.layer.id;
+      a.highlight[i] = THREE.MathUtils.damp(a.highlight[i], s.hovered === l.layer.id || picked ? 1 : 0, 8, dt);
       const boost = (1 + a.highlight[i] * 0.45) * (1 - a.recede[i] * 0.6);
       l.dry.color.copy(l.tint).multiplyScalar(boost);
       l.wet.color.copy(l.tint).multiplyScalar(WET_DARKEN * boost);

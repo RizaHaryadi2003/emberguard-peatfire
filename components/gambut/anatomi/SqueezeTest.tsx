@@ -9,6 +9,11 @@ type Props = {
   /** Contoh yang sudah habis diperas, urut sesuai waktu diperas. */
   squeezed: readonly OrganicLayerId[];
   onSqueezed: (id: OrganicLayerId) => void;
+  /**
+   * Contoh yang dipilih dan apakah sedang diperas, diteruskan ke adegan 3D
+   * agar lapisannya disorot dan airnya mengucur dari bongkahan.
+   */
+  onStateChange: (state: { layer: OrganicLayerId; squeezing: boolean }) => void;
   reducedMotion: boolean;
 };
 
@@ -32,7 +37,7 @@ const TICKS = [0, 10, 20, 30];
  * Saat modul diulang, induknya memasang ulang komponen ini (`key`), sehingga
  * isi gelas dari percobaan sebelumnya ikut kosong.
  */
-export default function SqueezeTest({ squeezed, onSqueezed, reducedMotion }: Props) {
+export default function SqueezeTest({ squeezed, onSqueezed, onStateChange, reducedMotion }: Props) {
   const [selected, setSelected] = useState<OrganicLayerId>("fibrik");
   const [progress, setProgress] = useState<Record<OrganicLayerId, number>>({ fibrik: 0, hemik: 0, saprik: 0 });
   const [holding, setHolding] = useState(false);
@@ -81,6 +86,10 @@ export default function SqueezeTest({ squeezed, onSqueezed, reducedMotion }: Pro
   }, [done, onSqueezed, progress, reducedMotion, selected]);
 
   useEffect(() => stop, [stop]);
+
+  useEffect(() => {
+    onStateChange({ layer: selected, squeezing: holding });
+  }, [holding, onStateChange, selected]);
 
   const fill = (value * sample.shownKg) / SQUEEZE_SCALE_KG;
   const remaining = Math.max(0, SQUEEZE_REQUIRED - squeezed.length);

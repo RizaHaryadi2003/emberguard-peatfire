@@ -150,6 +150,8 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     peat: 0,
     hovered: null,
     focused: null,
+    squeezeLayer: null,
+    squeezing: false,
     reducedMotion: false,
     rotation: 0,
     explode: 0,
@@ -160,6 +162,12 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   useEffect(() => {
     Object.assign(sceneState.current, { step, waterCm, years, hovered, focused, reducedMotion });
   }, [step, waterCm, years, hovered, focused, reducedMotion]);
+
+  /** Teruskan contoh yang dipilih dan keadaan memeras ke adegan 3D. */
+  const handleSqueezeState = useCallback((state: { layer: OrganicLayerId; squeezing: boolean }) => {
+    sceneState.current.squeezeLayer = state.layer;
+    sceneState.current.squeezing = state.squeezing;
+  }, []);
 
   /**
    * Semua perubahan umur lewat sini — baik dari pengatur maupun dari demo
@@ -640,7 +648,13 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               onAdvance={advance}
             />
           </div>
-          <SqueezeTest key={round} squeezed={squeezed} onSqueezed={handleSqueezed} reducedMotion={reducedMotion} />
+          <SqueezeTest
+            key={round}
+            squeezed={squeezed}
+            onSqueezed={handleSqueezed}
+            onStateChange={handleSqueezeState}
+            reducedMotion={reducedMotion}
+          />
         </div>
 
         {/* Pengatur muka air (tahap interaktif) */}
