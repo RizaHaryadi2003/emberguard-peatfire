@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Check, FastForward, MousePointerClick, Pause, RotateCcw, Waves } from "lucide-react";
+import { Check, FastForward, Info, MousePointerClick, Pause, RotateCcw, Waves, X } from "lucide-react";
 import { CANAL_TEXT, FIGURE_NOTE, KANAL_ACTS, KANAL_HOOK, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
-import { GAMBUT_MODULES } from "@/config/gambut-content";
+import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
 import ModuleHook from "@/components/gambut/ModuleHook";
+import StepAdvance from "@/components/gambut/StepAdvance";
 import {
   CANAL_DEPTH_MAX_M,
   DrainageSim,
@@ -97,6 +98,8 @@ export default function KanalModule() {
    */
   const [probeSolvedOnce, setProbeSolvedOnce] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  /** Catatan skala gambar terbuka. Lihat kolom kanan. */
+  const [scaleOpen, setScaleOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
@@ -244,7 +247,25 @@ export default function KanalModule() {
       : `Permukaan baru turun ${formatDrop(stats.maxSubsidenceM)} dari ${ACT3_SUBSIDENCE_M * 100} cm`,
     blocked ? "Sekat terpasang" : "Sekat belum terpasang",
   ][act];
+  /**
+   * Seberapa jauh tugas ini sudah dikerjakan, 0–1, atau null bila tugasnya
+   * tidak bertahap. Babak 02 dan 04 sekali jadi: penandanya tepat atau tidak,
+   * sekatnya terpasang atau tidak, jadi bilah kemajuan di sana hanya akan
+   * melompat dari kosong ke penuh tanpa memberi tahu apa pun.
+   */
+  const progressRatio: number | null = [
+    Math.min(1, canalDepthCm / ACT1_DEPTH_CM),
+    null,
+    Math.min(1, stats.maxSubsidenceM / ACT3_SUBSIDENCE_M),
+    null,
+  ][act];
   const canAdvance = actDone[act] && act < KANAL_ACTS.length - 1;
+
+  /**
+   * Cincin sorotan pada alat yang diminta tugas babak ini, selama tugasnya
+   * belum selesai. Lihat `.guide-ring` di globals.css.
+   */
+  const guide = (forAct: number) => (act === forAct && !actDone[act] && !hookOpen ? "guide-ring" : "");
 
   const goToAct = (next: number) => {
     if (next > act && !actDone[act]) return;
@@ -326,24 +347,44 @@ export default function KanalModule() {
           >
             {current.body}
           </p>
-          <p className="mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3">
-            <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#6fb6d8]" />
-            {current.task}
-          </p>
-          <p
-            className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] tabular-nums transition-colors ${
-              actDone[act]
-                ? "border-emerald-300/35 bg-emerald-400/10 text-emerald-100"
-                : "border-white/15 bg-white/5 text-white/55"
+          {/* Kartu tugas.
+              Sebelumnya tugasnya satu baris kecil di bawah judul, dan alat
+              yang dimaksud tidak ditunjuk sama sekali — pembaca membaca
+              "cari jarak pada grafik" tanpa tahu grafik yang mana, atau bahwa
+              grafik itu dapat diseret. Sekarang tugasnya dibingkai sendiri,
+              menyebut nama alatnya, dan berganti menjadi kalimat pengamatan
+              begitu selesai: apa yang baru saja terjadi, bukan hanya bahwa
+              pembaca sudah boleh lanjut. */}
+          <div
+            className={`mt-3 rounded-2xl border p-3 backdrop-blur-md transition-colors duration-500 [@media(min-height:901px)]:mt-4 ${
+              actDone[act] ? "border-emerald-300/30 bg-emerald-950/40" : "border-[#6fb6d8]/30 bg-black/45"
             }`}
           >
-            {actDone[act] ? (
-              <Check size={12} className="shrink-0" />
-            ) : (
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
+            <p
+              className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${
+                actDone[act] ? "text-emerald-200" : "text-[#8fcce8]"
+              }`}
+            >
+              {actDone[act] ? <Check size={12} /> : <MousePointerClick size={12} />}
+              {actDone[act] ? "Berhasil · perhatikan" : "Tugasmu"}
+            </p>
+            <p className="mt-1.5 text-[13px] leading-snug text-white">
+              {actDone[act] ? current.observe : current.task}
+            </p>
+            {!actDone[act] && (
+              <div className="mt-2">
+                {progressRatio !== null && (
+                  <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-[#6fb6d8] transition-[width] duration-300"
+                      style={{ width: `${Math.round(progressRatio * 100)}%` }}
+                    />
+                  </div>
+                )}
+                <p className="text-[11px] tabular-nums text-white/55">{progress}</p>
+              </div>
             )}
-            {progress}
-          </p>
+          </div>
         </div>
       </div>
 
@@ -358,7 +399,7 @@ export default function KanalModule() {
               mana pembaca memang sedang bekerja. Keduanya satu keadaan, jadi
               penandanya selalu sama di mana pun ia digeser. */}
           {act === 1 && (
-            <div className="mb-3 border-b border-white/10 pb-3 lg:hidden">
+            <div className={`mb-3 rounded-2xl border-b border-white/10 p-1.5 pb-3 lg:hidden ${guide(1)}`}>
               {/* Dibatasi lebarnya supaya panel kendali tidak tumbuh sampai
                   menutupi seluruh bongkahan di belakangnya. */}
               <div className="mx-auto max-w-[300px]">
@@ -377,6 +418,7 @@ export default function KanalModule() {
           )}
 
           {/* Kedalaman kanal */}
+          <div className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(0)}`}>
           <div className="flex items-baseline justify-between">
             <label htmlFor="kanal-depth" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
               {CANAL_TEXT.depthLabel}
@@ -399,6 +441,7 @@ export default function KanalModule() {
             aria-valuetext={`Kanal sedalam ${canalDepthCm} sentimeter`}
             className="water-slider relative z-10 mt-2 w-full"
           />
+          </div>
 
           {/* Waktu — baru muncul pada babak 03, babak yang memang tentang waktu. */}
           {act >= TOOL_FROM.time && (
@@ -410,7 +453,7 @@ export default function KanalModule() {
                 {stats.atTimeLimit && <span className="ml-2 font-sans text-[10px] not-italic text-white/40">batas model</span>}
               </p>
             </div>
-            <div className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
+            <div className={`flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1 ${guide(2)}`}>
               {TIME_SPEEDS.map((speed, i) => (
                 <button
                   key={speed.label}
@@ -437,7 +480,7 @@ export default function KanalModule() {
               type="button"
               onClick={() => setBlocked(true)}
               disabled={blocked || canalDepthCm === 0}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-45"
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${guide(3)}`}
             >
               <Waves size={14} />
               {blocked ? CANAL_TEXT.blockedLabel : CANAL_TEXT.blockLabel}
@@ -453,35 +496,26 @@ export default function KanalModule() {
             </button>
           </div>
 
-          {/* Kabar bahwa sekatnya bekerja.
-              Tempatnya di sini, tepat di bawah tombol yang baru saja ditekan
-              pembaca — bukan di kolom kanan seperti sebelumnya. Di sana ia
-              kartu ketiga yang ditumpuk di bawah grafik dan tabel angka, dan
-              tumpukan itu pada layar setinggi 900 piksel menjulur melewati
-              tepi bawah layar: begitu babak 04 dibuka, kalimat yang paling
-              penting di seluruh modul justru yang terpotong. Kolom kanan
-              sekarang tidak pernah bertambah tinggi di babak mana pun. */}
-          {blocked && (
-            <p className="mt-3 border-t border-emerald-300/20 pt-3 text-[11px] leading-relaxed text-emerald-50/85">
-              {CANAL_TEXT.blockedMessage}
-            </p>
-          )}
         </div>
       </div>
 
-      {/* Kolom kanan: angka hidup dan keterangan skala. Satu tumpukan yang
-          ditambatkan ke tepi atas, seperti perbaikan pada Modul 03. */}
-      {/* `bottom-24` bukan hiasan: ia yang menjamin tumpukan ini tidak pernah
-          lagi menjulur melewati tepi bawah layar, berapa pun isinya dan
-          sependek apa pun jendelanya. Kalau suatu saat isinya memang tidak
-          muat, yang terjadi tumpukan ini bergulir sendiri — bukan separuh
-          kartunya hilang tanpa tanda apa pun. */}
-      <div inert={hookOpen} className={`absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
+      {/* Kolom kanan: grafik dan angka hidup.
+          Sebelumnya kolom ini memuat juga lima baris keterangan skala, dan
+          tumpukannya lebih tinggi daripada layar laptop, sehingga ia diberi
+          gulir sendiri. Kotak yang bergulir di dalam halaman yang tidak
+          bergulir membingungkan: pembaca tidak tahu ada isi di bawahnya, dan
+          rodanya kadang menggulir kotak itu ketika ia hendak memperbesar
+          gambar. Sekarang keterangan skala dilipat ke tombol "Skala gambar",
+          sehingga kolom ini cukup pendek untuk tidak pernah perlu digulir. */}
+      <div
+        inert={hookOpen}
+        className={`absolute right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
+      >
         {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
             dari kurva ini. */}
-        <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+        <div className={`rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4 ${guide(1)}`}>
           <WaterTableChart
             sim={sim}
             stats={stats}
@@ -494,17 +528,14 @@ export default function KanalModule() {
           />
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+        <div className="relative rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
             <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
-            <p
-              className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block"
-              title={current.fact.caption}
-            >
+            <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block">
               {current.fact.caption}
             </p>
           </div>
-          <dl className="space-y-2 [@media(min-height:769px)]:space-y-2.5">
+          <dl className="space-y-2">
             {(
               [
                 ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM)],
@@ -524,17 +555,51 @@ export default function KanalModule() {
               </div>
             ))}
           </dl>
-          <div className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[10px] leading-snug text-white/45">
-            <p>{SCALE_NOTE.exaggeration(VERTICAL_EXAGGERATION)}</p>
-            <p>{SCALE_NOTE.canal(CANAL_LABEL_WIDTH_M)}</p>
-            <p>{FIGURE_NOTE.block(NEAR_LENGTH_M)}</p>
-            <p>{SCALE_NOTE.trees}</p>
-            <p>
-              Garis jingga: batas {Math.round(WATER_LIMIT_M * 100)} cm · Waktu dibatasi {SIM_MAX_YEARS} tahun
-            </p>
-          </div>
-        </div>
 
+          {/* Keterangan skala tetap wajib ada, hanya tidak lagi dibentangkan
+              terus-menerus. Ia dibuka ke kiri, di atas gambar, supaya kolom
+              ini tidak bertambah tinggi saat dibuka. */}
+          <button
+            type="button"
+            onClick={() => setScaleOpen((v) => !v)}
+            aria-expanded={scaleOpen}
+            aria-controls="kanal-skala"
+            className="mt-3 inline-flex cursor-pointer items-center gap-1.5 border-t border-white/10 pt-2.5 text-[10px] text-white/50 transition-colors hover:text-white"
+          >
+            <Info size={12} />
+            Skala gambar
+          </button>
+          {scaleOpen && (
+            <div
+              id="kanal-skala"
+              role="dialog"
+              aria-label="Skala gambar"
+              onKeyDown={(e) => e.key === "Escape" && setScaleOpen(false)}
+              className="absolute bottom-0 right-full mr-3 w-64 rounded-2xl border border-white/15 bg-black/80 p-3.5 text-[11px] leading-snug text-white/70 shadow-2xl shadow-black/60 backdrop-blur-xl"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">Skala gambar</p>
+                <button
+                  type="button"
+                  onClick={() => setScaleOpen(false)}
+                  aria-label="Tutup keterangan skala"
+                  className="cursor-pointer rounded-full p-0.5 text-white/50 hover:text-white"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+              <ul className="space-y-1.5">
+                <li>{FIGURE_NOTE.block(NEAR_LENGTH_M)}. {FIGURE_NOTE.window(NEAR_LENGTH_M)}.</li>
+                <li>{SCALE_NOTE.exaggeration(VERTICAL_EXAGGERATION)}.</li>
+                <li>{SCALE_NOTE.canal(CANAL_LABEL_WIDTH_M)}.</li>
+                <li>{SCALE_NOTE.trees}.</li>
+                <li>
+                  Garis jingga: batas {Math.round(WATER_LIMIT_M * 100)} cm. Waktu dibatasi {SIM_MAX_YEARS} tahun.
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigasi babak (bawah) */}
@@ -565,16 +630,39 @@ export default function KanalModule() {
           })}
         </div>
 
+        {/* Di ponsel tombolnya tetap muncul hanya saat terbuka: lebar layar
+            tidak cukup untuk tombol terkunci beserta arahannya di samping
+            penanda babak, dan arahannya sudah ada di kartu tugas. */}
         {canAdvance && (
           <button
             type="button"
             onClick={() => goToAct(act + 1)}
-            className="group mb-1 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+            className="group mb-1 inline-flex md:hidden cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
           >
             Babak berikutnya
           </button>
         )}
       </nav>
+
+      {/* Panah lanjut (kanan bawah), sama dengan Modul 01 dan 03.
+          Sebelumnya tombol lanjut baru muncul setelah tugasnya selesai, jadi
+          pembaca yang belum selesai tidak melihat tanda apa pun bahwa ada
+          babak berikutnya dan bahwa sesuatu harus dikerjakan untuk sampai ke
+          sana. Panah ini selalu terlihat: terkunci dengan arahan, atau
+          terbuka dengan nama babak yang menunggu. */}
+      <div inert={hookOpen} className={`absolute bottom-6 right-5 hidden sm:right-10 md:block xl:right-14 ${panelFade}`}>
+        {act < KANAL_ACTS.length - 1 ? (
+          <StepAdvance
+            nextTitle={KANAL_ACTS[act + 1].title}
+            label="Babak berikutnya"
+            hint={current.hint}
+            locked={!actDone[act]}
+            onAdvance={() => goToAct(act + 1)}
+          />
+        ) : (
+          <StepAdvance {...BACK_TO_MODULE_LIST} />
+        )}
+      </div>
     </div>
   );
 }

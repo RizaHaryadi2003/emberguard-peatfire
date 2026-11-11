@@ -357,6 +357,30 @@ export default function WaterTableChart({
           />
         </g>
 
+        {/* Penanda bayangan sebelum pembaca menyentuh grafik.
+            Tanpa ini grafik babak 02 tampak sama dengan grafik di babak lain,
+            dan tidak ada yang memberi tahu bahwa ia dapat diseret. Bayangan
+            ini bergoyang ke kiri dan kanan di tengah grafik, lalu hilang
+            begitu pembaca menekannya. */}
+        {interactive && probeM === null && (
+          <g className="guide-nudge" aria-hidden>
+            <line
+              x1={xOf(TRANSECT_LENGTH_M / 2)}
+              y1={PAD_T - 4}
+              x2={xOf(TRANSECT_LENGTH_M / 2)}
+              y2={PAD_T + PLOT_H}
+              stroke="#ffffff"
+              strokeOpacity="0.6"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+            />
+            <path
+              d={`M${xOf(TRANSECT_LENGTH_M / 2) - 9},${PAD_T + PLOT_H / 2} l4,-3 v6 z M${xOf(TRANSECT_LENGTH_M / 2) + 9},${PAD_T + PLOT_H / 2} l-4,-3 v6 z`}
+              fill="#ffffff"
+            />
+          </g>
+        )}
+
         {/* Penanda jarak yang digeser pembaca — tugas babak 02. */}
         {probeM !== null && (
           <g>
@@ -385,7 +409,6 @@ export default function WaterTableChart({
         <span>500</span>
         <span>1.000 m</span>
       </div>
-      <p className="mt-1 text-[9px] leading-snug text-white/30">{FIGURE_NOTE.window(NEAR_LENGTH_M)}</p>
 
       <div className="mt-1.5 flex items-baseline justify-between gap-2 text-[10px]">
         <span className="text-[#f0a35e]/80">batas 40 cm</span>

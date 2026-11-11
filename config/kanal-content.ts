@@ -1,13 +1,13 @@
 /**
  * ============================================================================
- *  TEKS MODUL 03 — KANAL & PENGERINGAN — GANTI DI SINI
+ *  TEKS MODUL 02 — KANAL & PENGERINGAN — GANTI DI SINI
  * ============================================================================
  *  Modul ini penampang lanskap, bukan bongkahan: satu kilometer gambut yang
  *  dipotong kanal. Pembaca menggali kanalnya sendiri, memajukan tahun, lalu
  *  mencoba memperbaikinya dengan sekat — dan menemukan bahwa yang kembali
  *  hanya airnya.
  *
- *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-03.md
+ *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-02.md
  *  (Wösten dkk. 2008, Ritzema dkk. 2014, Hooijer dkk. 2012). Tetapan model di
  *  `lib/drainage.ts` belum dikalibrasi ulang; lihat bagian 7 dokumen itu.
  * ============================================================================
@@ -26,8 +26,21 @@ export type KanalAct = {
   title: string;
   /** Kalimat pengantar babak. */
   body: string;
-  /** Tugas yang harus dilakukan pembaca agar babak berikutnya terbuka. */
+  /**
+   * Tugas yang harus dilakukan pembaca agar babak berikutnya terbuka.
+   *
+   * Ditulis sebagai perintah yang menyebut nama alatnya persis seperti
+   * tulisan pada alat itu, supaya pembaca tidak perlu menebak apa yang harus
+   * disentuh. Alat yang dimaksud juga disorot selama tugasnya belum selesai.
+   */
   task: string;
+  /**
+   * Yang harus diperhatikan sesudah tugasnya selesai.
+   *
+   * Inilah "sesudah" dari aksi babak ini: tanpa kalimat ini pembaca tahu ia
+   * sudah boleh lanjut, tetapi tidak tahu apa yang baru saja ia lihat.
+   */
+  observe: string;
   /**
    * Petunjuk yang muncul saat pembaca mencoba melompat ke babak yang masih
    * terkunci. Satu kalimat perintah, bukan penjelasan.
@@ -42,7 +55,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "01",
     title: "Satu kanal",
     body: "Kanal digali untuk mengeringkan lahan. Begitu terbuka, air di dalam gambut mengalir keluar sendiri — tanpa pompa, hanya gravitasi. Makin dalam kanalnya, makin dalam muka air tanah di sekitarnya turun.",
-    task: "Gali kanal sampai sedalam satu meter.",
+    task: "Geser Kedalaman kanal di panel bawah sampai 100 cm.",
+    observe: "Lihat garis biru di gambar: muka air tanah turun paling dalam di tepi kanal, lalu melandai menjauhinya. Tanah di atas garis itu kini kering.",
     hint: "Gali kanalnya sampai sedalam satu meter untuk melanjutkan.",
     fact: {
       value: "40 cm",
@@ -53,7 +67,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "02",
     title: "Jauh dari tepi",
     body: "Yang kering bukan hanya tepi kanal. Muka air tanah melengkung turun sampai ratusan meter ke dalam, dan sepanjang itu lapisan atasnya menjadi bahan bakar. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
-    task: "Pada grafik, cari jarak tempat muka airnya melewati batas 40 cm.",
+    task: "Seret penanda di grafik muka air ke titik tempat garis biru memotong garis jingga putus-putus (batas 40 cm).",
+    observe: "Dari kanal sampai sejauh itu, lapisan atas gambut kering dan mudah terbakar. Lahan yang dikeringkan jauh lebih luas daripada galiannya.",
     hint: "Tandai tempat muka airnya menyeberangi batas 40 cm pada grafik.",
     // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
     // justru yang sedang dicari pembaca pada grafik, dan mencetaknya di panel
@@ -68,7 +83,8 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "03",
     title: "Tahun demi tahun",
     body: "Gambut kering menyusut sendiri, tanpa api sama sekali. Permukaannya turun beberapa sentimeter tiap tahun, dan karbon yang tersimpan ribuan tahun terlepas ke udara. Tidak terlihat karena terlalu lambat.",
-    task: "Jalankan waktu sampai permukaan turun 50 cm.",
+    task: "Pilih Sedang atau Cepat pada Waktu berjalan, lalu tunggu sampai permukaan turun 50 cm.",
+    observe: "Garis putus-putus menandai permukaan semula. Tanahnya turun tanpa api sama sekali, dan karbon yang tersimpan di dalamnya terlepas ke udara.",
     hint: "Jalankan waktu sampai permukaannya turun setengah meter.",
     fact: {
       value: "7 cm/tahun",
@@ -79,7 +95,9 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "04",
     title: "Yang kembali hanya airnya",
     body: "Sekat menahan air, muka airnya naik, dan lahan ini tidak lagi rawan terbakar. Tetapi tanah yang sudah melesak tidak ikut naik. Garis putus-putus menunjukkan setinggi mana tanah ini dahulu. Airnya bisa dikembalikan, tanahnya tidak.",
-    task: "Pasang sekat, lalu bandingkan dengan garis putus-putus.",
+    task: "Tekan Pasang sekat kanal, lalu bandingkan permukaan tanah dengan garis putus-putus.",
+    observe:
+      "Muka air sudah pulih dan lahan ini tidak lagi rawan terbakar. Tetapi permukaannya tetap di tempatnya yang baru, di bawah garis putus-putus. Airnya bisa dikembalikan, tanahnya tidak.",
     hint: "Pasang sekat kanalnya.",
     fact: {
       value: "± 400 m",
@@ -100,8 +118,6 @@ export const CANAL_TEXT = {
   depthLabel: "Kedalaman kanal",
   blockLabel: "Pasang sekat kanal",
   blockedLabel: "Sekat terpasang",
-  blockedMessage:
-    "Muka air sudah pulih dan lahan ini tidak lagi rawan terbakar. Tetapi permukaannya tetap di tempatnya yang baru — bandingkan dengan garis putus-putus di atasnya.",
   resetLabel: "Mulai dari awal",
 };
 
@@ -116,7 +132,7 @@ export const CANAL_TEXT = {
  */
 export const PROBE_TEXT = {
   label: "Penanda jarak",
-  idle: "Geser penanda di sepanjang grafik.",
+  idle: "Tekan grafik ini, lalu seret ke kiri atau kanan.",
   tooNear: "Di sini muka airnya masih di bawah batas. Coba lebih jauh dari kanal.",
   tooFar: "Di sini muka airnya sudah di atas batas. Coba lebih dekat ke kanal.",
   found: "Tepat di sini muka airnya menyeberangi batas 40 cm.",
@@ -142,7 +158,7 @@ export const FIGURE_NOTE = {
   // Petak 36 m hanya 3,6% lebar grafik — sepotong pita yang terlalu tipis
   // untuk diberi label di dalam gambarnya. Jadi hubungannya dikatakan dengan
   // kalimat, bukan dengan tanda yang harus dicari.
-  window: (lengthM: number) => `Pita terang di kiri: ${lengthM} m yang digambar besar`,
+  window: (lengthM: number) => `Pita terang di kiri grafik: ${lengthM} m yang digambar besar`,
 };
 
 /** Keterangan skala yang wajib tampil pada gambar. */
