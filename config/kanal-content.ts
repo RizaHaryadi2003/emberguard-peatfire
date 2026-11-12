@@ -158,6 +158,7 @@ export const CANAL_TEXT = {
   blockLabel: "Pasang sekat kanal",
   blockedLabel: "Sekat terpasang",
   resetLabel: "Mulai dari awal",
+  summaryLabel: "Lihat ringkasan",
 };
 
 export const CHART_TEXT = {
@@ -200,9 +201,39 @@ export const SCALE_NOTE = {
   near: (lengthM: number) => `Petak dekat kanal, ${lengthM} m tiap sisi`,
 };
 
+/**
+ * Kartu penutup yang muncul setelah sekat dipasang di babak 04.
+ *
+ * Menjawab pertanyaan pembuka ("Dari mana air itu datang?") dengan angka yang
+ * baru saja dilihat pembaca sendiri, lalu meninggalkan satu kesimpulan yang
+ * dapat ia bawa pulang: air dapat dikembalikan, tanah tidak.
+ */
 export const KANAL_SUMMARY = {
-  title: "Yang ditinggalkan satu kanal",
-  lead: "Tiga puluh tahun berlalu, dan kanal itu masih bekerja setiap hari tanpa ada yang menyalakannya.",
+  title: KANAL_HOOK.question,
+  answer: (depthCm: number, reach: string, fields: string) =>
+    `Dari dalam gambut di sekitarnya. Kanal sedalam ${depthCm} cm menguras air sampai ${reach} ke kiri dan kanannya: ± ${fields} lapangan bola lahan menjadi rawan terbakar di sepanjang tiap 1 km kanal.`,
   closing:
-    "Gambut yang kering inilah yang akan kamu sulut di modul berikutnya: begitu ada satu sulutan, ia tidak lagi butuh nyala untuk terus membakar.",
+    "Sekat mengembalikan airnya, tetapi tidak tanahnya. Karena itu menjaga gambut tetap basah sejak awal jauh lebih murah daripada memperbaikinya.",
+  next: "Gambut yang kering inilah yang menjadi bahan bakar di modul berikutnya.",
+  rows: {
+    reach: "Lahan rawan dari kanal",
+    fields: "Setara, tiap 1 km kanal",
+    drop: "Permukaan turun",
+    carbon: "Karbon terlepas",
+  },
+  share: "Buat kartu hasilmu",
+  reset: "Coba lagi dari awal",
+  close: "Lihat lahannya lagi",
+};
+
+/** Teks kartu hasil yang dibagikan ke media sosial. */
+export const KANAL_CARD_TEXT = {
+  brand: "EMBERGUARD · KANAL & PENGERINGAN",
+  fieldsUnit: "lapangan bola",
+  fieldsLead: "lahan gambut jadi rawan terbakar oleh tiap 1 km kanal",
+  headline: (depthCm: number) => `Kanal sedalam ${depthCm} cm mengeringkan lahan jauh melewati tepinya.`,
+  guessLine: (guess: string, reach: string) => `Tebakanku ${guess}. Ternyata ${reach} ke tiap sisi.`,
+  note: "Airnya bisa dikembalikan dengan sekat. Tanah yang sudah melesak tidak.",
+  challenge: "Menurutmu sejauh apa? Tebak sendiri.",
+  source: "Simulasi Emberguard, dikalibrasi ke Hooijer dkk. (2012)",
 };

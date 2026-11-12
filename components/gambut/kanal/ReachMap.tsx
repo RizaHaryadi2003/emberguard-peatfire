@@ -2,6 +2,7 @@
 
 import { TRANSECT_LENGTH_M, type DrainageStats } from "@/lib/drainage";
 import { CHART_TEXT, FIGURE_NOTE, GUESS_TEXT } from "@/config/kanal-content";
+import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsText as fieldsTextOf, reachesBeyond } from "@/lib/kanalCard";
 
 // Peta lahan: kanal dan daerah rawan terbakar, dilihat dari atas.
 //
@@ -32,13 +33,6 @@ const CX = W / 2;
 /** Meter per satuan viewBox: seluruh lebar memuat 1 km ke tiap sisi. */
 const M_PER_UNIT = (TRANSECT_LENGTH_M * 2) / W;
 
-/**
- * Lapangan sepak bola menurut ukuran FIFA (m). Luasnya 7.140 m², atau
- * 0,714 ha — patokan luas yang paling dikenal pembaca.
- */
-const FIELD_LENGTH_M = 105;
-const FIELD_WIDTH_M = 68;
-const FIELD_AREA_M2 = FIELD_LENGTH_M * FIELD_WIDTH_M;
 
 /** Lebar kanal yang digambar (satuan). Delapan meter hanya 0,8 satuan. */
 const CANAL_DRAWN = 2.4;
@@ -68,13 +62,12 @@ export default function ReachMap({
   reducedMotion = false,
 }: Props) {
   const reach = Math.min(stats.riskReachM, TRANSECT_LENGTH_M);
-  const allRisky = stats.riskReachM >= TRANSECT_LENGTH_M - 1;
+  const allRisky = reachesBeyond(stats.riskReachM);
   const shown = revealReach && reach > 0;
   const spread = animate && !reducedMotion;
 
   // Luas rawan di sepanjang 1 km kanal, dua sisi, dalam lapangan bola.
-  const fields = (2 * reach * 1000) / FIELD_AREA_M2;
-  const fieldsText = allRisky ? `lebih dari ${Math.floor(fields)}` : `${Math.max(1, Math.round(fields))}`;
+  const fieldsText = fieldsTextOf(stats.riskReachM);
 
   // Lapangan-lapangan yang dijejerkan dari tepi kanal sampai ujung daerah
   // rawan, sisi kanan saja: memperlihatkan "selebar berapa lapangan" tanpa
@@ -138,10 +131,20 @@ export default function ReachMap({
           {Array.from({ length: fieldCount }, (_, i) => {
             const x = CX + CANAL_DRAWN / 2 + 0.6 + i * fieldW;
             return (
-              <g key={i} stroke="#ffffff" strokeOpacity="0.9" strokeWidth="0.45" fill="none">
-                <rect x={x} y={fieldY} width={fieldW} height={fieldH} fill="#ffffff" fillOpacity="0.1" />
-                <line x1={x + fieldW / 2} y1={fieldY} x2={x + fieldW / 2} y2={fieldY + fieldH} />
-              </g>
+              // Tanpa garis tengah, dan dengan celah tipis: satu lapangan
+              // harus terbaca sebagai satu kotak.
+              <rect
+                key={i}
+                x={x + 0.3}
+                y={fieldY}
+                width={fieldW - 0.6}
+                height={fieldH}
+                fill="#ffffff"
+                fillOpacity="0.18"
+                stroke="#ffffff"
+                strokeOpacity="0.95"
+                strokeWidth="0.45"
+              />
             );
           })}
 

@@ -23,12 +23,13 @@ import {
   formatDrop,
   formatYears,
   SIM_MAX_YEARS,
-  TRANSECT_LENGTH_M,
   WATER_LIMIT_M,
   type DrainageStats,
 } from "@/lib/drainage";
 import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
 import ReachMap from "./ReachMap";
+import SummaryCard from "./SummaryCard";
+import { FIELD_LENGTH_M, reachesBeyond } from "@/lib/kanalCard";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -64,6 +65,9 @@ const TOOL_FROM = { depth: 0, time: 2, weir: 3 } as const;
 
 /** Penurunan permukaan yang harus dicapai babak 03 (m). */
 const ACT3_SUBSIDENCE_M = 0.5;
+
+/** Jeda antara sekat terpasang dan munculnya kartu penutup (ms). */
+const SUMMARY_DELAY_MS = 3500;
 
 /** Kedalaman kanal yang harus dicapai babak 01 (cm). */
 const ACT1_DEPTH_CM = 100;
@@ -101,6 +105,15 @@ export default function KanalModule() {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
+  /**
+   * Kartu penutup sudah boleh tampil. Ditunda beberapa detik setelah sekat
+   * dipasang, supaya pembaca sempat melihat airnya naik dan membandingkan
+   * permukaan tanah dengan garis putus-putus — itulah isi babak 04, dan kartu
+   * yang langsung menutupinya akan merampasnya.
+   */
+  const [summaryReady, setSummaryReady] = useState(false);
+  /** Pembaca menutup kartu penutup untuk melihat lahannya lagi. */
+  const [summaryHidden, setSummaryHidden] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
 
@@ -175,6 +188,15 @@ export default function KanalModule() {
     };
   }, []);
 
+  // Hitung mundur kartu penutup begitu tugas babak terakhir selesai. Bila
+  // syaratnya batal sebelum waktunya (mulai dari awal), hitungannya dibatalkan.
+  const lastActDone = act === KANAL_ACTS.length - 1 && blocked && stats.maxSubsidenceM > 0.1;
+  useEffect(() => {
+    if (!lastActDone || summaryReady) return;
+    const timer = window.setTimeout(() => setSummaryReady(true), SUMMARY_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [lastActDone, summaryReady]);
+
   const handleStats = useCallback((next: DrainageStats) => setStats(next), []);
 
   const handleReady = useCallback(() => setReady(true), []);
@@ -187,6 +209,8 @@ export default function KanalModule() {
     setSpeedIndex(0);
     setBlocked(false);
     setGuess(null);
+    setSummaryReady(false);
+    setSummaryHidden(false);
     Object.assign(stateRef.current, createKanalState());
   }, [sim]);
 
@@ -238,6 +262,10 @@ export default function KanalModule() {
   ][act];
   const canAdvance = actDone[act] && act < KANAL_ACTS.length - 1;
 
+  // --- Kartu penutup ---------------------------------------------------------
+  const summaryDue = act === KANAL_ACTS.length - 1 && actDone[act] && summaryReady;
+  const showSummary = summaryDue && !summaryHidden;
+
   /**
    * Cincin sorotan pada alat yang diminta tugas babak ini, selama tugasnya
    * belum selesai. Lihat `.guide-ring` di globals.css.
@@ -270,9 +298,9 @@ export default function KanalModule() {
     // Ditambah padanan lapangan bola (panjang 105 m), patokan yang sama
     // dengan peta lahan.
     const actual =
-      reach >= TRANSECT_LENGTH_M - 1
+      reachesBeyond(reach)
         ? "lebih dari 1 km"
-        : `${formatDistance(reach)}${reach >= 80 ? ` (± ${Math.round(reach / 105)} kali panjang lapangan bola)` : ""}`;
+        : `${formatDistance(reach)}${reach >= 80 ? ` (± ${Math.round(reach / FIELD_LENGTH_M)} kali panjang lapangan bola)` : ""}`;
     const nearest = REACH_GUESSES.reduce(
       (best, g, i) =>
         Math.abs(Math.log(reach / g.m)) < Math.abs(Math.log(reach / REACH_GUESSES[best].m)) ? i : best,
@@ -368,14 +396,16 @@ export default function KanalModule() {
           <p
             className={`mt-2 hidden text-sm leading-snug text-white/75 [@media(min-height:901px)]:mt-3 [@media(min-height:901px)]:leading-relaxed ${
               dense ? "[@media(min-height:861px)]:sm:block" : "[@media(min-height:701px)]:sm:block"
-            }`}
+            } ${showSummary ? "!hidden" : ""}`}
           >
             {current.body}
           </p>
           {/* Istilah babak ini. Selalu tampil, juga di layar pendek yang
               menyembunyikan cerita di atasnya, karena tugas babak memakai
               istilah ini. */}
-          <p className="mt-2 max-w-[404px] text-[11px] leading-snug text-white/60">
+          {/* Kartu penutup menjulang dari bawah; selama ia tampil, panel ini
+              menyisakan judulnya saja supaya keduanya tidak bertumpuk. */}
+          <p className={`mt-2 max-w-[404px] text-[11px] leading-snug text-white/60 ${showSummary ? "hidden" : ""}`}>
             <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
           </p>
           {/* Kartu tugas.
@@ -387,7 +417,7 @@ export default function KanalModule() {
               begitu selesai: apa yang baru saja terjadi, bukan hanya bahwa
               pembaca sudah boleh lanjut. */}
           <div
-            className={`mt-3 rounded-2xl border p-3 backdrop-blur-md transition-colors duration-500 [@media(min-height:901px)]:mt-4 ${
+            className={`mt-3 rounded-2xl border p-3 backdrop-blur-md transition-colors duration-500 [@media(min-height:901px)]:mt-4 ${showSummary ? "hidden" : ""} ${
               actDone[act] ? "border-emerald-300/30 bg-emerald-950/40" : "border-[#6fb6d8]/30 bg-black/45"
             }`}
           >
@@ -440,8 +470,17 @@ export default function KanalModule() {
         </div>
       </div>
 
-      {/* Panel kendali (kiri bawah) */}
+      {/* Panel kendali (kiri bawah), atau kartu penutup di tempatnya. */}
       <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
+        {showSummary ? (
+          <SummaryCard
+            stats={stats}
+            canalDepthCm={canalDepthCm}
+            guess={guess}
+            onReset={handleReset}
+            onClose={() => setSummaryHidden(true)}
+          />
+        ) : (
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
           {/* Grafik untuk layar sempit.
               Panel kanan tersembunyi di bawah lebar lg, dan di sanalah grafik
@@ -564,9 +603,20 @@ export default function KanalModule() {
               <RotateCcw size={14} />
               {CANAL_TEXT.resetLabel}
             </button>
+            {/* Kartu penutup yang ditutup dapat dibuka lagi. */}
+            {summaryDue && summaryHidden && (
+              <button
+                type="button"
+                onClick={() => setSummaryHidden(false)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-[#f0a35e]"
+              >
+                {CANAL_TEXT.summaryLabel}
+              </button>
+            )}
           </div>
 
         </div>
+        )}
       </div>
 
       {/* Kolom kanan: grafik dan angka hidup.
