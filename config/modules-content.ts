@@ -42,7 +42,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     title: "Gambut",
     lead: "Tanah apa yang kita pijak, dan mengapa ia menyimpan begitu banyak air.",
     modules: [
-      { href: null, title: "Gambut di Sekitarmu", caption: "Ternyata kotamu berdiri di atasnya" },
+      { href: "/modul/sekitarmu", title: "Gambut di Sekitarmu", caption: "Ternyata kotamu berdiri di atasnya" },
       { href: "/modul/anatomi", title: "Anatomi Gambut", caption: "Kupas lapisannya satu per satu" },
       { href: null, title: "Hutan Rawa Gambut", caption: "Yang hidup dan menjaga airnya" },
     ],

@@ -16,6 +16,11 @@ type Props = {
   onAdvance?: () => void;
   /** Bila diisi, panah ini kembali ke halaman tersebut alih-alih berpindah tahap. */
   href?: string;
+  /**
+   * Tautan menuju ke depan (modul berikutnya), bukan kembali ke daftar.
+   * Tanpa ini, tautan selalu digambar dengan panah ke kiri.
+   */
+  forward?: boolean;
   className?: string;
 };
 
@@ -40,12 +45,13 @@ export default function StepAdvance({
   urgent,
   onAdvance,
   href,
+  forward = false,
   className = "",
 }: Props) {
   const title = locked ? hint : href ? label : `Lanjut ke ${nextTitle}`;
   // Tautan tidak mengenal keadaan "mati", jadi panahnya bergeser pada tiap
   // sorotan; tombol hanya bergeser selama ia memang dapat diklik.
-  const body = href ? (
+  const body = href && !forward ? (
     <>
       <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
       {label}
