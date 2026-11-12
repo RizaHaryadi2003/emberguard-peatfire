@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { waterDepthAt, WATER_LIMIT_M } from "@/lib/drainage";
+import { PROFILE_DEPTH_M, waterDepthAt, WATER_LIMIT_M } from "@/lib/drainage";
 import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceYAt, xOfDistance } from "./transect";
 
 // Tumbuhan di atas bongkahan.
@@ -371,7 +371,12 @@ export function createPlantField(
     for (const planting of plantings) {
       planting.plants.forEach((p, i) => {
         const dropM = drop(p.distanceM);
-        const water = waterDepthAt(p.distanceM, canalDepthM, dropM);
+        // Argumen ketiga `waterDepthAt` adalah tebal gambut yang TERSISA,
+        // bukan penurunannya. Dahulu yang diberikan penurunannya (nol di awal),
+        // sehingga muka air terhitung nol dan daun tidak pernah menguning
+        // karena airnya menjauh — padahal kehausan itulah tahap pertama yang
+        // seharusnya terlihat, sebelum tanahnya melesak.
+        const water = waterDepthAt(p.distanceM, canalDepthM, PROFILE_DEPTH_M - dropM);
 
         // 0 = sehat, 1 = mati.
         const wither = THREE.MathUtils.clamp(
