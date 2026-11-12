@@ -1,4 +1,6 @@
-# Acuan Riset Modul 03 — Bara di Bawah Tanah
+# Acuan Riset Modul 07 — Bara di Bawah Tanah
+
+> Nomor modul mengikuti susunan 13 modul (12 November 2026). Di dalam dokumen ini nomor lama mungkin masih muncul: dahulu Anatomi 01, Kanal 02, Bara 03, Karbon 04.
 
 Dokumen ini menetapkan dasar riset Modul 03 dan mencatat bagian modul yang
 belum sesuai dengannya. Keputusan A–D dan F pada bagian 8 sudah diterapkan

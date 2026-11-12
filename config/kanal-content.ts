@@ -7,7 +7,7 @@
  *  mencoba memperbaikinya dengan sekat — dan menemukan bahwa yang kembali
  *  hanya airnya.
  *
- *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-02.md
+ *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-kanal.md
  *  (Wösten dkk. 2008, Ritzema dkk. 2014, Hooijer dkk. 2012). Tetapan model di
  *  `lib/drainage.ts` belum dikalibrasi ulang; lihat bagian 7 dokumen itu.
  * ============================================================================

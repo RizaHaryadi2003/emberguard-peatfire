@@ -13,7 +13,7 @@ tersendiri (`docs/md/acuan-modul-XX.md`). Dokumen inilah yang mengatur
 
 | Modul | Acuan utama | Dokumen |
 |---|---|---|
-| 01 Anatomi Gambut | Andriesse (1988), FAO Soils Bulletin 59 | `acuan-modul-01.md` |
+| 01 Anatomi Gambut | Andriesse (1988), FAO Soils Bulletin 59 | `acuan-modul-anatomi.md` |
 | 02 – 04, Bagian 02 – 04 | *(menyusul)* | — |
 
 ---
@@ -125,7 +125,7 @@ tiga hal yang harus ditiru modul lain:
 > **Pembaruan 11 November 2026.** Riza memutuskan desain Modul 01 tetap. Papan
 > cerita "baru" di bawah (tiga fase laju, penampang lanskap, uji gosok, uji
 > peras) **tidak dipakai** dan disimpan hanya sebagai catatan. Acuan yang kini
-> dipakai ada di bagian 0 `docs/md/acuan-modul-01.md` (Anshari dkk., 2026).
+> dipakai ada di bagian 0 `docs/md/acuan-modul-anatomi.md` (Anshari dkk., 2026).
 >
 > Uji peras sempat dipasang di Tahap 3 demi memenuhi Pola 5A, lalu dicabut:
 > fitur itu tidak menambah pengetahuan yang menjadi tema modul, dan pembaca
@@ -137,7 +137,7 @@ tiga hal yang harus ditiru modul lain:
 
 > **Acuan:** Andriesse, J. P. (1988). *Nature and Management of Tropical Peat
 > Soils.* FAO Soils Bulletin 59. Rincian temuan, angka, dan kutipan tiap tahap
-> ada di `docs/md/acuan-modul-01.md`.
+> ada di `docs/md/acuan-modul-anatomi.md`.
 
 **Keadaan sekarang.** Tahap 1 (seret umur) dan Tahap 2 (klik lapisan) sudah
 memiliki aksi. Tahap 3 belum menuntut aksi apa pun, dan Tahap 4 bisa
@@ -273,7 +273,7 @@ dengan sumbu tahun di sisi kiri dan penghitung karbon di sisi kanan.
 
 | Babak | Judul | Ajakan (A1) | Aksi (A2) | Tingkat | Animasi (A3) | Akibat (A4) | Angka (A5) |
 |---|---|---|---|---|---|---|---|
-| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur dari 0 sampai umur penuh profil | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan | Tiang penuh; karbon tersimpan penuh | Laju tumbuh mengikuti `acuan-modul-01.md`; total karbon per hektar menunggu acuan Modul 04 |
+| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur dari 0 sampai umur penuh profil | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan | Tiang penuh; karbon tersimpan penuh | Laju tumbuh mengikuti `acuan-modul-anatomi.md`; total karbon per hektar menunggu acuan Modul 04 |
 | **02** | Habis dalam hitungan hari | "Sulut tiang gambut." | Satu klik pada tiang | **3** | Bara turun cepat; tiang menyusut dari atas; **penghitung karbon berbalik turun**, dan angka yang hilang naik ke langit sebagai kabut gelap; sumbu tahun di kiri ikut tergerus mundur — umur yang tadi ditabung terhapus dalam beberapa detik | Tiang habis. Penghitung nol | Umur terbentuk dan lama terbakar disandingkan *(angka menunggu acuan Modul 04)* |
 | **03** | Sebesar apa itu | "Pilih pembanding yang paling mudah kamu bayangkan." | Menekan kartu pembanding (mobil setahun / penerbangan / rumah tangga) | **1** | Ikon pembanding memenuhi layar satu per satu sampai jumlahnya setara karbon yang barusan lepas; berhenti dengan angka besar | Pembaca punya pegangan nyata atas besaran abstrak | Jumlah setara *(perlu rujukan dan perhitungan sendiri)* |
 | **04** | Menabung ulang | "Coba kembalikan karbonnya." | Memutar pengatur tahun ke depan lagi, sekuat apa pun | **4** | Tiang tumbuh **sangat lambat** — pengatur diputar penuh, tiang hanya naik beberapa sentimeter. Bilah pemulihan nyaris tidak bergerak | Pembaca merasakan sendiri ketimpangannya; tidak bisa menang | "Butuh ribuan tahun untuk mengembalikan apa yang hilang dalam tiga hari." |
@@ -486,7 +486,7 @@ Diurutkan berdasarkan **manfaat dibagi kesulitan**, bukan berdasarkan nomor.
 | Urutan | Pekerjaan | Kesulitan | Alasan didahulukan |
 |---|---|---|---|
 | ~~1~~ | ~~Selesaikan Babak 04 Modul 03~~ | Kecil | **Selesai** |
-| 2 | Susun ulang Modul 01 menurut `acuan-modul-01.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
+| 2 | Susun ulang Modul 01 menurut `acuan-modul-anatomi.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
 | ~~3~~ | ~~**Modul 02 — Kanal**~~ | Sedang | **Selesai** |
 | ~~5~~ | ~~Modul 04 — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
 | 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |

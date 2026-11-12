@@ -10,7 +10,7 @@
 // yang muncul di antarmuka — kedalaman bara, laju rambat, hari ke-berapa —
 // dapat dibaca langsung. Kadar air dan laju rambatnya dikalibrasi terhadap
 // pengukuran lapangan di Kalimantan Tengah (Usup dkk., 2004) dan ambang bara
-// Frandsen; rinciannya ada di docs/md/acuan-modul-02.md. Sisanya, seperti arah
+// Frandsen; rinciannya ada di docs/md/acuan-modul-bara.md. Sisanya, seperti arah
 // rambat dan besar penurunan permukaan, adalah asumsi model.
 //
 // Berkas ini murni logika (tanpa three.js maupun React) agar dapat diuji

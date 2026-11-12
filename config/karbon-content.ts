@@ -9,7 +9,7 @@
  *
  *  Babak "Arsip di bawah kaki" (mencari gambut seumur Borobudur) dicabut pada
  *  11 November 2026 karena mengulang pelajaran Modul 01 Tahap 1. Acuan tiap
- *  angka ada di docs/md/acuan-modul-04.md.
+ *  angka ada di docs/md/acuan-modul-karbon.md.
  * ============================================================================
  */
 

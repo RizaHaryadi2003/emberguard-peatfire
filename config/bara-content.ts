@@ -100,7 +100,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     body: "Di permukaan, yang terlihat sering hanya asap yang keluar dari tanah. Menyiram sedikit membuat asap itu surut dan lahan tampak aman, padahal baranya masih hidup di bawah kaki kita. Begitu tanah di atasnya kering lagi, bara itu naik dan permukaannya menyala kembali.",
     // Usup dkk. (2004), hlm. 12–13: sulit padam walau hujan, lalu muncul lagi
     // menjadi api baru. Naiknya bara sesudah siraman kering adalah sintesis
-    // model (lihat docs/md/acuan-modul-02.md, "Perubahan Babak 03").
+    // model (lihat docs/md/acuan-modul-bara.md, "Perubahan Babak 03").
     lead: "Siraman hanya memadamkan permukaan. Bara di bawah tetap hidup, lalu naik lagi saat tanahnya kering.",
     task: "Siram permukaan, buka tampilan termal, lalu tunggu sampai permukaan menyala lagi.",
     // Usup dkk. (2004), hlm. 12.

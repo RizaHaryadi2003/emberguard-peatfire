@@ -1,4 +1,6 @@
-# Acuan Riset Modul 04 — Gudang Karbon
+# Acuan Riset Modul 08 — Gudang Karbon
+
+> Nomor modul mengikuti susunan 13 modul (12 November 2026). Di dalam dokumen ini nomor lama mungkin masih muncul: dahulu Anatomi 01, Kanal 02, Bara 03, Karbon 04.
 
 Dokumen ini memeriksa kesesuaian Modul 04 dengan temanya, menetapkan
 pengetahuan intinya, mencatat acuan riset, lalu mengkalibrasi isi modul yang

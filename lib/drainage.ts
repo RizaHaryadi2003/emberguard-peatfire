@@ -42,7 +42,7 @@ import { PROFILE_DEPTH } from "./peat";
 // berbeda di bawahnya, jadi di sini WD dibatasi pada 1 m.
 //
 // Panjang pengaruh kanal (INFLUENCE_LENGTH_PER_M) dan muka air alami adalah
-// asumsi model; rinciannya di docs/md/acuan-modul-03.md.
+// asumsi model; rinciannya di docs/md/acuan-modul-kanal.md.
 // ---------------------------------------------------------------------------
 
 /**
