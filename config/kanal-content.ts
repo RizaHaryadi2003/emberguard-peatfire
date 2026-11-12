@@ -160,26 +160,15 @@ export const CANAL_TEXT = {
   resetLabel: "Mulai dari awal",
 };
 
-/**
- * Teks penanda jarak pada grafik — tugas babak 02.
- *
- * Babak 02 meminta pembaca menemukan tepi daerah rawan. Sebelum ini tidak ada
- * yang dapat dikerjakannya untuk "menemukan": syaratnya sudah terpenuhi oleh
- * babak 01, jadi kalimat tugasnya hanya sebuah ajakan tanpa pekerjaan. Dengan
- * penanda ini ia benar-benar harus mencarinya, dan jawabannya berubah tiap
- * kali kedalaman kanalnya diubah.
- */
-export const PROBE_TEXT = {
-  label: "Penanda jarak",
-  idle: "Tekan grafik ini, lalu seret ke kiri atau kanan.",
-  tooNear: "Di sini muka airnya masih di bawah batas. Coba lebih jauh dari kanal.",
-  tooFar: "Di sini muka airnya sudah di atas batas. Coba lebih dekat ke kanal.",
-  found: "Tepat di sini muka airnya menyeberangi batas 40 cm.",
-  // Kanal yang dalam membuat tepinya jatuh di luar satu kilometer. Itu bukan
-  // cacat, melainkan jawabannya — dan pembaca harus menandai ujung grafik
-  // untuk menyatakan bahwa ia melihatnya.
-  beyond: "Seluruh satu kilometer ini rawan. Tandai ujung grafik.",
-  beyondFound: "Benar — dengan kanal sedalam ini, pengaruhnya tidak muat dalam satu kilometer.",
+export const CHART_TEXT = {
+  canal: "kanal",
+  risky: "rawan terbakar",
+  safe: "aman",
+  allRisky: "seluruh 1 km rawan terbakar",
+  noneRisky: "tidak ada yang rawan",
+  limit: "batas aman 40 cm",
+  dry: "tanah kering (mudah terbakar)",
+  wet: "tanah basah",
 };
 
 /**
@@ -192,8 +181,8 @@ export const PROBE_TEXT = {
  */
 export const FIGURE_NOTE = {
   block: (lengthM: number) => `Gambar: ${lengthM} m dari tepi kanal`,
-  chart: "Grafik: seluruh 1 km",
-  chartLead: "Seberapa dalam muka air tanah, pada tiap jarak dari kanal",
+  chart: "Tampak samping · 1 km dari kanal",
+  chartLead: "Tanah yang sama dengan gambar, diperpanjang sampai 1 km. Biru = tanah basah, coklat = tanah kering.",
   // Petak 36 m hanya 3,6% lebar grafik — sepotong pita yang terlalu tipis
   // untuk diberi label di dalam gambarnya. Jadi hubungannya dikatakan dengan
   // kalimat, bukan dengan tanda yang harus dicari.
