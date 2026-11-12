@@ -1,6 +1,6 @@
 # Acuan Modul 03 · Hutan Rawa Gambut
 
-Status: **draf, menunggu keputusan pengguna** (12 November 2026).
+Status: **disetujui dan dibangun** (12 November 2026); babak 03 dan tampilan ponsel belum diperiksa di peramban.
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 1 · Gambut, modul ketiga).
 
 ## 1. Pertanyaan modul

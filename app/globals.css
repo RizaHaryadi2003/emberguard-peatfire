@@ -145,6 +145,17 @@ body {
   animation: kanalFill 1.3s ease-out 0.35s both;
 }
 
+/* Hujan pada penampang kubah gambut (Modul Hutan Rawa Gambut). */
+@keyframes hutanRain {
+  from { transform: translateY(-30px); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: translateY(40px); opacity: 0; }
+}
+
+.hutan-rain {
+  animation: hutanRain 0.9s linear infinite;
+}
+
 /* Daerah rawan pada peta lahan melebar dari kanal ke kedua sisi. */
 @keyframes kanalSpread {
   from { transform: scaleX(0); }
@@ -160,7 +171,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .kanal-draw,
   .kanal-fill,
-  .kanal-spread {
+  .kanal-spread,
+  .hutan-rain {
     animation: none;
     stroke-dasharray: none;
   }

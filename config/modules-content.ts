@@ -44,7 +44,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     modules: [
       { href: "/modul/sekitarmu", title: "Gambut di Sekitarmu", caption: "Ternyata kotamu berdiri di atasnya" },
       { href: "/modul/anatomi", title: "Anatomi Gambut", caption: "Kupas lapisannya satu per satu" },
-      { href: null, title: "Hutan Rawa Gambut", caption: "Yang hidup dan menjaga airnya" },
+      { href: "/modul/hutan-rawa", title: "Hutan Rawa Gambut", caption: "Hutan yang berubah mengikuti gambutnya" },
     ],
   },
   {
