@@ -550,7 +550,14 @@ export default function KanalModule() {
           bergulir membingungkan: pembaca tidak tahu ada isi di bawahnya, dan
           rodanya kadang menggulir kotak itu ketika ia hendak memperbesar
           gambar. Sekarang keterangan skala dilipat ke tombol "Skala gambar",
-          sehingga kolom ini cukup pendek untuk tidak pernah perlu digulir. */}
+          sehingga kolom ini cukup pendek untuk tidak pernah perlu digulir.
+
+          Susunannya tiga lantai dari atas ke bawah — grafik, angka, panah
+          lanjut — dalam satu kolom setinggi layar. Grafik dan panah tidak
+          pernah menyusut. Bila layarnya terlalu pendek untuk ketiganya, yang
+          mengalah hanya daftar angka di lantai tengah, dan itu pun di dalam
+          kotaknya sendiri. Dengan begitu tidak ada dua kotak yang dapat
+          bertumpuk, dan panah lanjut selalu terlihat, di babak mana pun. */}
       <div
         inert={hookOpen}
         className={`absolute bottom-6 right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
@@ -559,7 +566,7 @@ export default function KanalModule() {
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
             dari kurva ini. */}
-        <div className={`rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4 ${guide(1)}`}>
+        <div className={`shrink-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4 ${guide(1)}`}>
           <WaterTableChart
             sim={sim}
             stats={stats}
@@ -572,17 +579,17 @@ export default function KanalModule() {
           />
         </div>
 
-        {/* `min-h-0` membolehkan kotak ini mengalah lebih dulu bila layar
-            terlalu pendek, supaya panah lanjut di bawahnya tidak pernah
-            terdorong keluar layar. */}
-        <div className="relative min-h-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
-          <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
+        {/* Lantai tengah, satu-satunya yang boleh mengalah (`min-h-0`). */}
+        <div className="relative flex min-h-0 flex-col rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+          <div className="mb-2 shrink-0 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
             <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
             <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block">
               {current.fact.caption}
             </p>
           </div>
-          <dl className="space-y-2">
+          {/* Hanya daftar ini yang dapat digulir, dan hanya pada layar yang
+              terlalu pendek; pada laptop biasa seluruhnya muat. */}
+          <dl className="min-h-0 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.25)_transparent] [scrollbar-width:thin]">
             {(
               [
                 ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah tepat di samping kanal"],
@@ -623,7 +630,7 @@ export default function KanalModule() {
             onClick={() => setScaleOpen((v) => !v)}
             aria-expanded={scaleOpen}
             aria-controls="kanal-skala"
-            className="mt-3 inline-flex cursor-pointer items-center gap-1.5 border-t border-white/10 pt-2.5 text-[10px] text-white/50 transition-colors hover:text-white"
+            className="mt-3 inline-flex shrink-0 cursor-pointer items-center gap-1.5 self-start border-t border-white/10 pt-2.5 text-[10px] text-white/50 transition-colors hover:text-white"
           >
             <Info size={12} />
             Skala gambar
@@ -667,7 +674,9 @@ export default function KanalModule() {
             tertindih kotak angka. Di dalam satu kolom, ruangnya dibagi:
             `mt-auto` mendorongnya ke dasar layar, dan ia tidak pernah dapat
             naik melewati kotak di atasnya. */}
-        <div className="mt-auto shrink-0 self-end pt-2">{advance}</div>
+        {/* Teks arahannya dibatasi selebar kolom, supaya tidak menjulur
+            ke atas gambar di sebelah kirinya. */}
+        <div className="mt-auto shrink-0 self-end pt-1 [&_p]:max-w-[236px]">{advance}</div>
       </div>
 
       {/* Navigasi babak (bawah) */}
