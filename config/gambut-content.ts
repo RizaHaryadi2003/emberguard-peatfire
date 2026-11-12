@@ -6,36 +6,6 @@
 
 import type { GrowthStatus, WaterStatus } from "@/lib/peat";
 
-export const GAMBUT_INTRO = {
-  eyebrow: "Bagian 01",
-  title: "Gambut",
-  lead: "Tanah yang terbuat dari hutan itu sendiri, basah, tebal, dan menyimpan ribuan tahun sejarah. Kenali cara kerjanya sebelum memahami mengapa ia bisa terbakar.",
-};
-
-export type GambutModule = {
-  /** Alamat halaman modul; kosong bila belum tersedia. */
-  href: string | null;
-  number: string;
-  title: string;
-  caption: string;
-  available: boolean;
-};
-
-/**
- * Urutan modul mengikuti rantai sebab-akibat yang terjadi di lapangan:
- * gambut alami yang basah (01), dikeringkan oleh kanal (02), lalu terbakar
- * membara dan sulit padam (03), dan karbonnya hilang (04). Tiap modul hanya
- * memakai pengetahuan yang sudah diajarkan modul sebelumnya. Kanal dan Bara
- * ditukar pada 11 November 2026: Modul Bara memakai muka air 95 cm sebagai
- * titik awal, padahal penyebab turunnya baru dijelaskan di Modul Kanal.
- */
-export const GAMBUT_MODULES: readonly GambutModule[] = [
-  { href: "/gambut/anatomi", number: "01", title: "Anatomi Gambut", caption: "Kupas lapisannya satu per satu", available: true },
-  { href: "/gambut/kanal", number: "02", title: "Kanal & Pengeringan", caption: "Saat air dialirkan keluar", available: true },
-  { href: "/gambut/bara", number: "03", title: "Bara di Bawah Tanah", caption: "Api yang merambat tanpa terlihat", available: true },
-  { href: "/gambut/karbon", number: "04", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar", available: true },
-];
-
 export type AnatomiStep = {
   title: string;
   body: string;
@@ -66,12 +36,6 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   },
 ];
 
-/** Tujuan panah pada tahap terakhir: pembaca kembali memilih sendiri modulnya. */
-export const BACK_TO_MODULE_LIST = {
-  nextTitle: "Daftar modul Gambut",
-  label: "Kembali ke daftar modul",
-  href: "/gambut",
-};
 
 /**
  * Pembuka Modul 01. Dimulai dari pertanyaan yang sudah dimiliki pembaca, bukan

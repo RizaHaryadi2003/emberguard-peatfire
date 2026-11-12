@@ -21,11 +21,11 @@ export default function ComingSoon({ eyebrow, title, description }: Props) {
           {description}
         </p>
         <Link
-          href="/gambut"
+          href="/modul"
           className="hero-anim hero-fade mt-10 inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm text-white/85 transition-colors hover:border-white/40 hover:text-white"
           style={{ animationDelay: "0.55s" }}
         >
-          <ArrowLeft size={16} /> Mulai dari Gambut
+          <ArrowLeft size={16} /> Mulai dari Modul
         </Link>
       </div>
     </main>

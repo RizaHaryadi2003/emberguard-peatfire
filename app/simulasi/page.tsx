@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Simulasi — Emberguard" };
 export default function SimulasiPage() {
   return (
     <ComingSoon
-      eyebrow="Bagian 02"
+      eyebrow="Simulasi"
       title="Simulasi"
       description="Atur angin, kelembapan, dan kekeringan, lalu coba hentikan api sebelum meluas."
     />

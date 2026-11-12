@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
-import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
+import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
 import IgnitionPicker from "./IgnitionPicker";
@@ -27,7 +27,7 @@ gsap.registerPlugin(useGSAP);
 const BaraScene = dynamic(() => import("./scene/BaraScene"), { ssr: false });
 
 // Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
-const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/bara")!;
+const MODULE = moduleAt("/modul/bara");
 
 /**
  * Muka air tanah awal (cm): sedalam yang terendah pada catatan 1993–2002 di

@@ -5,7 +5,7 @@ import { KANAL_CARD_TEXT, REACH_GUESSES } from "@/config/kanal-content";
 import { CANAL_DEPTH_MAX_M, COLUMNS, DrainageSim, TRANSECT_LENGTH_M } from "./drainage";
 import type { CardFormat } from "./resultCard";
 
-export const KANAL_PATH = "/gambut/kanal";
+export const KANAL_PATH = "/modul/kanal";
 export const KANAL_CARD_PATH = `${KANAL_PATH}/kartu`;
 
 /**

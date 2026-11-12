@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
-import { GAMBUT_MODULES } from "@/config/gambut-content";
+import { nextModule } from "@/config/modules-content";
 
 /** Navigasi di akhir halaman modul: kembali ke daftar & modul berikutnya. */
-export default function ModuleFooter({ current }: { current: string }) {
-  const index = GAMBUT_MODULES.findIndex((m) => m.number === current);
-  const next = GAMBUT_MODULES[index + 1];
+export default function ModuleFooter({ href }: { href: string }) {
+  const next = nextModule(href);
 
   return (
     <footer className="bg-black px-5 py-14 text-white sm:px-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <Link
-          href="/gambut"
+          href="/modul"
           className="inline-flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
         >
-          <ArrowLeft size={16} /> Semua modul Gambut
+          <ArrowLeft size={16} /> Semua modul
         </Link>
 
         {next &&

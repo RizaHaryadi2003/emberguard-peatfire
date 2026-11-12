@@ -4,7 +4,7 @@
 import { RESULT_CARD_TEXT, WATER_STATUS_TEXT } from "@/config/gambut-content";
 import { formatWaterDepth, getWaterStatus, WATER_MAX_CM, WATER_MIN_CM, type WaterStatus } from "./peat";
 
-export const ANATOMI_PATH = "/gambut/anatomi";
+export const ANATOMI_PATH = "/modul/anatomi";
 export const RESULT_CARD_PATH = `${ANATOMI_PATH}/kartu`;
 
 export type CardFormat = "story" | "og";

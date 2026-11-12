@@ -259,8 +259,7 @@ export type MatchVerdict = "idle" | "tooLittle" | "tooMuch" | "tooWide" | "match
  *
  * Tiga keadaan yang berbeda dipisahkan, bukan dijadikan satu "belum benar",
  * sebab ketiganya menyuruh pembaca melakukan hal yang berbeda: menambah,
- * mengurangi, atau mempersempit. Pola yang sama dengan `judgeProbe` pada
- * Modul 02 (`components/gambut/kanal/probe.ts`).
+ * mengurangi, atau mempersempit.
  */
 export function judgeMatch(areaHa: number, depthM: number): MatchVerdict {
   if (depthM <= 0) return "idle";

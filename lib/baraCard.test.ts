@@ -36,14 +36,14 @@ describe("isi kartu", () => {
 
 describe("alamat kartu", () => {
   it("memuat kedalaman, dan penanda muncul lagi hanya bila terjadi", () => {
-    expect(baraCardImagePath({ cm: 39, resurfaced: true }, "story")).toBe("/gambut/bara/kartu?format=story&dalam=39&muncul=1");
-    expect(baraCardImagePath({ cm: 39, resurfaced: false }, "og")).toBe("/gambut/bara/kartu?format=og&dalam=39");
-    expect(baraCardImagePath(null, "og")).toBe("/gambut/bara/kartu?format=og");
+    expect(baraCardImagePath({ cm: 39, resurfaced: true }, "story")).toBe("/modul/bara/kartu?format=story&dalam=39&muncul=1");
+    expect(baraCardImagePath({ cm: 39, resurfaced: false }, "og")).toBe("/modul/bara/kartu?format=og&dalam=39");
+    expect(baraCardImagePath(null, "og")).toBe("/modul/bara/kartu?format=og");
   });
 
   it("tautan bagikan dapat dibaca kembali", () => {
     const url = new URL(baraShareLink("https://contoh.id", { cm: 45, resurfaced: true }));
-    expect(url.pathname).toBe("/gambut/bara");
+    expect(url.pathname).toBe("/modul/bara");
     expect(parseSharedBurn(url.searchParams.get("dalam"), url.searchParams.get("muncul"))).toEqual({ cm: 45, resurfaced: true });
   });
 });

@@ -13,7 +13,7 @@ import {
   SCALE_NOTE,
   TIME_SPEEDS,
 } from "@/config/kanal-content";
-import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
+import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import StepAdvance from "@/components/gambut/StepAdvance";
 import {
@@ -36,7 +36,7 @@ import { createKanalState, type KanalState, type Quality } from "./scene/kanalSt
 const KanalScene = dynamic(() => import("./scene/KanalScene"), { ssr: false });
 
 // Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
-const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/kanal")!;
+const MODULE = moduleAt("/modul/kanal");
 
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;

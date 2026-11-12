@@ -65,8 +65,8 @@ describe("isi dan alamat kartu", () => {
   });
 
   it("menyusun alamat gambar dan tautan", () => {
-    expect(kanalCardImagePath(null, "og")).toBe("/gambut/kanal/kartu?format=og");
-    expect(kanalCardImagePath({ cm: 100, guess: 2 }, "story")).toBe("/gambut/kanal/kartu?format=story&kanal=100&tebak=2");
-    expect(kanalShareLink("https://contoh.id", { cm: 150, guess: null })).toBe("https://contoh.id/gambut/kanal?kanal=150");
+    expect(kanalCardImagePath(null, "og")).toBe("/modul/kanal/kartu?format=og");
+    expect(kanalCardImagePath({ cm: 100, guess: 2 }, "story")).toBe("/modul/kanal/kartu?format=story&kanal=100&tebak=2");
+    expect(kanalShareLink("https://contoh.id", { cm: 150, guess: null })).toBe("https://contoh.id/modul/kanal?kanal=150");
   });
 });

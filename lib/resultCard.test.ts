@@ -53,12 +53,12 @@ describe("getResultCard", () => {
 
 describe("alamat kartu", () => {
   it("menyertakan muka air hanya bila ada nilainya", () => {
-    expect(cardImagePath(62, "story")).toBe("/gambut/anatomi/kartu?format=story&muka=62");
-    expect(cardImagePath(null, "og")).toBe("/gambut/anatomi/kartu?format=og");
-    expect(cardImagePath(0, "og")).toBe("/gambut/anatomi/kartu?format=og&muka=0");
+    expect(cardImagePath(62, "story")).toBe("/modul/anatomi/kartu?format=story&muka=62");
+    expect(cardImagePath(null, "og")).toBe("/modul/anatomi/kartu?format=og");
+    expect(cardImagePath(0, "og")).toBe("/modul/anatomi/kartu?format=og&muka=0");
   });
 
   it("menyusun tautan yang dibagikan", () => {
-    expect(shareLink("https://contoh.id", 62)).toBe("https://contoh.id/gambut/anatomi?muka=62");
+    expect(shareLink("https://contoh.id", 62)).toBe("https://contoh.id/modul/anatomi?muka=62");
   });
 });

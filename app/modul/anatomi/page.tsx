@@ -28,7 +28,7 @@ export default async function AnatomiPage({ searchParams }: Props) {
   return (
     <main className="bg-black">
       <AnatomiModule sharedWaterCm={sharedWaterCm} />
-      <ModuleFooter current="01" />
+      <ModuleFooter href="/modul/anatomi" />
     </main>
   );
 }

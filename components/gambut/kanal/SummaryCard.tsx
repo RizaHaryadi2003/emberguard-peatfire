@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Eye, RotateCcw, Share2 } from "lucide-react";
 import LaptopNudge from "@/components/gambut/LaptopNudge";
 import ShareCardDialog from "@/components/gambut/ShareCardDialog";
-import { GAMBUT_MODULES } from "@/config/gambut-content";
+import { nextAvailableModule } from "@/config/modules-content";
 import { KANAL_SUMMARY } from "@/config/kanal-content";
 import { formatDrop, type DrainageStats } from "@/lib/drainage";
 import {
@@ -18,8 +18,8 @@ import {
   type SharedCanal,
 } from "@/lib/kanalCard";
 
-/** Modul berikutnya dalam urutan Gambut: Bara. */
-const NEXT_MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/bara");
+/** Modul tersedia berikutnya sesudah Kanal. */
+const NEXT_MODULE = nextAvailableModule("/modul/kanal");
 
 /** Dibuat hanya setelah diklik di peramban, jadi `window` selalu tersedia. */
 function KanalCardDialog({ shared, onClose }: { shared: SharedCanal; onClose: () => void }) {

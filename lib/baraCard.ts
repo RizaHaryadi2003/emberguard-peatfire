@@ -4,7 +4,7 @@
 import { BARA_CARD_TEXT, type BaraCardZone } from "@/config/bara-content";
 import type { CardFormat } from "./resultCard";
 
-export const BARA_PATH = "/gambut/bara";
+export const BARA_PATH = "/modul/bara";
 export const BARA_CARD_PATH = `${BARA_PATH}/kartu`;
 
 /** Batas bara gambut permukaan dan bara gambut dalam (cm); Usup dkk. (2004). */

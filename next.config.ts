@@ -12,6 +12,19 @@ const nextConfig: NextConfig = {
   //   172.16–31.*  — jaringan kantor/kampus, mis. "UPZ SPACE" (172.25.x.x)
   //   10.*.*.*     — tethering ponsel dan jaringan besar
   allowedDevOrigins: ["192.168.*.*", "172.*.*.*", "10.*.*.*"],
+
+  // Alamat lama tetap hidup. Bagian "Gambut" kini menjadi "Modul", dan menu
+  // Dampak serta Pencegahan menjadi bagian di dalamnya. Tautan yang sudah
+  // dibagikan di media sosial — termasuk kartu hasil beserta nilainya di
+  // parameter alamat — dialihkan permanen ke tempat barunya.
+  async redirects() {
+    return [
+      { source: "/gambut", destination: "/modul", permanent: true },
+      { source: "/gambut/:path*", destination: "/modul/:path*", permanent: true },
+      { source: "/dampak", destination: "/modul#dampak", permanent: true },
+      { source: "/pencegahan", destination: "/modul#mencegah", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

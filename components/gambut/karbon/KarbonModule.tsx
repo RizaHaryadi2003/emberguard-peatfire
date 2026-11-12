@@ -14,7 +14,7 @@ import {
   MATCH_TEXT,
   TIME_SPEEDS,
 } from "@/config/karbon-content";
-import { GAMBUT_MODULES } from "@/config/gambut-content";
+import { moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import {
   AREA_MAX_HA,
@@ -38,7 +38,7 @@ import { createKarbonState, type KarbonState, type Quality } from "./scene/karbo
 const KarbonScene = dynamic(() => import("./scene/KarbonScene"), { ssr: false });
 
 // Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
-const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/karbon")!;
+const MODULE = moduleAt("/modul/karbon");
 
 /**
  * Babak paling awal yang sudah menampilkan tiap alat.

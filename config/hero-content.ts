@@ -12,10 +12,9 @@ export const BRAND_NAME = "Emberguard";
  */
 export const NAV_LINKS = [
   { label: "Beranda", href: "/" },
-  { label: "Gambut", href: "/gambut" },
+  { label: "Modul", href: "/modul" },
   { label: "Simulasi", href: "/simulasi" },
-  { label: "Dampak", href: "/dampak" },
-  { label: "Pencegahan", href: "/pencegahan" },
+  { label: "Kuis", href: "/kuis" },
 ] as const;
 
 export const HEADING = {

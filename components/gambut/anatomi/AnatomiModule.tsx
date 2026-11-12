@@ -6,7 +6,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { ANATOMI_HOOK, ANATOMI_STEPS, BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
+import { ANATOMI_HOOK, ANATOMI_STEPS } from "@/config/gambut-content";
+import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
@@ -50,7 +51,7 @@ const HOOK_WATER_CM = 90;
 const DEMO_YEARS = 620;
 
 // Diambil lewat alamatnya, bukan urutannya, supaya urutan modul dapat diubah.
-const MODULE = GAMBUT_MODULES.find((m) => m.href === "/gambut/anatomi")!;
+const MODULE = moduleAt("/modul/anatomi");
 
 /**
  * Arahan tiap tahap: apa yang harus dikerjakan pembaca sebelum tahap
