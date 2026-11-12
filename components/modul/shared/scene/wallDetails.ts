@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { PeatLayerId } from "@/lib/peat";
+import type { PeatLayerId } from "@/lib/model/peat";
 import { seeded } from "@/lib/random";
 import { wallPoint } from "./terrain";
 

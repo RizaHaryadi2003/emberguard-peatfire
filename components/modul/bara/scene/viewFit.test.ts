@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DIORAMA_CAMERA_POSES } from "@/components/modul/scene/dioramaConstants";
+import { DIORAMA_CAMERA_POSES } from "@/components/modul/shared/scene/dioramaConstants";
 import { fitView, readingArea } from "./viewFit";
 
 const SCREENS: [number, number][] = [

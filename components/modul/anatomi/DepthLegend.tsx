@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMeters, formatWaterDepth, PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
+import { formatMeters, formatWaterDepth, PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/model/peat";
 
 type Props = {
   waterCm: number;

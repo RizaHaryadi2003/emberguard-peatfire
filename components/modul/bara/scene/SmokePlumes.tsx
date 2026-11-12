@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { createSmokeTexture, createSparkTexture } from "@/components/modul/scene/proceduralTextures";
-import { CELL_SMOLDER, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
+import { createSmokeTexture, createSparkTexture } from "@/components/modul/shared/scene/proceduralTextures";
+import { CELL_SMOLDER, GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/model/smolder";
 import { QUALITY_PROFILE, type BaraState, type Quality } from "./baraState";
 
 // Asap, percikan, dan cahaya bara. Semuanya mengikuti keadaan simulasi: asap

@@ -1,8 +1,8 @@
 "use client";
 
 import { Clock, Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
-import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/bara-content";
-import { formatDay, formatElapsed } from "@/lib/smolder";
+import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/modul/bara";
+import { formatDay, formatElapsed } from "@/lib/model/smolder";
 
 /** Batas pengatur muka air tanah pada antarmuka (cm). */
 export const WATER_MIN_CM = 0;

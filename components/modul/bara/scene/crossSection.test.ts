@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { PROFILE_DEPTH } from "@/lib/peat";
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
-import { interfaceY, radiusAt } from "@/components/modul/scene/terrain";
+import { PROFILE_DEPTH } from "@/lib/model/peat";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
+import { interfaceY, radiusAt } from "@/components/modul/shared/scene/terrain";
 import {
   createFaceGrid,
   createSurfaceGrid,

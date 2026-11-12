@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayer, type PeatLayerId } from "@/lib/peat";
+import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayer, type PeatLayerId } from "@/lib/model/peat";
 import { seeded } from "@/lib/random";
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
 
 // Isi tiap lapisan tanah yang digambar pada bidang potong. Fibrik penuh serat,
 // akar, ranting, dan daun yang masih utuh; hemik menyisakan potongannya;

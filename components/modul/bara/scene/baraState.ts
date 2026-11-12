@@ -1,6 +1,6 @@
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
-import { CELL_W, GRID_COLS, type SmolderSim } from "@/lib/smolder";
-import type { ViewMode } from "@/config/bara-content";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
+import { CELL_W, GRID_COLS, type SmolderSim } from "@/lib/model/smolder";
+import type { ViewMode } from "@/config/modul/bara";
 
 // Ukuran diorama & arah matahari dipakai bersama dengan Modul Anatomi supaya
 // bongkahan gambut pada kedua modul benar-benar sama.
@@ -15,7 +15,7 @@ export {
   SUN_DIRECTION,
   WET_DARKEN,
   type Quality,
-} from "@/components/modul/scene/dioramaConstants";
+} from "@/components/modul/shared/scene/dioramaConstants";
 
 /**
  * Keadaan yang dibagi antara antarmuka (DOM) dan adegan 3D. Disimpan dalam ref

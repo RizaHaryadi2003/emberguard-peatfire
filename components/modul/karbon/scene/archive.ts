@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { PROFILE_DEPTH } from "@/lib/peat";
-import { BLOCK_DEPTH, BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
+import { PROFILE_DEPTH } from "@/lib/model/peat";
+import { BLOCK_DEPTH, BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
 import { surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/crossSection";
 
 // Bentuk bongkahan Modul Karbon: petak gambut yang sama dengan Modul Anatomi dan Bara,

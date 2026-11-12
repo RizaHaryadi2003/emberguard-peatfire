@@ -4,7 +4,7 @@ import { useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { createWallDetails } from "@/components/modul/scene/wallDetails";
+import { createWallDetails } from "@/components/modul/shared/scene/wallDetails";
 import type { BaraState, Subsidence } from "./baraState";
 
 /** Detail sedekat ini dengan bidang potong disingkirkan agar tidak menembusnya (m). */

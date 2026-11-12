@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
+import { PEAT_LAYERS, type PeatLayerId } from "@/lib/model/peat";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
 import { createHalfBody, createHalfRibbon, updateHalfBody, updateHalfRibbon } from "./crossSection";
 import { generateLayerContents, type ContentItem } from "./layerContents";
 

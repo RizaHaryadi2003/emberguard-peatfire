@@ -1,13 +1,13 @@
 import * as THREE from "three";
-import { radiusAt } from "@/components/modul/scene/terrain";
+import { radiusAt } from "@/components/modul/shared/scene/terrain";
 import {
   DIORAMA_BASE_YAW,
   DIORAMA_CAMERA_POSES,
   DIORAMA_TREE_SPOTS,
   DIORAMA_Y,
   MAX_ROTATION,
-} from "@/components/modul/scene/dioramaConstants";
-import { PROFILE_DEPTH } from "@/lib/peat";
+} from "@/components/modul/shared/scene/dioramaConstants";
+import { PROFILE_DEPTH } from "@/lib/model/peat";
 
 // Ukuran bongkahan di layar lebar. Bongkahan dibesarkan sampai sepenuh ruang
 // kosong di antara kolom teks kiri dan kanan, pada sudut putar mana pun, jadi

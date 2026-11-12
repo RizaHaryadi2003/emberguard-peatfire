@@ -24,7 +24,7 @@ perkebunan akasia adalah S = 1,5 + 4,98 × WD, dan gabungan S = 0,69 + 5,98 × W
 mendahului Bara di Bawah Tanah, mengikuti rantai sebab-akibat.
 
 - Tanggal: 11 November 2026
-- Berlaku untuk: Modul 02 (`/gambut/kanal`), model di `lib/drainage.ts`
+- Berlaku untuk: Modul 02 (`/gambut/kanal`), model di `lib/model/drainage.ts`
 - Prinsip: setiap aksi harus membawa satu pengetahuan inti modul, dengan
   perbedaan sebelum–sesudah yang jelas (memori `aksi-harus-membawa-ilmu`)
 
@@ -95,7 +95,7 @@ dkk. (2012), jadi rangkaian acuannya tersambung.
 
 ## 5. Angka di kode dibandingkan dengan acuan
 
-| Tetapan (`lib/drainage.ts`) | Sekarang | Kata acuan | Tindakan |
+| Tetapan (`lib/model/drainage.ts`) | Sekarang | Kata acuan | Tindakan |
 |---|---|---|---|
 | `SUBSIDENCE_CM_PER_YEAR_PER_M` | ~~5 cm/tahun per 1 m~~ → **7,06** | S = 7,06 × WD, hutan dikeringkan (Hooijer, §3.7) | **Diterapkan**, dibatasi pada WD 1 m |
 | `COMPACTION_SHARE`, `COMPACTION_YEARS` | ~~30% dalam 2 tahun~~ → 25% dari lesak 5 tahun, tahun pertama saja | Pemampatan hanya berarti pada tahun pertama; oksidasi 75% setelah 5 tahun | **Diterapkan** |

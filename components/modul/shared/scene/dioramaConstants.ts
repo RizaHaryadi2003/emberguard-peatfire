@@ -2,7 +2,7 @@
 // modul 3D, sehingga bongkahan tanah pada Modul Anatomi dan Modul Bara
 // benar-benar sama dan dapat dibandingkan langsung oleh pembaca.
 
-import type { PeatLayerId } from "@/lib/peat";
+import type { PeatLayerId } from "@/lib/model/peat";
 
 /** Mutu grafis: "low" untuk ponsel/perangkat lemah (resolusi & bayangan lebih rendah). */
 export type Quality = "high" | "low";

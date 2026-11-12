@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CELL_ASH, CELL_INTACT, CELL_QUENCHED, CELL_SMOLDER } from "@/lib/smolder";
+import { CELL_ASH, CELL_INTACT, CELL_QUENCHED, CELL_SMOLDER } from "@/lib/model/smolder";
 import { describeCell, describeLayer, placeHint } from "./layerHint";
 
 describe("describeCell", () => {

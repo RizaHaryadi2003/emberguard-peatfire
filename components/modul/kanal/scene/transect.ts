@@ -6,7 +6,7 @@ import {
   PROFILE_DEPTH_M,
   TRANSECT_LENGTH_M,
   type DrainageSim,
-} from "@/lib/drainage";
+} from "@/lib/model/drainage";
 
 // Bentuk bongkahan lanskap Modul Kanal: sepetak gambut yang dibelah kanal,
 // dilihat dari sudut isometrik.

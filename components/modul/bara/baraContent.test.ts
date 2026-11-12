@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BARA_ACTS } from "@/config/bara-content";
+import { BARA_ACTS } from "@/config/modul/bara";
 
 describe("penjelasan singkat tiap babak", () => {
   it("tersedia pada semua babak", () => {

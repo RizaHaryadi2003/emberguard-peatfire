@@ -1,6 +1,6 @@
-import type { Quality } from "@/components/modul/scene/dioramaConstants";
+import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
 
-export { QUALITY_PROFILE, type Quality } from "@/components/modul/scene/dioramaConstants";
+export { QUALITY_PROFILE, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
 
 /**
  * Keadaan yang dibagi antara antarmuka (DOM) dan adegan 3D.

@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowDownToLine, ChevronsDown, Cloud, Flame, MoveHorizontal, type LucideIcon } from "lucide-react";
-import { LEGEND_ITEMS, type BaraAct } from "@/config/bara-content";
-import type { SmolderStats } from "@/lib/smolder";
+import { LEGEND_ITEMS, type BaraAct } from "@/config/modul/bara";
+import type { SmolderStats } from "@/lib/model/smolder";
 
 type Props = {
   stats: SmolderStats;

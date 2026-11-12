@@ -158,7 +158,7 @@ lambat untuk bara permukaan. Kedalamannya melewati kisaran 20–50 cm.
 
 ### Sesudah kalibrasi
 
-`lib/smolder.test.ts` mengunci hasil berikut. Laju mendatar 3,5 cm/jam untuk
+`lib/model/smolder.test.ts` mengunci hasil berikut. Laju mendatar 3,5 cm/jam untuk
 bara permukaan dan 1,25 cm/jam untuk bara dalam. Pada muka air 95 cm bara
 berhenti di 39–45 cm, pada 60 cm hanya 9 cm, dan pada 40 cm tidak dapat menyala.
 

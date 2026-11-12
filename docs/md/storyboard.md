@@ -238,7 +238,7 @@ bagian 2.
 > *"Saat air dialirkan keluar"*
 
 > **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/modul/kanal/`,
-> model di `lib/drainage.ts`. Pesan utama, keempat babak, dan tugas tiap babak
+> model di `lib/model/drainage.ts`. Pesan utama, keempat babak, dan tugas tiap babak
 > di bawah ini tetap seperti rencana. Panggungnya berubah: bukan satu petak
 > ± 500 m, melainkan **dua gambar berdampingan** — bongkahan isometrik
 > puluhan meter di dekat kanal, dan grafik muka air sepanjang 1 km. Kerucut
@@ -264,8 +264,8 @@ dipulihkan. Air sama tingginya, tanahnya tidak. Kalimat penutup:
 *"Air bisa dikembalikan. Tanahnya tidak."*
 
 **Yang bisa dipakai ulang dari kode yang ada:** `getWaterStatus`,
-`getSurfaceDryness`, dan `getFireDanger` dari `lib/peat.ts`; `getAtmosphere`
-dari `lib/atmosphere.ts`; pola `PerformanceGuard` dan `QUALITY_PROFILE`.
+`getSurfaceDryness`, dan `getFireDanger` dari `lib/model/peat.ts`; `getAtmosphere`
+dari `lib/model/atmosphere.ts`; pola `PerformanceGuard` dan `QUALITY_PROFILE`.
 
 **Logika baru yang perlu berkas sendiri di `lib/`:** `canal.ts` — kerucut
 penurunan muka air terhadap jarak dari kanal, dan laju subsiden per tahun.
@@ -278,7 +278,7 @@ Murni, dapat diuji.
 > *"Apa yang lepas saat gambut terbakar"*
 
 > **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/modul/karbon/`,
-> model di `lib/carbon.ts`. Pesan utamanya tetap ketimpangan waktu. Panggungnya
+> model di `lib/model/carbon.ts`. Pesan utamanya tetap ketimpangan waktu. Panggungnya
 > berubah: bukan satu tiang gambut 1 m × 1 m, melainkan **bidang potong yang
 > sama** yang sudah dikenal pembaca sejak Modul Anatomi, dibaca ulang sebagai
 > kalender dan sebagai gudang. Satu babak ditambahkan di luar rencana —
@@ -431,7 +431,7 @@ kotanya berasap di Bagian Dampak — lalu satu kalimat terakhir:
 ## 6. Kontrak Babak untuk Pemrograman
 
 Supaya keempat modul tidak memakai bentuk data yang berbeda-beda, seluruh babak
-memakai satu tipe yang sama. `BaraAct` di `config/bara-content.ts` sudah hampir
+memakai satu tipe yang sama. `BaraAct` di `config/modul/bara.ts` sudah hampir
 tepat; tinggal diangkat menjadi tipe bersama:
 
 ```ts

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ActModuleShell from "@/components/modul/ActModuleShell";
+import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import {
   BORE_SITES,
   DISTRICT_PEAT,
@@ -10,7 +10,7 @@ import {
   SEKITARMU_HOOK,
   SEKITARMU_TEXT,
   ZOOM_LEVELS,
-} from "@/config/sekitarmu-content";
+} from "@/config/modul/sekitarmu";
 import mapData from "@/data/sekitarmu-map.json";
 import SekitarmuMap from "./SekitarmuMap";
 

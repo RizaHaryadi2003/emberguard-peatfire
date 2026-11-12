@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { createNoiseTexture, NOISE_GLSL } from "@/components/modul/scene/noiseTexture";
+import { createNoiseTexture, NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 import { BLOCK_WIDTH, type BaraState } from "./baraState";
 
 // Nyala singkat di permukaan saat gambut disulut. Hanya satu bidang dengan

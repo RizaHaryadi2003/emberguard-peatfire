@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
 import KanalCardArt from "@/components/modul/kanal/KanalCardArt";
-import { parseSharedCanal } from "@/lib/kanalCard";
-import { CARD_FONTS } from "@/lib/cardFonts";
-import { CARD_SIZE, parseCardFormat } from "@/lib/resultCard";
+import { parseSharedCanal } from "@/lib/kartu/kanalCard";
+import { CARD_FONTS } from "@/lib/kartu/cardFonts";
+import { CARD_SIZE, parseCardFormat } from "@/lib/kartu/anatomiCard";
 
 /** Gambar kartu hasil Modul Kanal (PNG), sumber yang sama dengan Modul Anatomi dan Bara. */
 export async function GET(request: Request) {

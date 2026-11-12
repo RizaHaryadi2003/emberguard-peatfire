@@ -1,4 +1,4 @@
-import type { PeatLayerId } from "@/lib/peat";
+import type { PeatLayerId } from "@/lib/model/peat";
 
 // Ukuran diorama, arah matahari, dan batas putaran dipakai bersama dengan modul
 // lain; diteruskan di sini agar berkas Modul Anatomi cukup mengimpor dari satu tempat.
@@ -11,7 +11,7 @@ export {
   QUALITY_PROFILE,
   SUN_DIRECTION,
   type Quality,
-} from "@/components/modul/scene/dioramaConstants";
+} from "@/components/modul/shared/scene/dioramaConstants";
 
 /**
  * Keadaan yang dibagi antara antarmuka (DOM) dan adegan 3D.

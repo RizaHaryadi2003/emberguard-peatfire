@@ -4,12 +4,12 @@ import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { PEAT_LAYERS } from "@/lib/peat";
-import { DrainageSim, PROFILE_DEPTH_M, type DrainageStats } from "@/lib/drainage";
-import PerformanceGuard from "@/components/modul/scene/PerformanceGuard";
-import FpsMeter, { wantsFpsMeter } from "@/components/modul/scene/FpsMeter";
-import SkyLighting from "@/components/modul/scene/SkyLighting";
-import Backdrop from "@/components/modul/scene/Backdrop";
+import { PEAT_LAYERS } from "@/lib/model/peat";
+import { DrainageSim, PROFILE_DEPTH_M, type DrainageStats } from "@/lib/model/drainage";
+import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
+import FpsMeter, { wantsFpsMeter } from "@/components/modul/shared/scene/FpsMeter";
+import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
+import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { QUALITY_PROFILE, type KanalState, type Quality } from "./kanalState";
 import {
   canalBedHalf,

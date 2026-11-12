@@ -1,8 +1,8 @@
 "use client";
 
 import { Droplets, Flame, Share2 } from "lucide-react";
-import { WATER_STATUS_TEXT } from "@/config/anatomi-content";
-import { getWaterStatus, WATER_LIMIT_CM, WATER_MAX_CM, WATER_MIN_CM } from "@/lib/peat";
+import { WATER_STATUS_TEXT } from "@/config/modul/anatomi";
+import { getWaterStatus, WATER_LIMIT_CM, WATER_MAX_CM, WATER_MIN_CM } from "@/lib/model/peat";
 
 type Props = {
   waterCm: number;

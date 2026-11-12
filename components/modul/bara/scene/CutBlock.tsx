@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, useThree, type RootState, type ThreeEvent } from "@react-three/fiber";
-import { PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
-import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/smolder";
-import { getAtmosphere } from "@/lib/atmosphere";
-import { interfaceY } from "@/components/modul/scene/terrain";
-import { createNoiseTexture } from "@/components/modul/scene/noiseTexture";
+import { PEAT_LAYERS, type PeatLayerId } from "@/lib/model/peat";
+import { GRID_COLS, GRID_ROWS, type SmolderSim } from "@/lib/model/smolder";
+import { getAtmosphere } from "@/lib/model/atmosphere";
+import { interfaceY } from "@/components/modul/shared/scene/terrain";
+import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import {
   createFaceGrid,
   createHalfBody,

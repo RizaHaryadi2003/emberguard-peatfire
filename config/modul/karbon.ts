@@ -20,7 +20,7 @@ import {
   NARROW_AREA_HA,
   PERSON_T_CO2_PER_YEAR,
   RECOVERY_MAX_YEARS,
-} from "@/lib/carbon";
+} from "@/lib/model/carbon";
 
 export type KarbonAct = {
   number: string;

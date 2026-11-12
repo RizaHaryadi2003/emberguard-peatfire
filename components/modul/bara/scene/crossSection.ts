@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { PROFILE_DEPTH } from "@/lib/peat";
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
-import { footprintRadius, interfaceY, radiusAt, radiusFrom } from "@/components/modul/scene/terrain";
+import { PROFILE_DEPTH } from "@/lib/model/peat";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
+import { footprintRadius, interfaceY, radiusAt, radiusFrom } from "@/components/modul/shared/scene/terrain";
 
 // Bentuk bongkahan gambut Modul Bara: bongkahan yang sama seperti Modul Anatomi,
 // tetapi dipotong tepat di tengah (bidang z = 0) dan hanya separuh belakang

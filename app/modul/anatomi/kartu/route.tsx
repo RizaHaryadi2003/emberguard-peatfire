@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import ResultCardArt from "@/components/modul/anatomi/ResultCardArt";
-import { CARD_FONTS } from "@/lib/cardFonts";
-import { CARD_SIZE, parseCardFormat, parseSharedWaterCm } from "@/lib/resultCard";
+import { CARD_FONTS } from "@/lib/kartu/cardFonts";
+import { CARD_SIZE, parseCardFormat, parseSharedWaterCm } from "@/lib/kartu/anatomiCard";
 
 /**
  * Gambar kartu hasil Modul Anatomi (PNG). Satu sumber untuk pratinjau di dialog,

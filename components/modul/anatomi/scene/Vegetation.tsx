@@ -4,14 +4,14 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { getSurfaceDryness } from "@/lib/peat";
-import { createPuddleTexture } from "@/components/modul/scene/proceduralTextures";
+import { getSurfaceDryness } from "@/lib/model/peat";
+import { createPuddleTexture } from "@/components/modul/shared/scene/proceduralTextures";
 import { seeded } from "@/lib/random";
-import { createSurfaceGeometry, isInsideFootprint } from "@/components/modul/scene/terrain";
+import { createSurfaceGeometry, isInsideFootprint } from "@/components/modul/shared/scene/terrain";
 import {
   DIORAMA_TREE_SPOTS as TREE_SPOTS,
   DIORAMA_UNDERSTORY_SPOTS as UNDERSTORY_SPOTS,
-} from "@/components/modul/scene/dioramaConstants";
+} from "@/components/modul/shared/scene/dioramaConstants";
 import type { SceneState } from "./sceneState";
 
 // Permukaan hutan rawa gambut di atas balok. Semua tumbuhan adalah model 3D

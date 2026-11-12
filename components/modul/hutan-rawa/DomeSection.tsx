@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { FOREST_ZONES, HUTAN_TEXT, type ForestZone } from "@/config/hutan-rawa-content";
+import { FOREST_ZONES, HUTAN_TEXT, type ForestZone } from "@/config/modul/hutan-rawa";
 
 // Penampang samping kubah gambut, dari tepi hutan (kiri) ke puncak kubah
 // (kanan).

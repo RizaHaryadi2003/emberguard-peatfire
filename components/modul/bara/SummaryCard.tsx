@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { RotateCcw, Share2 } from "lucide-react";
-import LaptopNudge from "@/components/modul/LaptopNudge";
-import ShareCardDialog from "@/components/modul/ShareCardDialog";
-import { BARA_SUMMARY } from "@/config/bara-content";
-import { baraCardImagePath, baraShareLink, getBaraCard, type SharedBurn } from "@/lib/baraCard";
-import { formatElapsed, type SmolderStats } from "@/lib/smolder";
+import LaptopNudge from "@/components/modul/shared/LaptopNudge";
+import ShareCardDialog from "@/components/modul/shared/ShareCardDialog";
+import { BARA_SUMMARY } from "@/config/modul/bara";
+import { baraCardImagePath, baraShareLink, getBaraCard, type SharedBurn } from "@/lib/kartu/baraCard";
+import { formatElapsed, type SmolderStats } from "@/lib/model/smolder";
 
 /** Dibuat hanya setelah diklik di peramban, jadi `window` selalu tersedia. */
 function BaraCardDialog({ burn, onClose }: { burn: SharedBurn; onClose: () => void }) {

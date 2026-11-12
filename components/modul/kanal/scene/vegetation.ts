@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PROFILE_DEPTH_M, waterDepthAt, WATER_LIMIT_M } from "@/lib/drainage";
+import { PROFILE_DEPTH_M, waterDepthAt, WATER_LIMIT_M } from "@/lib/model/drainage";
 import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceYAt, xOfDistance } from "./transect";
 
 // Tumbuhan di atas bongkahan.

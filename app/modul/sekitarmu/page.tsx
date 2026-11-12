@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import SekitarmuModule from "@/components/modul/sekitarmu/SekitarmuModule";
-import { SEKITARMU_HOOK } from "@/config/sekitarmu-content";
+import { SEKITARMU_HOOK } from "@/config/modul/sekitarmu";
 
 export const metadata: Metadata = {
   title: "Gambut di Sekitarmu — Emberguard",

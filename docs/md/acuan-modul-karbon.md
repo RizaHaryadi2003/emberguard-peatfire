@@ -16,7 +16,7 @@ tanda kedalaman terukur 2006 dan 1997 dipasang pada pengatur bakar, dan
 kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 
 - Tanggal: 11 November 2026
-- Berlaku untuk: Modul 04 (`/gambut/karbon`), model di `lib/carbon.ts`
+- Berlaku untuk: Modul 04 (`/gambut/karbon`), model di `lib/model/carbon.ts`
 - Prinsip: setiap aksi harus membawa satu pengetahuan inti modul, dengan
   perbedaan sebelum–sesudah yang jelas (memori `aksi-harus-membawa-ilmu`)
 
@@ -80,7 +80,7 @@ kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 
 ## 5. Angka di kode dibandingkan dengan acuan
 
-| Tetapan (`lib/carbon.ts`) | Sekarang | Kata acuan | Tindakan |
+| Tetapan (`lib/model/carbon.ts`) | Sekarang | Kata acuan | Tindakan |
 |---|---|---|---|
 | `PEAT_BULK_DENSITY_KG_M3` × `CARBON_FRACTION` | 100 × 0,55 = 55 kg C/m³ | Warren: BD 0,10 → 54,9 kg C/m³ | **Cocok.** Ganti dasar perhitungannya ke persamaan Warren |
 | CO₂ per ha per 1 m terbakar | ± 2.000 t | 55 kg C/m³ × 10.000 m³ × 44/12 = 2.017 t | **Cocok**, kini bersumber |

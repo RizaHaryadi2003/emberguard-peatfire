@@ -1,7 +1,7 @@
 "use client";
 
-import ShareCardDialog from "@/components/modul/ShareCardDialog";
-import { cardImagePath, getResultCard, shareLink } from "@/lib/resultCard";
+import ShareCardDialog from "@/components/modul/shared/ShareCardDialog";
+import { cardImagePath, getResultCard, shareLink } from "@/lib/kartu/anatomiCard";
 
 /** Kartu hasil Modul Anatomi: muka air pilihan pembaca. */
 export default function ResultCardDialog({ waterCm, onClose }: { waterCm: number; onClose: () => void }) {

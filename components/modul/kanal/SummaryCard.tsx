@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Eye, RotateCcw, Share2 } from "lucide-react";
-import LaptopNudge from "@/components/modul/LaptopNudge";
-import ShareCardDialog from "@/components/modul/ShareCardDialog";
+import LaptopNudge from "@/components/modul/shared/LaptopNudge";
+import ShareCardDialog from "@/components/modul/shared/ShareCardDialog";
 import { nextAvailableModule } from "@/config/modules-content";
-import { KANAL_SUMMARY } from "@/config/kanal-content";
-import { formatDrop, type DrainageStats } from "@/lib/drainage";
+import { KANAL_SUMMARY } from "@/config/modul/kanal";
+import { formatDrop, type DrainageStats } from "@/lib/model/drainage";
 import {
   fieldsText,
   getKanalCard,
@@ -16,7 +16,7 @@ import {
   reachText,
   riskReachFor,
   type SharedCanal,
-} from "@/lib/kanalCard";
+} from "@/lib/kartu/kanalCard";
 
 /** Modul tersedia berikutnya sesudah Kanal. */
 const NEXT_MODULE = nextAvailableModule("/modul/kanal");

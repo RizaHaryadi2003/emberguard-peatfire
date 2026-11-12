@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
-import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/scene/dioramaConstants";
-import { CANAL_WIDTH_M, COLUMNS, TRANSECT_LENGTH_M, WATER_LIMIT_M } from "@/lib/drainage";
-import { createNoiseTexture, NOISE_GLSL } from "@/components/modul/scene/noiseTexture";
+import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/model/peat";
+import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/shared/scene/dioramaConstants";
+import { CANAL_WIDTH_M, COLUMNS, TRANSECT_LENGTH_M, WATER_LIMIT_M } from "@/lib/model/drainage";
+import { createNoiseTexture, NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 
 // `createNoiseTexture` diekspor ulang supaya KanalScene tidak perlu tahu
 // bahwa deraunya kini milik bersama, bukan milik modul ini.

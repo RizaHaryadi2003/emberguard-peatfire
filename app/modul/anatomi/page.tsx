@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import AnatomiModule from "@/components/modul/anatomi/AnatomiModule";
-import ModuleFooter from "@/components/modul/ModuleFooter";
-import { ANATOMI_HOOK } from "@/config/anatomi-content";
-import { CARD_SIZE, cardImagePath, parseSharedWaterCm } from "@/lib/resultCard";
+import ModuleFooter from "@/components/modul/shared/ModuleFooter";
+import { ANATOMI_HOOK } from "@/config/modul/anatomi";
+import { CARD_SIZE, cardImagePath, parseSharedWaterCm } from "@/lib/kartu/anatomiCard";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

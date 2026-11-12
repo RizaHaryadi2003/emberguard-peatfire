@@ -2,10 +2,10 @@
 // Satori hanya mendukung sebagian CSS: semua tata letak memakai flexbox dan
 // gaya sebaris, sama dengan kartu Modul Anatomi dan Bara.
 
-import { KANAL_CARD_TEXT, KANAL_HOOK } from "@/config/kanal-content";
-import { TRANSECT_LENGTH_M } from "@/lib/drainage";
-import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsFor, getKanalCard, reachesBeyond, type KanalCard, type SharedCanal } from "@/lib/kanalCard";
-import type { CardFormat } from "@/lib/resultCard";
+import { KANAL_CARD_TEXT, KANAL_HOOK } from "@/config/modul/kanal";
+import { TRANSECT_LENGTH_M } from "@/lib/model/drainage";
+import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsFor, getKanalCard, reachesBeyond, type KanalCard, type SharedCanal } from "@/lib/kartu/kanalCard";
+import type { CardFormat } from "@/lib/kartu/anatomiCard";
 
 const ORANGE = "#f0a35e";
 const CANAL_BLUE = "#5fb0dc";

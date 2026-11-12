@@ -9,7 +9,7 @@
  *
  *  Angka pada `fact` dikutip dari acuan di docs/md/acuan-modul-kanal.md
  *  (Wösten dkk. 2008, Ritzema dkk. 2014, Hooijer dkk. 2012). Tetapan model di
- *  `lib/drainage.ts` belum dikalibrasi ulang; lihat bagian 7 dokumen itu.
+ *  `lib/model/drainage.ts` belum dikalibrasi ulang; lihat bagian 7 dokumen itu.
  * ============================================================================
  */
 

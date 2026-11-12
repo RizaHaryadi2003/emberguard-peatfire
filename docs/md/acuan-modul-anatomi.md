@@ -43,7 +43,7 @@ jadi lebih dekat ke sasaran pengguna daripada data Sarawak dalam Andriesse.
 | Pori ± 90% pada fibrik | Boelter (1974) dalam Andriesse (1988) | Tidak berubah |
 | Batas 50 cm dan 0,4 m | PP 71/2014, PP 57/2016 | Tidak berubah |
 
-Laju 1 mm/tahun juga dipakai Modul 02 dan 04 (`lib/carbon.ts`), jadi tidak ada
+Laju 1 mm/tahun juga dipakai Modul 02 dan 04 (`lib/model/carbon.ts`), jadi tidak ada
 angka di modul lain yang ikut berubah. Laju akumulasi karbon SF61 menurut
 artikel yang sama adalah 63 g C m⁻² tahun⁻¹, yang dapat dipakai saat Modul 04
 ditinjau.
@@ -274,7 +274,7 @@ utuh, bukan dihitung ulang dari model Tahap 1.
 
 ## 7. Isi Modul 01 Sekarang yang Bertentangan dengan Acuan
 
-Hasil pemeriksaan `lib/peat.ts` dan `config/anatomi-content.ts` terhadap
+Hasil pemeriksaan `lib/model/peat.ts` dan `config/modul/anatomi.ts` terhadap
 Andriesse (1988):
 
 | # | Keadaan sekarang | Kata acuan | Tindakan |

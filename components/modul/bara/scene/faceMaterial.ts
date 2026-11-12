@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/peat";
-import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/scene/dioramaConstants";
-import { NOISE_GLSL } from "@/components/modul/scene/noiseTexture";
-import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder";
+import { PEAT_LAYERS, PROFILE_DEPTH, type PeatLayerId } from "@/lib/model/peat";
+import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/shared/scene/dioramaConstants";
+import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
+import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/model/smolder";
 
 // Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul Bara ditentukan
 // di sini: strata gambut dari tekstur foto, gelap-terangnya gambut basah,

@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import type { ShellAct, ShellHook } from "@/components/modul/ActModuleShell";
+import type { ShellAct, ShellHook } from "@/components/modul/shared/ActModuleShell";
 
 export const HUTAN_HOOK: ShellHook = {
   setup: "Dari luar, hutan rawa gambut tampak seperti hutan yang sama di mana-mana.",

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { createSmokeTexture, createSparkTexture } from "@/components/modul/scene/proceduralTextures";
+import { createSmokeTexture, createSparkTexture } from "@/components/modul/shared/scene/proceduralTextures";
 import { BLOCK_DEPTH, BLOCK_WIDTH, type SceneState } from "./sceneState";
-import { isInsideFootprint } from "@/components/modul/scene/terrain";
+import { isInsideFootprint } from "@/components/modul/shared/scene/terrain";
 
 // Percikan api dan asap yang naik dari permukaan gambut kering.
 // Kekuatannya mengikuti tingkat bahaya: nol selama muka air ≤ 40 cm.

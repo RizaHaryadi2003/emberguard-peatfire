@@ -17,8 +17,8 @@
 // otomatis dan dirujuk sebagai algoritma pada naskah skripsi.
 
 import { getLayerAtDepth, PROFILE_DEPTH, type PeatLayerId } from "./peat";
-import { seeded } from "./random";
-import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
+import { seeded } from "@/lib/random";
+import { BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
 
 /** Ukuran kisi sel pada bidang penampang. */
 export const GRID_COLS = 96;

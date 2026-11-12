@@ -5,9 +5,9 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/bara-content";
+import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
 import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
-import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/smolder";
+import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
 import IgnitionPicker from "./IgnitionPicker";
 import ControlDock, { WATER_MAX_CM } from "./ControlDock";
@@ -15,9 +15,9 @@ import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
 import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
-import ModuleHook from "@/components/modul/ModuleHook";
-import StepAdvance from "@/components/modul/StepAdvance";
-import type { SharedBurn } from "@/lib/baraCard";
+import ModuleHook from "@/components/modul/shared/ModuleHook";
+import StepAdvance from "@/components/modul/shared/StepAdvance";
+import type { SharedBurn } from "@/lib/kartu/baraCard";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
 
@@ -82,7 +82,7 @@ const ACT_HINT = [
  * adalah ruang uji: bongkahan gambut dipotong sehingga penampangnya menghadap
  * pembaca, lalu pembaca sendiri yang menyulut, memajukan waktu, mencoba
  * memadamkan, dan akhirnya membasahi gambutnya kembali. Tiap tindakan langsung
- * mengubah simulasi bara (`lib/smolder.ts`) yang digambar pada penampang.
+ * mengubah simulasi bara (`lib/model/smolder.ts`) yang digambar pada penampang.
  */
 export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const rootRef = useRef<HTMLDivElement>(null);

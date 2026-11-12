@@ -3,15 +3,15 @@
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import SkyLighting from "@/components/modul/scene/SkyLighting";
-import Backdrop from "@/components/modul/scene/Backdrop";
-import PerformanceGuard from "@/components/modul/scene/PerformanceGuard";
+import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
+import Backdrop from "@/components/modul/shared/scene/Backdrop";
+import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import {
   DIORAMA_CAMERA_POSES as CAMERA_POSES,
   DIORAMA_EXPOSURE,
   DIORAMA_HEMISPHERE,
-} from "@/components/modul/scene/dioramaConstants";
-import { GRID_COLS, GRID_ROWS, smoothField, type SmolderSim, type SmolderStats } from "@/lib/smolder";
+} from "@/components/modul/shared/scene/dioramaConstants";
+import { GRID_COLS, GRID_ROWS, smoothField, type SmolderSim, type SmolderStats } from "@/lib/model/smolder";
 import CutBlock from "./CutBlock";
 import SurfaceCover from "./SurfaceCover";
 import WallDetails from "./WallDetails";

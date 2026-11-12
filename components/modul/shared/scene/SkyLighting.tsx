@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { getAtmosphere } from "@/lib/atmosphere";
+import { getAtmosphere } from "@/lib/model/atmosphere";
 import { QUALITY_PROFILE, SUN_DIRECTION, type AtmosphereState, type Quality } from "./dioramaConstants";
 
 /**

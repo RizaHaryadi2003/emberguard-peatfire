@@ -1,6 +1,6 @@
-import { CELL_STATE_TEXT } from "@/config/bara-content";
-import type { PeatLayerId } from "@/lib/peat";
-import { CELL_ASH, CELL_QUENCHED, CELL_SMOLDER, type CellState } from "@/lib/smolder";
+import { CELL_STATE_TEXT } from "@/config/modul/bara";
+import type { PeatLayerId } from "@/lib/model/peat";
+import { CELL_ASH, CELL_QUENCHED, CELL_SMOLDER, type CellState } from "@/lib/model/smolder";
 
 // Keterangan yang hanya muncul saat pembaca menunjuk tanah.
 //

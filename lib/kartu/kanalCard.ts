@@ -1,9 +1,9 @@
 // Logika murni kartu hasil Modul Kanal: membaca nilai dari tautan, menghitung isi
 // kartu, dan menyusun alamatnya. Dipisah dari komponen agar mudah diuji.
 
-import { KANAL_CARD_TEXT, REACH_GUESSES } from "@/config/kanal-content";
-import { CANAL_DEPTH_MAX_M, COLUMNS, DrainageSim, TRANSECT_LENGTH_M } from "./drainage";
-import type { CardFormat } from "./resultCard";
+import { KANAL_CARD_TEXT, REACH_GUESSES } from "@/config/modul/kanal";
+import { CANAL_DEPTH_MAX_M, COLUMNS, DrainageSim, TRANSECT_LENGTH_M } from "@/lib/model/drainage";
+import type { CardFormat } from "./anatomiCard";
 
 export const KANAL_PATH = "/modul/kanal";
 export const KANAL_CARD_PATH = `${KANAL_PATH}/kartu`;

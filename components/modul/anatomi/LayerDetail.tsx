@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { formatMeters, type PeatLayer } from "@/lib/peat";
+import { formatMeters, type PeatLayer } from "@/lib/model/peat";
 
 type Props = { layer: PeatLayer; onClose: () => void };
 

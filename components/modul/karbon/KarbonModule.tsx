@@ -13,9 +13,9 @@ import {
   LIMIT_NOTES,
   MATCH_TEXT,
   TIME_SPEEDS,
-} from "@/config/karbon-content";
+} from "@/config/modul/karbon";
 import { moduleAt } from "@/config/modules-content";
-import ModuleHook from "@/components/modul/ModuleHook";
+import ModuleHook from "@/components/modul/shared/ModuleHook";
 import {
   AREA_MAX_HA,
   AREA_MIN_HA,
@@ -31,7 +31,7 @@ import {
   judgeMatch,
   matchSolved,
   type CarbonStats,
-} from "@/lib/carbon";
+} from "@/lib/model/carbon";
 import { createKarbonState, type KarbonState, type Quality } from "./scene/karbonState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.

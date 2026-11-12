@@ -3,8 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Check, MousePointerClick, RotateCcw } from "lucide-react";
-import ModuleHook from "@/components/modul/ModuleHook";
-import StepAdvance from "@/components/modul/StepAdvance";
+import ModuleHook from "@/components/modul/shared/ModuleHook";
+import StepAdvance from "@/components/modul/shared/StepAdvance";
 import { BACK_TO_MODULE_LIST, moduleAt, nextAvailableModule } from "@/config/modules-content";
 
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */

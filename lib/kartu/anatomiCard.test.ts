@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardImagePath, getResultCard, parseCardFormat, parseSharedWaterCm, shareLink } from "./resultCard";
+import { cardImagePath, getResultCard, parseCardFormat, parseSharedWaterCm, shareLink } from "./anatomiCard";
 
 describe("parseSharedWaterCm", () => {
   it("menerima bilangan bulat di dalam rentang pengatur", () => {

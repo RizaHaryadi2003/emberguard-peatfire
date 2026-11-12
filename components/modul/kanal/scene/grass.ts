@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PROFILE_DEPTH_M, waterDepthAt } from "@/lib/drainage";
+import { PROFILE_DEPTH_M, waterDepthAt } from "@/lib/model/drainage";
 import { backEdgeZ, BLOCK_DEPTH, farDistance, surfaceYAt, xOfDistance } from "./transect";
 
 // Rumput tipis di atas hamparan gambut.

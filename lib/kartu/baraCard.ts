@@ -1,8 +1,8 @@
 // Logika murni kartu hasil Modul Bara: membaca nilai dari tautan, memilih isi
 // kartu, dan menyusun alamatnya. Dipisah dari komponen agar mudah diuji.
 
-import { BARA_CARD_TEXT, type BaraCardZone } from "@/config/bara-content";
-import type { CardFormat } from "./resultCard";
+import { BARA_CARD_TEXT, type BaraCardZone } from "@/config/modul/bara";
+import type { CardFormat } from "./anatomiCard";
 
 export const BARA_PATH = "/modul/bara";
 export const BARA_CARD_PATH = `${BARA_PATH}/kartu`;

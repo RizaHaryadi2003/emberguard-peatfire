@@ -12,10 +12,10 @@ import {
   REACH_GUESSES,
   SCALE_NOTE,
   TIME_SPEEDS,
-} from "@/config/kanal-content";
+} from "@/config/modul/kanal";
 import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
-import ModuleHook from "@/components/modul/ModuleHook";
-import StepAdvance from "@/components/modul/StepAdvance";
+import ModuleHook from "@/components/modul/shared/ModuleHook";
+import StepAdvance from "@/components/modul/shared/StepAdvance";
 import {
   CANAL_DEPTH_MAX_M,
   DrainageSim,
@@ -25,11 +25,11 @@ import {
   SIM_MAX_YEARS,
   WATER_LIMIT_M,
   type DrainageStats,
-} from "@/lib/drainage";
+} from "@/lib/model/drainage";
 import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
 import ReachMap from "./ReachMap";
 import SummaryCard from "./SummaryCard";
-import { FIELD_LENGTH_M, reachesBeyond } from "@/lib/kanalCard";
+import { FIELD_LENGTH_M, reachesBeyond } from "@/lib/kartu/kanalCard";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.

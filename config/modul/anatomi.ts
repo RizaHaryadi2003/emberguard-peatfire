@@ -4,7 +4,7 @@
  * ============================================================================
  */
 
-import type { GrowthStatus, WaterStatus } from "@/lib/peat";
+import type { GrowthStatus, WaterStatus } from "@/lib/model/peat";
 
 export type AnatomiStep = {
   title: string;

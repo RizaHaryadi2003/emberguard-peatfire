@@ -1,7 +1,7 @@
 "use client";
 
 import { Hourglass, Layers, Sprout } from "lucide-react";
-import { GROWTH_STATUS_TEXT } from "@/config/anatomi-content";
+import { GROWTH_STATUS_TEXT } from "@/config/modul/anatomi";
 import {
   formatYears,
   getDeepestLayer,
@@ -11,7 +11,7 @@ import {
   PEAT_MAX_YEARS,
   PEAT_MIN_THICKNESS_CM,
   PEAT_MIN_YEARS,
-} from "@/lib/peat";
+} from "@/lib/model/peat";
 
 type Props = {
   years: number;

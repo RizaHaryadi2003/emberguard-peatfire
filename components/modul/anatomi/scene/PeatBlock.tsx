@@ -4,11 +4,11 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
-import { createEmberTexture } from "@/components/modul/scene/proceduralTextures";
-import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab } from "@/components/modul/scene/terrain";
-import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/scene/dioramaConstants";
-import { createWallDetails } from "@/components/modul/scene/wallDetails";
+import { PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/model/peat";
+import { createEmberTexture } from "@/components/modul/shared/scene/proceduralTextures";
+import { createRibbon, createSlab, interfaceY, updateRibbon, updateSlab } from "@/components/modul/shared/scene/terrain";
+import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/shared/scene/dioramaConstants";
+import { createWallDetails } from "@/components/modul/shared/scene/wallDetails";
 import { EXPLODE_GAP, EXPLODE_STEP, type SceneState } from "./sceneState";
 
 /** Seberapa jauh lapisan terpilih maju ke arah kamera, dan lapisan lain mundur (m). */

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import KanalModule from "@/components/modul/kanal/KanalModule";
-import { KANAL_HOOK } from "@/config/kanal-content";
-import { kanalCardImagePath, parseSharedCanal } from "@/lib/kanalCard";
-import { CARD_SIZE } from "@/lib/resultCard";
+import { KANAL_HOOK } from "@/config/modul/kanal";
+import { kanalCardImagePath, parseSharedCanal } from "@/lib/kartu/kanalCard";
+import { CARD_SIZE } from "@/lib/kartu/anatomiCard";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

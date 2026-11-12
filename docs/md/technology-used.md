@@ -284,16 +284,16 @@ detik).
 
 | Berkas uji | Uji | Cakupan |
 |---|---|---|
-| `lib/carbon.test.ts` | 32 | Cadangan karbon, CO₂, umur menurut kedalaman, pemulihan |
-| `lib/peat.test.ts` | 28 | Klasifikasi lapisan, status air, indeks bahaya |
-| `lib/drainage.test.ts` | 25 | Panjang pengaruh kanal, subsiden, emisi, pemadatan |
-| `lib/smolder.test.ts` | 23 | Penyalaan, perambatan, pemadaman, subsiden |
+| `lib/model/carbon.test.ts` | 32 | Cadangan karbon, CO₂, umur menurut kedalaman, pemulihan |
+| `lib/model/peat.test.ts` | 28 | Klasifikasi lapisan, status air, indeks bahaya |
+| `lib/model/drainage.test.ts` | 25 | Panjang pengaruh kanal, subsiden, emisi, pemadatan |
+| `lib/model/smolder.test.ts` | 23 | Penyalaan, perambatan, pemadaman, subsiden |
 | `components/modul/bara/scene/crossSection.test.ts` | 12 | Pemetaan sel simulasi ke geometri penampang |
 | `components/modul/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 02 |
 | `components/modul/karbon/depthProbe.test.ts` | 8 | Penilaian penanda kedalaman babak 01 Modul 04 |
 | `lib/spotlight.test.ts` | 7 | Interpolasi dan penghalusan kursor |
 | `components/modul/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 03 |
-| `lib/atmosphere.test.ts` | 4 | Peralihan suasana langit |
+| `lib/model/atmosphere.test.ts` | 4 | Peralihan suasana langit |
 | `lib/ambientSound.test.ts` | 2 | Laju derak bara dan peluang kicau burung |
 
 ---
@@ -333,7 +333,7 @@ Handler tanpa perlu berganti teknologi.
 
 ### 7.1 Anggaran grafis dua tingkat
 
-`components/modul/scene/dioramaConstants.ts` menetapkan dua profil mutu yang
+`components/modul/shared/scene/dioramaConstants.ts` menetapkan dua profil mutu yang
 dipakai bersama oleh seluruh modul:
 
 | Parameter | `high` | `low` | Arti |

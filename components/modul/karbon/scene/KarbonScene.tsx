@@ -3,12 +3,12 @@
 import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { PEAT_LAYERS } from "@/lib/peat";
-import { CarbonSim, type CarbonStats } from "@/lib/carbon";
-import PerformanceGuard from "@/components/modul/scene/PerformanceGuard";
-import SkyLighting from "@/components/modul/scene/SkyLighting";
-import Backdrop from "@/components/modul/scene/Backdrop";
-import { createNoiseTexture } from "@/components/modul/scene/noiseTexture";
+import { PEAT_LAYERS } from "@/lib/model/peat";
+import { CarbonSim, type CarbonStats } from "@/lib/model/carbon";
+import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
+import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
+import Backdrop from "@/components/modul/shared/scene/Backdrop";
+import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { QUALITY_PROFILE, type KarbonState, type Quality } from "./karbonState";
 import {
   createFaceGrid,

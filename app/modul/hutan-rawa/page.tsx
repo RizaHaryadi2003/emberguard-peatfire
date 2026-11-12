@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import HutanModule from "@/components/modul/hutan-rawa/HutanModule";
-import { HUTAN_HOOK } from "@/config/hutan-rawa-content";
+import { HUTAN_HOOK } from "@/config/modul/hutan-rawa";
 
 export const metadata: Metadata = {
   title: "Hutan Rawa Gambut — Emberguard",

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PROFILE_DEPTH } from "@/lib/peat";
+import { PROFILE_DEPTH } from "@/lib/model/peat";
 import { BLOCK_DEPTH, BLOCK_WIDTH } from "./dioramaConstants";
 
 // Bentuk bongkahan tanah yang alami (bukan kotak): tapak membulat tak

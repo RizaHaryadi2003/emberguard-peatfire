@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { CloudRain, Waves } from "lucide-react";
-import ActModuleShell from "@/components/modul/ActModuleShell";
-import { FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/hutan-rawa-content";
+import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import { FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
 import DomeSection, { zoneAt } from "./DomeSection";
 
 /** Panjang penampang yang dapat dijalani (km). */

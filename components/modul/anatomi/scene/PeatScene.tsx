@@ -3,18 +3,18 @@
 import { Suspense, useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { getFireDanger, getPeatThickness, PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
+import { getFireDanger, getPeatThickness, PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/model/peat";
 import PeatBlock from "./PeatBlock";
 import Vegetation from "./Vegetation";
 import Embers from "./Embers";
-import SkyLighting from "@/components/modul/scene/SkyLighting";
-import Backdrop from "@/components/modul/scene/Backdrop";
-import PerformanceGuard from "@/components/modul/scene/PerformanceGuard";
+import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
+import Backdrop from "@/components/modul/shared/scene/Backdrop";
+import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import {
   DIORAMA_CAMERA_POSES as CAMERA_POSES,
   DIORAMA_EXPOSURE,
   DIORAMA_HEMISPHERE,
-} from "@/components/modul/scene/dioramaConstants";
+} from "@/components/modul/shared/scene/dioramaConstants";
 import {
   DIORAMA_BASE_YAW,
   DIORAMA_Y,

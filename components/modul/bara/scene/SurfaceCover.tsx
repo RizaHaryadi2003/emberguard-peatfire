@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { isInsideFootprint } from "@/components/modul/scene/terrain";
-import { DIORAMA_TREE_SPOTS, DIORAMA_UNDERSTORY_SPOTS } from "@/components/modul/scene/dioramaConstants";
+import { isInsideFootprint } from "@/components/modul/shared/scene/terrain";
+import { DIORAMA_TREE_SPOTS, DIORAMA_UNDERSTORY_SPOTS } from "@/components/modul/shared/scene/dioramaConstants";
 import { seeded } from "@/lib/random";
-import { type SmolderSim } from "@/lib/smolder";
+import { type SmolderSim } from "@/lib/model/smolder";
 import {
   createSurfaceGrid,
   SURFACE_COLS,

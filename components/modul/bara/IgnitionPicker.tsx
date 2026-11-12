@@ -1,7 +1,7 @@
 "use client";
 
 import { Flame, Wind } from "lucide-react";
-import { IGNITION_SOURCES, type IgnitionSource } from "@/config/bara-content";
+import { IGNITION_SOURCES, type IgnitionSource } from "@/config/modul/bara";
 
 const ICONS = {
   lintas: Wind,

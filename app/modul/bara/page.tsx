@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import BaraModule from "@/components/modul/bara/BaraModule";
-import { BARA_HOOK } from "@/config/bara-content";
-import { baraCardImagePath, parseSharedBurn } from "@/lib/baraCard";
-import { CARD_SIZE } from "@/lib/resultCard";
+import { BARA_HOOK } from "@/config/modul/bara";
+import { baraCardImagePath, parseSharedBurn } from "@/lib/kartu/baraCard";
+import { CARD_SIZE } from "@/lib/kartu/anatomiCard";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

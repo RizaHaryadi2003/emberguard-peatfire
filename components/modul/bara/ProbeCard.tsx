@@ -1,9 +1,9 @@
 "use client";
 
 import { X } from "lucide-react";
-import { CELL_STATE_TEXT } from "@/config/bara-content";
-import { formatMeters, PEAT_LAYERS, type PeatLayerId } from "@/lib/peat";
-import type { CellState } from "@/lib/smolder";
+import { CELL_STATE_TEXT } from "@/config/modul/bara";
+import { formatMeters, PEAT_LAYERS, type PeatLayerId } from "@/lib/model/peat";
+import type { CellState } from "@/lib/model/smolder";
 
 export type ProbeResult = {
   state: CellState;

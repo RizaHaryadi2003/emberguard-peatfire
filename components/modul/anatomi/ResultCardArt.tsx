@@ -2,9 +2,9 @@
 // Satori hanya mendukung sebagian CSS: semua tata letak memakai flexbox dan
 // gaya sebaris, jadi kelas Tailwind tidak dapat dipakai di sini.
 
-import { ANATOMI_HOOK } from "@/config/anatomi-content";
-import { getResultCard, type CardFormat, type ResultCard } from "@/lib/resultCard";
-import { WATER_LIMIT_CM, WATER_MAX_CM, type WaterStatus } from "@/lib/peat";
+import { ANATOMI_HOOK } from "@/config/modul/anatomi";
+import { getResultCard, type CardFormat, type ResultCard } from "@/lib/kartu/anatomiCard";
+import { WATER_LIMIT_CM, WATER_MAX_CM, type WaterStatus } from "@/lib/model/peat";
 
 const STATUS_COLOR: Record<WaterStatus, string> = {
   basah: "#7dd3fc",

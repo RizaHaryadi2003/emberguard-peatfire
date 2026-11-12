@@ -1,7 +1,7 @@
 "use client";
 
 import { Html } from "@react-three/drei";
-import { ageAtDepth, formatYearCount } from "@/lib/carbon";
+import { ageAtDepth, formatYearCount } from "@/lib/model/carbon";
 import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, originalTopY } from "./archive";
 
 // Penggaris pada bongkahan Modul Karbon.

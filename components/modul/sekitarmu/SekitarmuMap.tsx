@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, Check, Flame } from "lucide-react";
 import mapData from "@/data/sekitarmu-map.json";
-import { BORE_SITES, DISTRICT_PEAT, FIRE_SITES, SEKITARMU_TEXT } from "@/config/sekitarmu-content";
+import { BORE_SITES, DISTRICT_PEAT, FIRE_SITES, SEKITARMU_TEXT } from "@/config/modul/sekitarmu";
 
 // Peta Modul 01: dari Indonesia sampai jalan-jalan di Pontianak Tenggara.
 //
