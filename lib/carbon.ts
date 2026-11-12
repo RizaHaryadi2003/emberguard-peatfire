@@ -1,8 +1,8 @@
-// Gudang karbon gambut untuk Modul 04 "Gudang Karbon".
+// Gudang karbon gambut untuk Modul Karbon "Gudang Karbon".
 //
 // Dipisah dari komponen 3D agar mudah diuji dan dirujuk di naskah skripsi,
-// sama seperti `peat.ts` untuk Modul 01, `smolder.ts` untuk Modul 03, dan
-// `drainage.ts` untuk Modul 02.
+// sama seperti `peat.ts` untuk Modul Anatomi, `smolder.ts` untuk Modul Bara, dan
+// `drainage.ts` untuk Modul Kanal.
 //
 // --- Yang ingin disampaikan -------------------------------------------------
 //
@@ -16,10 +16,10 @@
 // lain tanpa pernah dipertemukan:
 //
 //   1. Gambut menumpuk satu milimeter setahun (`PEAT_GROWTH_MM_PER_YEAR` di
-//      peat.ts, dipakai Modul 01 saat pembaca menyeret waktu; rata-rata inti
+//      peat.ts, dipakai Modul Anatomi saat pembaca menyeret waktu; rata-rata inti
 //      SF61, Anshari dkk. 2026). Artinya satu meter gambut
 //      adalah seribu tahun penimbunan — bidang potong yang dilihat pembaca
-//      sejak Modul 01 sebenarnya sebuah kalender.
+//      sejak Modul Anatomi sebenarnya sebuah kalender.
 //   2. Gambut yang terbakar melepaskan karbonnya sebagai CO2. Yang menentukan
 //      besarnya bukan luas kebakaran — angka yang selalu muncul di berita —
 //      melainkan luas dikali kedalaman. Kebakaran sempit yang dalam
@@ -142,7 +142,7 @@ export function peopleYearsEquivalent(co2T: number): number {
 //  KALENDER GAMBUT
 // ---------------------------------------------------------------------------
 //
-// Bidang potong yang sama yang dilihat pembaca sejak Modul 01, dibaca sebagai
+// Bidang potong yang sama yang dilihat pembaca sejak Modul Anatomi, dibaca sebagai
 // sumbu waktu. Tidak ada yang diubah pada gambutnya — hanya penggarisnya yang
 // diganti, dari meter menjadi tahun.
 

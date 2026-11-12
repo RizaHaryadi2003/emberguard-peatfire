@@ -53,7 +53,7 @@ import { createGrassField } from "./grass";
 import { createWeir } from "./weir";
 import SceneLabels from "./SceneLabels";
 
-// Kanvas 3D Modul 02: sepetak gambut yang dibelah kanal, dilihat isometrik.
+// Kanvas 3D Modul Kanal: sepetak gambut yang dibelah kanal, dilihat isometrik.
 //
 // Susunannya cermin terhadap sumbu kanal. Satu sayap dibangun, lalu digambar
 // dua kali — sekali apa adanya, sekali dengan skala x negatif. Kedua sisi
@@ -93,7 +93,7 @@ const CAMERA_AZIMUTH = (21 * Math.PI) / 180;
 const CAMERA_DISTANCE = 150;
 
 /**
- * Berapa kali petak ini lebih besar daripada diorama 4,4 m Modul 01 dan 03.
+ * Berapa kali petak ini lebih besar daripada diorama 4,4 m Modul Anatomi dan Bara.
  *
  * Dipakai `SkyLighting` untuk menyetel kerapatan kabut, jarak matahari, dan
  * jangkauan peta bayangan. Petaknya selebar 80 m, jadi angkanya 16 — dan
@@ -138,8 +138,8 @@ const PLANTING = {
 /**
  * Batas resolusi render khusus modul ini, di atas batas bersama.
  *
- * Modul 01 dan 03 memotret bongkahan kecil yang menempati sebagian layar;
- * sisanya latar foto yang tidak berbiaya apa-apa. Modul 02 menutupi hampir
+ * Modul Anatomi dan Bara memotret bongkahan kecil yang menempati sebagian layar;
+ * sisanya latar foto yang tidak berbiaya apa-apa. Modul Kanal menutupi hampir
  * separuh layar dengan tanah yang tiap pikselnya menjalankan peneduh berisi
  * empat peta warna, empat peta normal, derau berlapis, dan seluruh jalur PBR
  * dengan peta lingkungan serta bayangan. Pada 1,5× resolusi perangkat, layar
@@ -406,8 +406,8 @@ function Block({
     THREE.TextureLoader,
     PEAT_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`),
   );
-  // Peta normal tiap lapisan. Berkasnya sudah ada di repositori untuk Modul 01
-  // dan 03; Modul 02 (Kanal) tidak memakainya sama sekali sebelum ini, dan itulah
+  // Peta normal tiap lapisan. Berkasnya sudah ada di repositori untuk Modul Anatomi
+  // dan 03; Modul Kanal (Kanal) tidak memakainya sama sekali sebelum ini, dan itulah
   // sebabnya tanahnya rata seperti kain bercorak.
   const normals = useLoader(
     THREE.TextureLoader,
@@ -417,7 +417,7 @@ function Block({
     "/textures/gambut/permukaan_kering_color.webp",
     "/textures/gambut/permukaan_kering_normal.webp",
   ]);
-  // Model pindaian yang sama dengan Modul 01 dan 03, sehingga pembaca
+  // Model pindaian yang sama dengan Modul Anatomi dan Bara, sehingga pembaca
   // mengenali tumbuhan yang sama — hanya dilihat dari jauh.
   const [treeGltf, fernGltf] = useLoader(GLTFLoader, [
     "/models/gambut/pohon_pachira.glb",
@@ -863,7 +863,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
       <CameraRig />
       <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
       {showFps && <FpsMeter />}
-      {/* Langit fisik, kabut, dan matahari yang sama dengan Modul 01 dan 03.
+      {/* Langit fisik, kabut, dan matahari yang sama dengan Modul Anatomi dan Bara.
           Petak ini enam belas kali lebih besar daripada diorama di sana, dan
           skalanya dinyatakan supaya kabut serta peta bayangannya ikut
           menyesuaikan — bukan disalin lalu diubah angkanya satu per satu. */}

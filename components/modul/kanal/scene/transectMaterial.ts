@@ -8,7 +8,7 @@ import { createNoiseTexture, NOISE_GLSL } from "@/components/modul/scene/noiseTe
 // bahwa deraunya kini milik bersama, bukan milik modul ini.
 export { createNoiseTexture };
 
-// Bahan tanah Modul 02.
+// Bahan tanah Modul Kanal.
 //
 // --- Mengapa MeshStandardMaterial, bukan peneduh sendiri ---------------------
 //
@@ -28,7 +28,7 @@ export { createNoiseTexture };
 // dengan tepat sampai kedalaman berapa gambut ini masih jenuh air.
 //
 // Peta normal tiap lapisan ikut dipakai — berkasnya sudah ada di repositori
-// untuk Modul 01 dan 03, dan tidak dipakai Modul 02 sama sekali sebelum ini.
+// untuk Modul Anatomi dan Bara, dan tidak dipakai Modul Kanal sama sekali sebelum ini.
 // Peta normal inilah yang membuat serat fibrik dan bongkah saprik punya
 // relief; tanpanya, tekstur foto hanyalah gambar rata.
 //
@@ -113,7 +113,7 @@ const FACE_DIFFUSE = /* glsl */ `
   // Akar, serat, dan sisa kayu: isi gambut yang membedakannya dari tanah
   // biasa. Gambut adalah tumbuhan yang belum selesai membusuk, dan pada
   // bidang potong yang sebenarnya isinya terlihat langsung — makin dalam,
-  // makin hancur (Modul 01 menceritakan urutan ini).
+  // makin hancur (Modul Anatomi menceritakan urutan ini).
   //
   // Akar: guratan tegak yang gelap, turun dari permukaan dan habis dalam
   // satu setengah meter pertama — sejauh itulah akar hidup menembus gambut.
@@ -151,7 +151,7 @@ const FACE_DIFFUSE = /* glsl */ `
 
   // Gambut jenuh air lebih gelap dan sedikit kebiruan daripada gambut kering
   // di atasnya. Batas inilah seluruh isi modul ini, jadi ia harus terbaca
-  // sekali lihat. Besar peredupannya sama dengan Modul 01 dan 03.
+  // sekali lihat. Besar peredupannya sama dengan Modul Anatomi dan Bara.
   float kWet = smoothstep(-0.02, 0.06, vDepth - kWaterDepth);
   kAlbedo = mix(
     kAlbedo,
@@ -159,7 +159,7 @@ const FACE_DIFFUSE = /* glsl */ `
     kWet
   );
 
-  // Lapisan kering di atas muka air: bahan bakar yang dibahas Modul 03.
+  // Lapisan kering di atas muka air: bahan bakar yang dibahas Modul Bara.
   float kDry = 1.0 - kWet;
   kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.18, 1.1, 0.92), kDry * (1.0 - smoothstep(0.0, 0.9, vDepth)) * 0.85);
 
@@ -219,7 +219,7 @@ export type FaceUniforms = {
 /**
  * Buat tekstur data keadaan kolom: selebar jumlah kolom, setinggi satu piksel.
  *
- * Satu piksel tingginya, bukan satu kisi penuh seperti Modul 03: keadaan di
+ * Satu piksel tingginya, bukan satu kisi penuh seperti Modul Bara: keadaan di
  * sini hanya berubah terhadap jarak dari kanal, tidak terhadap kedalaman.
  * Kedalaman diurus oleh atribut `aDepth` pada geometrinya.
  */

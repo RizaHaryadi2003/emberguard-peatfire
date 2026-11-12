@@ -21,13 +21,13 @@ import { BLOCK_DEPTH_M, NEAR_LENGTH_M, surfaceYAt, xOfDistance } from "./transec
 //
 // --- Model pindaian, dan mengapa harus di-instance --------------------------
 //
-// Pohonnya memakai model pindaian yang sama dengan Modul 01 dan 03
+// Pohonnya memakai model pindaian yang sama dengan Modul Anatomi dan Bara
 // (pohon_pachira.glb, Poly Haven CC0 — lihat public/models/gambut/SUMBER.md),
 // bukan bentuk sederhana. Bola hijau di atas batang silinder tidak pernah
 // terbaca sebagai pohon begitu ia terkena cahaya matahari sungguhan: yang
 // didapat justru permen lolipop yang mengambang di atas tanah yang serius.
 //
-// Tetapi Modul 01 dan 03 hanya menanam tiga pohon dan menyalin modelnya satu
+// Tetapi Modul Anatomi dan Bara hanya menanam tiga pohon dan menyalin modelnya satu
 // per satu; modul ini menanam lima puluhan. Disalin dengan cara yang sama,
 // tiap pohon menjadi satu panggilan gambar tersendiri dan ratusan ribu
 // segitiga — persis yang tidak boleh terjadi pada modul yang juga menjalankan
@@ -144,7 +144,7 @@ function seeded(seed: number): () => number {
  * Model pindaian ini mahal: satu pohon pachira berdaun 17.000-24.000 segitiga,
  * dan lima puluhan pohon membuat seluruh adegan menggambar 1,3 juta segitiga
  * tiap bingkai — pada modul yang juga menjalankan simulasi tiap bingkai.
- * Modul 01 dan 03 tidak pernah menghadapi ini karena hanya menanam tiga.
+ * Modul Anatomi dan Bara tidak pernah menghadapi ini karena hanya menanam tiga.
  *
  * Yang dijatuhkan helai utuh, bukan segitiga satu per satu. Daun pada model
  * ini tersusun sebagai lembar-lembar bersegitiga genap; membuang segitiga
@@ -207,7 +207,7 @@ function collectVariants(root: THREE.Object3D, leafKeep = 1): Part[][] {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     // Ragam dipisahkan oleh huruf terakhir nama mesh, sama seperti pada
-    // SurfaceCover Modul 03 — begitulah berkas Poly Haven ini disusun.
+    // SurfaceCover Modul Bara — begitulah berkas Poly Haven ini disusun.
     const key = mesh.name.slice(-1);
     const leaf = /leaf|leaves|daun/i.test(mesh.name);
     let geometry = mesh.geometry.clone();
@@ -352,7 +352,7 @@ export function createPlantField(
   // Pakis tidak ikut dirender pada langkah bayangan. Daunnya berpoligon rapat
   // dan bayangannya nyaris tidak terlihat di bawah tajuk, sementara biayanya
   // melipatgandakan jumlah segitiga tiap bingkai — pertimbangan yang sama
-  // dengan SurfaceCover pada Modul 03.
+  // dengan SurfaceCover pada Modul Bara.
   const fernPlanting =
     fernScene && ferns.length > 0
       ? plantVariants(collectVariants(fernScene, leafKeep), ferns, false)

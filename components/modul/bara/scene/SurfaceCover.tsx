@@ -19,11 +19,11 @@ import { applyBurn, createBurnUniforms, type BurnUniforms } from "./burnMaterial
 import { BLOCK_WIDTH, DRAG_THRESHOLD, QUALITY_PROFILE, type BaraState, type Quality, type Subsidence } from "./baraState";
 
 // Permukaan hutan rawa di atas bongkahan yang dipotong. Tumbuhan memakai model
-// pindaian yang sama dengan Modul 01 (Poly Haven, CC0 — lihat
+// pindaian yang sama dengan Modul Anatomi (Poly Haven, CC0 — lihat
 // public/models/gambut/SUMBER.md). Di modul ini permukaan ikut melesak ke dalam
 // rongga abu, dan tumbuhannya terbakar bertahap (lihat `burnMaterial.ts`).
 
-// Tumbuhan yang sama letaknya dengan Modul 01; yang berdiri di separuh depan
+// Tumbuhan yang sama letaknya dengan Modul Anatomi; yang berdiri di separuh depan
 // ikut hilang bersama tanah yang dipotong.
 const TREE_SPOTS = DIORAMA_TREE_SPOTS.filter(([, z]) => z < 0);
 const UNDERSTORY_SPOTS = DIORAMA_UNDERSTORY_SPOTS.filter(([, z]) => z < 0);

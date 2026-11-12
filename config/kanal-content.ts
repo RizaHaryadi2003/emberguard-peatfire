@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- *  TEKS MODUL 02 — KANAL & PENGERINGAN — GANTI DI SINI
+ *  TEKS MODUL KANAL — KANAL & PENGERINGAN — GANTI DI SINI
  * ============================================================================
  *  Modul ini penampang lanskap, bukan bongkahan: satu kilometer gambut yang
  *  dipotong kanal. Pembaca menggali kanalnya sendiri, memajukan tahun, lalu

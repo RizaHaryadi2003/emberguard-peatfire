@@ -1,4 +1,4 @@
-// Logika murni kartu hasil Modul 01: membaca nilai dari tautan, memilih isi
+// Logika murni kartu hasil Modul Anatomi: membaca nilai dari tautan, memilih isi
 // kartu, dan menyusun alamatnya. Dipisah dari komponen agar mudah diuji.
 
 import { RESULT_CARD_TEXT, WATER_STATUS_TEXT } from "@/config/anatomi-content";

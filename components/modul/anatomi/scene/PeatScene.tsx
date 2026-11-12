@@ -165,7 +165,7 @@ type Props = {
   onOverload: () => void;
 };
 
-/** Kanvas 3D Modul 01. Berhenti merender saat tidak terlihat di layar. */
+/** Kanvas 3D Modul Anatomi. Berhenti merender saat tidak terlihat di layar. */
 export default function PeatScene({ stateRef, active, quality, onHoverLayer, onSelectLayer, onReady, onOverload }: Props) {
   const profile = QUALITY_PROFILE[quality];
   const maxDpr = profile.maxDpr;

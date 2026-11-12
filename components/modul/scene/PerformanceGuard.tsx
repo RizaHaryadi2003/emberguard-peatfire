@@ -46,7 +46,7 @@ export default function PerformanceGuard({ maxDpr, onOverload }: { maxDpr: numbe
       // permintaan baru dikerjakan pada bingkai berikutnya, dan permintaan
       // sesudahnya jatuh tepat saat loop itu berhenti. Akibatnya adegan hanya
       // tergambar tiap bingkai kedua — diukur 30 fps saat bongkahan diseret
-      // pada layar 60 Hz, di Modul 01 maupun 02.
+      // pada layar 60 Hz, di Modul Anatomi maupun 02.
       if (cap === FRAME_CAP.active) {
         if (loop !== "always") setFrameloop("always");
         return;

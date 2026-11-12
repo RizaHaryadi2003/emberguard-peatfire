@@ -4,7 +4,7 @@ import { seeded } from "@/lib/random";
 import { wallPoint } from "./terrain";
 
 // Detail dinding bongkahan: akar dan ranting mencuat dari fibrik dan hemik,
-// kerikil di tanah mineral. Dipakai Modul 01 dan Modul 03 dengan benih acak
+// kerikil di tanah mineral. Dipakai Modul Anatomi dan Modul Bara dengan benih acak
 // yang sama, jadi letaknya pun sama pada kedua modul.
 
 /** Salin mesh dari model glTF agar siap ditempatkan berulang (geometri & material dipakai bersama). */

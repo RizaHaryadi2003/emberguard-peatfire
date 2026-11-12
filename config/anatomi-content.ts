@@ -12,7 +12,7 @@ export type AnatomiStep = {
   fact: { value: string; caption: string };
 };
 
-/** Empat tahap cerita Modul 01, berpindah mengikuti gulir halaman. */
+/** Empat tahap cerita Modul Anatomi, berpindah mengikuti gulir halaman. */
 export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   {
     title: "Hutan di atas spons",
@@ -38,7 +38,7 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
 
 
 /**
- * Pembuka Modul 01. Dimulai dari pertanyaan yang sudah dimiliki pembaca, bukan
+ * Pembuka Modul Anatomi. Dimulai dari pertanyaan yang sudah dimiliki pembaca, bukan
  * dari definisi, karena ia datang dari media sosial dan belum tentu berniat
  * belajar. Klaim "sebagian besar isinya air" bersandar pada pori gambut yang
  * jenuh, 81–93% volume (Andriesse 1988, §4.2.4 dan Tabel 10).

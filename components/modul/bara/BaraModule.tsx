@@ -76,9 +76,9 @@ const ACT_HINT = [
 ];
 
 /**
- * Modul 03 — Bara di Bawah Tanah.
+ * Modul Bara — Bara di Bawah Tanah.
  *
- * Berbeda dari Modul 01 yang bercerita mengikuti gulir halaman, modul ini
+ * Berbeda dari Modul Anatomi yang bercerita mengikuti gulir halaman, modul ini
  * adalah ruang uji: bongkahan gambut dipotong sehingga penampangnya menghadap
  * pembaca, lalu pembaca sendiri yang menyulut, memajukan waktu, mencoba
  * memadamkan, dan akhirnya membasahi gambutnya kembali. Tiap tindakan langsung
@@ -140,7 +140,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   }, [act, view, speedIndex, waterCm, reducedMotion, hookOpen]);
 
   // Halaman ini dikunci setinggi layar, jadi tidak ada gulir sungguhan yang
-  // bisa ditangkap seperti di Modul 01. Gerakannya dibaca langsung.
+  // bisa ditangkap seperti di Modul Anatomi. Gerakannya dibaca langsung.
   useEffect(() => {
     if (!hookOpen) return;
     let startY: number | null = null;
@@ -402,7 +402,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
    */
   const dense = act >= 2;
 
-  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01. */
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   const actDone = [
@@ -457,7 +457,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
       <StepAdvance {...BACK_TO_MODULE_LIST} />
     );
 
-  // Seret mendatar untuk memutar diorama, sama dengan Modul 01. Jarak tempuhnya
+  // Seret mendatar untuk memutar diorama, sama dengan Modul Anatomi. Jarak tempuhnya
   // disimpan agar penangan klik di dalam adegan dapat membedakan seretan dari
   // ketukan.
   const drag = useRef<{ x: number; y: number; start: number } | null>(null);
@@ -508,7 +508,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   return (
     <div ref={rootRef} id="modul-bara" className="relative h-[100dvh] w-full overflow-hidden bg-[#050505]">
       {/* Lapisan 3D. Seretan tetikus memutar diorama; sentuhan tidak memutar,
-          sama dengan Modul 01. */}
+          sama dengan Modul Anatomi. */}
       <div
         className="absolute inset-0 cursor-grab active:cursor-grabbing"
         onPointerDown={handleDragStart}
@@ -663,7 +663,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
       {/* Pada layar sangat pendek panel merapat ke tepi bawah. Navigasi babak
           berakhir di 54 px dari dasar, jadi 56 px masih bersih tanpa saling
           menindih. Di layar sempit navigasi itu tidak ada, jadi panelnya turun
-          dan panah lanjut duduk di atasnya, sama dengan Modul 01. */}
+          dan panah lanjut duduk di atasnya, sama dengan Modul Anatomi. */}
       <div ref={dockRef} inert={hookOpen} className={`absolute bottom-6 left-5 right-5 z-30 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
         <div ref={dockStackRef} className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
           {/* Kolom kanan tidak ada di bawah lg, jadi pesannya tampil di sini.

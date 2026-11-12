@@ -3,7 +3,7 @@ import * as THREE from "three";
 // Derau yang dipakai bersama oleh bahan tanah seluruh modul 3D.
 //
 // Dipindahkan ke sini dari `components/modul/kanal/scene/transectMaterial.ts`
-// ketika Modul 04 memerlukannya juga. Isinya tidak berubah sama sekali — yang
+// ketika Modul Karbon memerlukannya juga. Isinya tidak berubah sama sekali — yang
 // berubah hanya tempatnya, sebab derau ini bukan milik satu modul: ia bagian
 // dari cara seluruh section ini menggambar tanah.
 
@@ -21,8 +21,8 @@ import * as THREE from "three";
 // peneduh bidang potong memanggil `kNoise` tiga kali, sehingga tiap piksel
 // tanah membayar tiga sampai lima puluh `sin`.
 //
-// Pada Modul 01 dan 03 biaya itu tidak pernah terasa: bongkahannya hanya
-// menempati sebagian kecil layar. Modul 02 menutupi hampir separuh layar
+// Pada Modul Anatomi dan Bara biaya itu tidak pernah terasa: bongkahannya hanya
+// menempati sebagian kecil layar. Modul Kanal menutupi hampir separuh layar
 // dengan tanah, jadi biaya per piksel itulah seluruh anggarannya.
 //
 // Tekstur derau satu kali baca menggantikan semuanya. Teksturnya 128×128,

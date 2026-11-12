@@ -8,7 +8,7 @@ import {
   type DrainageSim,
 } from "@/lib/drainage";
 
-// Bentuk bongkahan lanskap Modul 02: sepetak gambut yang dibelah kanal,
+// Bentuk bongkahan lanskap Modul Kanal: sepetak gambut yang dibelah kanal,
 // dilihat dari sudut isometrik.
 //
 // --- Mengapa bukan penampang satu kilometer --------------------------------
@@ -281,7 +281,7 @@ export function groundY(xScene: number, zM: number, dropM = 0, canalDepthM = 0):
 // yang diangkat dari lanskap, dan mata tertarik ke garis-garis lurus itu
 // alih-alih ke kanal dan lapisan di bidang potongnya.
 //
-// Bentuk yang baru mengikuti cara Modul 01 dan 03 (`scene/terrain.ts`):
+// Bentuk yang baru mengikuti cara Modul Anatomi dan Bara (`scene/terrain.ts`):
 //   - tepi luar bergelombang landai di denah, tidak pernah lurus;
 //   - bahu permukaan membulat turun ke dinding, bukan bertemu pada siku;
 //   - dinding samping memperlihatkan lapisan gambut yang sama dengan bidang
@@ -1155,7 +1155,7 @@ export function createCanalWaterGeometry(): THREE.BufferGeometry {
 // ---------------------------------------------------------------------------
 
 /**
- * Pelacak penurunan permukaan, sejajar dengan `createSubsidence` pada Modul 03.
+ * Pelacak penurunan permukaan, sejajar dengan `createSubsidence` pada Modul Bara.
  *
  * Yang digambar bukan nilai simulasi apa adanya, melainkan salinannya yang
  * dihaluskan. Simulasi maju dalam langkah tetap 0,05 tahun, jadi pada

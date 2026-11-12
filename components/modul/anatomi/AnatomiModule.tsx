@@ -69,7 +69,7 @@ const STEP_HINT = [
 const STEP_FREE = [false, false, true, true];
 
 /**
- * Modul 01 — Anatomi Gambut.
+ * Modul Anatomi — Anatomi Gambut.
  * Bagian ini "menempel" di layar selama empat layar gulir; tiap seperempat
  * gulir memindahkan cerita ke tahap berikutnya, sementara model 3D di
  * belakangnya berubah (kamera, lapisan terurai, muka air, bara).
@@ -657,7 +657,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
             } hidden md:inline-flex`}
             // Di layar sempit tombol ini selalu disembunyikan, sama dengan
-            // Modul 03. Dahulu ia hanya disembunyikan saat panel pengatur
+            // Modul Bara. Dahulu ia hanya disembunyikan saat panel pengatur
             // tampil; pada tahap tanpa panel ia berbagi baris dengan panah
             // lanjut dan arahannya, dan di layar 390 px baris itu selebar
             // 385 px sehingga tombolnya terdorong keluar tepi kiri layar.

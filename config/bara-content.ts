@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- *  TEKS MODUL 02 — BARA DI BAWAH TANAH — GANTI DI SINI
+ *  TEKS MODUL KANAL — BARA DI BAWAH TANAH — GANTI DI SINI
  * ============================================================================
- *  Modul ini bukan cerita bergulir seperti Modul 01, melainkan ruang uji:
+ *  Modul ini bukan cerita bergulir seperti Modul Anatomi, melainkan ruang uji:
  *  pembaca menekan tombol, menyulut, memajukan waktu, mencoba memadamkan, lalu
  *  melihat akibatnya pada penampang gambut. Empat babak berurutan, dan tiap
  *  babak baru terbuka setelah pembaca melakukan tindakan yang diminta.
@@ -27,7 +27,7 @@ export type BaraAct = {
 };
 
 /**
- * Pembuka Modul 03. Berangkat dari yang sering dilihat pembaca saat musim kabut
+ * Pembuka Modul Bara. Berangkat dari yang sering dilihat pembaca saat musim kabut
  * asap: asap tebal tanpa api. Tidak memuat angka; klaim bahwa bara gambut
  * berasap tanpa nyala sama dengan isi Babak 01 dan Babak 03 di bawah.
  */

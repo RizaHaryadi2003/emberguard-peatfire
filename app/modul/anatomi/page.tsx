@@ -22,7 +22,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-// Halaman Modul 01: diorama interaktif, lalu navigasi antarmodul.
+// Halaman Modul Anatomi: diorama interaktif, lalu navigasi antarmodul.
 export default async function AnatomiPage({ searchParams }: Props) {
   const sharedWaterCm = parseSharedWaterCm((await searchParams).muka);
   return (

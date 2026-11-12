@@ -26,10 +26,10 @@ export default function SkyLighting({
   stateRef: RefObject<AtmosphereState>;
   quality?: Quality;
   /**
-   * Berapa kali lebih besar adegan ini dibanding diorama 4,4 m Modul 01 & 02.
+   * Berapa kali lebih besar adegan ini dibanding diorama 4,4 m Modul Anatomi & 02.
    *
    * Seluruh angka di berkas ini — kerapatan kabut, jarak matahari, jangkauan
-   * peta bayangan — dipilih untuk bongkahan selebar beberapa meter. Modul 02
+   * peta bayangan — dipilih untuk bongkahan selebar beberapa meter. Modul Kanal
    * memakai petak selebar delapan puluh meter, dan angka yang sama di sana
    * berarti kabut setebal susu pada jarak sepuluh meter dan peta bayangan
    * yang hanya menutupi sepersepuluh gambarnya.
@@ -43,9 +43,9 @@ export default function SkyLighting({
   /**
    * Pengali kecerahan latar langit/foto (1 = seperti semula).
    *
-   * Modul 01 dan 03 memotret dioramanya dari dekat, sehingga latar hanya
+   * Modul Anatomi dan Bara memotret dioramanya dari dekat, sehingga latar hanya
    * mengintip di sela-sela bongkahan dan kecerahannya tidak pernah menjadi
-   * soal. Modul 02 memperlihatkan petak selebar delapan puluh meter dari
+   * soal. Modul Kanal memperlihatkan petak selebar delapan puluh meter dari
    * jauh, dan latar yang sama di sana mengisi lebih dari separuh layar —
    * terang benderang di belakang antarmuka yang gelap, sehingga teksnya sulit
    * dibaca dan bongkahannya tenggelam.

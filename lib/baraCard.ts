@@ -1,4 +1,4 @@
-// Logika murni kartu hasil Modul 03: membaca nilai dari tautan, memilih isi
+// Logika murni kartu hasil Modul Bara: membaca nilai dari tautan, memilih isi
 // kartu, dan menyusun alamatnya. Dipisah dari komponen agar mudah diuji.
 
 import { BARA_CARD_TEXT, type BaraCardZone } from "@/config/bara-content";

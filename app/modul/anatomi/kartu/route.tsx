@@ -4,7 +4,7 @@ import { CARD_FONTS } from "@/lib/cardFonts";
 import { CARD_SIZE, parseCardFormat, parseSharedWaterCm } from "@/lib/resultCard";
 
 /**
- * Gambar kartu hasil Modul 01 (PNG). Satu sumber untuk pratinjau di dialog,
+ * Gambar kartu hasil Modul Anatomi (PNG). Satu sumber untuk pratinjau di dialog,
  * berkas unduhan, dan pratinjau tautan di media sosial, sehingga ketiganya
  * selalu sama. Isinya hanya bergantung pada alamat, jadi aman disimpan lama.
  */

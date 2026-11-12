@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title, description, openGraph: { title, description, images: [{ url: image, ...CARD_SIZE.og }] }, twitter: { card: "summary_large_image" } };
 }
 
-// Halaman Modul 02: satu layar penuh, tanpa gulir — sama seperti Modul 03.
+// Halaman Modul Kanal: satu layar penuh, tanpa gulir — sama seperti Modul Bara.
 // Babaknya berpindah lewat tombol, jadi gulir hanya akan menyingkap pita hitam
 // kosong di bawah penampang.
 export default function KanalPage() {

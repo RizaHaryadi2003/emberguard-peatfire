@@ -19,7 +19,7 @@ type Props = {
 };
 
 /**
- * Akar dan kerikil di dinding bongkahan: susunan yang sama dengan Modul 01,
+ * Akar dan kerikil di dinding bongkahan: susunan yang sama dengan Modul Anatomi,
  * dikurangi yang berada pada separuh depan yang sudah dipotong.
  */
 export default function WallDetails({ stateRef, subsidence }: Props) {

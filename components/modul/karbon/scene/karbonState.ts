@@ -7,7 +7,7 @@ export { QUALITY_PROFILE, type Quality } from "@/components/modul/scene/dioramaC
  *
  * Disimpan dalam ref dan dibaca tiap bingkai, sehingga menggeser pengatur
  * kedalaman bakar tidak memicu render ulang seluruh kanvas — pola yang sama
- * dengan `BaraState` pada Modul 03 dan `KanalState` pada Modul 02.
+ * dengan `BaraState` pada Modul Bara dan `KanalState` pada Modul Kanal.
  */
 export type KarbonState = {
   /** Babak aktif (0-3). */
@@ -49,7 +49,7 @@ export type KarbonState = {
    *
    * Di sini ia diambil dari dalamnya kebakaran. Jadi langit modul ini
    * menguning karena gambutnya sedang habis terbakar — sambungan langsung ke
-   * Modul 03, tempat pembaca pertama kali melihat langit yang sama menguning
+   * Modul Bara, tempat pembaca pertama kali melihat langit yang sama menguning
    * oleh asap bara di bawah tanah.
    */
   danger: number;

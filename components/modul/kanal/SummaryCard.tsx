@@ -49,7 +49,7 @@ type Props = {
 };
 
 /**
- * Kartu penutup Modul 02: jawaban pertanyaan pembuka, empat angka yang baru
+ * Kartu penutup Modul Kanal: jawaban pertanyaan pembuka, empat angka yang baru
  * saja dilihat pembaca, satu kesimpulan, dan jalan ke modul berikutnya.
  *
  * Jangkauan rawan dihitung ulang dari kedalaman kanalnya, bukan dibaca dari

@@ -4,7 +4,7 @@ import { PEAT_LAYER_TINT, WET_DARKEN } from "@/components/modul/scene/dioramaCon
 import { NOISE_GLSL } from "@/components/modul/scene/noiseTexture";
 import { CAPILLARY_RISE, DOUSE_DEPTH, GRID_COLS, GRID_ROWS } from "@/lib/smolder";
 
-// Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul 03 ditentukan
+// Peneduh (shader) bidang potong gambut. Seluruh tampilan Modul Bara ditentukan
 // di sini: strata gambut dari tekstur foto, gelap-terangnya gambut basah,
 // jaringan bara yang berpijar, rongga abu yang melesak ke dalam, sampai mode
 // termal. Semua dibaca dari satu tekstur data hasil simulasi `SmolderSim`
@@ -166,7 +166,7 @@ vec4 layerWeights(float d) {
   return vec4(1.0 - b0, b0 - b1, b1 - b2, b2);
 }
 
-/** Skala warna tiap lapisan; angkanya dari PEAT_LAYER_TINT, sama dengan Modul 01. */
+/** Skala warna tiap lapisan; angkanya dari PEAT_LAYER_TINT, sama dengan Modul Anatomi. */
 vec3 tintFor(vec4 w) {
   return w.x * vec3(${tintGlsl("fibrik")}) + w.y * vec3(${tintGlsl("hemik")}) +
          w.z * vec3(${tintGlsl("saprik")}) + w.w * vec3(${tintGlsl("mineral")});
@@ -308,7 +308,7 @@ void main() {
   // Gambut jenuh air lebih gelap dan sedikit kebiruan daripada gambut kering
   // di atasnya: batas inilah yang menentukan sampai sedalam apa bara dapat
   // turun, jadi ia harus terbaca sekali lihat. Besarnya peredupan sama dengan
-  // Modul 01 (WET_DARKEN); yang ditambahkan di sini hanya condong ke biru,
+  // Modul Anatomi (WET_DARKEN); yang ditambahkan di sini hanya condong ke biru,
   // karena sebelumnya separuh bawah penampang — yang memang selalu basah —
   // jatuh ke hampir hitam dan tidak bisa dibaca lagi.
   albedo = mix(albedo, albedo * vec3(${(WET_DARKEN * 1.04).toFixed(3)}, ${(WET_DARKEN * 1.12).toFixed(3)}, ${(WET_DARKEN * 1.26).toFixed(3)}), wetEdge);
@@ -347,7 +347,7 @@ void main() {
   //
   // Kedua porsinya dinaikkan dari 0,85 dan 0,50. Bidang potong ini memakai
   // peneduhnya sendiri, jadi ia tidak menerima pantulan lingkungan seperti
-  // bongkahan Modul 01 — tanpa tambahan itu, separuh bawah penampang yang
+  // bongkahan Modul Anatomi — tanpa tambahan itu, separuh bawah penampang yang
   // selalu jenuh air terbaca sebagai bidang hitam, padahal di situlah bara
   // nanti berhenti dan justru harus terlihat.
   vec3 color = albedo * (uAmbient * 1.15 + uSunColor * uSunIntensity * diff * 0.56) * cavityShade * lipShade;

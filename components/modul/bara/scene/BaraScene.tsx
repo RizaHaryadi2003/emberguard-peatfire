@@ -30,11 +30,11 @@ import {
   type Quality,
 } from "./baraState";
 
-// Kanvas 3D Modul 03. Kamera, cahaya, dan gerak bongkahannya sama dengan Modul
-// 01; bedanya hanya bongkahan ini dipotong sehingga isinya terlihat.
+// Kanvas 3D Modul Bara. Kamera, cahaya, dan gerak bongkahannya sama dengan Modul
+// Anatomi; bedanya hanya bongkahan ini dipotong sehingga isinya terlihat.
 
 /**
- * Putar diorama mengikuti seretan pembaca. Gerakannya sama dengan Modul 01:
+ * Putar diorama mengikuti seretan pembaca. Gerakannya sama dengan Modul Anatomi:
  * hanya berputar pada sumbu tegak, bergoyang pelan saat diam, dan melambat
  * halus menuju sasarannya.
  */

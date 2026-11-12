@@ -38,7 +38,7 @@ import {
 // tepi silhuet) dan satu bidang potong di depan yang menampilkan seluruh
 // kejadian di bawah tanah lewat peneduhnya sendiri.
 
-/** Rona lapisan: daftar yang sama persis dengan Modul 01. */
+/** Rona lapisan: daftar yang sama persis dengan Modul Anatomi. */
 const LAYER_TINT = PEAT_LAYER_TINT;
 
 /**
@@ -66,7 +66,7 @@ const NEUTRAL_SUN: [number, number, number] = [1, 0.86, 0.68];
 
 /**
  * Pengganti eksposur 1,12 yang dahulu dipakai adegan ini. Adegan sekarang
- * memakai eksposur Modul 01 (0,9), dan bidang potong diberi cahaya lebih
+ * memakai eksposur Modul Anatomi (0,9), dan bidang potong diberi cahaya lebih
  * sebanding supaya isi lapisannya tetap sama terangnya.
  */
 const FACE_LIGHT_BOOST = 1.12 / 0.9;
@@ -156,7 +156,7 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
       normals.push(normalMap);
     });
 
-    // Badan lapisan memakai resep Modul 01: tiap lapisan dipotong muka air
+    // Badan lapisan memakai resep Modul Anatomi: tiap lapisan dipotong muka air
     // menjadi irisan kering (terang, kasar) dan irisan basah (gelap, berkilap).
     const bodies = PEAT_LAYERS.map((layer, i) => {
       const tint = new THREE.Color(...LAYER_TINT[layer.id]);
@@ -245,7 +245,7 @@ export default function CutBlock({ sim, stateRef, hint, field, subsidence, quali
    * Bentuk irisan kering & basah tiap lapisan pada muka air `waterM`.
    *
    * Tanpa `force`, hanya lapisan yang dipotong muka air yang dibentuk ulang,
-   * sama seperti Modul 01. Setelah permukaan melesak, batas lapisan ikut turun,
+   * sama seperti Modul Anatomi. Setelah permukaan melesak, batas lapisan ikut turun,
    * jadi rentang penjepitan itu tidak lagi berlaku dan nilainya dipakai apa adanya.
    */
   const rebuildBody = useCallback((waterM: number, force: boolean) => {

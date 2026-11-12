@@ -3,12 +3,12 @@ import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
 import { footprintRadius, interfaceY, radiusAt, radiusFrom } from "@/components/modul/scene/terrain";
 
-// Bentuk bongkahan gambut Modul 03: bongkahan yang sama seperti Modul 01,
+// Bentuk bongkahan gambut Modul Bara: bongkahan yang sama seperti Modul Anatomi,
 // tetapi dipotong tepat di tengah (bidang z = 0) dan hanya separuh belakang
 // yang disisakan. Bidang potongnya menghadap kamera, sehingga seluruh kejadian
 // di bawah tanah — bara, rongga abu, muka air — terlihat langsung.
 //
-// Semua bentuk dihitung dari fungsi yang sama dengan Modul 01 (`terrain.ts`),
+// Semua bentuk dihitung dari fungsi yang sama dengan Modul Anatomi (`terrain.ts`),
 // jadi ukuran, lekuk tapak, dan gelombang batas antarlapisan tetap sama.
 
 /** Jumlah titik mengelilingi separuh tapak dan pembagian vertikal dinding. */
@@ -24,7 +24,7 @@ export const FACE_ROWS = 96;
 export const SURFACE_COLS = 72;
 export const SURFACE_ROWS = 28;
 
-/** Berapa kali tekstur gambut diulang per meter (sama dengan Modul 01). */
+/** Berapa kali tekstur gambut diulang per meter (sama dengan Modul Anatomi). */
 export const UV_PER_METER = 0.75;
 
 /** Bidang potong digeser sedikit ke depan agar tidak bersaing dengan badan bongkahan. */
@@ -114,8 +114,8 @@ const FOOTPRINT_RIGHT = footprintRadius(0);
  * sepanjang 4,4 m — penyebab utama bongkahan tampak seperti kue yang
  * dipotong, bukan tanah yang digali.
  *
- * Hanya dipakai Modul 03. `interfaceY` pada `terrain.ts` sengaja tidak diubah
- * agar tampilan Modul 01 yang sudah jadi tidak bergeser.
+ * Hanya dipakai Modul Bara. `interfaceY` pada `terrain.ts` sengaja tidak diubah
+ * agar tampilan Modul Anatomi yang sudah jadi tidak bergeser.
  */
 export function surfaceRelief(x: number, z: number): number {
   return (
@@ -132,7 +132,7 @@ export function surfaceRelief(x: number, z: number): number {
  *
  * Dahulu sampai 4,7 cm. Selama kamera memandang bidang potong hampir tegak
  * lurus, sisipan itu tidak terlihat. Begitu kamera berdiri serong seperti
- * Modul 01, ia menganga menjadi celah hitam setinggi bongkahan — karena di
+ * Modul Anatomi, ia menganga menjadi celah hitam setinggi bongkahan — karena di
  * sanalah badan bongkahan memang berlubang, dan yang terlihat dari celah itu
  * adalah lapisan penutup gelap di belakang bidang potong. Sekarang sisipannya
  * tinggal beberapa milimeter, cukup untuk jaminan tadi, dan lekuk tepinya

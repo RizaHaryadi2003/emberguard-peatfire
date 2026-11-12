@@ -1,4 +1,4 @@
-// Logika murni kartu hasil Modul 02: membaca nilai dari tautan, menghitung isi
+// Logika murni kartu hasil Modul Kanal: membaca nilai dari tautan, menghitung isi
 // kartu, dan menyusun alamatnya. Dipisah dari komponen agar mudah diuji.
 
 import { KANAL_CARD_TEXT, REACH_GUESSES } from "@/config/kanal-content";

@@ -43,7 +43,7 @@ const MODULE = moduleAt("/modul/karbon");
 /**
  * Babak paling awal yang sudah menampilkan tiap alat.
  *
- * Mengikuti pola Modul 02 dan 03: alat sebuah babak baru muncul ketika
+ * Mengikuti pola Modul Kanal dan Bara: alat sebuah babak baru muncul ketika
  * babaknya tiba, lalu tetap ada di babak sesudahnya.
  */
 const TOOL_FROM = { burn: 0, area: 1, time: 2 } as const;
@@ -58,9 +58,9 @@ const RECOVERY_TARGET_YEARS = 100;
 const HOOK_SWIPE = 30;
 
 /**
- * Modul 04 — Gudang Karbon.
+ * Modul Karbon — Gudang Karbon.
  *
- * Bongkahan gambut yang sama dengan Modul 01 dan 03, dibaca ulang sebagai
+ * Bongkahan gambut yang sama dengan Modul Anatomi dan Bara, dibaca ulang sebagai
  * gudang karbon. Pembaca membakarnya sendiri, menukar luas dengan kedalaman,
  * lalu mencoba menimbunnya kembali dan menemukan berapa lama itu.
  */
@@ -81,7 +81,7 @@ export default function KarbonModule() {
    * Diingat, bukan dihitung ulang: pengaturnya masih dapat digeser di babak
    * terakhir, dan tanpa kunci ini penanda babak yang sudah selesai akan
    * berubah kelabu lagi seolah pekerjaannya batal. Pola dan alasannya sama
-   * dengan `probeSolvedOnce` pada Modul 02.
+   * dengan `probeSolvedOnce` pada Modul Kanal.
    */
   const [matchSolvedOnce, setMatchSolvedOnce] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -104,7 +104,7 @@ export default function KarbonModule() {
   }, [act, burnCm, speedIndex, reducedMotion]);
 
   // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
-  // usapan ke atas, sama dengan Modul 02 dan 03.
+  // usapan ke atas, sama dengan Modul Kanal dan Bara.
   useEffect(() => {
     if (!hookOpen) return;
     let startY: number | null = null;
@@ -174,7 +174,7 @@ export default function KarbonModule() {
    * dipasang di sini. Dikerjakan di dalam `useEffect` yang mengawasi kedua
    * nilainya, yang didapat adalah satu render tambahan tiap kali salah satu
    * pengatur bergerak satu langkah; alasan lengkapnya ada pada
-   * `probeSolvedOnce` di Modul 02.
+   * `probeSolvedOnce` di Modul Kanal.
    */
   const recordMatch = useCallback((nextAreaHa: number, nextBurnM: number) => {
     if (matchSolved(judgeMatch(nextAreaHa, nextBurnM))) setMatchSolvedOnce(true);
@@ -195,7 +195,7 @@ export default function KarbonModule() {
   //
   // Tiap syarat harus berupa pekerjaan yang benar-benar dikerjakan pembaca di
   // babak itu, bukan keadaan yang kebetulan sudah benar — aturan yang dibayar
-  // mahal di Modul 02 dan tidak boleh dilanggar lagi di sini. Perhatikan
+  // mahal di Modul Kanal dan tidak boleh dilanggar lagi di sini. Perhatikan
   // bahwa syarat babak 02 tidak mungkin terpenuhi oleh pekerjaan babak 01:
   // babak 01 meminta 50 cm pada satu hektare, yang menghasilkan karbon jauh
   // di bawah angka beritanya dan luas yang tidak pernah disentuh.
@@ -208,7 +208,7 @@ export default function KarbonModule() {
   /**
    * Sisa pekerjaan babak ini, satu baris, dengan angka yang hidup.
    *
-   * Pola yang sama dengan Modul 02: pembaca harus tahu seberapa jauh ia dari
+   * Pola yang sama dengan Modul Kanal: pembaca harus tahu seberapa jauh ia dari
    * selesai, bukan hanya bahwa ia belum.
    */
   const progress: string = [
@@ -233,7 +233,7 @@ export default function KarbonModule() {
   const current = KARBON_ACTS[act];
   const dense = act >= 1;
 
-  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01–03. */
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi, Kanal, dan Bara. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   return (
@@ -458,7 +458,7 @@ export default function KarbonModule() {
           {/* Kabar bahwa takiknya akhirnya tertutup.
               Tempatnya di panel kiri, bukan di kolom kanan — kolom itu tidak
               boleh bertambah tinggi di babak mana pun, pelajaran yang dibayar
-              di Modul 02 ketika kartu ketiga menjulur melewati tepi layar. */}
+              di Modul Kanal ketika kartu ketiga menjulur melewati tepi layar. */}
           {act >= TOOL_FROM.time && stats.burnDepthM > 0 && stats.remainingM <= 0.001 && (
             <p className="mt-3 border-t border-emerald-300/20 pt-3 text-[11px] leading-relaxed text-emerald-50/85">
               {KARBON_TEXT.healed}

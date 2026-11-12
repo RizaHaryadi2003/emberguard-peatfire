@@ -1,4 +1,4 @@
-// Data dan logika murni Modul 01 "Anatomi Gambut".
+// Data dan logika murni Modul Anatomi "Anatomi Gambut".
 // Dipisah dari komponen 3D agar mudah diuji dan dirujuk di naskah skripsi.
 
 export type PeatLayerId = "fibrik" | "hemik" | "saprik" | "mineral";

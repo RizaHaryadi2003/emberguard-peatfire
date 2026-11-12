@@ -1,6 +1,6 @@
-// Tampilan gambar kartu Modul 03, digambar di server oleh ImageResponse (Satori).
+// Tampilan gambar kartu Modul Bara, digambar di server oleh ImageResponse (Satori).
 // Satori hanya mendukung sebagian CSS: semua tata letak memakai flexbox dan
-// gaya sebaris, sama dengan kartu Modul 01.
+// gaya sebaris, sama dengan kartu Modul Anatomi.
 
 import { BARA_CARD_RESURFACED, BARA_HOOK, type BaraCardZone } from "@/config/bara-content";
 import { DEEP_LIMIT_CM, getBaraCard, MAX_SHARED_DEPTH_CM, SURFACE_LIMIT_CM, type BaraCard, type SharedBurn } from "@/lib/baraCard";

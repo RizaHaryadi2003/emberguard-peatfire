@@ -1,25 +1,25 @@
-// Hidrologi kanal gambut untuk Modul 02 "Kanal & Pengeringan".
+// Hidrologi kanal gambut untuk Modul Kanal "Kanal & Pengeringan".
 //
 // Dipisah dari komponen 3D agar mudah diuji dan dirujuk di naskah skripsi,
-// sama seperti `peat.ts` untuk Modul 01 dan `smolder.ts` untuk Modul 03.
+// sama seperti `peat.ts` untuk Modul Anatomi dan `smolder.ts` untuk Modul Bara.
 //
 // --- Pergeseran skala, dan mengapa perlu -----------------------------------
 //
-// Modul 01 dan 03 memakai bongkahan tanah selebar 4,4 m. Pengeringan tidak
+// Modul Anatomi dan Bara memakai bongkahan tanah selebar 4,4 m. Pengeringan tidak
 // terjadi pada skala itu: satu kanal menurunkan muka air tanah bukan hanya di
 // tepinya, melainkan dalam kerucut penurunan yang membentang ratusan meter ke
 // dalam kubah gambut. Digambarkan pada bongkahan 4,4 m, kerucut itu akan
 // tampak sebagai garis datar — tidak ada yang bisa dipelajari dari sana.
 //
-// Karena itu Modul 02 menarik kamera ke belakang: penampang lanskap sepanjang
+// Karena itu Modul Kanal menarik kamera ke belakang: penampang lanskap sepanjang
 // satu kilometer, sedalam profil gambut yang sama. Lapisan, rona, dan teksturnya tetap
 // yang dipakai dua modul sebelumnya, sehingga pembaca mengenali tanah yang
 // sama — hanya dilihat dari jauh.
 //
 // --- Yang ingin disampaikan -------------------------------------------------
 //
-// Modul 03 memperlihatkan kerusakan yang tidak terlihat karena tersembunyi di
-// dalam *ruang*: bara di bawah permukaan. Modul 02 memperlihatkan kerusakan
+// Modul Bara memperlihatkan kerusakan yang tidak terlihat karena tersembunyi di
+// dalam *ruang*: bara di bawah permukaan. Modul Kanal memperlihatkan kerusakan
 // yang tidak terlihat karena tersembunyi di dalam *waktu*: satu kanal bekerja
 // pelan, bertahun-tahun, jauh dari kanalnya sendiri. Dan ketika akhirnya
 // diperbaiki, yang dapat dikembalikan hanya airnya — tanahnya tidak.
@@ -119,7 +119,7 @@ export const CANAL_WIDTH_M = 8;
 export const CANAL_DEPTH_MIN_M = 0;
 export const CANAL_DEPTH_MAX_M = 3;
 
-/** Kedalaman profil gambut, sama dengan Modul 01 dan 03 (m). */
+/** Kedalaman profil gambut, sama dengan Modul Anatomi dan Bara (m). */
 export const PROFILE_DEPTH_M = PROFILE_DEPTH;
 
 /**

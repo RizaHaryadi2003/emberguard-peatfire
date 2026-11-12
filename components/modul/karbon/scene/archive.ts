@@ -3,17 +3,17 @@ import { PROFILE_DEPTH } from "@/lib/peat";
 import { BLOCK_DEPTH, BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
 import { surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/crossSection";
 
-// Bentuk bongkahan Modul 04: petak gambut yang sama dengan Modul 01 dan 03,
+// Bentuk bongkahan Modul Karbon: petak gambut yang sama dengan Modul Anatomi dan Bara,
 // dibaca sebagai arsip.
 //
 // --- Mengapa bongkahan yang sama, bukan gambar baru -------------------------
 //
-// Modul 02 menarik kamera mundur karena pengeringan memang tidak terjadi pada
+// Modul Kanal menarik kamera mundur karena pengeringan memang tidak terjadi pada
 // skala beberapa meter. Modul ini justru harus kembali ke bongkahan 4,4 m,
 // dan itu keputusan, bukan kemalasan.
 //
 // Yang diajarkan modul ini bukan peristiwa melainkan pembacaan: bidang potong
-// yang sejak Modul 01 dibaca pembaca sebagai "lapisan tanah" sebenarnya juga
+// yang sejak Modul Anatomi dibaca pembaca sebagai "lapisan tanah" sebenarnya juga
 // sebuah kalender — satu milimeter satu tahun — dan juga sebuah gudang —
 // lima puluh lima kilogram karbon tiap meter kubik. Pembacaan baru atas
 // gambar yang sudah dikenal hanya mungkin bila gambarnya memang yang sudah
@@ -21,14 +21,14 @@ import { surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/cross
 // benda keempat yang tidak ada hubungannya dengan tiga sebelumnya.
 //
 // Karena itu `surfaceRelief` dan `UV_PER_METER` diambil langsung dari Modul
-// 02, bukan disalin: permukaan bergelombang yang sama, tekstur seukuran yang
-// sama. Bila suatu saat Modul 03 mengubahnya, bongkahan ini ikut berubah —
+// Kanal, bukan disalin: permukaan bergelombang yang sama, tekstur seukuran yang
+// sama. Bila suatu saat Modul Bara mengubahnya, bongkahan ini ikut berubah —
 // dan memang harus, sebab keduanya petak tanah yang sama.
 //
 // --- Satuan ------------------------------------------------------------------
 //
 // Satu satuan adegan = satu meter, mendatar maupun tegak. Tidak ada pembesaran
-// tegak sama sekali, tidak seperti Modul 02. Pada bongkahan selebar 4,4 m dan
+// tegak sama sekali, tidak seperti Modul Kanal. Pada bongkahan selebar 4,4 m dan
 // sedalam 3,4 m perbandingannya sudah terbaca apa adanya, dan modul yang
 // seluruhnya tentang membandingkan besar tidak boleh mengawalinya dengan
 // penggaris yang sudah dibengkokkan.
@@ -41,7 +41,7 @@ import { surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/cross
 
 export { surfaceRelief, UV_PER_METER };
 
-/** Lebar bongkahan (m) — sama dengan Modul 01 dan 03. */
+/** Lebar bongkahan (m) — sama dengan Modul Anatomi dan Bara. */
 export const BLOCK_W = BLOCK_WIDTH;
 
 /** Tebal bongkahan ke arah belakang (m). */
@@ -243,7 +243,7 @@ export function updateTopGrid(
  *
  * Inilah satu-satunya cara memperlihatkan yang hilang, sebab yang hilang
  * tidak punya geometri — persis persoalan yang sama dengan garis permukaan
- * asal pada Modul 02, hanya di sini jawabannya tiga dimensi. Tanpa kotak ini
+ * asal pada Modul Kanal, hanya di sini jawabannya tiga dimensi. Tanpa kotak ini
  * pembaca melihat permukaan turun tetapi tidak punya pembanding, dan
  * penurunan tanpa pembanding tidak terbaca sebagai kehilangan.
  *
@@ -267,7 +267,7 @@ export function createLostGeometry(): THREE.BufferGeometry {
  * digambar peneduh sebagai rambut halus pada bidang potongnya, dan di sana
  * biayanya nol — tetapi angkanya tidak. Dua puluh delapan angka pada tepi
  * gambar setinggi tiga ratus piksel akan saling bertindihan menjadi gumpalan,
- * dan pelajaran yang sama sudah mahal sekali dibayar pada Modul 02.
+ * dan pelajaran yang sama sudah mahal sekali dibayar pada Modul Kanal.
  */
 export const AGE_TICKS_M = [1, 2, 2.8];
 

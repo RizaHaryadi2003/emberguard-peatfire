@@ -1,14 +1,14 @@
 /**
  * ============================================================================
- *  TEKS MODUL 04 — GUDANG KARBON — GANTI DI SINI
+ *  TEKS MODUL KARBON — GUDANG KARBON — GANTI DI SINI
  * ============================================================================
  *  Modul ini membaca bidang potong gambut yang sudah dikenal pembaca sejak
- *  Modul 01 sebagai gudang karbon (± 55 kg karbon tiap meter kubik). Tiga
+ *  Modul Anatomi sebagai gudang karbon (± 55 kg karbon tiap meter kubik). Tiga
  *  babaknya: sedalam apa api gambut menghabiskannya, mengapa kedalaman sama
  *  pentingnya dengan luas, dan berapa lama yang hilang ditabung kembali.
  *
  *  Babak "Arsip di bawah kaki" (mencari gambut seumur Borobudur) dicabut pada
- *  11 November 2026 karena mengulang pelajaran Modul 01 Tahap 1. Acuan tiap
+ *  11 November 2026 karena mengulang pelajaran Modul Anatomi Tahap 1. Acuan tiap
  *  angka ada di docs/md/acuan-modul-karbon.md.
  * ============================================================================
  */
@@ -136,12 +136,12 @@ export const MATCH_TEXT = {
  * Keterangan yang menjelaskan apa yang sedang dilihat pembaca.
  *
  * Modul ini memperlihatkan satu bongkahan tetapi menghitung satu hektare, dan
- * dua hal itu harus dikatakan, bukan dibiarkan ditebak. Modul 02 belajar
+ * dua hal itu harus dikatakan, bukan dibiarkan ditebak. Modul Kanal belajar
  * mahal soal ini: dua gambar berbeda skala tanpa keterangan membuat keduanya
  * tidak dapat dibaca sama sekali.
  */
 export const FIGURE_NOTE = {
-  block: "Gambar: bongkahan 4,4 m — petak yang sama dengan Modul 01 dan 03",
+  block: "Gambar: bongkahan 4,4 m — petak yang sama dengan Modul Anatomi dan Bara",
   area: "Angka karbon dihitung untuk seluruh luas yang disetel, bukan untuk bongkahan ini",
   calendar: "Alur pada bidang potong: tiap garis 100 tahun, garis tebal 500 tahun",
 };

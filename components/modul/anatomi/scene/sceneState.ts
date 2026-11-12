@@ -1,7 +1,7 @@
 import type { PeatLayerId } from "@/lib/peat";
 
 // Ukuran diorama, arah matahari, dan batas putaran dipakai bersama dengan modul
-// lain; diteruskan di sini agar berkas Modul 01 cukup mengimpor dari satu tempat.
+// lain; diteruskan di sini agar berkas Modul Anatomi cukup mengimpor dari satu tempat.
 export {
   BLOCK_DEPTH,
   BLOCK_WIDTH,

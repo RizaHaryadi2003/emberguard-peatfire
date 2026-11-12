@@ -2,7 +2,7 @@ import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
 import { CELL_W, GRID_COLS, type SmolderSim } from "@/lib/smolder";
 import type { ViewMode } from "@/config/bara-content";
 
-// Ukuran diorama & arah matahari dipakai bersama dengan Modul 01 supaya
+// Ukuran diorama & arah matahari dipakai bersama dengan Modul Anatomi supaya
 // bongkahan gambut pada kedua modul benar-benar sama.
 export {
   BLOCK_DEPTH,

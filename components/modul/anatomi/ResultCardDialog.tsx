@@ -3,7 +3,7 @@
 import ShareCardDialog from "@/components/modul/ShareCardDialog";
 import { cardImagePath, getResultCard, shareLink } from "@/lib/resultCard";
 
-/** Kartu hasil Modul 01: muka air pilihan pembaca. */
+/** Kartu hasil Modul Anatomi: muka air pilihan pembaca. */
 export default function ResultCardDialog({ waterCm, onClose }: { waterCm: number; onClose: () => void }) {
   const card = getResultCard(waterCm);
   const link = shareLink(window.location.origin, card.cm);

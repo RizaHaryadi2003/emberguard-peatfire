@@ -1,6 +1,6 @@
-// Tampilan gambar kartu Modul 02, digambar di server oleh ImageResponse (Satori).
+// Tampilan gambar kartu Modul Kanal, digambar di server oleh ImageResponse (Satori).
 // Satori hanya mendukung sebagian CSS: semua tata letak memakai flexbox dan
-// gaya sebaris, sama dengan kartu Modul 01 dan 03.
+// gaya sebaris, sama dengan kartu Modul Anatomi dan Bara.
 
 import { KANAL_CARD_TEXT, KANAL_HOOK } from "@/config/kanal-content";
 import { TRANSECT_LENGTH_M } from "@/lib/drainage";

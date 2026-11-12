@@ -55,7 +55,7 @@ const ACT_SPEED = [0, 0, 0, 0];
 /**
  * Babak paling awal yang sudah menampilkan tiap alat.
  *
- * Mengikuti pola Modul 03 (`showDouse={act >= 2}`, `showRewet={act >= 3}`):
+ * Mengikuti pola Modul Bara (`showDouse={act >= 2}`, `showRewet={act >= 3}`):
  * alat sebuah babak baru muncul ketika babaknya tiba. Sebelum ini ketiganya
  * tersedia sejak babak 01, sehingga pembaca dapat memasang sekat — pekerjaan
  * babak 04 — sebelum ia sempat tahu bahwa ada empat babak, dan keempat
@@ -73,7 +73,7 @@ const SUMMARY_DELAY_MS = 3500;
 const ACT1_DEPTH_CM = 100;
 
 /**
- * Modul 02 — Kanal & Pengeringan.
+ * Modul Kanal — Kanal & Pengeringan.
  *
  * Penampang lanskap sepanjang satu kilometer, bukan bongkahan seperti dua
  * modul sebelumnya: pengeringan tidak terjadi pada skala beberapa meter.
@@ -95,7 +95,7 @@ export default function KanalModule() {
    * Tebakan pembaca di babak 02 (indeks pada REACH_GUESSES), atau null.
    *
    * Disimpan sampai pembaca memulai dari awal, seperti `dousedOnce` di
-   * Modul 03: meninggalkan babak 02 tidak membatalkan tebakan yang sudah
+   * Modul Bara: meninggalkan babak 02 tidak membatalkan tebakan yang sudah
    * dijawab.
    */
   const [guess, setGuess] = useState<number | null>(null);
@@ -134,7 +134,7 @@ export default function KanalModule() {
   }, [act, canalDepthCm, speedIndex, blocked, reducedMotion, guess]);
 
   // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
-  // usapan ke atas, sama dengan Modul 03: halaman ini dikunci setinggi layar,
+  // usapan ke atas, sama dengan Modul Bara: halaman ini dikunci setinggi layar,
   // jadi gerakannya dibaca langsung.
   useEffect(() => {
     if (!hookOpen) return;
@@ -233,7 +233,7 @@ export default function KanalModule() {
   /**
    * Sisa pekerjaan babak ini, satu baris.
    *
-   * Modul 03 hanya menyimpan petunjuknya di atribut `title` penanda babak,
+   * Modul Bara hanya menyimpan petunjuknya di atribut `title` penanda babak,
    * yang hanya terlihat kalau pembaca kebetulan menunda tetikusnya di sana.
    * Di sini syaratnya ditulis terus-menerus dan angkanya hidup, sehingga
    * pembaca tahu seberapa jauh ia dari selesai — bukan hanya bahwa ia belum.
@@ -324,11 +324,11 @@ export default function KanalModule() {
   })();
   const dense = act >= 2;
 
-  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 03. */
+  /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi dan Bara. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
   /**
-   * Panah lanjut, sama dengan Modul 01 dan 03. Selalu terlihat: terkunci
+   * Panah lanjut, sama dengan Modul Anatomi dan Bara. Selalu terlihat: terkunci
    * dengan arahan, atau terbuka dengan nama babak yang menunggu. Dipasang di
    * dua tempat menurut lebar layar, jadi isinya disusun sekali di sini.
    */
@@ -387,7 +387,7 @@ export default function KanalModule() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/75 to-transparent" />
 
-      {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul 03:
+      {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul Bara:
           min-height, sehingga keadaan sempit menjadi keadaan dasar. */}
       <div inert={hookOpen} className={`pointer-events-none absolute z-20 left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
@@ -531,10 +531,10 @@ export default function KanalModule() {
             </span>
           </div>
           {/* Trek berwarna. `.water-slider` menyembunyikan trek bawaan peramban
-              dan mengandalkan elemen di belakangnya, seperti di Modul 01 —
+              dan mengandalkan elemen di belakangnya, seperti di Modul Anatomi —
               tetapi di modul ini elemen itu tidak pernah dipasang, sehingga
               yang terlihat hanya bulatan putih tanpa jalur. Bagian yang sudah
-              digali diwarnai seperti penggeser muka air Modul 01 — biru
+              digali diwarnai seperti penggeser muka air Modul Anatomi — biru
               (basah) ke jingga (kering) — dan garis tegak menandai 100 cm
               yang diminta babak 01. */}
           <div className="relative mt-2">
@@ -801,7 +801,7 @@ export default function KanalModule() {
                 title={locked ? current.hint : a.title}
                 className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                {/* Sama dengan Modul 01, 03, dan 04: putih untuk babak yang
+                {/* Sama dengan Modul Anatomi, Bara, dan 04: putih untuk babak yang
                     sedang dibuka, jingga untuk babak yang sudah dilewati.
                     "Sudah dilewati" dihitung dari urutannya, bukan dari
                     `actDone`: syarat itu dihitung ulang dari keadaan sekarang,
@@ -834,7 +834,7 @@ export default function KanalModule() {
         )}
       </nav>
 
-      {/* Panah lanjut (kanan bawah), sama dengan Modul 01 dan 03.
+      {/* Panah lanjut (kanan bawah), sama dengan Modul Anatomi dan Bara.
           Sebelumnya tombol lanjut baru muncul setelah tugasnya selesai, jadi
           pembaca yang belum selesai tidak melihat tanda apa pun bahwa ada
           babak berikutnya dan bahwa sesuatu harus dikerjakan untuk sampai ke

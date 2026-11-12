@@ -4,9 +4,9 @@ import { PEAT_LAYER_TINT } from "@/components/modul/scene/dioramaConstants";
 import { NOISE_GLSL } from "@/components/modul/scene/noiseTexture";
 import { GROWTH_M_PER_YEAR } from "@/lib/carbon";
 
-// Bahan tanah Modul 04.
+// Bahan tanah Modul Karbon.
 //
-// Rangkanya sama dengan Modul 02: `MeshStandardMaterial` yang warna dasarnya
+// Rangkanya sama dengan Modul Kanal: `MeshStandardMaterial` yang warna dasarnya
 // diambil alih lewat `onBeforeCompile`, sehingga bayangan, peta lingkungan
 // langit, dan kabut tetap dikerjakan three.js pada jalur yang sudah
 // dioptimalkan. Alasannya ditulis panjang di
@@ -29,10 +29,10 @@ import { GROWTH_M_PER_YEAR } from "@/lib/carbon";
 //   3. Penanda kedalaman yang dahulu digeser pembaca pada babak "Arsip di
 //      bawah kaki" (dicabut 11 November 2026); kini tidak pernah menyala.
 //
-// Tidak ada tekstur keadaan sama sekali, tidak seperti Modul 02 dan 03:
+// Tidak ada tekstur keadaan sama sekali, tidak seperti Modul Kanal dan Bara:
 // seluruh isi modul ini dapat dinyatakan dengan empat angka, jadi keempatnya
 // cukup dikirim sebagai uniform. Peneduhnya karena itu jauh lebih murah
-// daripada peneduh Modul 02.
+// daripada peneduh Modul Kanal.
 
 /** Rona satu lapisan sebagai tetapan GLSL, dibaca dari daftar bersama. */
 function tintGlsl(id: PeatLayerId): string {

@@ -1,4 +1,4 @@
-// Model perambatan bara gambut (smouldering) untuk Modul 03 "Bara di Bawah Tanah".
+// Model perambatan bara gambut (smouldering) untuk Modul Bara "Bara di Bawah Tanah".
 //
 // Bara gambut bukan api yang menyala di permukaan: ia membakar bahan organik
 // pelan-pelan di dalam tanah, tanpa lidah api, pada suhu jauh lebih rendah
