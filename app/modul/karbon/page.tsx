@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import KarbonModule from "@/components/gambut/karbon/KarbonModule";
+import KarbonModule from "@/components/modul/karbon/KarbonModule";
 
 export const metadata: Metadata = { title: "Gudang Karbon — Emberguard" };
 

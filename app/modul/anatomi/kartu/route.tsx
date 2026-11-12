@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import ResultCardArt from "@/components/gambut/anatomi/ResultCardArt";
+import ResultCardArt from "@/components/modul/anatomi/ResultCardArt";
 import { CARD_FONTS } from "@/lib/cardFonts";
 import { CARD_SIZE, parseCardFormat, parseSharedWaterCm } from "@/lib/resultCard";
 

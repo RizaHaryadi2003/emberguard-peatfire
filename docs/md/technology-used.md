@@ -31,7 +31,7 @@ statis**. Alasan lengkapnya ada pada bagian 6.
 | Bahasa | Versi | Cakupan | Catatan |
 |---|---|---|---|
 | TypeScript | ^5 | Seluruh `.ts` dan `.tsx` | `strict: true`, `target: ES2017`, alias impor `@/*` |
-| GLSL | — | `components/gambut/bara/scene/faceMaterial.ts` | Peneduh titik & fragmen, ditulis tangan sebagai templat teks |
+| GLSL | — | `components/modul/bara/scene/faceMaterial.ts` | Peneduh titik & fragmen, ditulis tangan sebagai templat teks |
 | JavaScript (ESM) | — | `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.mts` | Hanya konfigurasi |
 | CSS | — | `app/globals.css` | Beserta arahan Tailwind v4 |
 
@@ -108,11 +108,11 @@ app/gambut/bara/page.tsx              Komponen Server
   • tidak mengirim JavaScript apa pun
         │
         ▼
-components/gambut/bara/BaraModule.tsx   "use client"
+components/modul/bara/BaraModule.tsx   "use client"
   • useState, useRef, useEffect, GSAP, AudioContext
         │
         ▼ dynamic(..., { ssr: false })
-components/gambut/bara/scene/BaraScene.tsx
+components/modul/bara/scene/BaraScene.tsx
   • <Canvas> WebGL — tidak dapat dirender di sisi server
 ```
 
@@ -288,11 +288,11 @@ detik).
 | `lib/peat.test.ts` | 28 | Klasifikasi lapisan, status air, indeks bahaya |
 | `lib/drainage.test.ts` | 25 | Panjang pengaruh kanal, subsiden, emisi, pemadatan |
 | `lib/smolder.test.ts` | 23 | Penyalaan, perambatan, pemadaman, subsiden |
-| `components/gambut/bara/scene/crossSection.test.ts` | 12 | Pemetaan sel simulasi ke geometri penampang |
-| `components/gambut/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 02 |
-| `components/gambut/karbon/depthProbe.test.ts` | 8 | Penilaian penanda kedalaman babak 01 Modul 04 |
+| `components/modul/bara/scene/crossSection.test.ts` | 12 | Pemetaan sel simulasi ke geometri penampang |
+| `components/modul/kanal/probe.test.ts` | 9 | Penilaian penanda jarak babak 02 Modul 02 |
+| `components/modul/karbon/depthProbe.test.ts` | 8 | Penilaian penanda kedalaman babak 01 Modul 04 |
 | `lib/spotlight.test.ts` | 7 | Interpolasi dan penghalusan kursor |
-| `components/gambut/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 03 |
+| `components/modul/bara/scene/baraState.test.ts` | 7 | Keadaan adegan Modul 03 |
 | `lib/atmosphere.test.ts` | 4 | Peralihan suasana langit |
 | `lib/ambientSound.test.ts` | 2 | Laju derak bara dan peluang kicau burung |
 
@@ -333,7 +333,7 @@ Handler tanpa perlu berganti teknologi.
 
 ### 7.1 Anggaran grafis dua tingkat
 
-`components/gambut/scene/dioramaConstants.ts` menetapkan dua profil mutu yang
+`components/modul/scene/dioramaConstants.ts` menetapkan dua profil mutu yang
 dipakai bersama oleh seluruh modul:
 
 | Parameter | `high` | `low` | Arti |

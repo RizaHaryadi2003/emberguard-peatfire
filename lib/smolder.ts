@@ -18,7 +18,7 @@
 
 import { getLayerAtDepth, PROFILE_DEPTH, type PeatLayerId } from "./peat";
 import { seeded } from "./random";
-import { BLOCK_WIDTH } from "@/components/gambut/scene/dioramaConstants";
+import { BLOCK_WIDTH } from "@/components/modul/scene/dioramaConstants";
 
 /** Ukuran kisi sel pada bidang penampang. */
 export const GRID_COLS = 96;

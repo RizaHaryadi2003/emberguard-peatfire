@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import KanalModule from "@/components/gambut/kanal/KanalModule";
+import KanalModule from "@/components/modul/kanal/KanalModule";
 import { KANAL_HOOK } from "@/config/kanal-content";
 import { kanalCardImagePath, parseSharedCanal } from "@/lib/kanalCard";
 import { CARD_SIZE } from "@/lib/resultCard";

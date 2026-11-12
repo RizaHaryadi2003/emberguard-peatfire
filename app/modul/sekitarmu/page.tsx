@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import SekitarmuModule from "@/components/gambut/sekitarmu/SekitarmuModule";
+import SekitarmuModule from "@/components/modul/sekitarmu/SekitarmuModule";
 import { SEKITARMU_HOOK } from "@/config/sekitarmu-content";
 
 export const metadata: Metadata = {

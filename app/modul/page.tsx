@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ModuleList from "@/components/gambut/ModuleList";
+import ModuleList from "@/components/modul/ModuleList";
 
 export const metadata: Metadata = { title: "Modul — Emberguard" };
 

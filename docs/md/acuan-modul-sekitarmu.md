@@ -1,6 +1,6 @@
 # Acuan Modul 01 · Gambut di Sekitarmu
 
-Status: **sumber dan rancangan babak disetujui; modul dibangun** (12 November 2026). Kode: `components/gambut/sekitarmu/`, teks: `config/sekitarmu-content.ts`, peta: `data/sekitarmu-map.json`.
+Status: **sumber dan rancangan babak disetujui; modul dibangun** (12 November 2026). Kode: `components/modul/sekitarmu/`, teks: `config/sekitarmu-content.ts`, peta: `data/sekitarmu-map.json`.
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 1 · Gambut, modul pertama).
 
 ## 1. Pertanyaan modul

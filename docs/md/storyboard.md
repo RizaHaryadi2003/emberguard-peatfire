@@ -217,7 +217,7 @@ bagian 2.
 
 > *"Saat air dialirkan keluar"*
 
-> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/gambut/kanal/`,
+> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/modul/kanal/`,
 > model di `lib/drainage.ts`. Pesan utama, keempat babak, dan tugas tiap babak
 > di bawah ini tetap seperti rencana. Panggungnya berubah: bukan satu petak
 > ± 500 m, melainkan **dua gambar berdampingan** — bongkahan isometrik
@@ -257,7 +257,7 @@ Murni, dapat diuji.
 
 > *"Apa yang lepas saat gambut terbakar"*
 
-> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/gambut/karbon/`,
+> **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/modul/karbon/`,
 > model di `lib/carbon.ts`. Pesan utamanya tetap ketimpangan waktu. Panggungnya
 > berubah: bukan satu tiang gambut 1 m × 1 m, melainkan **bidang potong yang
 > sama** yang sudah dikenal pembaca sejak Modul 01, dibaca ulang sebagai

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import AnatomiModule from "@/components/gambut/anatomi/AnatomiModule";
-import ModuleFooter from "@/components/gambut/ModuleFooter";
-import { ANATOMI_HOOK } from "@/config/gambut-content";
+import AnatomiModule from "@/components/modul/anatomi/AnatomiModule";
+import ModuleFooter from "@/components/modul/ModuleFooter";
+import { ANATOMI_HOOK } from "@/config/anatomi-content";
 import { CARD_SIZE, cardImagePath, parseSharedWaterCm } from "@/lib/resultCard";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };

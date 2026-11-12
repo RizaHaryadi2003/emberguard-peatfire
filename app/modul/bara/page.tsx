@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import BaraModule from "@/components/gambut/bara/BaraModule";
+import BaraModule from "@/components/modul/bara/BaraModule";
 import { BARA_HOOK } from "@/config/bara-content";
 import { baraCardImagePath, parseSharedBurn } from "@/lib/baraCard";
 import { CARD_SIZE } from "@/lib/resultCard";

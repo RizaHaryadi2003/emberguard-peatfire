@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import BaraCardArt from "@/components/gambut/bara/BaraCardArt";
+import BaraCardArt from "@/components/modul/bara/BaraCardArt";
 import { parseSharedBurn } from "@/lib/baraCard";
 import { CARD_FONTS } from "@/lib/cardFonts";
 import { CARD_SIZE, parseCardFormat } from "@/lib/resultCard";

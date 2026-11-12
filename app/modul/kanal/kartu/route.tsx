@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import KanalCardArt from "@/components/gambut/kanal/KanalCardArt";
+import KanalCardArt from "@/components/modul/kanal/KanalCardArt";
 import { parseSharedCanal } from "@/lib/kanalCard";
 import { CARD_FONTS } from "@/lib/cardFonts";
 import { CARD_SIZE, parseCardFormat } from "@/lib/resultCard";

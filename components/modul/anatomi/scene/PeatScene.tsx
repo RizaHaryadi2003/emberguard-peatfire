@@ -1,0 +1,199 @@
+"use client";
+
+import { Suspense, useEffect, useRef, type RefObject } from "react";
+import * as THREE from "three";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { getFireDanger, getPeatThickness, PEAT_LAYERS, PEAT_THICKNESS, type PeatLayerId } from "@/lib/peat";
+import PeatBlock from "./PeatBlock";
+import Vegetation from "./Vegetation";
+import Embers from "./Embers";
+import SkyLighting from "@/components/modul/scene/SkyLighting";
+import Backdrop from "@/components/modul/scene/Backdrop";
+import PerformanceGuard from "@/components/modul/scene/PerformanceGuard";
+import {
+  DIORAMA_CAMERA_POSES as CAMERA_POSES,
+  DIORAMA_EXPOSURE,
+  DIORAMA_HEMISPHERE,
+} from "@/components/modul/scene/dioramaConstants";
+import {
+  DIORAMA_BASE_YAW,
+  DIORAMA_Y,
+  EXPLODE_GAP,
+  EXPLODE_STEP,
+  GROWTH_STEP,
+  INTERACTIVE_STEP,
+  QUALITY_PROFILE,
+  type Quality,
+  type SceneState,
+} from "./sceneState";
+
+/** Kamera bergerak halus ke pose tahap aktif, ditambah paralaks kursor. */
+function CameraRig({ stateRef }: { stateRef: RefObject<SceneState> }) {
+  const camera = useThree((s) => s.camera);
+  const target = useRef(new THREE.Vector3(...CAMERA_POSES[0].target));
+  const desiredPos = useRef(new THREE.Vector3());
+  const desiredTarget = useRef(new THREE.Vector3());
+
+  useFrame((state, delta) => {
+    const s = stateRef.current;
+    if (!s) return;
+    const dt = Math.min(delta, 0.05);
+    const pose = CAMERA_POSES[s.step] ?? CAMERA_POSES[0];
+    const focusIdx = s.step === EXPLODE_STEP && s.focused ? PEAT_LAYERS.findIndex((l) => l.id === s.focused) : -1;
+
+    // Layar sempit (ponsel/potret) butuh kamera lebih jauh agar balok utuh terlihat.
+    const aspect = state.size.width / Math.max(1, state.size.height);
+    const distance = aspect < 0.8 ? 1.7 : aspect < 1.3 ? 1.25 : 1;
+
+    const parallax = s.reducedMotion ? 0 : 1;
+    let zoom = distance;
+    if (focusIdx >= 0) {
+      // Lapisan terpilih: bidik pusat lapisan (yang sudah maju ke depan) dan mendekat.
+      const layer = PEAT_LAYERS[focusIdx];
+      const y = DIORAMA_Y - (layer.top + layer.bottom) / 2 + (PEAT_LAYERS.length - 1 - focusIdx) * EXPLODE_GAP * s.explode;
+      desiredTarget.current.set(pose.pos[0], 0, pose.pos[2]).normalize().multiplyScalar(0.6).setY(y);
+      zoom *= 0.8;
+    } else {
+      desiredTarget.current.set(...pose.target);
+    }
+    desiredPos.current
+      .set(...pose.pos)
+      .sub(new THREE.Vector3(...pose.target))
+      .multiplyScalar(zoom)
+      .add(desiredTarget.current);
+    desiredPos.current.x += state.pointer.x * 0.35 * parallax;
+    desiredPos.current.y += state.pointer.y * 0.2 * parallax;
+
+    const k = s.reducedMotion ? 30 : 2.2;
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, desiredPos.current.x, k, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, desiredPos.current.y, k, dt);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, desiredPos.current.z, k, dt);
+    target.current.lerp(desiredTarget.current, 1 - Math.exp(-k * dt));
+    camera.lookAt(target.current);
+
+    // Di layar lebar, pusat gambar digeser ke kanan agar diorama tidak
+    // tertutup panel teks di kiri.
+    const cam = camera as THREE.PerspectiveCamera;
+    const { width, height } = state.size;
+    const shiftX = aspect > 1.3 ? -width * 0.035 : 0;
+    // Di layar sempit, panel pengatur duduk di tepi bawah dan menutupi badan
+    // bongkahan. Pada tahap yang memakai panel, gambar diangkat sedikit supaya
+    // yang berubah karena pengatur itu — timbunan yang tumbuh, muka air yang
+    // turun — tetap terlihat oleh orang yang sedang menggesernya.
+    const panelStep = s.step === GROWTH_STEP || s.step === INTERACTIVE_STEP;
+    const shiftY = aspect < 0.8 && panelStep ? height * 0.12 : 0;
+    const current = cam.view?.enabled ? cam.view : null;
+    if (shiftX || shiftY) {
+      const same =
+        current?.offsetX === shiftX &&
+        current?.offsetY === shiftY &&
+        current?.fullWidth === width &&
+        current?.fullHeight === height;
+      if (!same) cam.setViewOffset(width, height, shiftX, shiftY, width, height);
+    } else if (current) {
+      cam.clearViewOffset();
+    }
+  });
+
+  return null;
+}
+
+/**
+ * Diorama gambut: diputar oleh seretan pengguna dan bergoyang pelan saat diam.
+ * Juga menghitung nilai bersama tiap bingkai (tingkat urai & bahaya) agar
+ * semua komponen 3D bergerak serempak.
+ */
+function Diorama({
+  stateRef,
+  onHoverLayer,
+  onSelectLayer,
+  onReady,
+}: {
+  stateRef: RefObject<SceneState>;
+  onHoverLayer: (id: PeatLayerId | null) => void;
+  onSelectLayer: (id: PeatLayerId | null) => void;
+  onReady: () => void;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const surfaceRef = useRef<THREE.Group>(null);
+
+  // Dipanggil setelah semua tekstur di dalam Suspense selesai dimuat.
+  useEffect(() => onReady(), [onReady]);
+
+  useFrame((state, delta) => {
+    const s = stateRef.current;
+    const g = ref.current;
+    if (!s || !g) return;
+    const dt = Math.min(delta, 0.05);
+    const fast = s.reducedMotion;
+    s.explode = THREE.MathUtils.damp(s.explode, s.step === EXPLODE_STEP ? 1 : 0, fast ? 30 : 2.4, dt);
+    // Tebal timbunan dihaluskan di sini, satu kali untuk seluruh adegan, agar
+    // bongkahan dan tumbuhan di atasnya naik dengan nilai yang sama persis.
+    s.peat = THREE.MathUtils.damp(s.peat, getPeatThickness(s.years), fast ? 30 : 6, dt);
+    s.danger = THREE.MathUtils.damp(s.danger, getFireDanger(s.waterCm), fast ? 30 : 1.6, dt);
+
+    const idle = fast ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.06;
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, DIORAMA_BASE_YAW + s.rotation + idle, 4, dt);
+
+    // Permukaan (rumput, pohon, bara) ikut naik bersama lapisan teratas, dan
+    // ikut turun saat timbunan gambut belum setebal profil penuh.
+    if (surfaceRef.current) {
+      surfaceRef.current.position.y =
+        (PEAT_LAYERS.length - 1) * EXPLODE_GAP * s.explode + (s.peat - PEAT_THICKNESS);
+    }
+  });
+
+  return (
+    <group ref={ref} position={[0, DIORAMA_Y, 0]}>
+      <PeatBlock stateRef={stateRef} onHoverLayer={onHoverLayer} onSelectLayer={onSelectLayer} />
+      <group ref={surfaceRef}>
+        <Vegetation stateRef={stateRef} />
+        <Embers stateRef={stateRef} />
+      </group>
+    </group>
+  );
+}
+
+type Props = {
+  stateRef: RefObject<SceneState>;
+  active: boolean;
+  quality: Quality;
+  onHoverLayer: (id: PeatLayerId | null) => void;
+  onSelectLayer: (id: PeatLayerId | null) => void;
+  onReady: () => void;
+  /** Perangkat tetap kewalahan pada resolusi terendah. */
+  onOverload: () => void;
+};
+
+/** Kanvas 3D Modul 01. Berhenti merender saat tidak terlihat di layar. */
+export default function PeatScene({ stateRef, active, quality, onHoverLayer, onSelectLayer, onReady, onOverload }: Props) {
+  const profile = QUALITY_PROFILE[quality];
+  const maxDpr = profile.maxDpr;
+  return (
+    <Canvas
+      shadows={profile.softShadow ? "percentage" : "basic"}
+      dpr={[1, maxDpr]}
+      // Klik di ruang kosong melepaskan lapisan yang sedang dipilih.
+      onPointerMissed={() => onSelectLayer(null)}
+      frameloop={active ? "demand" : "never"}
+      camera={{ fov: 34, near: 0.1, far: 400, position: CAMERA_POSES[0].pos }}
+      gl={{ antialias: profile.antialias, powerPreference: "default" }}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = DIORAMA_EXPOSURE;
+      }}
+      fallback={<p className="p-6 text-sm text-white/70">Peramban Anda tidak mendukung WebGL, jadi model 3D gambut tidak dapat ditampilkan.</p>}
+    >
+      <SkyLighting stateRef={stateRef} quality={quality} />
+      {/* Cahaya pantul lembut dari langit & air agar sisi teduh tidak hitam pekat */}
+      <hemisphereLight args={DIORAMA_HEMISPHERE} />
+      <CameraRig stateRef={stateRef} />
+      <PerformanceGuard maxDpr={maxDpr} onOverload={onOverload} />
+
+      <Suspense fallback={null}>
+        <Backdrop />
+        <Diorama stateRef={stateRef} onHoverLayer={onHoverLayer} onSelectLayer={onSelectLayer} onReady={onReady} />
+      </Suspense>
+    </Canvas>
+  );
+}

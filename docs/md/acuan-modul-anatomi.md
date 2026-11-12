@@ -274,7 +274,7 @@ utuh, bukan dihitung ulang dari model Tahap 1.
 
 ## 7. Isi Modul 01 Sekarang yang Bertentangan dengan Acuan
 
-Hasil pemeriksaan `lib/peat.ts` dan `config/gambut-content.ts` terhadap
+Hasil pemeriksaan `lib/peat.ts` dan `config/anatomi-content.ts` terhadap
 Andriesse (1988):
 
 | # | Keadaan sekarang | Kata acuan | Tindakan |
