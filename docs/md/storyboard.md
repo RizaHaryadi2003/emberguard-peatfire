@@ -5,26 +5,34 @@ disebut animasi interaktif**, bukan animasi biasa.
 
 Isi setiap babak **diturunkan dari riset acuan**, bukan dari perkiraan
 sendiri. Tiap modul memiliki satu acuan utama yang dibahas dalam dokumen
-tersendiri (`docs/md/acuan-modul-XX.md`). Dokumen inilah yang mengatur
+tersendiri (`docs/md/acuan-modul-<nama>.md`). Dokumen inilah yang mengatur
 **bentuk** interaksinya (Pola 5A), sedangkan dokumen acuan mengatur **isinya**.
 
-- Tanggal: 30 September 2026, direvisi 8 November 2026
-- Berlaku untuk: seluruh bagian, termasuk Modul 01 dan 03 yang sudah jadi
+- Tanggal: 30 September 2026, direvisi 8 November 2026 dan 13 November 2026
+  (susunan 13 modul dalam 5 bagian)
+- Berlaku untuk: seluruh modul, Simulasi, dan Kuis
+- Modul disebut dengan **namanya**, bukan nomornya: nomor dihitung otomatis dari
+  `config/modules-content.ts` dan berubah setiap ada modul baru.
 
 | Modul | Acuan utama | Dokumen |
 |---|---|---|
-| 01 Anatomi Gambut | Andriesse (1988), FAO Soils Bulletin 59 | `acuan-modul-anatomi.md` |
-| 02 – 04, Bagian 02 – 04 | *(menyusul)* | — |
+| Gambut di Sekitarmu | Parabi dkk. (2026); Anda dkk. (2021) | `acuan-modul-sekitarmu.md` |
+| Anatomi Gambut | Anshari dkk. (2026); Andriesse (1988) | `acuan-modul-anatomi.md` |
+| Hutan Rawa Gambut | Page dkk. (1999); Husson dkk. (2018) | `acuan-modul-hutan-rawa.md` |
+| Kanal & Pengeringan | Hooijer dkk. (2012); Ritzema dkk. (2014) | `acuan-modul-kanal.md` |
+| Bara di Bawah Tanah | Usup dkk. (2004); Frandsen (1989) | `acuan-modul-bara.md` |
+| Gudang Karbon | lihat dokumennya | `acuan-modul-karbon.md` |
+| Modul lain, Simulasi, Kuis | *(menyusul)* | — |
 
 ---
 
 ## 1. Masalah yang Dipecahkan Dokumen Ini
 
-Modul 01 dirancang sambil jalan dan Modul 03 menyusul dengan bentuk yang
+Modul Anatomi dirancang sambil jalan dan Modul Bara menyusul dengan bentuk yang
 berbeda. Keduanya berjalan baik, tetapi belum ada aturan tertulis yang
 menyatakan **mengapa** bentuknya seperti itu. Akibatnya:
 
-- Modul 02 dan 04 tidak punya patokan, dan berisiko memakai bentuk ketiga yang
+- Modul Kanal dan Karbon tidak punya patokan, dan berisiko memakai bentuk ketiga yang
   berbeda lagi.
 - Bagian Simulasi, Dampak, dan Pencegahan masih kosong tanpa arah.
 - Sulit menjawab pertanyaan penguji: "apa yang membuat ini interaktif?"
@@ -41,7 +49,7 @@ Dokumen ini menutup ketiganya.
 Itulah inti yang disampaikan pembimbing. Supaya dapat diperiksa satu per satu,
 aturan itu dipecah menjadi lima unsur yang **wajib ada pada setiap babak**:
 
-| | Unsur | Pertanyaan pemeriksa | Contoh dari Modul 03 Babak 01 |
+| | Unsur | Pertanyaan pemeriksa | Contoh dari Modul Bara Babak 01 |
 |---|---|---|---|
 | **A1** | **Ajakan** | Apa yang diminta dari pembaca, dalam satu kalimat? | "Pilih satu sumber sulutan, lalu klik permukaan gambut." |
 | **A2** | **Aksi** | Apa yang pembaca lakukan dengan tangannya? | Memilih kartu, lalu mengeklik titik di permukaan 3D |
@@ -100,7 +108,7 @@ berbeda, dan tidak boleh dua babak berurutan memakai tingkat yang sama.
 
 ## 3. Audit Dua Modul yang Sudah Jadi
 
-### Modul 03 — Bara di Bawah Tanah ⭐ **jadikan patokan**
+### Modul Bara — Bara di Bawah Tanah ⭐ **jadikan patokan**
 
 | Babak | Ajakan | Tingkat | 5A lengkap? |
 |---|---|---|---|
@@ -120,9 +128,9 @@ tiga hal yang harus ditiru modul lain:
 3. **Akibat tak terbalik** — gambut yang jadi abu tidak kembali. Ada yang
    dipertaruhkan.
 
-### Modul 01 — Anatomi Gambut ✅ **desain dipertahankan, acuan disesuaikan**
+### Modul Anatomi — Anatomi Gambut ✅ **desain dipertahankan, acuan disesuaikan**
 
-> **Pembaruan 11 November 2026.** Riza memutuskan desain Modul 01 tetap. Papan
+> **Pembaruan 11 November 2026.** Riza memutuskan desain Modul Anatomi tetap. Papan
 > cerita "baru" di bawah (tiga fase laju, penampang lanskap, uji gosok, uji
 > peras) **tidak dipakai** dan disimpan hanya sebagai catatan. Acuan yang kini
 > dipakai ada di bagian 0 `docs/md/acuan-modul-anatomi.md` (Anshari dkk., 2026).
@@ -165,8 +173,9 @@ penampang lanskap untuk Tahap 1.
 
 ## 4. Peta Cerita Seluruh Situs
 
-Empat bagian dengan satu alur tunggal: **kenali → saksikan → kendalikan →
-tanggung akibatnya → cegah.**
+Navigasi situs: **Beranda · Modul · Simulasi · Kuis** (sejak 12 November
+2026). Alurnya tetap satu: **kenali → saksikan → tanggung akibatnya → cegah →
+kendalikan → uji diri.**
 
 ```
 BERANDA
@@ -174,35 +183,46 @@ BERANDA
   Aksi: gerakkan kursor — hutan sehat tersingkap menjadi hutan terbakar
         │
         ▼
-BAGIAN 01 — GAMBUT                              [ KENALI ]
-  Modul 01  Anatomi Gambut        apa itu gambut          ✅ selesai
-  Modul 02  Kanal & Pengeringan   mengapa jadi kering     ✅ dikalibrasi ke acuan
-  Modul 03  Bara di Bawah Tanah   bagaimana ia terbakar   ✅ selesai
-  Modul 04  Gudang Karbon         apa yang hilang         ✅ dikalibrasi ke acuan
+MODUL — 13 modul dalam 5 bagian                         [ KENALI ]
+  Bagian 1 · Gambut
+    Gambut di Sekitarmu      di mana gambut itu          ✅ selesai
+    Anatomi Gambut           apa itu gambut              ✅ selesai
+    Hutan Rawa Gambut        apa yang hidup di atasnya   ✅ selesai
+  Bagian 2 · Kering
+    Kanal & Pengeringan      mengapa jadi kering         ✅ selesai
+    Musim Api                kapan paling rawan          ⏳
+  Bagian 3 · Api
+    Siapa yang Menyalakan?   dari mana apinya            ⏳
+    Bara di Bawah Tanah      bagaimana ia terbakar       ✅ selesai
+  Bagian 4 · Dampak                                      [ TANGGUNG AKIBATNYA ]
+    Gudang Karbon            apa yang lepas ke udara     ✅ selesai
+    Kabut Asap               apa yang kita hirup         ⏳
+    Yang Hilang dari Hutan   apa yang tidak kembali      ⏳
+  Bagian 5 · Mencegah                                    [ CEGAH ]
+    Membasahi Kembali        sekat kanal, sumur bor      ⏳
+    Tanpa Api                membuka lahan tanpa bakar   ⏳
+    Saat Tanah Berasap       pilihan tindakan warga      ⏳
+  + cek singkat 3–4 soal di akhir tiap bagian
         │
         ▼
-BAGIAN 02 — SIMULASI                            [ KENDALIKAN ]
+SIMULASI                                                [ KENDALIKAN ]
   Satu lanskap, api nyata, sumber daya terbatas.
   Pembaca memakai semua yang dipelajari untuk menghentikan kebakaran.
         │
         ▼
-BAGIAN 03 — DAMPAK                              [ TANGGUNG AKIBATNYA ]
-  Asap tidak berhenti di batas lahan. Ikuti perjalanannya ke kota.
-        │
-        ▼
-BAGIAN 04 — PENCEGAHAN                          [ CEGAH ]
-  Semua yang tadi dilihat, dibalik menjadi tindakan.
+KUIS                                                    [ UJI DIRI ]
+  Mencakup kelima bagian; hasilnya dapat dibagikan sebagai kartu.
 ```
 
-**Urutan modul Gambut** (ditetapkan 11 November 2026) memakai tiga kriteria:
+**Urutan modul Bagian Gambut–Api** (ditetapkan 11 November 2026) memakai tiga kriteria:
 satu pertanyaan per modul; tiap modul hanya memakai pengetahuan yang sudah
 diajarkan sebelumnya; dan urutannya mengikuti rantai sebab-akibat di lapangan
 — gambut alami basah, dikeringkan kanal, terbakar membara, karbonnya hilang.
-Karena itu Kanal (dahulu 03) dan Bara (dahulu 02) ditukar.
+Karena itu Kanal dan Bara sempat ditukar urutannya.
 
-**Alasan urutannya begitu:** pembaca tidak boleh diberi tahu cara mencegah
-sebelum ia merasakan sendiri betapa sulitnya memadamkan. Bagian 04 hanya terasa
-penting kalau Bagian 02 sudah membuatnya gagal sekali.
+**Alasan Simulasi diletakkan sesudah Modul:** Simulasi menguji, bukan
+mengajar — pembaca memakai semua yang sudah dipelajari, termasuk bagian
+Mencegah, untuk menghadapi satu kebakaran utuh.
 
 ---
 
@@ -213,7 +233,7 @@ bagian 2.
 
 ---
 
-### 5.1 Modul 02 — Kanal & Pengeringan
+### 5.1 Modul Kanal — Kanal & Pengeringan
 
 > *"Saat air dialirkan keluar"*
 
@@ -229,7 +249,7 @@ bermula dari **air yang dikeluarkan**, bertahun-tahun sebelumnya.
 
 **Panggung:** pandangan lanskap dari samping-atas — petak gambut selebar
 ± 500 m dengan hutan di satu sisi dan lahan terbuka di sisi lain. Lebih luas
-daripada bongkahan 4,4 m di Modul 01–02, supaya pembaca melihat bahwa satu
+daripada bongkahan 4,4 m di Modul Anatomi dan Bara, supaya pembaca melihat bahwa satu
 kanal memengaruhi wilayah jauh di luar tepinya.
 
 | Babak | Judul | Ajakan (A1) | Aksi (A2) | Tingkat | Animasi (A3) | Akibat (A4) | Angka (A5) |
@@ -253,14 +273,14 @@ Murni, dapat diuji.
 
 ---
 
-### 5.2 Modul 04 — Gudang Karbon
+### 5.2 Modul Karbon — Gudang Karbon
 
 > *"Apa yang lepas saat gambut terbakar"*
 
 > **Keadaan: sudah dikerjakan** (28 Oktober 2026) — `components/modul/karbon/`,
 > model di `lib/carbon.ts`. Pesan utamanya tetap ketimpangan waktu. Panggungnya
 > berubah: bukan satu tiang gambut 1 m × 1 m, melainkan **bidang potong yang
-> sama** yang sudah dikenal pembaca sejak Modul 01, dibaca ulang sebagai
+> sama** yang sudah dikenal pembaca sejak Modul Anatomi, dibaca ulang sebagai
 > kalender dan sebagai gudang. Satu babak ditambahkan di luar rencana —
 > "Hektare bukan ukurannya" — karena luas tanpa kedalaman adalah justru
 > kekeliruan yang dibawa pembaca dari berita.
@@ -273,8 +293,8 @@ dengan sumbu tahun di sisi kiri dan penghitung karbon di sisi kanan.
 
 | Babak | Judul | Ajakan (A1) | Aksi (A2) | Tingkat | Animasi (A3) | Akibat (A4) | Angka (A5) |
 |---|---|---|---|---|---|---|---|
-| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur dari 0 sampai umur penuh profil | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan | Tiang penuh; karbon tersimpan penuh | Laju tumbuh mengikuti `acuan-modul-anatomi.md`; total karbon per hektar menunggu acuan Modul 04 |
-| **02** | Habis dalam hitungan hari | "Sulut tiang gambut." | Satu klik pada tiang | **3** | Bara turun cepat; tiang menyusut dari atas; **penghitung karbon berbalik turun**, dan angka yang hilang naik ke langit sebagai kabut gelap; sumbu tahun di kiri ikut tergerus mundur — umur yang tadi ditabung terhapus dalam beberapa detik | Tiang habis. Penghitung nol | Umur terbentuk dan lama terbakar disandingkan *(angka menunggu acuan Modul 04)* |
+| **01** | Menabung ribuan tahun | "Putar pengatur tahun ke depan." | Memutar / menyeret pengatur dari 0 sampai umur penuh profil | **4** | Tiang gambut tumbuh naik satu lapis tipis tiap ratusan tahun; penghitung karbon di kanan naik perlahan | Tiang penuh; karbon tersimpan penuh | Laju tumbuh mengikuti `acuan-modul-anatomi.md`; total karbon per hektar menunggu acuan Modul Karbon |
+| **02** | Habis dalam hitungan hari | "Sulut tiang gambut." | Satu klik pada tiang | **3** | Bara turun cepat; tiang menyusut dari atas; **penghitung karbon berbalik turun**, dan angka yang hilang naik ke langit sebagai kabut gelap; sumbu tahun di kiri ikut tergerus mundur — umur yang tadi ditabung terhapus dalam beberapa detik | Tiang habis. Penghitung nol | Umur terbentuk dan lama terbakar disandingkan *(angka menunggu acuan Modul Karbon)* |
 | **03** | Sebesar apa itu | "Pilih pembanding yang paling mudah kamu bayangkan." | Menekan kartu pembanding (mobil setahun / penerbangan / rumah tangga) | **1** | Ikon pembanding memenuhi layar satu per satu sampai jumlahnya setara karbon yang barusan lepas; berhenti dengan angka besar | Pembaca punya pegangan nyata atas besaran abstrak | Jumlah setara *(perlu rujukan dan perhitungan sendiri)* |
 | **04** | Menabung ulang | "Coba kembalikan karbonnya." | Memutar pengatur tahun ke depan lagi, sekuat apa pun | **4** | Tiang tumbuh **sangat lambat** — pengatur diputar penuh, tiang hanya naik beberapa sentimeter. Bilah pemulihan nyaris tidak bergerak | Pembaca merasakan sendiri ketimpangannya; tidak bisa menang | "Butuh ribuan tahun untuk mengembalikan apa yang hilang dalam tiga hari." |
 
@@ -287,7 +307,7 @@ karbon per volume, dan konversi ke satuan setara.
 
 ---
 
-### 5.3 Bagian 02 — Simulasi
+### 5.3 Menu Simulasi
 
 > *"Atur angin, kelembapan, dan kekeringan, lalu coba hentikan api sebelum meluas."*
 
@@ -326,7 +346,7 @@ menekan semua tombol:
 
 | Tindakan | Aksi | Biaya | Hasil sebenarnya |
 |---|---|---|---|
-| Siram dari darat | Klik titik | Murah | Asap hilang, bara **tidak** padam *(pelajaran Modul 03)* |
+| Siram dari darat | Klik titik | Murah | Asap hilang, bara **tidak** padam *(pelajaran Modul Bara)* |
 | Bom air helikopter | Klik titik | Mahal, ada jeda isi ulang | Padam di permukaan saja |
 | Sekat kanal | Seret di kanal | Sedang, **lambat** | Muka air naik → satu-satunya yang benar-benar memadamkan |
 | Sekat bakar | Seret garis | Sedang | Menahan api permukaan, **tidak** menahan bara bawah tanah |
@@ -353,7 +373,7 @@ memakai aturan yang sama.
 
 ---
 
-### 5.4 Bagian 03 — Dampak
+### 5.4 Bagian 4 Modul — Dampak *(rancangan awal; akan dipecah menjadi modul Kabut Asap dan Yang Hilang dari Hutan, masing-masing dengan acuannya)*
 
 **Pesan utama:** asap tidak berhenti di batas lahan.
 
@@ -385,7 +405,7 @@ selalu menempel pada sesuatu yang berubah di layar.
 
 ---
 
-### 5.5 Bagian 04 — Pencegahan
+### 5.5 Bagian 5 Modul — Mencegah *(rancangan awal; akan dipecah menjadi modul Membasahi Kembali, Tanpa Api, dan Saat Tanah Berasap)*
 
 **Pesan utama:** setiap hal yang tadi dilihat rusak, punya pasangan tindakan.
 
@@ -395,14 +415,14 @@ memperbaiki.
 
 | Babak | Masalah yang diingatkan | Ajakan | Tingkat | Animasi |
 |---|---|---|---|---|
-| **01** Jaga airnya | Modul 02: kanal mengeringkan lahan | "Pasang sekat sampai seluruh lahan kembali aman." | 3 | Sekat dipasang; peta berubah merah → biru; penghitung "luas aman" naik sampai 100% |
-| **02** Buka lahan tanpa bakar | Modul 03: satu sulutan cukup | "Pilih cara membuka lahan." | 1 | Dua jalur bersanding: dengan api → bara menjalar; tanpa api → lahan bersih, bara nol |
-| **03** Temukan lebih awal | Bagian 02: api menyebar saat terlambat | "Periksa titik panas hari ini." | 3 | Peta titik panas; klik untuk memverifikasi; yang ditemukan hari ke-1 padam dengan satu regu, hari ke-7 butuh helikopter |
-| **04** Kita yang menjaga | Bagian 03: asap mencapai kota | "Susun regu pemadaman desamu." | 3 + 2 | Menaruh anggota MPA, menara pantau, dan embung di peta desa; menjalankan satu musim kemarau untuk melihat hasilnya |
+| **01** Jaga airnya | Modul Kanal: kanal mengeringkan lahan | "Pasang sekat sampai seluruh lahan kembali aman." | 3 | Sekat dipasang; peta berubah merah → biru; penghitung "luas aman" naik sampai 100% |
+| **02** Buka lahan tanpa bakar | Modul Bara: satu sulutan cukup | "Pilih cara membuka lahan." | 1 | Dua jalur bersanding: dengan api → bara menjalar; tanpa api → lahan bersih, bara nol |
+| **03** Temukan lebih awal | Simulasi: api menyebar saat terlambat | "Periksa titik panas hari ini." | 3 | Peta titik panas; klik untuk memverifikasi; yang ditemukan hari ke-1 padam dengan satu regu, hari ke-7 butuh helikopter |
+| **04** Kita yang menjaga | Bagian Dampak: asap mencapai kota | "Susun regu pemadaman desamu." | 3 + 2 | Menaruh anggota MPA, menara pantau, dan embung di peta desa; menjalankan satu musim kemarau untuk melihat hasilnya |
 
 **Penutup situs:** ringkasan seluruh perjalanan pembaca — berapa kali ia gagal
-memadamkan di Bagian 02, berapa karbon yang lepas di Modul 04, berapa hari
-kotanya berasap di Bagian 03 — lalu satu kalimat terakhir:
+memadamkan di Simulasi, berapa karbon yang lepas di Modul Karbon, berapa hari
+kotanya berasap di Bagian Dampak — lalu satu kalimat terakhir:
 
 > *"Semua itu bermula dari air yang dikeluarkan. Dan berhenti di tempat yang sama."*
 
@@ -434,7 +454,7 @@ Dan satu aturan pemrograman yang berlaku di semua modul:
 > **Babak berikutnya hanya terbuka setelah syaratnya terpenuhi**, dan syarat itu
 > dibaca dari **keadaan simulasi**, bukan dari "tombol sudah ditekan".
 
-Modul 03 sudah menerapkannya lewat larik `ACT_HINT` dan pemeriksaan keadaan.
+Modul Bara sudah menerapkannya lewat larik `ACT_HINT` dan pemeriksaan keadaan.
 Bedanya besar: memeriksa `sim.stats.frontDepth > 1.0` berarti pembaca benar-benar
 membuat baranya turun sedalam satu meter, sedangkan memeriksa "tombol ditekan"
 hanya berarti ia menekan tombol.
@@ -485,13 +505,13 @@ Diurutkan berdasarkan **manfaat dibagi kesulitan**, bukan berdasarkan nomor.
 
 | Urutan | Pekerjaan | Kesulitan | Alasan didahulukan |
 |---|---|---|---|
-| ~~1~~ | ~~Selesaikan Babak 04 Modul 03~~ | Kecil | **Selesai** |
-| 2 | Susun ulang Modul 01 menurut `acuan-modul-anatomi.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
-| ~~3~~ | ~~**Modul 02 — Kanal**~~ | Sedang | **Selesai** |
-| ~~5~~ | ~~Modul 04 — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
-| 4 | **Bagian 04 — Pencegahan** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |
-| 6 | Bagian 03 — Dampak | Sedang | Sebagian besar sudah tersedia lewat `getAtmosphere` |
-| 7 | Bagian 02 — Simulasi | **Besar** | Perlu perluasan `SmolderSim` ke bidang datar. Kerjakan terakhir, saat pola kerja sudah mapan |
+| ~~1~~ | ~~Selesaikan Babak 04 Modul Bara~~ | Kecil | **Selesai** |
+| 2 | Susun ulang Modul Anatomi menurut `acuan-modul-anatomi.md` | Sedang | Membetulkan angka yang bertentangan dengan acuan dan memberi aksi pada Tahap 3–4. Lihat bagian 3 |
+| ~~3~~ | ~~**Modul Kanal — Kanal**~~ | Sedang | **Selesai** |
+| ~~5~~ | ~~Modul Karbon — Gudang Karbon~~ | Sedang | **Selesai** — dikerjakan mendahului Pencegahan karena sepenuhnya memakai ulang bidang potong yang sudah ada |
+| 4 | **Bagian Mencegah** | Sedang | Menutup alur cerita. Skripsi berjudul *pencegahan* sebaiknya memiliki bagian pencegahan sebelum memiliki bagian permainan. **Pekerjaan berikutnya** |
+| 6 | Bagian Dampak | Sedang | Sebagian besar sudah tersedia lewat `getAtmosphere` |
+| 7 | Menu Simulasi | **Besar** | Perlu perluasan `SmolderSim` ke bidang datar. Kerjakan terakhir, saat pola kerja sudah mapan |
 
 **Catatan penting:** bila waktu skripsi menipis, berhenti setelah urutan ke-4.
 Empat modul Gambut + Pencegahan sudah merupakan produk yang utuh dan bercerita
