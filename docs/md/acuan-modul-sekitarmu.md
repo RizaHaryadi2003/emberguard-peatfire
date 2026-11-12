@@ -1,6 +1,6 @@
 # Acuan Modul 01 · Gambut di Sekitarmu
 
-Status: **draf, menunggu keputusan pengguna** (12 November 2026).
+Status: **sumber disetujui pengguna** (12 November 2026). Rancangan babak menunggu persetujuan.
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 1 · Gambut, modul pertama).
 
 ## 1. Pertanyaan modul
@@ -38,20 +38,22 @@ Luas gambut Kota Pontianak menurut tiga sumber:
 | BBSDLP 2019 (lewat sumber C) | 4.320 ha (36,5%) | Tidak dirinci di sumber C | Peta tanah semi-detail |
 | **Parabi dkk. 2026 (sumber B)** | **2.311,8 ha (≈ 19,5%)** | **Utara dan Tenggara saja** | **Verifikasi lapangan 614 titik + uji lab** |
 
-Usulan: modul memakai **sumber B** karena satu-satunya yang diverifikasi
-langsung di lapangan dan paling baru. Angka 858,4 ha di naskah Bab 1 sebaiknya
-ditinjau ulang atau diberi keterangan bahwa sumbernya pernyataan pejabat,
-bukan pemetaan. Keputusan ada pada pengguna.
+**Keputusan (12 November 2026):** modul memakai **sumber B (Parabi dkk.,
+2026)** — satu-satunya yang diverifikasi langsung di lapangan dan paling baru.
+Angka 858,4 ha di naskah Bab 1 perlu ditinjau ulang oleh pengguna.
 
 ## 4. Yang belum ditemukan
 
-- Luas gambut **Kalimantan Barat** dari pemetaan yang sama dengan sumber A.
-  Angka 1,68 juta ha yang beredar berasal dari pernyataan Tim Restorasi Gambut
-  Daerah (Mongabay, 2017), dan 1,73 juta ha dari Wahyunto dkk. (2004). Jika
-  tidak ditemukan tabel provinsi sumber A, babak tingkat provinsi memakai
-  Wahyunto dkk. (2004) dengan menyebut tahunnya, atau dilewati.
-- Batas administrasi kecamatan Kota Pontianak (GeoJSON) untuk menggambar peta.
-  Perlu diunduh dari sumber terbuka; harus izin pengguna dulu.
+- Luas gambut **Kalimantan Barat** dari pemetaan yang sama dengan sumber A
+  belum ditemukan. **Keputusan (12 November 2026):** memakai **1,68 juta ha**
+  yang dinyatakan Ketua Tim Restorasi Gambut Daerah Kalbar, dikutip sebagai
+  "TRGD Kalbar dalam Mongabay (2017)" dengan tahunnya ditulis. Pembanding
+  lama: 1,73 juta ha (Wahyunto dkk., 2004).
+- Batas kecamatan dan sungai: **sudah diambil** dari OpenStreetMap (ODbL),
+  lihat `data/pontianak-map.json` dan `data/SUMBER.md`. Peta itu memuat batas
+  kecamatan, bukan batas gambut: Parabi dkk. hanya melaporkan luas gambut per
+  kecamatan, jadi modul menulis persentasenya (42% dan 36%), tidak mewarnai
+  seluruh kecamatan sebagai gambut.
 
 ## 5. Rancangan babak (usulan, mengikuti data di atas)
 
