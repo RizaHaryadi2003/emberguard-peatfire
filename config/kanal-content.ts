@@ -75,7 +75,9 @@ export const KANAL_ACTS: readonly KanalAct[] = [
   {
     number: "02",
     title: "Jauh dari tepi",
-    body: "Yang kering bukan hanya tepi kanal. Muka air tanah melengkung turun sampai ratusan meter ke dalam, dan sepanjang itu lapisan atasnya menjadi bahan bakar. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
+    // Tidak menyebut jaraknya: paragraf ini terbaca sebelum pembaca menebak,
+    // dan menuliskan "ratusan meter" di sini berarti memberinya jawaban.
+    body: "Tanah di tepi kanal sudah kering. Tetapi air mengalir ke kanal dari tanah di sekitarnya juga. Seberapa jauh dari kanal tanah ikut mengering sampai mudah terbakar?",
     // Tebak dulu, baru lihat. Pembaca hampir selalu mengira yang kering hanya
     // tepi kanal; jarak sebenarnya baru terasa mengejutkan bila ia sempat
     // menebak lebih dulu. Tugas sebelumnya — menyeret penanda ke perpotongan
@@ -143,6 +145,8 @@ export const GUESS_TEXT = {
   right: "Tebakanmu tepat. Kebanyakan orang mengira hanya tepinya.",
   noCanal: "Kanalnya sedang tidak digali, jadi tidak ada lahan yang rawan. Gali lagi untuk melihatnya.",
   locked: "Tebak dulu di panel kiri. Peta ini akan menjawabnya.",
+  /** Pengganti angka kunci babak 02 sebelum menebak: angka itu petunjuk jawaban. */
+  factHidden: { value: "?", caption: "Angka kunci babak ini muncul setelah kamu menebak." },
 };
 
 /** Pilihan kecepatan waktu. */

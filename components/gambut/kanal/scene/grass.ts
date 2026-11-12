@@ -31,13 +31,17 @@ const BLADES = 7;
 /** Tinggi rumpun rata-rata (satuan adegan). */
 const TUFT_HEIGHT = 0.62;
 
+// Warna ditulis sebagai heks (sRGB), bukan sebagai angka 0-1. Angka 0-1 pada
+// `THREE.Color` dibaca sebagai warna linear, yang di layar tampil jauh lebih
+// terang: rumput hijau tua yang dimaksud muncul sebagai helai keputihan,
+// seperti salju di atas hutan rawa.
 /** Hijau rawa gambut — gelap, sedikit kebiruan, seperti peneduh hamparan. */
-const LUSH = new THREE.Color(0.2, 0.34, 0.13);
-const LUSH_ALT = new THREE.Color(0.3, 0.4, 0.15);
+const LUSH = new THREE.Color("#2c4a1c");
+const LUSH_ALT = new THREE.Color("#3d5520");
 /** Rumput yang kehausan: kuning jerami. */
-const THIRSTY = new THREE.Color(0.58, 0.52, 0.26);
+const THIRSTY = new THREE.Color("#8a7a3a");
 /** Rumput yang mati di atas gambut yang sudah melesak: coklat kusam. */
-const RUINED = new THREE.Color(0.42, 0.33, 0.2);
+const RUINED = new THREE.Color("#5e4a2e");
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -88,7 +92,8 @@ function createTuftGeometry(): THREE.BufferGeometry {
       dx * midLean * 0.5 - sx * 0.55, height * 0.55, dz * midLean * 0.5 - sz * 0.55,
       dx * lean, height, dz * lean,
     );
-    colors.push(0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 1.1, 1.1, 1.05);
+    // Peneduhan pangkal ke ujung, sebagai pengali warna rumpun.
+    colors.push(0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.62, 0.62, 0.62, 0.62, 0.62, 0.62, 0.85, 0.85, 0.82);
     indices.push(base, base + 1, base + 2, base, base + 2, base + 3, base + 3, base + 2, base + 4);
   }
   const geom = new THREE.BufferGeometry();
@@ -151,7 +156,10 @@ export function createGrassField(perSide: number): GrassField {
   const geometry = createTuftGeometry();
   const material = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.82,
+    roughness: 0.9,
+    // Helai setipis ini tidak memantulkan langit sekuat tanah; tanpa
+    // peredaman, peta lingkungan menyalakan sisi atasnya menjadi putih.
+    envMapIntensity: 0.35,
     metalness: 0,
     side: THREE.DoubleSide,
   });

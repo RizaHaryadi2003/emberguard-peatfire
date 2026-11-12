@@ -129,7 +129,7 @@ export default function KanalModule() {
       reducedMotion,
       // Daerah rawan baru diperlihatkan setelah tebakan babak 02 dijawab;
       // di babak 03 dan 04 ia sudah diketahui pembaca.
-      riskRevealed: act >= 2 || (act === 1 && guess !== null),
+      riskRevealed: act >= 2 || guess !== null,
     });
   }, [act, canalDepthCm, speedIndex, blocked, reducedMotion, guess]);
 
@@ -282,6 +282,16 @@ export default function KanalModule() {
 
   // --- Tebakan babak 02 ------------------------------------------------------
   const awaitingGuess = act === 1 && guess === null;
+  /**
+   * Jangkauan lahan rawan sudah boleh terlihat. Di babak 01 pun belum:
+   * jangkauan itulah yang ditebak di babak 02, dan menampilkannya lebih dulu
+   * berarti membocorkan jawabannya.
+   */
+  const reachKnown = act >= 2 || guess !== null;
+  /** Peta lahan masuk ke panel kendali di layar sempit (babak 02, sesudah menebak). */
+  const phoneMapShown = act === 1 && guess !== null;
+  /** Angka kunci babak; di babak 02 disembunyikan sampai pembaca menebak. */
+  const fact = awaitingGuess ? GUESS_TEXT.factHidden : current.fact;
   const guessM = act === 1 && guess !== null ? REACH_GUESSES[guess].m : null;
   /**
    * Kalimat yang membandingkan tebakan dengan jarak sebenarnya.
@@ -379,7 +389,7 @@ export default function KanalModule() {
 
       {/* Panel cerita babak (kiri atas). Ambang tingginya mengikuti Modul 03:
           min-height, sehingga keadaan sempit menjadi keadaan dasar. */}
-      <div inert={hookOpen} className={`pointer-events-none absolute left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
+      <div inert={hookOpen} className={`pointer-events-none absolute z-20 left-5 right-5 top-14 sm:left-10 sm:top-14 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:651px)]:sm:top-20 [@media(min-height:901px)]:top-20 [@media(min-height:901px)]:sm:top-24 ${panelFade}`}>
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
@@ -429,7 +439,9 @@ export default function KanalModule() {
               {actDone[act] ? <Check size={12} /> : <MousePointerClick size={12} />}
               {actDone[act] ? "Berhasil · perhatikan" : "Tugasmu"}
             </p>
-            <p className="mt-1.5 text-[13px] leading-snug text-white">
+            {/* Di layar sempit babak 02 menyisakan kalimat perbandingan di
+                bawah saja; paragraf pengamatannya dibacakan oleh peta. */}
+            <p className={`mt-1.5 text-[13px] leading-snug text-white ${phoneMapShown ? "max-lg:hidden" : ""}`}>
               {actDone[act] ? current.observe : current.task}
             </p>
             {/* Babak 02: pilihan tebakan, lalu perbandingannya. */}
@@ -471,7 +483,9 @@ export default function KanalModule() {
       </div>
 
       {/* Panel kendali (kiri bawah), atau kartu penutup di tempatnya. */}
-      <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
+      {/* z-20: label 3D (`SceneLabels`, z ≤ 10) tidak boleh muncul di atas
+          panel ini maupun panel cerita. */}
+      <div inert={hookOpen} className={`absolute z-20 bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
         {showSummary ? (
           <SummaryCard
             stats={stats}
@@ -482,17 +496,16 @@ export default function KanalModule() {
           />
         ) : (
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
-          {/* Grafik untuk layar sempit.
-              Panel kanan tersembunyi di bawah lebar lg, dan di sanalah grafik
-              itu berada. Pada babak 02 grafik inilah yang menjawab tebakan
-              pembaca, jadi di ponsel ia ikut masuk ke panel kendali begitu
-              tebakannya dipilih. */}
-          {/* Baru muncul setelah pembaca menebak: sebelum itu kurvanya sudah
-              menjawab pertanyaannya. */}
-          {act === 1 && guess !== null && (
-            <div className="mb-3 rounded-2xl border-b border-white/10 p-1.5 pb-3 lg:hidden">
-              {/* Dibatasi lebarnya supaya panel kendali tidak tumbuh sampai
-                  menutupi seluruh bongkahan di belakangnya. */}
+          {/* Peta lahan untuk layar sempit.
+              Panel kanan tersembunyi di bawah lebar lg, dan di sanalah peta
+              itu berada. Pada babak 02 peta inilah yang menjawab tebakan
+              pembaca, jadi di ponsel ia masuk ke panel kendali begitu
+              tebakannya dipilih — versi ringkas, menggantikan penggeser
+              kedalaman yang tidak diminta babak ini. Diukur pada 390×844:
+              peta lengkap ditambah penggeser menjulang sampai menutupi kartu
+              tugas dan seluruh bongkahan. */}
+          {phoneMapShown && (
+            <div className="rounded-2xl p-1 lg:hidden">
               <div className="mx-auto max-w-[300px]">
               <ReachMap
                 stats={stats}
@@ -501,13 +514,14 @@ export default function KanalModule() {
                 guessM={guessM}
                 sweepKey={`hp-${act}-${canalDepthCm}-${guess}`}
                 reducedMotion={reducedMotion}
+                compact
               />
               </div>
             </div>
           )}
 
           {/* Kedalaman kanal */}
-          <div className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(0)}`}>
+          <div className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(0)} ${phoneMapShown ? "max-lg:hidden" : ""}`}>
           <div className="flex items-baseline justify-between">
             <label htmlFor="kanal-depth" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
               {CANAL_TEXT.depthLabel}
@@ -554,15 +568,19 @@ export default function KanalModule() {
 
           {/* Waktu — baru muncul pada babak 03, babak yang memang tentang waktu. */}
           {act >= TOOL_FROM.time && (
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Waktu berjalan</p>
-              <p className="mt-1 whitespace-nowrap font-playfair text-xl italic leading-none text-white">
+          <div className="mt-3 border-t border-white/10 pt-3">
+            {/* Dua baris: nama dan tahunnya di atas, tombol kecepatan di
+                bawah. Dalam satu baris, keempat tombol menyisakan terlalu
+                sedikit ruang dan "Waktu berjalan" terlipat menjadi dua baris
+                yang berdesakan dengan angka tahunnya. */}
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Waktu berjalan</p>
+              <p className="whitespace-nowrap font-playfair text-xl italic leading-none text-white">
+                {stats.atTimeLimit && <span className="mr-2 font-sans text-[10px] not-italic text-white/40">batas model</span>}
                 {formatYears(stats.years)}
-                {stats.atTimeLimit && <span className="ml-2 font-sans text-[10px] not-italic text-white/40">batas model</span>}
               </p>
             </div>
-            <div className={`flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1 ${guide(2)}`}>
+            <div className={`mt-2 flex justify-between gap-1 rounded-full border border-white/15 bg-black/30 p-1 ${guide(2)}`}>
               {TIME_SPEEDS.map((speed, i) => (
                 <button
                   key={speed.label}
@@ -570,7 +588,7 @@ export default function KanalModule() {
                   onClick={() => setSpeedIndex(i)}
                   aria-pressed={speedIndex === i}
                   title={speed.yearsPerSecond === 0 ? "Hentikan waktu" : `${speed.yearsPerSecond} tahun per detik`}
-                  className={`cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  className={`flex-1 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     speedIndex === i ? "bg-white text-black" : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`}
                 >
@@ -656,7 +674,7 @@ export default function KanalModule() {
           >
             <ReachMap
               stats={stats}
-              revealReach={!awaitingGuess}
+              revealReach={reachKnown}
               animate={act === 1}
               guessM={guessM}
               sweepKey={`${act}-${canalDepthCm}-${guess}`}
@@ -672,30 +690,31 @@ export default function KanalModule() {
 
         {/* Lantai tengah, satu-satunya yang boleh mengalah (`min-h-0`). */}
         <div className="relative flex min-h-0 flex-1 flex-col rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
-          {/* Kontainer yang diukur. Ambang 170 px dan 290 px adalah tinggi
-              isinya sendiri: angka saja sekitar 130 px, ditambah kalimat
-              fakta sekitar 165 px, ditambah arti keempat angka sekitar
-              275 px — masing-masing diberi sedikit kelonggaran. */}
+          {/* Kontainer yang diukur. Ambang 200 px dan 300 px diukur di
+              peramban pada 1440×900, dengan kalimat fakta terpanjang (empat
+              baris): angka saja sekitar 140 px, ditambah kalimat fakta
+              sekitar 200 px, ditambah arti keempat angka (satu baris
+              masing-masing) sekitar 265 px. */}
           <div className="min-h-0 flex-1 overflow-hidden [container-type:size]">
           <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
-            <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
-            <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@container(min-height:170px)]:block">
-              {current.fact.caption}
+            <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{fact.value}</p>
+            <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@container(min-height:200px)]:block">
+              {fact.caption}
             </p>
           </div>
           <dl className="space-y-2">
             {(
               [
-                ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah tepat di samping kanal"],
+                ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah di tepi kanal"],
                 [
                   "Jangkauan rawan",
                   // Disembunyikan selama tebakan babak 02 belum dijawab:
                   // angka ini adalah jawabannya.
-                  awaitingGuess ? "tebak dulu" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
-                  "Sejauh ini dari kanal, gambut rawan terbakar",
+                  awaitingGuess ? "tebak dulu" : !reachKnown ? "—" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
+                  "Jarak terjauh yang rawan terbakar",
                 ],
-                ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—", "Tanah yang hilang karena gambut kering melesak"],
-                ["Karbon terlepas", stats.emittedTPerHa >= 1 ? `${Math.round(stats.emittedTPerHa)} t/ha` : "—", "Ton karbon ke udara dari tiap hektare lahan"],
+                ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—", "Tanah hilang karena gambut melesak"],
+                ["Karbon terlepas", stats.emittedTPerHa >= 1 ? `${Math.round(stats.emittedTPerHa)} t/ha` : "—", "Ton karbon ke udara per hektare"],
               ] as [string, string, string][]
             ).map(([label, value, meaning]) => (
               <div key={label}>
@@ -704,7 +723,7 @@ export default function KanalModule() {
                   <dd className="text-xs font-medium tabular-nums text-white">{value}</dd>
                 </div>
                 {/* Arti angkanya, hanya bila kotak ini masih punya ruang. */}
-                <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@container(min-height:290px)]:block">{meaning}</p>
+                <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@container(min-height:300px)]:block">{meaning}</p>
               </div>
             ))}
           </dl>

@@ -205,8 +205,14 @@ const FREE_WIDE = { left: 0.325, right: 0.805, top: 0.12, bottom: 0.95 };
 /**
  * Di bawah lebar lg, kolom kanan disembunyikan dan panel kendali turun ke
  * bawah layar, jadi yang kosong adalah pita di tengah.
+ *
+ * Diukur pada ponsel 390×844: kartu tugas babak 02 — yang memuat tiga tombol
+ * tebakan — berakhir di 49% tinggi layar, dan panel kendali mulai di 72%.
+ * Pita sebelumnya (24-60%) menaruh bongkahan tepat di belakang kartu tugas.
+ * Di ponsel lebar layarlah yang membatasi besar gambar, jadi pita yang lebih
+ * pendek ini tidak mengecilkannya.
  */
-const FREE_NARROW = { left: 0.04, right: 0.96, top: 0.24, bottom: 0.6 };
+const FREE_NARROW = { left: 0.04, right: 0.96, top: 0.48, bottom: 0.72 };
 
 /**
  * Lebar layar tempat kolom kanan mulai tampil (piksel CSS).

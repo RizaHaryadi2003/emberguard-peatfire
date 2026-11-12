@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { TRANSECT_LENGTH_M, type DrainageStats } from "@/lib/drainage";
 import { CHART_TEXT, FIGURE_NOTE, GUESS_TEXT } from "@/config/kanal-content";
 import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsText as fieldsTextOf, reachesBeyond } from "@/lib/kanalCard";
@@ -51,6 +52,8 @@ type Props = {
   /** Jarak tebakan pembaca (m), digambar sebagai garis pembanding. */
   guessM?: number | null;
   reducedMotion?: boolean;
+  /** Versi ponsel: tanpa kalimat pengantar dan keterangan warna. */
+  compact?: boolean;
 };
 
 export default function ReachMap({
@@ -60,11 +63,20 @@ export default function ReachMap({
   animate = false,
   guessM = null,
   reducedMotion = false,
+  compact = false,
 }: Props) {
   const reach = Math.min(stats.riskReachM, TRANSECT_LENGTH_M);
   const allRisky = reachesBeyond(stats.riskReachM);
   const shown = revealReach && reach > 0;
   const spread = animate && !reducedMotion;
+  // Peta ini dipasang dua kali di halaman — kolom kanan untuk laptop, panel
+  // bawah untuk ponsel — dan salah satunya selalu tersembunyi. Dengan ID pola
+  // yang sama, peramban memakai pola milik salinan yang tersembunyi, dan
+  // peta yang terlihat kehilangan hutan dan daerah rawannya sama sekali.
+  const uid = useId().replace(/:/g, "");
+  const forestId = `kanal-forest-${uid}`;
+  const riskLId = `kanal-risk-l-${uid}`;
+  const riskRId = `kanal-risk-r-${uid}`;
 
   // Luas rawan di sepanjang 1 km kanal, dua sisi, dalam lapangan bola.
   const fieldsText = fieldsTextOf(stats.riskReachM);
@@ -81,7 +93,7 @@ export default function ReachMap({
     <figure className="m-0">
       <figcaption className="mb-2">
         <span className="block text-[10px] uppercase tracking-[0.16em] text-white/50">{FIGURE_NOTE.chart}</span>
-        <span className="mt-0.5 block text-[10px] leading-snug text-white/60">{FIGURE_NOTE.chartLead}</span>
+        {!compact && <span className="mt-0.5 block text-[10px] leading-snug text-white/60">{FIGURE_NOTE.chartLead}</span>}
       </figcaption>
 
       <div className="relative overflow-hidden rounded-xl">
@@ -97,30 +109,30 @@ export default function ReachMap({
         >
           <defs>
             {/* Tajuk hutan rawa: bintik-bintik gelap, bukan bidang hijau rata. */}
-            <pattern id="kanal-forest" width="7" height="7" patternUnits="userSpaceOnUse">
+            <pattern id={forestId} width="7" height="7" patternUnits="userSpaceOnUse">
               <rect width="7" height="7" fill="#1f3a22" />
               <circle cx="2" cy="2" r="1.7" fill="#2d5230" />
               <circle cx="5.5" cy="5" r="1.4" fill="#284a2b" />
             </pattern>
-            <linearGradient id="kanal-risk-l" x1="1" y1="0" x2="0" y2="0">
+            <linearGradient id={riskLId} x1="1" y1="0" x2="0" y2="0">
               <stop offset="0%" stopColor="#e8823a" stopOpacity="0.9" />
               <stop offset="88%" stopColor="#e8a050" stopOpacity="0.75" />
               <stop offset="100%" stopColor="#e8a050" stopOpacity="0.35" />
             </linearGradient>
-            <linearGradient id="kanal-risk-r" x1="0" y1="0" x2="1" y2="0">
+            <linearGradient id={riskRId} x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#e8823a" stopOpacity="0.9" />
               <stop offset="88%" stopColor="#e8a050" stopOpacity="0.75" />
               <stop offset="100%" stopColor="#e8a050" stopOpacity="0.35" />
             </linearGradient>
           </defs>
 
-          <rect width={W} height={H} fill="url(#kanal-forest)" />
+          <rect width={W} height={H} fill={`url(#${forestId})`} />
 
           {/* Daerah rawan, dua sisi, melebar dari kanal. */}
           {shown && (
             <g key={spread ? sweepKey : "diam"} className={spread ? "kanal-spread" : undefined}>
-              <rect x={CX - u(reach)} y={0} width={u(reach)} height={H} fill="url(#kanal-risk-l)" />
-              <rect x={CX} y={0} width={u(reach)} height={H} fill="url(#kanal-risk-r)" />
+              <rect x={CX - u(reach)} y={0} width={u(reach)} height={H} fill={`url(#${riskLId})`} />
+              <rect x={CX} y={0} width={u(reach)} height={H} fill={`url(#${riskRId})`} />
             </g>
           )}
 
@@ -206,7 +218,7 @@ export default function ReachMap({
         <p className="mt-2 text-[10px] leading-snug text-white/60">{CHART_TEXT.noneRisky}</p>
       ) : null}
 
-      <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-white/60">
+      <ul className={`mt-1.5 flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-white/60 ${compact ? "hidden" : "flex"}`}>
         <li className="inline-flex items-center gap-1">
           <span className="h-2 w-2 rounded-[2px] bg-[#e8823a]" />
           {CHART_TEXT.legendRisky}
