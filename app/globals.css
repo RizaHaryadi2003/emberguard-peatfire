@@ -145,9 +145,22 @@ body {
   animation: kanalFill 1.3s ease-out 0.35s both;
 }
 
+/* Daerah rawan pada peta lahan melebar dari kanal ke kedua sisi. */
+@keyframes kanalSpread {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.kanal-spread {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: kanalSpread 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kanal-draw,
-  .kanal-fill {
+  .kanal-fill,
+  .kanal-spread {
     animation: none;
     stroke-dasharray: none;
   }

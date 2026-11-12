@@ -28,7 +28,7 @@ import {
   type DrainageStats,
 } from "@/lib/drainage";
 import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
-import WaterTableChart from "./WaterTableChart";
+import ReachMap from "./ReachMap";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -267,7 +267,12 @@ export default function KanalModule() {
     const reach = stats.riskReachM;
     const yours = `${GUESS_TEXT.yours}: ${REACH_GUESSES[guess].label}.`;
     if (reach <= 0) return `${yours} ${GUESS_TEXT.noCanal}`;
-    const actual = reach >= TRANSECT_LENGTH_M - 1 ? "lebih dari 1 km" : formatDistance(reach);
+    // Ditambah padanan lapangan bola (panjang 105 m), patokan yang sama
+    // dengan peta lahan.
+    const actual =
+      reach >= TRANSECT_LENGTH_M - 1
+        ? "lebih dari 1 km"
+        : `${formatDistance(reach)}${reach >= 80 ? ` (± ${Math.round(reach / 105)} kali panjang lapangan bola)` : ""}`;
     const nearest = REACH_GUESSES.reduce(
       (best, g, i) =>
         Math.abs(Math.log(reach / g.m)) < Math.abs(Math.log(reach / REACH_GUESSES[best].m)) ? i : best,
@@ -450,8 +455,7 @@ export default function KanalModule() {
               {/* Dibatasi lebarnya supaya panel kendali tidak tumbuh sampai
                   menutupi seluruh bongkahan di belakangnya. */}
               <div className="mx-auto max-w-[300px]">
-              <WaterTableChart
-                sim={sim}
+              <ReachMap
                 stats={stats}
                 revealReach
                 animate
@@ -600,8 +604,7 @@ export default function KanalModule() {
             className={`transition-[filter,opacity] duration-700 ${awaitingGuess ? "pointer-events-none opacity-30 blur-[3px]" : ""}`}
             aria-hidden={awaitingGuess}
           >
-            <WaterTableChart
-              sim={sim}
+            <ReachMap
               stats={stats}
               revealReach={!awaitingGuess}
               animate={act === 1}

@@ -82,7 +82,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     // dua garis pada grafik — hanya latihan membaca grafik, dan pembaca tidak
     // tahu untuk apa ia mengerjakannya.
     task: "Tebak dulu: sampai sejauh mana dari kanal lahan ini ikut kering dan rawan terbakar?",
-    observe: "Warna jingga menandai lahan yang rawan terbakar. Ia menjalar jauh melewati petak di gambar, dan grafik di sebelah kanan menunjukkan sampai mana ujungnya. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
+    observe: "Warna jingga menandai lahan yang rawan terbakar. Di gambar besar ia sudah melewati ujung petak; peta lahan memperlihatkan sampai mana sebenarnya. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
     hint: "Pilih tebakanmu untuk melanjutkan.",
     term: { word: "Rawan terbakar", meaning: "muka air lebih dalam dari 40 cm, sehingga lapisan gambut di atasnya cukup kering untuk menyala." },
     // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
@@ -142,7 +142,7 @@ export const GUESS_TEXT = {
   actual: "Kenyataannya",
   right: "Tebakanmu tepat. Kebanyakan orang mengira hanya tepinya.",
   noCanal: "Kanalnya sedang tidak digali, jadi tidak ada lahan yang rawan. Gali lagi untuk melihatnya.",
-  locked: "Tebak dulu di panel kiri. Grafik ini akan menjawabnya.",
+  locked: "Tebak dulu di panel kiri. Peta ini akan menjawabnya.",
 };
 
 /** Pilihan kecepatan waktu. */
@@ -162,13 +162,17 @@ export const CANAL_TEXT = {
 
 export const CHART_TEXT = {
   canal: "kanal",
-  risky: "rawan terbakar",
-  safe: "aman",
-  allRisky: "seluruh 1 km rawan terbakar",
-  noneRisky: "tidak ada yang rawan",
-  limit: "batas aman 40 cm",
-  dry: "tanah kering (mudah terbakar)",
-  wet: "tanah basah",
+  /** Jangkauan rawan di satu sisi kanal. */
+  reach: (m: string) => `${m} ke kiri dan ke kanan kanal`,
+  allReach: "lebih dari 1 km ke kiri dan ke kanan kanal",
+  /** Kalimat besar di bawah peta. */
+  fields: (n: string) => `± ${n} lapangan bola`,
+  fieldsLead: "lahan rawan terbakar di sepanjang tiap 1 km kanal",
+  noneRisky: "Belum ada lahan yang rawan terbakar.",
+  legendRisky: "rawan terbakar",
+  legendSafe: "gambut masih basah",
+  legendField: "lapangan bola, skala sama",
+  scale: "1 km",
 };
 
 /**
@@ -181,12 +185,9 @@ export const CHART_TEXT = {
  */
 export const FIGURE_NOTE = {
   block: (lengthM: number) => `Gambar: ${lengthM} m dari tepi kanal`,
-  chart: "Tampak samping · 1 km dari kanal",
-  chartLead: "Tanah yang sama dengan gambar, diperpanjang sampai 1 km. Biru = tanah basah, coklat = tanah kering.",
-  // Petak 36 m hanya 3,6% lebar grafik — sepotong pita yang terlalu tipis
-  // untuk diberi label di dalam gambarnya. Jadi hubungannya dikatakan dengan
-  // kalimat, bukan dengan tanda yang harus dicari.
-  window: (lengthM: number) => `Pita terang di kiri grafik: ${lengthM} m yang digambar besar`,
+  chart: "Dilihat dari atas",
+  chartLead: "Kanal di tengah. Jingga = lahan di kiri-kanannya yang ikut kering dan rawan terbakar.",
+  window: (lengthM: number) => `Gambar besar hanya memperlihatkan ${lengthM} m pertama; peta lahan memperlihatkan seluruhnya`,
 };
 
 /** Keterangan skala yang wajib tampil pada gambar. */

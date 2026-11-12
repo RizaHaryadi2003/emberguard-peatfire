@@ -31,7 +31,7 @@ import {
 //
 // Jadi kedua tugas itu dipisah. Berkas ini mengerjakan tugas pertama: sepetak
 // lahan di dekat kanal, cukup dekat untuk dikenali sebagai tempat. Tugas
-// kedua dikerjakan `WaterTableChart` sebagai grafik dua dimensi, yang memang
+// kedua dikerjakan `ReachMap` sebagai peta lahan dari atas, yang memang
 // bentuk yang benar untuk mengukur.
 //
 // --- Satuan ----------------------------------------------------------------
