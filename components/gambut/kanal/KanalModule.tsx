@@ -572,7 +572,10 @@ export default function KanalModule() {
           />
         </div>
 
-        <div className="relative rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+        {/* `min-h-0` membolehkan kotak ini mengalah lebih dulu bila layar
+            terlalu pendek, supaya panah lanjut di bawahnya tidak pernah
+            terdorong keluar layar. */}
+        <div className="relative min-h-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
             <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
             <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block">
@@ -601,7 +604,13 @@ export default function KanalModule() {
                 </div>
                 {/* Arti angkanya, hanya di layar yang cukup tinggi supaya
                     kolom ini tetap tidak perlu digulir. */}
-                <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@media(min-height:801px)]:block">{meaning}</p>
+                {/* Disembunyikan pula pada babak 02: grafik di atas memuat
+                    tambahan bacaan penanda, dan tanpa ruang ini kolomnya lebih
+                    tinggi daripada layar sehingga panah lanjut terdorong ke
+                    luar. Artinya sudah dibaca pembaca pada babak 01. */}
+                {act !== 1 && (
+                  <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@media(min-height:801px)]:block">{meaning}</p>
+                )}
               </div>
             ))}
           </dl>
@@ -658,7 +667,7 @@ export default function KanalModule() {
             tertindih kotak angka. Di dalam satu kolom, ruangnya dibagi:
             `mt-auto` mendorongnya ke dasar layar, dan ia tidak pernah dapat
             naik melewati kotak di atasnya. */}
-        <div className="mt-auto self-end pt-2">{advance}</div>
+        <div className="mt-auto shrink-0 self-end pt-2">{advance}</div>
       </div>
 
       {/* Navigasi babak (bawah) */}
