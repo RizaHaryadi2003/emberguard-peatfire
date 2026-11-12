@@ -10,7 +10,7 @@ import {
   type DrainageStats,
 } from "@/lib/drainage";
 import { NEAR_LENGTH_M } from "./scene/transect";
-import { FIGURE_NOTE, PROBE_TEXT } from "@/config/kanal-content";
+import { FIGURE_NOTE, GUESS_TEXT, PROBE_TEXT } from "@/config/kanal-content";
 import { judgeProbe } from "./probe";
 
 // Kurva muka air tanah sepanjang satu kilometer.
@@ -127,6 +127,13 @@ type Props = {
    * supaya pemanggilnya yang memutuskan kapan gerakan itu pantas.
    */
   sweepKey?: string | number;
+  /**
+   * Gambar kurva dari tepi kanal ke luar, juga bila penandanya tidak dapat
+   * digeser. Dipakai babak 02 saat tebakan pembaca dijawab.
+   */
+  animate?: boolean;
+  /** Jarak tebakan pembaca (m), digambar sebagai garis pembanding. */
+  guessM?: number | null;
   /** Pengguna meminta gerak dikurangi. */
   reducedMotion?: boolean;
 };
@@ -139,6 +146,8 @@ export default function WaterTableChart({
   interactive = false,
   revealReach = true,
   sweepKey,
+  animate = false,
+  guessM = null,
   reducedMotion = false,
 }: Props) {
   // Dihitung ulang tiap kali ringkasan diperbarui — lima kali sedetik, dan
@@ -230,7 +239,7 @@ export default function WaterTableChart({
   // pembaca diminta memperhatikan bahwa pengeringan memanjang ratusan meter,
   // tetapi yang dilihatnya gambar diam. Menggambar kurvanya dari kanal ke
   // luar memperlihatkan pemanjangan itu, bukan sekadar menyatakannya.
-  const sweep = interactive && !reducedMotion;
+  const sweep = (interactive || animate) && !reducedMotion;
   const probeColor = verdict === "found" || verdict === "beyondFound" ? "#7fd4a8" : "#ffffff";
 
   return (
@@ -356,6 +365,33 @@ export default function WaterTableChart({
             className={sweep ? "kanal-draw" : undefined}
           />
         </g>
+
+        {/* Tebakan pembaca di babak 02: garis putih yang tetap di tempatnya
+            sementara kurvanya digambar melewatinya. Selisih antara garis ini
+            dan tepi jingga itulah jawabannya. */}
+        {guessM !== null && (
+          <g aria-hidden>
+            <line
+              x1={xOf(guessM)}
+              y1={PAD_T - 2}
+              x2={xOf(guessM)}
+              y2={PAD_T + PLOT_H}
+              stroke="#ffffff"
+              strokeOpacity="0.8"
+              strokeWidth="1"
+              strokeDasharray="3 2"
+            />
+            <text
+              x={xOf(guessM) + 3}
+              y={PAD_T + 5}
+              fill="#ffffff"
+              fillOpacity="0.8"
+              fontSize="8.5"
+            >
+              {GUESS_TEXT.chartLabel}
+            </text>
+          </g>
+        )}
 
         {/* Penanda bayangan sebelum pembaca menyentuh grafik.
             Tanpa ini grafik babak 02 tampak sama dengan grafik di babak lain,

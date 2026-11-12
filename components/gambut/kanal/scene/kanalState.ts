@@ -49,6 +49,11 @@ export type KanalState = {
    * melihat arahnya — dan arah itulah isi babaknya.
    */
   riskFront: number;
+  /**
+   * Daerah rawan sudah boleh diperlihatkan. Pada babak 02 baru menyala
+   * setelah pembaca menebak — sebelum itu jawabannya tidak boleh terlihat.
+   */
+  riskRevealed: boolean;
 };
 
 /** Keadaan awal modul: gambut yang belum tersentuh kanal. */
@@ -63,6 +68,7 @@ export function createKanalState(): KanalState {
     riskTint: 1,
     danger: 0,
     riskFront: 0,
+    riskRevealed: false,
   };
 }
 

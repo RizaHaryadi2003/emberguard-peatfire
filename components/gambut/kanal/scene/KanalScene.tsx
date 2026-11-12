@@ -329,12 +329,13 @@ function Simulation({
     const wantTint = s.act >= 1 ? 1 : 0.25;
     s.riskTint = THREE.MathUtils.damp(s.riskTint, wantTint, s.reducedMotion ? 30 : 4, dt);
 
-    // Mukanya menjalar keluar dari kanal sekali, saat babak 02 dibuka, lalu
+    // Mukanya menjalar keluar dari kanal sekali, saat tebakan babak 02
+    // dijawab, lalu
     // tinggal di ujung petak. Lajunya dipilih supaya menyeberangi petak dalam
     // waktu yang kira-kira sama dengan kurva pada grafik menggambar dirinya —
     // keduanya mengatakan hal yang sama, jadi keduanya harus terasa satu
     // gerakan meski skalanya berbeda seribu kali.
-    const wantFront = s.act >= 1 ? NEAR_LENGTH_M + 6 : 0;
+    const wantFront = s.riskRevealed ? NEAR_LENGTH_M + 6 : 0;
     const frontSpeed = s.reducedMotion ? 1000 : (NEAR_LENGTH_M + 6) / 1.2;
     s.riskFront =
       s.riskFront < wantFront

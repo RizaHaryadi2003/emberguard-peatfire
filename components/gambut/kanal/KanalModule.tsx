@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, Info, MousePointerClick, Pause, RotateCcw, Waves, X } from "lucide-react";
-import { CANAL_TEXT, FIGURE_NOTE, KANAL_ACTS, KANAL_HOOK, SCALE_NOTE, TIME_SPEEDS } from "@/config/kanal-content";
+import {
+  CANAL_TEXT,
+  FIGURE_NOTE,
+  GUESS_TEXT,
+  KANAL_ACTS,
+  KANAL_HOOK,
+  REACH_GUESSES,
+  SCALE_NOTE,
+  TIME_SPEEDS,
+} from "@/config/kanal-content";
 import { BACK_TO_MODULE_LIST, GAMBUT_MODULES } from "@/config/gambut-content";
 import ModuleHook from "@/components/gambut/ModuleHook";
 import StepAdvance from "@/components/gambut/StepAdvance";
@@ -14,12 +23,12 @@ import {
   formatDrop,
   formatYears,
   SIM_MAX_YEARS,
+  TRANSECT_LENGTH_M,
   WATER_LIMIT_M,
   type DrainageStats,
 } from "@/lib/drainage";
 import { CANAL_LABEL_WIDTH_M, NEAR_LENGTH_M, VERTICAL_EXAGGERATION } from "./scene/transect";
 import WaterTableChart from "./WaterTableChart";
-import { judgeProbe, probeSolved } from "./probe";
 import { createKanalState, type KanalState, type Quality } from "./scene/kanalState";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
@@ -78,25 +87,14 @@ export default function KanalModule() {
   const [canalDepthCm, setCanalDepthCm] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
   const [blocked, setBlocked] = useState(false);
-  /** Jarak yang ditandai pembaca pada grafik (m) — tugas babak 02. */
-  const [probeM, setProbeM] = useState<number | null>(null);
   /**
-   * Pembaca pernah menandai tepi daerah rawan dengan benar.
+   * Tebakan pembaca di babak 02 (indeks pada REACH_GUESSES), atau null.
    *
-   * Diingat, bukan dihitung ulang dari penandanya. Penanda itu dibersihkan
-   * begitu babak 02 ditinggalkan — ia tidak berarti apa-apa di babak lain —
-   * sehingga `actDone[1]` kembali palsu dan penanda babak 02 pada navigasi
-   * berubah kelabu lagi, seolah pekerjaannya batal. Modul 03 memakai cara
-   * yang sama untuk hal yang sama: `dousedOnce`, `thermalSeen`, `rewetOnce`.
-   *
-   * Dikunci di dalam penangan geseran, bukan di dalam `useEffect` yang
-   * mengawasi penandanya. Keduanya menghasilkan hal yang sama, tetapi yang
-   * kedua memanggil `setState` di dalam badan efek: satu render tambahan
-   * tiap kali penandanya bergerak, hanya untuk mencatat sesuatu yang sudah
-   * diketahui pada render sebelumnya. Di sini kuncinya dipasang di tempat
-   * pembaca benar-benar mengerjakannya.
+   * Disimpan sampai pembaca memulai dari awal, seperti `dousedOnce` di
+   * Modul 03: meninggalkan babak 02 tidak membatalkan tebakan yang sudah
+   * dijawab.
    */
-  const [probeSolvedOnce, setProbeSolvedOnce] = useState(false);
+  const [guess, setGuess] = useState<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   /** Catatan skala gambar terbuka. Lihat kolom kanan. */
   const [scaleOpen, setScaleOpen] = useState(false);
@@ -116,8 +114,11 @@ export default function KanalModule() {
       yearsPerSecond: TIME_SPEEDS[speedIndex].yearsPerSecond,
       blocked,
       reducedMotion,
+      // Daerah rawan baru diperlihatkan setelah tebakan babak 02 dijawab;
+      // di babak 03 dan 04 ia sudah diketahui pembaca.
+      riskRevealed: act >= 2 || (act === 1 && guess !== null),
     });
-  }, [act, canalDepthCm, speedIndex, blocked, reducedMotion]);
+  }, [act, canalDepthCm, speedIndex, blocked, reducedMotion, guess]);
 
   // Layar pembuka tertutup oleh tombolnya, oleh gulir ke bawah, atau oleh
   // usapan ke atas, sama dengan Modul 03: halaman ini dikunci setinggi layar,
@@ -178,22 +179,6 @@ export default function KanalModule() {
 
   const handleReady = useCallback(() => setReady(true), []);
 
-  /**
-   * Pembaca menggeser penanda jaraknya.
-   *
-   * Dicatat sekali saat penandanya tepat, lalu tidak pernah dicabut sampai
-   * ia memulai dari awal — lihat `probeSolvedOnce`. Jangkauan rawan dibaca
-   * dari ringkasan simulasi saat geseran itu terjadi, sebab itulah angka
-   * yang sedang dilihat pembaca pada grafik yang sedang ia telusuri.
-   */
-  const handleProbe = useCallback(
-    (m: number) => {
-      setProbeM(m);
-      if (probeSolved(judgeProbe(m, stats.riskReachM))) setProbeSolvedOnce(true);
-    },
-    [stats.riskReachM],
-  );
-
   const handleReset = useCallback(() => {
     sim.reset();
     setStats({ ...sim.stats });
@@ -201,8 +186,7 @@ export default function KanalModule() {
     setCanalDepthCm(0);
     setSpeedIndex(0);
     setBlocked(false);
-    setProbeM(null);
-    setProbeSolvedOnce(false);
+    setGuess(null);
     Object.assign(stateRef.current, createKanalState());
   }, [sim]);
 
@@ -215,12 +199,9 @@ export default function KanalModule() {
   // jangkauan itu 209 m. Jadi babak 02 lulus sebelum pembaca selesai membaca
   // tugasnya, dan tombol "Babak berikutnya" sudah menyala ketika babaknya
   // baru dibuka.
-  const probeVerdict = judgeProbe(probeM, stats.riskReachM);
-  const probeFound = probeSolved(probeVerdict) || probeSolvedOnce;
-
   const actDone = [
     canalDepthCm >= ACT1_DEPTH_CM,
-    probeFound,
+    guess !== null,
     stats.maxSubsidenceM >= ACT3_SUBSIDENCE_M,
     blocked && stats.maxSubsidenceM > 0.1,
   ];
@@ -237,11 +218,7 @@ export default function KanalModule() {
     canalDepthCm >= ACT1_DEPTH_CM
       ? `Kanal sedalam ${canalDepthCm} cm`
       : `Kanal baru ${canalDepthCm} cm dari ${ACT1_DEPTH_CM} cm`,
-    probeFound
-      ? "Tepi daerah rawan sudah ditandai"
-      : probeM === null
-        ? "Penanda pada grafik belum digeser"
-        : `Penanda di ${Math.round(probeM)} m — belum di tepinya`,
+    guess !== null ? "Tebakan sudah dijawab" : "Belum menebak",
     stats.maxSubsidenceM >= ACT3_SUBSIDENCE_M
       ? `Permukaan turun ${formatDrop(stats.maxSubsidenceM)}`
       : `Permukaan baru turun ${formatDrop(stats.maxSubsidenceM)} dari ${ACT3_SUBSIDENCE_M * 100} cm`,
@@ -271,12 +248,37 @@ export default function KanalModule() {
     if (next > act && !actDone[act]) return;
     setAct(next);
     setSpeedIndex(ACT_SPEED[next]);
-    // Penanda hanya berarti di babak 02. Dibiarkan menyala di babak lain, ia
-    // menjadi garis tegak tanpa keterangan di tengah grafik.
-    if (next !== 1) setProbeM(null);
   };
 
   const current = KANAL_ACTS[act];
+
+  // --- Tebakan babak 02 ------------------------------------------------------
+  const awaitingGuess = act === 1 && guess === null;
+  const guessM = act === 1 && guess !== null ? REACH_GUESSES[guess].m : null;
+  /**
+   * Kalimat yang membandingkan tebakan dengan jarak sebenarnya.
+   *
+   * Pilihan yang "tepat" adalah yang besarannya paling dekat dengan
+   * jangkauan sebenarnya, diukur pada skala logaritmik — 5, 50, dan 300 m
+   * adalah tiga besaran, dan yang dinilai besarannya.
+   */
+  const guessVerdict = (() => {
+    if (guess === null) return null;
+    const reach = stats.riskReachM;
+    const yours = `${GUESS_TEXT.yours}: ${REACH_GUESSES[guess].label}.`;
+    if (reach <= 0) return `${yours} ${GUESS_TEXT.noCanal}`;
+    const actual = reach >= TRANSECT_LENGTH_M - 1 ? "lebih dari 1 km" : formatDistance(reach);
+    const nearest = REACH_GUESSES.reduce(
+      (best, g, i) =>
+        Math.abs(Math.log(reach / g.m)) < Math.abs(Math.log(reach / REACH_GUESSES[best].m)) ? i : best,
+      0,
+    );
+    if (nearest === guess) return `${yours} ${GUESS_TEXT.actual}: ${actual}. ${GUESS_TEXT.right}`;
+    const times = Math.round(reach / REACH_GUESSES[guess].m);
+    return reach > REACH_GUESSES[guess].m
+      ? `${yours} ${GUESS_TEXT.actual}: ${actual}, sekitar ${times} kali lebih jauh.`
+      : `${yours} ${GUESS_TEXT.actual}: ${actual}, lebih dekat daripada tebakanmu.`;
+  })();
   const dense = act >= 2;
 
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 03. */
@@ -395,6 +397,27 @@ export default function KanalModule() {
             <p className="mt-1.5 text-[13px] leading-snug text-white">
               {actDone[act] ? current.observe : current.task}
             </p>
+            {/* Babak 02: pilihan tebakan, lalu perbandingannya. */}
+            {act === 1 && guess === null && (
+              <div className={`pointer-events-auto mt-2.5 grid grid-cols-3 gap-1.5 rounded-xl ${guide(1)}`}>
+                {REACH_GUESSES.map((g, i) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setGuess(i)}
+                    className="cursor-pointer rounded-xl border border-white/20 bg-white/5 px-2 py-2 text-left transition-colors hover:border-white/45 hover:bg-white/15"
+                  >
+                    <span className="block text-[13px] font-medium leading-tight text-white">{g.label}</span>
+                    <span className="mt-0.5 block text-[10px] leading-snug text-white/55">{g.note}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {act === 1 && guessVerdict && (
+              <p className="mt-2 border-t border-white/10 pt-2 text-[12px] font-medium leading-snug text-[#f0a35e]">
+                {guessVerdict}
+              </p>
+            )}
             {!actDone[act] && (
               <div className="mt-2">
                 {progressRatio !== null && (
@@ -417,24 +440,23 @@ export default function KanalModule() {
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
           {/* Grafik untuk layar sempit.
               Panel kanan tersembunyi di bawah lebar lg, dan di sanalah grafik
-              itu berada — artinya tugas babak 02 tidak mungkin diselesaikan
-              di ponsel sama sekali, sebab penandanya tidak ada di layar.
-              Jadi pada babak itu grafiknya ikut masuk ke panel kendali, di
-              mana pembaca memang sedang bekerja. Keduanya satu keadaan, jadi
-              penandanya selalu sama di mana pun ia digeser. */}
-          {act === 1 && (
-            <div className={`mb-3 rounded-2xl border-b border-white/10 p-1.5 pb-3 lg:hidden ${guide(1)}`}>
+              itu berada. Pada babak 02 grafik inilah yang menjawab tebakan
+              pembaca, jadi di ponsel ia ikut masuk ke panel kendali begitu
+              tebakannya dipilih. */}
+          {/* Baru muncul setelah pembaca menebak: sebelum itu kurvanya sudah
+              menjawab pertanyaannya. */}
+          {act === 1 && guess !== null && (
+            <div className="mb-3 rounded-2xl border-b border-white/10 p-1.5 pb-3 lg:hidden">
               {/* Dibatasi lebarnya supaya panel kendali tidak tumbuh sampai
                   menutupi seluruh bongkahan di belakangnya. */}
               <div className="mx-auto max-w-[300px]">
               <WaterTableChart
                 sim={sim}
                 stats={stats}
-                probeM={probeM}
-                onProbe={handleProbe}
-                interactive
-                revealReach={false}
-                sweepKey={`hp-${act}-${canalDepthCm}`}
+                revealReach
+                animate
+                guessM={guessM}
+                sweepKey={`hp-${act}-${canalDepthCm}-${guess}`}
                 reducedMotion={reducedMotion}
               />
               </div>
@@ -569,17 +591,30 @@ export default function KanalModule() {
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
             dari kurva ini. */}
-        <div className={`shrink-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4 ${guide(1)}`}>
-          <WaterTableChart
-            sim={sim}
-            stats={stats}
-            probeM={probeM}
-            onProbe={handleProbe}
-            interactive={act === 1}
-            revealReach={act !== 1}
-            sweepKey={`${act}-${canalDepthCm}`}
-            reducedMotion={reducedMotion}
-          />
+        <div className="relative shrink-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+          {/* Selama tebakan babak 02 belum dijawab, grafiknya dikaburkan:
+              kurvanya sendiri sudah menunjukkan jawabannya. Tetap dipasang,
+              bukan disembunyikan, supaya kolom ini tidak melompat tingginya
+              saat jawabannya dibuka. */}
+          <div
+            className={`transition-[filter,opacity] duration-700 ${awaitingGuess ? "pointer-events-none opacity-30 blur-[3px]" : ""}`}
+            aria-hidden={awaitingGuess}
+          >
+            <WaterTableChart
+              sim={sim}
+              stats={stats}
+              revealReach={!awaitingGuess}
+              animate={act === 1}
+              guessM={guessM}
+              sweepKey={`${act}-${canalDepthCm}-${guess}`}
+              reducedMotion={reducedMotion}
+            />
+          </div>
+          {awaitingGuess && (
+            <p className="absolute inset-0 flex items-center justify-center px-6 text-center text-[11px] leading-snug text-white/75">
+              {GUESS_TEXT.locked}
+            </p>
+          )}
         </div>
 
         {/* Lantai tengah, satu-satunya yang boleh mengalah (`min-h-0`). */}
@@ -601,9 +636,9 @@ export default function KanalModule() {
                 ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah tepat di samping kanal"],
                 [
                   "Jangkauan rawan",
-                  // Disembunyikan selama babak 02: itu jawaban yang sedang
-                  // dicari pembaca di grafik tepat di atasnya.
-                  act === 1 ? "cari di grafik" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
+                  // Disembunyikan selama tebakan babak 02 belum dijawab:
+                  // angka ini adalah jawabannya.
+                  awaitingGuess ? "tebak dulu" : stats.riskReachM > 0 ? formatDistance(stats.riskReachM) : "—",
                   "Sejauh ini dari kanal, gambut rawan terbakar",
                 ],
                 ["Permukaan turun", stats.maxSubsidenceM > 0.005 ? formatDrop(stats.maxSubsidenceM) : "—", "Tanah yang hilang karena gambut kering melesak"],

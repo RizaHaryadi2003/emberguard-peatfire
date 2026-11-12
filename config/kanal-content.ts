@@ -76,9 +76,14 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     number: "02",
     title: "Jauh dari tepi",
     body: "Yang kering bukan hanya tepi kanal. Muka air tanah melengkung turun sampai ratusan meter ke dalam, dan sepanjang itu lapisan atasnya menjadi bahan bakar. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
-    task: "Seret penanda di grafik muka air ke titik tempat garis biru memotong garis jingga putus-putus (batas 40 cm).",
-    observe: "Dari kanal sampai sejauh itu, lapisan atas gambut kering dan mudah terbakar. Lahan yang dikeringkan jauh lebih luas daripada galiannya.",
-    hint: "Tandai tempat muka airnya menyeberangi batas 40 cm pada grafik.",
+    // Tebak dulu, baru lihat. Pembaca hampir selalu mengira yang kering hanya
+    // tepi kanal; jarak sebenarnya baru terasa mengejutkan bila ia sempat
+    // menebak lebih dulu. Tugas sebelumnya — menyeret penanda ke perpotongan
+    // dua garis pada grafik — hanya latihan membaca grafik, dan pembaca tidak
+    // tahu untuk apa ia mengerjakannya.
+    task: "Tebak dulu: sampai sejauh mana dari kanal lahan ini ikut kering dan rawan terbakar?",
+    observe: "Warna jingga menandai lahan yang rawan terbakar. Ia menjalar jauh melewati petak di gambar, dan grafik di sebelah kanan menunjukkan sampai mana ujungnya. Satu kanal mengeringkan lahan jauh lebih luas daripada galiannya.",
+    hint: "Pilih tebakanmu untuk melanjutkan.",
     term: { word: "Rawan terbakar", meaning: "muka air lebih dalam dari 40 cm, sehingga lapisan gambut di atasnya cukup kering untuk menyala." },
     // Angka kunci babak ini sengaja bukan jarak tepi daerah rawan. Jarak itu
     // justru yang sedang dicari pembaca pada grafik, dan mencetaknya di panel
@@ -117,6 +122,28 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     },
   },
 ];
+
+/**
+ * Pilihan tebakan babak 02: sejauh mana lahan rawan terbakar dari kanal.
+ *
+ * Tiga pilihan, masing-masing satu besaran — tepi, puluhan, ratusan — sebab
+ * yang diuji adalah besarannya, bukan angkanya sampai meter. `m` adalah
+ * jarak yang digambar sebagai garis "tebakanmu" pada grafik.
+ */
+export const REACH_GUESSES: readonly { id: string; label: string; note: string; m: number }[] = [
+  { id: "tepi", label: "± 5 m", note: "hanya tepi kanal", m: 5 },
+  { id: "puluhan", label: "± 50 m", note: "setengah lapangan bola", m: 50 },
+  { id: "ratusan", label: "Ratusan meter", note: "beberapa kali panjang lapangan bola", m: 300 },
+];
+
+export const GUESS_TEXT = {
+  chartLabel: "tebakanmu",
+  yours: "Tebakanmu",
+  actual: "Kenyataannya",
+  right: "Tebakanmu tepat. Kebanyakan orang mengira hanya tepinya.",
+  noCanal: "Kanalnya sedang tidak digali, jadi tidak ada lahan yang rawan. Gali lagi untuk melihatnya.",
+  locked: "Tebak dulu di panel kiri. Grafik ini akan menjawabnya.",
+};
 
 /** Pilihan kecepatan waktu. */
 export const TIME_SPEEDS: readonly { label: string; yearsPerSecond: number }[] = [
