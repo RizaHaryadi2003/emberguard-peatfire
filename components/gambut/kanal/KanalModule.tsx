@@ -553,11 +553,14 @@ export default function KanalModule() {
           sehingga kolom ini cukup pendek untuk tidak pernah perlu digulir.
 
           Susunannya tiga lantai dari atas ke bawah — grafik, angka, panah
-          lanjut — dalam satu kolom setinggi layar. Grafik dan panah tidak
-          pernah menyusut. Bila layarnya terlalu pendek untuk ketiganya, yang
-          mengalah hanya daftar angka di lantai tengah, dan itu pun di dalam
-          kotaknya sendiri. Dengan begitu tidak ada dua kotak yang dapat
-          bertumpuk, dan panah lanjut selalu terlihat, di babak mana pun. */}
+          lanjut — dalam satu kolom setinggi layar, tanpa gulir. Grafik dan
+          panah tidak pernah menyusut; lantai tengah mengisi sisa tingginya.
+          Lantai itu mengukur ruangnya sendiri (kueri kontainer pada
+          tingginya) dan memilih sendiri seberapa banyak keterangan yang
+          ditampilkan: angka-angkanya selalu, kalimat fakta bila muat, arti
+          tiap angka bila masih muat. Dengan begitu tidak ada dua kotak yang
+          dapat bertumpuk, dan panah lanjut selalu terlihat, di babak mana
+          pun dan pada tinggi layar berapa pun. */}
       <div
         inert={hookOpen}
         className={`absolute bottom-6 right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
@@ -580,16 +583,19 @@ export default function KanalModule() {
         </div>
 
         {/* Lantai tengah, satu-satunya yang boleh mengalah (`min-h-0`). */}
-        <div className="relative flex min-h-0 flex-col rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
-          <div className="mb-2 shrink-0 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
+        <div className="relative flex min-h-0 flex-1 flex-col rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+          {/* Kontainer yang diukur. Ambang 170 px dan 290 px adalah tinggi
+              isinya sendiri: angka saja sekitar 130 px, ditambah kalimat
+              fakta sekitar 165 px, ditambah arti keempat angka sekitar
+              275 px — masing-masing diberi sedikit kelonggaran. */}
+          <div className="min-h-0 flex-1 overflow-hidden [container-type:size]">
+          <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
             <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{current.fact.value}</p>
-            <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block">
+            <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@container(min-height:170px)]:block">
               {current.fact.caption}
             </p>
           </div>
-          {/* Hanya daftar ini yang dapat digulir, dan hanya pada layar yang
-              terlalu pendek; pada laptop biasa seluruhnya muat. */}
-          <dl className="min-h-0 space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.25)_transparent] [scrollbar-width:thin]">
+          <dl className="space-y-2">
             {(
               [
                 ["Muka air di tepi kanal", formatDrop(stats.waterAtCanalM), "Kedalaman air tanah tepat di samping kanal"],
@@ -609,18 +615,12 @@ export default function KanalModule() {
                   <dt className="text-[11px] text-white/50">{label}</dt>
                   <dd className="text-xs font-medium tabular-nums text-white">{value}</dd>
                 </div>
-                {/* Arti angkanya, hanya di layar yang cukup tinggi supaya
-                    kolom ini tetap tidak perlu digulir. */}
-                {/* Disembunyikan pula pada babak 02: grafik di atas memuat
-                    tambahan bacaan penanda, dan tanpa ruang ini kolomnya lebih
-                    tinggi daripada layar sehingga panah lanjut terdorong ke
-                    luar. Artinya sudah dibaca pembaca pada babak 01. */}
-                {act !== 1 && (
-                  <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@media(min-height:801px)]:block">{meaning}</p>
-                )}
+                {/* Arti angkanya, hanya bila kotak ini masih punya ruang. */}
+                <p className="mt-0.5 hidden text-[10px] leading-snug text-white/35 [@container(min-height:290px)]:block">{meaning}</p>
               </div>
             ))}
           </dl>
+          </div>
 
           {/* Keterangan skala tetap wajib ada, hanya tidak lagi dibentangkan
               terus-menerus. Ia dibuka ke kiri, di atas gambar, supaya kolom
