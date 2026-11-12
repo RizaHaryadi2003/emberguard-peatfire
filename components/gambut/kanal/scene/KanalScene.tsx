@@ -217,6 +217,15 @@ const FREE_NARROW = { left: 0.04, right: 0.96, top: 0.24, bottom: 0.6 };
  */
 const PANEL_BREAKPOINT = 1024;
 
+/**
+ * Jeda terpendek antara dua kali menggambar ulang peta bayangan (detik).
+ *
+ * Seperempat detik cukup rapat sehingga bayangan tanggul dan pohon tampak
+ * mengikuti galian, tetapi berarti peta bayangan digambar empat kali sedetik,
+ * bukan enam puluh kali, selama kanal sedang berubah bentuk.
+ */
+const SHADOW_INTERVAL_SEC = 0.25;
+
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -496,8 +505,19 @@ function Block({
       gl.shadowMap.autoUpdate = true;
     };
   }, [gl, res]);
+  // Permintaan menggambar ulang bayangan dikumpulkan, lalu dikabulkan paling
+  // sering sekali tiap `SHADOW_INTERVAL_SEC`. Saat kanal digali, kedalaman
+  // gambarnya menyusul nilai penggeser selama sekitar satu detik, dan selama
+  // itu bentuk tanah berubah pada tiap bingkai. Bila tiap perubahan langsung
+  // menggambar ulang peta bayangan, satu bingkai berisi dua render penuh
+  // (dari matahari dan dari kamera) selama seluruh peralihan itu — dan
+  // itulah yang terasa tersendat saat penggeser kedalaman dimainkan.
+  // Permintaan terakhir tidak pernah hilang: ia dikabulkan begitu jedanya
+  // habis, jadi bayangan akhir selalu sesuai bentuk tanah yang terakhir.
+  const shadowDirty = useRef(false);
+  const shadowWait = useRef(0);
   const markShadows = () => {
-    gl.shadowMap.needsUpdate = true;
+    shadowDirty.current = true;
   };
 
   const built = useRef(-1);
@@ -660,6 +680,13 @@ function Block({
         res.plants.update(effective, subsidence.fn, s.drawnCanalDepthM);
         markShadows();
       }
+    }
+
+    shadowWait.current -= dt;
+    if (shadowDirty.current && shadowWait.current <= 0) {
+      shadowDirty.current = false;
+      shadowWait.current = SHADOW_INTERVAL_SEC;
+      gl.shadowMap.needsUpdate = true;
     }
   });
 
