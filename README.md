@@ -67,19 +67,28 @@ halaman termuat tetapi tombolnya tidak merespons.
 ## Struktur
 
 ```
-app/                 Rute (App Router). Tiap page.tsx = satu URL.
-components/          Komponen antarmuka dan adegan 3D.
-  gambut/scene/        Bagian 3D yang dipakai bersama semua modul.
-  gambut/anatomi/      Modul 01.
-  gambut/bara/         Modul 02.
-  gambut/kanal/        Modul 03.
-  gambut/karbon/       Modul 04.
-config/              Seluruh teks Bahasa Indonesia, terpisah dari kode.
-hooks/               Hook React yang dipakai ulang.
-lib/                 Logika murni: tanpa React, tanpa Three.js, tanpa DOM.
-public/              Model .glb dan tekstur .webp beserta berkas sumbernya.
-docs/md/             Dokumentasi teknis.
-docs/screenshots/    Tangkapan layar hasil pengujian.
+app/                    Rute (App Router). Tiap page.tsx = satu URL.
+  modul/<nama>/           Satu halaman per modul; kartu/ = gambar kartu hasil.
+  simulasi/, kuis/        Menu lain (masih halaman penanda).
+components/
+  modul/shared/           Kerangka dan komponen yang dipakai semua modul.
+  modul/shared/scene/     Bagian 3D yang dipakai bersama modul 3D.
+  modul/<nama>/           Isi tiap modul (sekitarmu, anatomi, hutan-rawa,
+                          kanal, bara, karbon).
+  modul/ModuleList.tsx    Halaman daftar modul.
+  hero/, layout/          Beranda dan navigasi.
+config/
+  modules-content.ts      Daftar bagian dan modul; nomor modul dihitung dari sini.
+  modul/<nama>.ts         Seluruh teks tiap modul, terpisah dari kode.
+lib/                    Logika murni: tanpa React, tanpa Three.js, tanpa DOM.
+  model/                  Model ilmiah tiap modul.
+  kartu/                  Isi dan alamat kartu hasil yang dibagikan.
+data/                   Data peta beserta SUMBER.md (atribusi dan cara olah).
+scripts/                Skrip pengolah data peta.
+hooks/                  Hook React yang dipakai ulang.
+public/                 Model .glb dan tekstur .webp beserta berkas sumbernya.
+docs/md/                Dokumentasi teknis: storyboard dan acuan riset tiap modul.
+docs/screenshots/       Tangkapan layar hasil pengujian.
 ```
 
 Pemisahan yang paling menentukan ada pada `lib/`: seluruh model ilmiahnya
@@ -90,19 +99,22 @@ diuji otomatis di lingkungan Node dan dikutip sebagai algoritma pada naskah.
 
 ## Isi
 
-| | Modul | Keadaan |
+Materi dibagi menjadi 13 modul dalam 5 bagian (lihat
+`config/modules-content.ts`). Modul yang sudah selesai:
+
+| Bagian | Modul | Isi |
 |---|---|---|
-| 01 | **Anatomi Gambut** — mengupas lapisan fibrik, hemik, saprik, dan tanah mineral mengikuti gulir halaman | Selesai |
-| 02 | **Bara di Bawah Tanah** — ruang uji perambatan bara pada bidang penampang | Selesai |
-| 03 | **Kanal & Pengeringan** — satu kanal digali, dan pengaruhnya diikuti sampai satu kilometer ke dalam kubah gambut | Selesai |
-| 04 | **Gudang Karbon** — bidang potong yang sama dibaca sebagai kalender dan sebagai gudang karbon | Selesai |
+| Gambut | **Gambut di Sekitarmu** | Peta dari Indonesia sampai jalan-jalan di Pontianak Tenggara: luas, kecamatan bergambut, tebal, dan bekas kebakaran |
+| Gambut | **Anatomi Gambut** | Mengupas lapisan fibrik, hemik, saprik, dan tanah mineral |
+| Gambut | **Hutan Rawa Gambut** | Penampang kubah gambut: hutan berganti mengikuti tebal gambut di bawahnya |
+| Kering | **Kanal & Pengeringan** | Satu kanal digali, dan pengaruhnya diikuti sampai satu kilometer ke dalam kubah gambut |
+| Api | **Bara di Bawah Tanah** | Ruang uji perambatan bara pada bidang penampang |
+| Dampak | **Gudang Karbon** | Bidang potong yang sama dibaca sebagai kalender dan sebagai gudang karbon |
 
-Keempat modul memakai pola yang sama: empat babak berurutan, dan babak
-berikutnya hanya terbuka setelah pembaca benar-benar mengerjakan tugas babak
-yang sedang dibukanya — bukan setelah menekan "lanjut".
-
-Bagian **Simulasi**, **Dampak**, dan **Pencegahan** masih berupa halaman
-penanda.
+Semua modul memakai pola yang sama: babak berurutan, dan babak berikutnya
+hanya terbuka setelah pembaca benar-benar mengerjakan tugas babak yang sedang
+dibukanya — bukan setelah menekan "lanjut". Tujuh modul lain, menu
+**Simulasi**, dan **Kuis** masih menyusul.
 
 ---
 
@@ -113,14 +125,14 @@ mengimpor React atau Three.js:
 
 | Modul | Model | Yang dihitung |
 |---|---|---|
-| 01 | [`lib/peat.ts`](lib/peat.ts) | Klasifikasi lapisan menurut kedalaman, status muka air, indeks bahaya |
-| 02 | [`lib/smolder.ts`](lib/smolder.ts) | Perambatan bara pada bidang penampang |
-| 03 | [`lib/drainage.ts`](lib/drainage.ts) | Kerucut penurunan muka air sepanjang 1 km, subsiden, dan emisi per tahun |
-| 04 | [`lib/carbon.ts`](lib/carbon.ts) | Cadangan karbon, CO₂ yang lepas, umur gambut menurut kedalaman, lama pemulihan |
+| Anatomi | [`lib/model/peat.ts`](lib/model/peat.ts) | Klasifikasi lapisan menurut kedalaman, status muka air, indeks bahaya |
+| Bara | [`lib/model/smolder.ts`](lib/model/smolder.ts) | Perambatan bara pada bidang penampang |
+| Kanal | [`lib/model/drainage.ts`](lib/model/drainage.ts) | Kerucut penurunan muka air sepanjang 1 km, subsiden, dan emisi per tahun |
+| Karbon | [`lib/model/carbon.ts`](lib/model/carbon.ts) | Cadangan karbon, CO₂ yang lepas, umur gambut menurut kedalaman, lama pemulihan |
 
-### Modul 02 — perambatan bara
+### Modul Bara — perambatan bara
 
-Model yang paling besar ada pada [`lib/smolder.ts`](lib/smolder.ts): sel-otomata
+Model yang paling besar ada pada [`lib/model/smolder.ts`](lib/model/smolder.ts): sel-otomata
 (*cellular automaton*) dua dimensi pada bidang penampang gambut, berukuran
 96 × 56 sel yang mewakili bongkahan 4,4 m × 3,4 m.
 
@@ -143,18 +155,18 @@ Langkah waktunya tetap (15 menit simulasi per langkah) sehingga hasilnya tidak
 bergantung pada kecepatan perangkat, dan bilangan acaknya ber-*seed* sehingga
 tangkapan layar dapat direproduksi.
 
-### Modul 03 — hidrologi kanal
+### Modul Kanal — hidrologi kanal
 
-[`lib/drainage.ts`](lib/drainage.ts) menarik kamera ke belakang: penampang
+[`lib/model/drainage.ts`](lib/model/drainage.ts) menarik kamera ke belakang: penampang
 lanskap sepanjang **satu kilometer**, karena pada bongkahan 4,4 m kerucut
 penurunan muka air hanya akan tampak sebagai garis datar. Panjang pengaruh
 satu kanal dihitung sebanding dengan kedalamannya, laju subsiden dan emisi
 sebanding dengan kedalaman muka air setempat, dan pemadatan awal yang lebih
 cepat pada dua tahun pertama dipisahkan dari oksidasi jangka panjang.
 
-### Modul 04 — gudang karbon
+### Modul Karbon — gudang karbon
 
-[`lib/carbon.ts`](lib/carbon.ts) menghitung dua arah dari bidang potong yang
+[`lib/model/carbon.ts`](lib/model/carbon.ts) menghitung dua arah dari bidang potong yang
 sama. Ke bawah sebagai **kalender**: satu milimeter setahun, jadi kedalaman
 dapat dibaca sebagai umur. Dan sebagai **gudang**: 55 kg karbon tiap meter
 kubik, sehingga yang lepas saat terbakar ditentukan oleh luas **dikali**
