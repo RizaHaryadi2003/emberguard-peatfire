@@ -9,7 +9,6 @@ import {
   CANAL_HALF_M,
   DEPTH_TICKS,
   DISTANCE_TICKS,
-  HALF_WIDTH,
   TAPER,
   taperAt,
   V_SCALE,
@@ -43,6 +42,13 @@ import {
 const TICK_GAP = 2.4;
 
 const FRONT_Z = BLOCK_DEPTH / 2;
+
+/**
+ * Jarak penggaris kedalaman dari tepi kanal (m). Cukup dekat untuk terbaca
+ * bersama galiannya, cukup jauh untuk tidak menutupi dinding kanal maupun
+ * keterangan lebar kanal di atasnya.
+ */
+const DEPTH_RULER_M = 3;
 
 export default function SceneLabels() {
   const base = floorY();
@@ -87,14 +93,21 @@ export default function SceneLabels() {
           oleh kamera, dan karena itu diambil dari besar gambarnya. Lebih
           buruk lagi, pita itu jatuh persis di atas panel kendali begitu
           panel itu tumbuh pada babak 04, sehingga angkanya tertimbun. Di
-          dalam gambar, keduanya selesai sekaligus. */}
+          dalam gambar, keduanya selesai sekaligus.
+
+          Letaknya kemudian dipindah dari ujung kiri bongkahan ke samping
+          kanal. Di ujung kiri, panel kendali yang tumbuh pada babak 03
+          (waktu berjalan) masih menutupi angka-angka itu. Di samping kanal
+          penggarisnya berada di tengah gambar, tempat tidak ada panel, dan
+          berdiri tepat di sebelah galian yang paling perlu diukur:
+          pembaca dapat membaca sedalam apa kanalnya tanpa memindahkan mata. */}
       {DEPTH_TICKS.map((d) => (
         // Menempel pada bidang potong pada ketinggiannya sendiri: makin
         // dalam, makin jauh bidang itu menjorok ke dalam.
         <group
           key={d}
           position={[
-            -HALF_WIDTH + 3.6,
+            xOfDistance(DEPTH_RULER_M),
             -d * V_SCALE,
             FRONT_Z + 0.05 - taperAt((surfaceY(0) + d * V_SCALE) / (surfaceY(0) - base)),
           ]}

@@ -20,6 +20,7 @@ import {
   createFaceGrid,
   createSkirtGeometry,
   createSubsidence,
+  type Subsidence,
   createSurfaceGrid,
   farDistance,
   surfaceY,
@@ -226,6 +227,19 @@ const PANEL_BREAKPOINT = 1024;
  */
 const SHADOW_INTERVAL_SEC = 0.25;
 
+/**
+ * Laju tanah yang digambar menyusul penurunan hasil simulasi (1/detik).
+ *
+ * Pada laju 6 sisa selisihnya tinggal sepersepuluh dalam 0,4 detik: cukup
+ * cepat sehingga tanah tidak terlihat tertinggal dari angka di panel, cukup
+ * lambat untuk melebur anak tangga 0,05 tahun simulasi menjadi gerakan yang
+ * menerus.
+ */
+const SUBSIDENCE_FOLLOW_RATE = 6;
+
+/** Frekuensi penyusulan tanah pada mutu rendah (kali per detik). */
+const SUBSIDENCE_HZ_LOW = 15;
+
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -283,7 +297,7 @@ function Simulation({
   data,
   quality,
   onStats,
-  onSubsidence,
+  subsidence,
 }: {
   sim: DrainageSim;
   stateRef: RefObject<KanalState>;
@@ -291,10 +305,10 @@ function Simulation({
   data: Uint8Array;
   quality: Quality;
   onStats: (stats: DrainageStats) => void;
-  onSubsidence: () => void;
+  subsidence: Subsidence;
 }) {
   const profile = QUALITY_PROFILE[quality];
-  const clock = useRef({ report: 0, field: 0, shape: 0, drop: -1 });
+  const clock = useRef({ report: 0, field: 0, shape: 0 });
 
   useFrame((_, delta) => {
     const s = stateRef.current;
@@ -336,17 +350,15 @@ function Simulation({
       field.needsUpdate = true;
     }
 
-    // Bentuk permukaan dibentuk ulang saat penurunannya berubah. Ini
-    // membentuk ulang geometri dan menghitung ulang normalnya, jadi jedanya
-    // diperlonggar di perangkat lemah.
-    c.shape -= dt;
-    if (c.shape <= 0) {
-      sim.collect();
-      if (Math.abs(sim.stats.maxSubsidenceM - c.drop) > 0.002) {
-        c.shape = profile.subsideSec;
-        c.drop = sim.stats.maxSubsidenceM;
-        onSubsidence();
-      }
+    // Tanah yang digambar menyusul penurunan hasil simulasi. Pada mutu
+    // tinggi ini dikerjakan tiap bingkai; di perangkat lemah cukup
+    // `SUBSIDENCE_HZ_LOW` kali sedetik, sebab tiap penyusulan yang terlihat
+    // membentuk ulang geometri dan menghitung ulang normalnya.
+    c.shape += dt;
+    const shapeEvery = quality === "low" ? 1 / SUBSIDENCE_HZ_LOW : 0;
+    if (c.shape >= shapeEvery) {
+      subsidence.tick(c.shape, s.reducedMotion ? Infinity : SUBSIDENCE_FOLLOW_RATE);
+      c.shape = 0;
     }
 
     // Ringkasan dikirim ke antarmuka lima kali per detik.
@@ -379,7 +391,7 @@ function Block({
   stateRef: RefObject<KanalState>;
   field: THREE.DataTexture;
   noise: THREE.DataTexture;
-  subsidence: ReturnType<typeof createSubsidence>;
+  subsidence: Subsidence;
   quality: Quality;
 }) {
   const colors = useLoader(
@@ -589,7 +601,7 @@ function Block({
     const canalDepthDrawn = Math.min(s.drawnCanalDepthM, Math.max(0, PROFILE_DEPTH_M - dropAtCanal));
     if (
       Math.abs(canalDepthDrawn - drawnDepth.current) > 0.002 ||
-      Math.abs(dropAtCanal - drawnDrop.current) > 0.004
+      Math.abs(dropAtCanal - drawnDrop.current) > 0.001
     ) {
       drawnDepth.current = canalDepthDrawn;
       drawnDrop.current = dropAtCanal;
@@ -852,7 +864,7 @@ export default function KanalScene({ sim, stateRef, active, quality, onStats, on
         data={data}
         quality={quality}
         onStats={onStats}
-        onSubsidence={subsidence.refresh}
+        subsidence={subsidence}
       />
       <Suspense fallback={null}>
         <Block

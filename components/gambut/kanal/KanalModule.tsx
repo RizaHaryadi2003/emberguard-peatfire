@@ -282,6 +282,24 @@ export default function KanalModule() {
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul 01 dan 03. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
+  /**
+   * Panah lanjut, sama dengan Modul 01 dan 03. Selalu terlihat: terkunci
+   * dengan arahan, atau terbuka dengan nama babak yang menunggu. Dipasang di
+   * dua tempat menurut lebar layar, jadi isinya disusun sekali di sini.
+   */
+  const advance =
+    act < KANAL_ACTS.length - 1 ? (
+      <StepAdvance
+        nextTitle={KANAL_ACTS[act + 1].title}
+        label="Babak berikutnya"
+        hint={current.hint}
+        locked={!actDone[act]}
+        onAdvance={() => goToAct(act + 1)}
+      />
+    ) : (
+      <StepAdvance {...BACK_TO_MODULE_LIST} />
+    );
+
   return (
     <div ref={rootRef} id="modul-kanal" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
       <div className="absolute inset-0">
@@ -535,7 +553,7 @@ export default function KanalModule() {
           sehingga kolom ini cukup pendek untuk tidak pernah perlu digulir. */}
       <div
         inert={hookOpen}
-        className={`absolute right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
+        className={`absolute bottom-6 right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
       >
         {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
@@ -632,6 +650,15 @@ export default function KanalModule() {
             </div>
           )}
         </div>
+
+        {/* Panah lanjut di layar lebar ikut mengalir di kolom ini, di bawah
+            kotak angka. Sebelumnya ia dipasang sendiri di pojok kanan bawah,
+            sementara kolom ini tumbuh ke bawah dari atas layar — keduanya
+            tidak saling tahu, dan pada laptop 900 piksel teks arahannya
+            tertindih kotak angka. Di dalam satu kolom, ruangnya dibagi:
+            `mt-auto` mendorongnya ke dasar layar, dan ia tidak pernah dapat
+            naik melewati kotak di atasnya. */}
+        <div className="mt-auto self-end pt-2">{advance}</div>
       </div>
 
       {/* Navigasi babak (bawah) */}
@@ -688,18 +715,9 @@ export default function KanalModule() {
           babak berikutnya dan bahwa sesuatu harus dikerjakan untuk sampai ke
           sana. Panah ini selalu terlihat: terkunci dengan arahan, atau
           terbuka dengan nama babak yang menunggu. */}
-      <div inert={hookOpen} className={`absolute bottom-6 right-5 hidden sm:right-10 md:block xl:right-14 ${panelFade}`}>
-        {act < KANAL_ACTS.length - 1 ? (
-          <StepAdvance
-            nextTitle={KANAL_ACTS[act + 1].title}
-            label="Babak berikutnya"
-            hint={current.hint}
-            locked={!actDone[act]}
-            onAdvance={() => goToAct(act + 1)}
-          />
-        ) : (
-          <StepAdvance {...BACK_TO_MODULE_LIST} />
-        )}
+      {/* Di layar lebar panah ini tinggal di kolom kanan; lihat di sana. */}
+      <div inert={hookOpen} className={`absolute bottom-6 right-5 hidden sm:right-10 md:block lg:hidden ${panelFade}`}>
+        {advance}
       </div>
     </div>
   );

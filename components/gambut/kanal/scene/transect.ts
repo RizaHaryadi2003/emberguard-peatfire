@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   CANAL_WIDTH_M,
+  COLUMNS,
   naturalSurfaceM,
   PROFILE_DEPTH_M,
   TRANSECT_LENGTH_M,
@@ -1065,22 +1066,71 @@ export function createCanalWaterGeometry(): THREE.BufferGeometry {
 /**
  * Pelacak penurunan permukaan, sejajar dengan `createSubsidence` pada Modul 03.
  *
- * Nilainya dibaca dari simulasi lewat satu fungsi, dan `version` bertambah
- * setiap kali bentuknya perlu dibentuk ulang — sehingga geometri tidak
- * dihitung ulang setiap bingkai.
+ * Yang digambar bukan nilai simulasi apa adanya, melainkan salinannya yang
+ * dihaluskan. Simulasi maju dalam langkah tetap 0,05 tahun, jadi pada
+ * kecepatan "Lambat" tanahnya turun sepuluh kali sedetik dalam anak tangga
+ * kecil; dan bentuk tanah dulu baru dibentuk ulang tiap setengah detik.
+ * Keduanya membuat permukaan melesak patah-patah saat waktu berjalan.
+ * Dengan salinan yang menyusul nilai simulasi sedikit demi sedikit pada tiap
+ * bingkai, gerakannya menjadi menerus — sementara angka di panel dan grafik
+ * tetap dibaca langsung dari simulasi, jadi tidak ada angka yang berubah.
+ *
+ * `version` bertambah setiap kali salinan itu bergeser cukup jauh untuk
+ * terlihat, dan itulah tanda bagi geometri untuk dibentuk ulang.
  */
 export type Subsidence = {
   fn: DropFn;
   version: number;
-  refresh: () => void;
+  /**
+   * Majukan salinan yang digambar sejauh `dt` detik. `rate` adalah laju
+   * penyusulan (1/detik); `Infinity` langsung menyamakannya.
+   */
+  tick: (dt: number, rate: number) => void;
 };
 
+/**
+ * Pergeseran terkecil yang dianggap terlihat (m). Satu milimeter tanah pada
+ * pembesaran tegak bongkahan ini kurang dari satu piksel.
+ */
+const SUBSIDENCE_VISIBLE_M = 0.001;
+
 export function createSubsidence(sim: DrainageSim): Subsidence {
+  const shown = new Float32Array(COLUMNS);
+  // Simpul tengah tiap kolom simulasi: pada jarak ini `subsidenceAtDistance`
+  // mengembalikan nilai kolom itu persis, tanpa campuran tetangganya.
+  const centers = Array.from({ length: COLUMNS }, (_, c) => ((c + 0.5) / COLUMNS) * TRANSECT_LENGTH_M);
+  let moved = 0;
+
   const tracker: Subsidence = {
     version: 0,
-    fn: (distanceM: number) => sim.subsidenceAtDistance(distanceM),
-    refresh: () => {
-      tracker.version++;
+    // Interpolasi linear antarkolom, sama dengan `DrainageSim.subsidenceAtDistance`.
+    fn: (distanceM: number) => {
+      const f = (distanceM / TRANSECT_LENGTH_M) * COLUMNS - 0.5;
+      const i = Math.max(0, Math.min(COLUMNS - 1, Math.floor(f)));
+      const j = Math.min(COLUMNS - 1, i + 1);
+      const t = Math.max(0, Math.min(1, f - i));
+      return shown[i] + (shown[j] - shown[i]) * t;
+    },
+    tick: (dt, rate) => {
+      const k = Number.isFinite(rate) ? 1 - Math.exp(-rate * dt) : 1;
+      let largest = 0;
+      for (let c = 0; c < COLUMNS; c++) {
+        const target = sim.subsidenceAtDistance(centers[c]);
+        // Tanah yang melesak tidak pernah naik kembali. Bila nilai simulasi
+        // lebih kecil daripada yang digambar, simulasinya baru diulang dari
+        // awal, dan tanah langsung dikembalikan — bukan dibuat terangkat
+        // perlahan seolah gambutnya tumbuh lagi.
+        const next = target < shown[c] ? target : shown[c] + (target - shown[c]) * k;
+        largest = Math.max(largest, Math.abs(next - shown[c]));
+        shown[c] = next;
+      }
+      // Pergeseran kecil dikumpulkan sampai terlihat, supaya geometri tidak
+      // dibentuk ulang untuk perubahan yang tidak mengubah satu piksel pun.
+      moved += largest;
+      if (moved >= SUBSIDENCE_VISIBLE_M) {
+        moved = 0;
+        tracker.version++;
+      }
     },
   };
   return tracker;
