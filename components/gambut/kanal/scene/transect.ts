@@ -56,8 +56,15 @@ import {
  * memang satu-satunya tugas bongkahan ini. Pertanyaan "sejauh apa" dijawab
  * grafik satu kilometer di panel kanan, bukan di sini; bongkahan ini
  * menjawab "seperti apa rupanya". Untuk menjawab itu ia harus besar.
+ *
+ * Kemudian dipendekkan lagi menjadi 24 m, dan tebalnya dari 30 m menjadi
+ * 26 m, dengan alasan yang sama: gambarnya dipaskan pada pita yang sama di
+ * antara panel kiri dan kanan, jadi bongkahan yang lebih pendek tergambar
+ * sekitar 14% lebih besar tanpa sekali pun melewati batas pita itu. 24 m
+ * masih tiga kali lebar kanalnya, dan penanda 20 m masih berada di atas
+ * tanahnya.
  */
-export const NEAR_LENGTH_M = 28;
+export const NEAR_LENGTH_M = 24;
 
 /** Lebar kanal (m) — menurut skala sebenarnya, tidak dilebih-lebihkan. */
 export const CANAL_LABEL_WIDTH_M = CANAL_WIDTH_M;
@@ -66,7 +73,7 @@ export const CANAL_LABEL_WIDTH_M = CANAL_WIDTH_M;
 export const CANAL_HALF_M = CANAL_WIDTH_M / 2;
 
 /** Tebal bongkahan ke arah belakang (m). */
-export const BLOCK_DEPTH_M = 30;
+export const BLOCK_DEPTH_M = 26;
 
 /**
  * Pembesaran tegak gambar ini.
@@ -675,26 +682,53 @@ export function canalBedHalf(canalDepthM: number): number {
  */
 const CANAL_SEGS = SURFACE_ROWS;
 
+/**
+ * Lajur titik melintasi kanal: tiap dinding dibagi `WALL_LANES` pita dari
+ * bibir ke kaki, dasarnya `BED_LANES`.
+ *
+ * Semula hanya empat titik — bibir, kaki, kaki, bibir — sehingga tiap
+ * dinding satu bidang miring yang rata sempurna sepanjang tiga puluh meter.
+ * Dinding galian gambut yang sebenarnya tidak pernah begitu: bagian atasnya
+ * ditahan akar dan berdiri curam, bagian bawahnya longsor sedikit demi
+ * sedikit menjadi kaki yang landai, dan seluruhnya bergelombang menurut
+ * bongkah yang runtuh. Pita-pita ini memberi ruang untuk bentuk itu.
+ */
+const WALL_LANES = 5;
+const BED_LANES = 4;
+const CANAL_LANES = WALL_LANES * 2 + BED_LANES + 1;
+
+/**
+ * Irisan memanjang tambahan di antara dua baris hamparan. Bibir kanal pada
+ * irisan tambahan diinterpolasi lurus dari dua baris di kiri-kanannya —
+ * persis seperti hamparan menggambar tepinya — jadi keduanya tetap bertemu
+ * tanpa celah, sementara relief dindingnya mendapat titik dua kali lebih
+ * rapat.
+ */
+const CANAL_SUB = 2;
+const CANAL_ROWS = CANAL_SEGS * CANAL_SUB + 1;
+
+/** Jarak dari ujung depan dan belakang tempat relief dinding mulai muncul (m). */
+const CANAL_END_BLEND_M = 1.4;
+
 export function createCanalGeometry(): THREE.BufferGeometry {
   const geom = new THREE.BufferGeometry();
-  // Empat lajur titik pada tiap irisan: bibir kiri, dasar kiri, dasar kanan,
-  // bibir kanan.
-  const rows = CANAL_SEGS + 1;
-  const total = 4 * rows;
+  const total = CANAL_LANES * CANAL_ROWS;
   geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
   geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
-  // Koordinat tekstur: selama ini tidak ada sama sekali, sehingga seluruh
-  // dinding dan dasar kanal membaca satu titik yang sama pada peta warna dan
-  // peta normalnya — galian sedalam tiga meter tergambar sebagai bidang
-  // berwarna rata tanpa serat apa pun. Inilah sebab kanalnya terbaca sebagai
-  // potongan geometri dan bukan sebagai tanah yang terbuka.
+  // Koordinat tekstur: tanpanya seluruh dinding membaca satu titik yang sama
+  // pada peta warna dan peta normal, dan galiannya tergambar sebagai bidang
+  // berwarna rata tanpa serat apa pun.
   geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+  // Warna per titik: dinding atas yang kering dan pucat, pita bawah yang
+  // basah dan gelap. Lihat `updateCanalGeometry`.
+  geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
 
   const idx: number[] = [];
-  for (let j = 0; j < CANAL_SEGS; j++) {
-    for (let i = 0; i < 3; i++) {
-      const a = j * 4 + i;
-      idx.push(a, a + 4, a + 1, a + 1, a + 4, a + 5);
+  for (let j = 0; j < CANAL_ROWS - 1; j++) {
+    for (let i = 0; i < CANAL_LANES - 1; i++) {
+      const a = j * CANAL_LANES + i;
+      const b = a + CANAL_LANES;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
     }
   }
   geom.setIndex(idx);
@@ -719,35 +753,92 @@ export function updateCanalGeometry(
 ): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
+  const color = geom.attributes.color as THREE.BufferAttribute;
   const floor = surfaceY(0) - (dropM + canalDepthM) * V_SCALE;
   // Dasar lebih sempit daripada mulutnya, sebanding dengan dalamnya.
   const bedHalf = canalBedHalf(canalDepthM);
   const front = BLOCK_DEPTH / 2;
   // Ragam dasar kanal: endapan lumpur tidak pernah rata. Dikecilkan pada
   // galian yang masih dangkal supaya tidak pernah menembus bibirnya.
-  const siltAmp = 0.12 * V_SCALE * Math.min(1, canalDepthM);
+  const deep = Math.min(1, canalDepthM);
+  const siltAmp = 0.12 * V_SCALE * deep;
+  // Relief dinding ke arah dalam tanah (m mendatar). Sebanding dengan dalam
+  // galiannya: parit sedalam sejengkal tidak punya longsoran.
+  const slumpAmp = 0.45 * deep;
 
+  // Bibir kanal pada baris-baris hamparan; irisan tambahan diinterpolasi.
+  const rims: number[] = [];
   for (let j = 0; j <= CANAL_SEGS; j++) {
-    const along = (j / CANAL_SEGS) * BLOCK_DEPTH;
-    const z = front - along;
-    const rim = Math.max(floor + 0.1, surfaceYAt(0, z, dropM, canalDepthM));
-    const bed = floor + (valueNoise(z / 5 + 71.3, 2.5) - 0.5) * siltAmp;
-    const wall = (rim - bed) / V_SCALE;
+    const z = front - (j / CANAL_SEGS) * BLOCK_DEPTH;
+    rims.push(Math.max(floor + 0.1, surfaceYAt(0, z, dropM, canalDepthM)));
+  }
 
-    const xs = [-CANAL_HALF_M, -bedHalf, bedHalf, CANAL_HALF_M];
-    const ys = [rim, bed, bed, rim];
-    // v diukur dari bibir ke bawah dalam meter, sehingga serat tanah pada
-    // dinding galian seukuran serat tanah pada bidang potong di sebelahnya.
-    const vs = [0, wall, wall, 0];
-    for (let i = 0; i < 4; i++) {
-      const k = j * 4 + i;
-      pos.setXYZ(k, xs[i], ys[i], z);
-      uv.setXY(k, along / 1.5, vs[i] / 1.5);
+  for (let r = 0; r < CANAL_ROWS; r++) {
+    const along = (r / (CANAL_ROWS - 1)) * BLOCK_DEPTH;
+    const z = front - along;
+    const seg = Math.min(CANAL_SEGS - 1, Math.floor(r / CANAL_SUB));
+    const t = r / CANAL_SUB - seg;
+    const rim = rims[seg] + (rims[seg + 1] - rims[seg]) * t;
+    const bed = floor + (valueNoise(z / 5 + 71.3, 2.5) - 0.5) * siltAmp;
+    // Relief dinding dipudarkan ke nol di kedua ujung: di depan, dinding
+    // ini harus bertemu penampang kanal pada bidang potong, yang garisnya
+    // lurus.
+    const endFade =
+      smoothstep01(along / CANAL_END_BLEND_M) * smoothstep01((BLOCK_DEPTH - along) / CANAL_END_BLEND_M);
+
+    for (let i = 0; i < CANAL_LANES; i++) {
+      let x: number;
+      let y: number;
+      // 0 di bibir, 1 di kaki dinding atau di dasar.
+      let down: number;
+      if (i <= WALL_LANES || i >= CANAL_LANES - 1 - WALL_LANES) {
+        const left = i <= WALL_LANES;
+        const k = left ? i / WALL_LANES : (CANAL_LANES - 1 - i) / WALL_LANES;
+        const sign = left ? -1 : 1;
+        // Profil dinding: curam di atas (ditahan akar), landai di kaki
+        // (bongkah yang sudah longsor). Pangkat di bawah satu membuat
+        // ketinggiannya turun cepat lebih dulu, lalu melandai.
+        const drop = Math.pow(k, 0.72);
+        x = sign * (CANAL_HALF_M - (CANAL_HALF_M - bedHalf) * k);
+        y = rim - (rim - bed) * drop;
+        // Longsoran: menjorok ke dalam tanah di tengah dinding, nol di bibir
+        // (supaya tetap bertemu hamparan) dan di kaki (supaya tetap bertemu
+        // dasar). Dua skala: bongkah selebar beberapa meter dan gerusan kecil.
+        const n =
+          (valueNoise(z / 3.1 + (left ? 3.7 : 9.1), k * 2.2) - 0.5) * 1.0 +
+          (valueNoise(z / 0.9 + (left ? 13.2 : 27.5), k * 4.5 + 1.3) - 0.5) * 0.45;
+        x += sign * n * slumpAmp * Math.sin(Math.PI * k) * endFade;
+        down = k;
+      } else {
+        const k = (i - WALL_LANES) / BED_LANES;
+        x = -bedHalf + k * bedHalf * 2;
+        y = bed + (valueNoise(x / 1.6 + 5.5, z / 2.4 + 1.1) - 0.5) * siltAmp * 0.8 * endFade;
+        down = 1;
+      }
+      const v = ((rim - y) / V_SCALE) / 1.5;
+      const idx = r * CANAL_LANES + i;
+      pos.setXYZ(idx, x, y, z);
+      // v diukur dari bibir ke bawah dalam meter, sehingga serat tanah pada
+      // dinding galian seukuran serat tanah pada bidang potong di sebelahnya.
+      uv.setXY(idx, along / 1.5 + x * 0.25, v);
+
+      // Warna: dinding atas kering dan pucat, sepertiga bawahnya basah dan
+      // gelap — gambut yang selalu dibasahi air kanal — dengan semburat
+      // lumut kehijauan tepat di kaki. Bercak acak supaya pitanya tidak
+      // tergambar sebagai garis penggaris.
+      const blot = valueNoise(z / 1.7 + i * 0.37, down * 3.1 + 4.4);
+      const wet = smoothstep01((down - 0.55 + (blot - 0.5) * 0.25) / 0.3) * deep;
+      const dry = 1.06 + (blot - 0.5) * 0.18;
+      const rC = dry + (0.58 - dry) * wet;
+      const gC = dry + (0.6 - dry) * wet;
+      const bC = dry + (0.5 - dry) * wet;
+      color.setXYZ(idx, rC, gC, bC);
     }
   }
 
   pos.needsUpdate = true;
   uv.needsUpdate = true;
+  color.needsUpdate = true;
   geom.computeVertexNormals();
   geom.computeBoundingSphere();
 }

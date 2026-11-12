@@ -110,6 +110,32 @@ const FACE_DIFFUSE = /* glsl */ `
   kAlbedo *= 0.8 + kMottle * 0.46;
   kAlbedo *= 1.0 + (kBedding - 0.5) * 0.3 * kFibrous;
 
+  // Akar, serat, dan sisa kayu: isi gambut yang membedakannya dari tanah
+  // biasa. Gambut adalah tumbuhan yang belum selesai membusuk, dan pada
+  // bidang potong yang sebenarnya isinya terlihat langsung — makin dalam,
+  // makin hancur (Modul 01 menceritakan urutan ini).
+  //
+  // Akar: guratan tegak yang gelap, turun dari permukaan dan habis dalam
+  // satu setengah meter pertama — sejauh itulah akar hidup menembus gambut.
+  // Dibuat dari punggung derau yang diregangkan tegak, lalu ditajamkan
+  // menjadi garis tipis.
+  float kRootRidge = 1.0 - abs(kNoise(vec2(vPeatWorld.x * 2.4, vPeatWorld.y * 0.32)) * 2.0 - 1.0);
+  float kRoot = smoothstep(0.91, 0.985, kRootRidge) * (1.0 - smoothstep(0.25, 1.5, vDepth));
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.5, 0.42, 0.36), kRoot * 0.75);
+
+  // Serat: helai mendatar yang lebih pucat, sisa daun dan batang yang
+  // masih utuh. Paling rapat di fibrik, masih ada di hemik, hilang di
+  // saprik yang sudah hancur.
+  float kFiberRidge = 1.0 - abs(kNoise(vec2(vPeatWorld.x * 1.3, vPeatWorld.y * 7.5) + 3.7) * 2.0 - 1.0);
+  float kFiber = smoothstep(0.93, 0.99, kFiberRidge) * (kW.x + kW.y * 0.55);
+  kAlbedo *= 1.0 + kFiber * 0.42;
+
+  // Sisa kayu: bongkah coklat kemerahan yang memanjang mendatar, terutama
+  // di hemik — batang pohon rawa yang tertimbun sebelum sempat hancur.
+  float kWood = smoothstep(0.79, 0.85, kNoise(vec2(vPeatWorld.x * 0.55, vPeatWorld.y * 2.2) + 11.0)) *
+    (kW.y + kW.z * 0.6);
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.78, 0.55, 0.4), kWood * 0.6);
+
   // Garis batas antarlapisan. Perpaduan warna saja terlalu halus untuk
   // dibaca, sehingga susunan strata tidak terlihat.
   float kWaver = (kNoise(vec2(vPeatWorld.x * 0.6, 3.1)) - 0.5) * 0.06;

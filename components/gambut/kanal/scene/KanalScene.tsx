@@ -49,6 +49,7 @@ import {
   createTransectMaterial,
 } from "./transectMaterial";
 import { createPlantField } from "./vegetation";
+import { createGrassField } from "./grass";
 import { createWeir } from "./weir";
 import SceneLabels from "./SceneLabels";
 
@@ -130,8 +131,8 @@ const CAMERA_FAR = CAMERA_DISTANCE + 400 * WORLD_SCALE;
  * beberapa puluh piksel sehingga penjarangannya memang tidak terlihat.
  */
 const PLANTING = {
-  high: { trees: 8, ferns: 8, leafKeep: 1 },
-  low: { trees: 5, ferns: 0, leafKeep: 0.5 },
+  high: { trees: 8, ferns: 8, leafKeep: 1, grass: 1600 },
+  low: { trees: 5, ferns: 0, leafKeep: 0.5, grass: 600 },
 } as const;
 
 /**
@@ -195,7 +196,7 @@ const CONTENT_HEIGHT =
  * yang meminta pembaca membandingkan permukaannya dengan garis putus-putus.
  *
  * Yang membuat gambarnya tetap membesar meski pitanya menyempit bukan
- * pitanya melainkan isinya: petaknya dipendekkan dari 36 m menjadi 28 m
+ * pitanya melainkan isinya: petaknya dipendekkan dari 36 m menjadi 28 m, lalu 24 m
  * tiap sisi, sehingga pita yang sama memuat lahan yang lebih sedikit dan
  * karena itu menggambarnya lebih besar.
  */
@@ -451,6 +452,9 @@ function Block({
         map: colors[1],
         normalMap: normals[1],
         color: "#6d5a44",
+        // Pita basah di kaki dinding dibawa geometrinya sebagai warna per
+        // titik (lihat `updateCanalGeometry`).
+        vertexColors: true,
         roughness: 0.88,
         metalness: 0,
         side: THREE.DoubleSide,
@@ -473,6 +477,9 @@ function Block({
         PLANTING[quality].leafKeep,
       ),
       weir: createWeir(),
+      // Rumpun rumput: tujuh segitiga tiap rumpun, satu panggilan gambar
+      // untuk semuanya. Lihat grass.ts.
+      grass: createGrassField(PLANTING[quality].grass),
     };
   }, [colors, normals, groundColor, groundNormal, treeGltf, fernGltf, quality, field, noise]);
 
@@ -491,6 +498,7 @@ function Block({
       res.skirtGeom.dispose();
       res.plants.dispose();
       res.weir.dispose();
+      res.grass.dispose();
     },
     [res],
   );
@@ -690,6 +698,9 @@ function Block({
       if (key !== plantKey.current) {
         plantKey.current = key;
         res.plants.update(effective, subsidence.fn, s.drawnCanalDepthM);
+        // Rumput tidak menjatuhkan bayangan, jadi tidak perlu menandai peta
+        // bayangan untuknya; ia cukup ikut diperbarui bersama pohon.
+        res.grass.update(effective, subsidence.fn, s.drawnCanalDepthM);
         markShadows();
       }
     }
@@ -791,6 +802,7 @@ function Block({
 
       <primitive object={res.weir.group} />
       <primitive object={res.plants.group} />
+      <primitive object={res.grass.mesh} />
     </group>
   );
 }
