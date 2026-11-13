@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, Check, Flame, X } from "lucide-react";
 import mapData from "@/data/sekitarmu-map.json";
-import { BORE_SITES, DISTRICT_PEAT, FIRE_SITES, SEKITARMU_TEXT } from "@/config/modul/sekitarmu";
+import { BORE_SITES, DISTRICT_PEAT, FIRE_SITES, ORGANIC_DISTRICTS, SEKITARMU_TEXT } from "@/config/modul/sekitarmu";
 
 // Peta Modul 01: dari Indonesia sampai jalan-jalan di Pontianak Tenggara.
 //
@@ -295,7 +295,11 @@ export default function SekitarmuMap({
                 // Di ponsel petanya kecil: hanya kecamatan bergambut yang
                 // diberi baris kedua, supaya labelnya tidak bertumpuk.
                 <span className={`sekitarmu-reveal font-medium ${peat ? "block text-[#f0a35e]" : "hidden text-white/50 sm:block"}`}>
-                  {peat ? SEKITARMU_TEXT.peat(peat.percent) : SEKITARMU_TEXT.notPeat}
+                  {peat
+                    ? SEKITARMU_TEXT.peat(peat.percent)
+                    : ORGANIC_DISTRICTS.has(d.name)
+                      ? SEKITARMU_TEXT.organic
+                      : SEKITARMU_TEXT.notPeat}
                 </span>
               )}
             </span>

@@ -56,7 +56,7 @@ export const SEKITARMU_ACTS: readonly SekitarmuAct[] = [
     title: "Di kecamatan mana",
     body: "Kota Pontianak terbagi enam kecamatan, dibelah Sungai Kapuas dan Sungai Landak. Sebagian kota ini berdiri di atas gambut, sisanya tanah endapan sungai.",
     task: "Tebak dulu: pilih kecamatan yang menurutmu berdiri di atas gambut, lalu tekan Periksa.",
-    observe: "Hanya dua kecamatan. 42% Pontianak Utara dan 36% Pontianak Tenggara adalah gambut. Peneliti memeriksanya langsung di 614 titik di seluruh kota.",
+    observe: "Menurut pemeriksaan langsung di 614 titik, hanya dua kecamatan yang bergambut: 42% Pontianak Utara dan 36% Pontianak Tenggara. Tanah Pontianak Kota dan Timur memang organik, tetapi tidak memenuhi syarat gambut.",
     term: {
       word: "Verifikasi lapangan",
       meaning: "memeriksa tanah langsung di tempatnya, bukan hanya dari peta atau citra satelit.",
@@ -117,6 +117,13 @@ export const DISTRICT_PEAT: Record<string, { km2: number; percent: number } | un
   "Pontianak Utara": { km2: 17.32, percent: 42 },
   "Pontianak Tenggara": { km2: 5.8, percent: 36 },
 };
+
+/**
+ * Kecamatan yang menurut Parabi dkk. (2026) bertanah organik, tetapi tidak
+ * memenuhi syarat gambut. Diberi label sendiri supaya pembaca tidak
+ * menyimpulkan tanahnya sama sekali tidak mengandung bahan organik.
+ */
+export const ORGANIC_DISTRICTS: ReadonlySet<string> = new Set(["Pontianak Kota", "Pontianak Timur"]);
 
 /** Titik bor babak 03. Kedalaman dalam meter; `max` null berarti "lebih dari". */
 export const BORE_SITES = [
@@ -191,6 +198,7 @@ export const SEKITARMU_TEXT = {
   checked: (right: number, total: number) => `Tebakanmu benar untuk ${right} dari ${total} kecamatan.`,
   peat: (percent: number) => `${percent}% gambut`,
   notPeat: "bukan gambut",
+  organic: "tanah organik, bukan gambut",
   hatchNote: "Arsiran: sebagian kecamatan ini gambut. Batas gambutnya tidak digambar, hanya luasnya yang diketahui.",
   personNote: "Orang dewasa ± 1,7 m",
   /** Tebal gambut dinyatakan sebagai tumpukan orang dewasa setinggi 1,7 m. */
