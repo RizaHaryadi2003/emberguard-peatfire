@@ -29,3 +29,21 @@ kecamatan dan sungai Kota Pontianak, serta tiga titik lokasi penelitian.
   Reformasi Untan, Jalan Sepakat II, Jalan Perdana. Ketiganya diperiksa
   berada di dalam batas Kecamatan Pontianak Tenggara.
 - Diolah dengan `scripts/build-sekitarmu-map.py`.
+
+## public/images/sekitarmu/*.jpg
+
+Citra satelit di bawah peta Modul 01: **EOxCloudless / Sentinel-2 cloudless
+2024** oleh EOX IT Services GmbH (memuat data Copernicus Sentinel 2024
+yang dimodifikasi), lisensi **CC BY-NC-SA 4.0**. Hanya untuk penggunaan
+non-komersial; turunan citra ini tunduk pada lisensi yang sama. Diunduh
+13 November 2026 lewat WMS `https://tiles.maps.eox.at/wms`, lapisan
+`s2cloudless-2024`, EPSG:4326, lalu dikompres ulang (JPEG):
+
+| Berkas | Kotak (barat, selatan, timur, utara) | Piksel |
+|---|---|---|
+| indonesia.jpg | 92, −13, 144, 9 | 1600 × 676 |
+| kalbar.jpg | 107,5, −3,5, 115, 2,6 | 1200 × 976 |
+| pontianak.jpg | 109,22, −0,13, 109,44, 0,07 | 1700 × 1545 |
+
+Karena proyeksi peta ekuirektangular, citra EPSG:4326 cukup ditempel
+sebagai persegi panjang pada koordinat yang sama.

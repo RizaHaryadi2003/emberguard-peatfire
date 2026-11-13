@@ -33,6 +33,29 @@ const SITE_VIEW: Box = (() => {
   return [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) - Math.min(...xs) + pad * 2, Math.max(...ys) - Math.min(...ys) + pad * 2];
 })();
 
+/**
+ * Citra satelit Sentinel-2 cloudless 2024 (EOX, CC BY-NC-SA 4.0), diunduh
+ * lewat WMS dalam EPSG:4326. Proyeksi peta ini ekuirektangular, jadi citra
+ * lintang–bujur cukup ditempel sebagai satu persegi panjang tanpa dilengkungkan.
+ * Tiga tingkat, dari kasar ke halus; tiap citra baru diunduh saat peta sudah
+ * mendekati tingkatnya, supaya halaman awal tetap ringan.
+ */
+const KX = mapData.projection.kmPerDegLon;
+const KY = mapData.projection.kmPerDegLat;
+function imageBox(west: number, south: number, east: number, north: number): Box {
+  return [west * KX, -north * KY, (east - west) * KX, (north - south) * KY];
+}
+const IMAGERY = {
+  indonesia: { href: "/images/sekitarmu/indonesia.jpg", box: imageBox(92, -13, 144, 9) },
+  kalbar: { href: "/images/sekitarmu/kalbar.jpg", box: imageBox(107.5, -3.5, 115, 2.6) },
+  pontianak: { href: "/images/sekitarmu/pontianak.jpg", box: imageBox(109.22, -0.13, 109.44, 0.07) },
+};
+
+/** 0 → 1 selama lebar tampilan menyusut dari `from` ke `to` (km). */
+function mixBetween(width: number, from: number, to: number) {
+  return Math.min(1, Math.max(0, (from - width) / (from - to)));
+}
+
 /** Titik yang labelnya diletakkan di kiri, supaya tidak menindih tetangganya. */
 const LABEL_LEFT = new Set(["perdana"]);
 
@@ -148,7 +171,12 @@ export default function SekitarmuMap({
   // Indonesia, tetapi pada skala kota ia muncul sebagai potongan laut bersudut
   // tajam di tempat yang sebenarnya daratan. Saat peta mendekat ke kota,
   // lapisan negara dan provinsi dipudarkan di bawah dasar daratan polos.
-  const cityMix = Math.min(1, Math.max(0, (220 - box[2]) / 160));
+  const cityMix = mixBetween(box[2], 220, 60);
+  // Citra Kalimantan Barat menggantikan citra Indonesia saat peta mendekat.
+  const kalbarMix = mixBetween(box[2], 3200, 1400);
+  // Citra kota mulai diunduh sedikit sebelum terlihat, supaya tidak muncul tiba-tiba.
+  const loadCity = box[2] < 600;
+  const loadKalbar = box[2] < 4200;
   const idn = mapData.countries.find((c) => c.code === "IDN")!;
   const districtClickable = act === 1 && !revealed;
 
@@ -162,6 +190,26 @@ export default function SekitarmuMap({
         aria-label="Peta Indonesia sampai Kota Pontianak"
       >
         <defs>
+          {/* Tepi citra dipudarkan ke warna laut, supaya batas gambarnya tidak
+              terlihat sebagai garis lurus saat tampilan lebih lebar dari citra. */}
+          <linearGradient id="sekitarmu-fade-x">
+            <stop offset="0" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.05" stopColor="#fff" />
+            <stop offset="0.95" stopColor="#fff" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="sekitarmu-fade-y" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.05" stopColor="#fff" />
+            <stop offset="0.95" stopColor="#fff" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <mask id="sekitarmu-feather-x" maskContentUnits="objectBoundingBox">
+            <rect width="1" height="1" fill="url(#sekitarmu-fade-x)" />
+          </mask>
+          <mask id="sekitarmu-feather-y" maskContentUnits="objectBoundingBox">
+            <rect width="1" height="1" fill="url(#sekitarmu-fade-y)" />
+          </mask>
           <clipPath id="sekitarmu-land">
             <path d={idn.d} />
           </clipPath>
@@ -177,41 +225,76 @@ export default function SekitarmuMap({
           </pattern>
         </defs>
 
-        {/* Laut, dibentangkan jauh melewati kotak supaya tidak pernah ada tepi. */}
-        <rect x={box[0] - box[2] * 4} y={box[1] - box[3] * 4} width={box[2] * 9} height={box[3] * 9} fill="#0b1a24" />
+        {/* Laut, dibentangkan jauh melewati kotak supaya tidak pernah ada tepi.
+            Warnanya disamakan dengan laut pada citra yang sudah digelapkan. */}
+        <rect x={box[0] - box[2] * 4} y={box[1] - box[3] * 4} width={box[2] * 9} height={box[3] * 9} fill="#0a1830" />
 
-        {mapData.countries.map((c) => (
-          <path
-            key={c.code}
-            d={c.d}
-            fill={c.code === "IDN" ? "#2a3a2b" : "#1a221e"}
-            stroke="rgba(255,255,255,0.35)"
-            strokeWidth={1}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-
+        {/* Citra satelit, dari kasar ke halus. */}
         {(
+          [
+            // Citra yang lebih halus menumpuk di atas yang kasar; citra di
+            // bawahnya baru dilepas setelah tertutup penuh, supaya laut gelap
+            // tidak tembus di tengah peralihan.
+            ["indonesia", 1, kalbarMix < 1],
+            ["kalbar", kalbarMix, loadKalbar && cityMix < 1],
+            ["pontianak", cityMix, loadCity],
+          ] as const
+        ).map(([id, opacity, load]) => {
+          if (!load || opacity <= 0) return null;
+          const img = IMAGERY[id];
+          return (
+            <g key={id} mask="url(#sekitarmu-feather-x)" opacity={opacity}>
+              <image
+                href={img.href}
+                x={img.box[0]}
+                y={img.box[1]}
+                width={img.box[2]}
+                height={img.box[3]}
+                preserveAspectRatio="none"
+                mask="url(#sekitarmu-feather-y)"
+              />
+            </g>
+          );
+        })}
+
+        {/* Peredup: citra asli terlalu terang untuk label putih dan arsiran. */}
+        <rect
+          x={box[0] - box[2] * 4}
+          y={box[1] - box[3] * 4}
+          width={box[2] * 9}
+          height={box[3] * 9}
+          fill="#050a08"
+          fillOpacity={0.3}
+          pointerEvents="none"
+        />
+
+        {/* Negara lain digelapkan supaya Indonesia menonjol; garis pantai Natural
+            Earth disederhanakan 4 km, jadi garisnya dipudarkan saat mendekat. */}
+        {cityMix < 1 &&
+          mapData.countries.map((c) => (
+            <path
+              key={c.code}
+              d={c.d}
+              fill={c.code === "IDN" ? "none" : "#000"}
+              fillOpacity={0.45 * (1 - cityMix)}
+              stroke="rgba(255,255,255,0.4)"
+              strokeOpacity={1 - kalbarMix}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+            />
+          ))}
+
+        {cityMix < 1 && (
           <path
             d={mapData.kalbar}
             clipPath="url(#sekitarmu-land)"
             fill="#c9773a"
-            fillOpacity={act === 0 ? 0.35 : 0.12}
+            fillOpacity={(act === 0 ? 0.22 : 0.08) * (1 - cityMix)}
             stroke="#f0a35e"
-            strokeOpacity={0.8}
-            strokeWidth={1.2}
+            strokeOpacity={0.85 * (1 - cityMix)}
+            strokeWidth={1.4}
             vectorEffect="non-scaling-stroke"
-          />
-        )}
-
-        {cityMix > 0 && (
-          <rect
-            x={box[0] - box[2] * 4}
-            y={box[1] - box[3] * 4}
-            width={box[2] * 9}
-            height={box[3] * 9}
-            fill="#1d2620"
-            fillOpacity={cityMix}
             pointerEvents="none"
           />
         )}
@@ -223,7 +306,9 @@ export default function SekitarmuMap({
             // Setelah Periksa, kecamatan dibuka satu per satu. Yang belum
             // dibuka tetap menampilkan tebakan pembaca.
             const shown = revealed && i < revealCount;
-            const fill = !shown && picked ? "rgba(111,182,216,0.45)" : "#25302a";
+            // Kecamatan diisi tipis saja, supaya rumah, jalan, dan kebun pada
+            // citra tetap terlihat di bawahnya.
+            const fill = !shown && picked ? "rgba(111,182,216,0.45)" : "rgba(8,14,10,0.18)";
             return (
               <g key={d.name}>
                 <path
@@ -252,7 +337,8 @@ export default function SekitarmuMap({
             );
           })}
 
-        {detail && mapData.rivers.map((r, i) => <path key={i} d={r} fill="#3f88b0" fillOpacity={0.9} pointerEvents="none" />)}
+        {/* Sungai sudah tampak pada citra; lapisan ini hanya menegaskannya. */}
+        {detail && mapData.rivers.map((r, i) => <path key={i} d={r} fill="#3f88b0" fillOpacity={0.35} pointerEvents="none" />)}
       </svg>
 
       {/* Penanda kota pada perbesaran jauh. */}
@@ -357,7 +443,7 @@ export default function SekitarmuMap({
           );
         })}
 
-      <p className="pointer-events-none absolute right-0 top-0 text-[9px] text-white/35">{SEKITARMU_TEXT.attribution}</p>
+      <p className="pointer-events-none absolute right-0 top-0 max-w-full text-right text-[9px] leading-tight text-white/45 [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">{SEKITARMU_TEXT.attribution}</p>
     </div>
   );
 }
