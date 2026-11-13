@@ -162,7 +162,7 @@ export const HUTAN_TEXT = {
   richness: "Kekayaan jenis",
   apes: "Orangutan dan owa",
   totals: "Tercatat di Sebangau sejak 1993",
-  scaleNote: "Tegak: tinggi pohon dan tebal gambut dalam meter. Mendatar: jarak dalam kilometer.",
+  scaleNote: "Tinggi pohon, tebal gambut, dan orang dalam meter sungguhan. Jarak mendatar dimampatkan: 14 km dari sungai ke puncak kubah.",
   you: "kamu",
   /** Tebal gambut di bawah kaki pejalan; angka dibulatkan dari kurva kubah. */
   gauge: (m: number) => `gambut ± ${m} m`,

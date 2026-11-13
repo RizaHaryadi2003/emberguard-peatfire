@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import { FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
-import DomeSection, { zoneAt } from "./DomeSection";
+import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
+import { zoneAt } from "./scene/dome";
+
+// Adegan 3D hanya dimuat di peramban (WebGL), sama seperti modul 3D lainnya.
+const HutanScene = dynamic(() => import("./scene/HutanScene"), { ssr: false });
 
 /** Panjang penampang yang dapat dijalani (km). */
 const SPAN_KM = 14;
@@ -34,6 +39,15 @@ export default function HutanModule() {
   const [triedRain, setTriedRain] = useState(false);
   const [opened, setOpened] = useState<Set<string>>(new Set());
   const [activeZone, setActiveZone] = useState<ForestZone["id"] | null>(null);
+  // Mutu grafis: rendah di ponsel sejak awal, dan turun sendiri bila
+  // PerformanceGuard mendapati perangkat kewalahan.
+  const [quality, setQuality] = useState<Quality>("high");
+  const handleOverload = useCallback(() => setQuality("low"), []);
+  useEffect(() => {
+    const low = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hanya sekali saat dipasang, membaca perangkat
+    if (low) setQuality("low");
+  }, []);
 
   const actDone = [maxKm >= SUMMIT_KM, triedFlood && triedRain, FOREST_ZONES.every((z) => opened.has(z.id))];
   const progress = [
@@ -81,14 +95,21 @@ export default function HutanModule() {
       onReset={reset}
       background="#0d1712"
       figure={
-        <DomeSection
-          walkerKm={act === 0 ? walkKm : null}
-          flood={act === 1 && flood}
-          rain={act === 1 && rain}
-          openedZones={act === 2 ? opened : null}
-          activeZone={act === 2 ? activeZone : null}
-          onZone={openZone}
-        />
+        <>
+          <HutanScene
+            walkerKm={act === 0 ? walkKm : null}
+            flood={act === 1 && flood}
+            rain={act === 1 && rain}
+            openedZones={act === 2 ? opened : null}
+            activeZone={act === 2 ? activeZone : null}
+            onZone={openZone}
+            quality={quality}
+            onOverload={handleOverload}
+          />
+          <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
+            {act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}
+          </p>
+        </>
       }
       controls={
         <>
