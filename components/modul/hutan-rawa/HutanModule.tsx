@@ -27,6 +27,9 @@ export default function HutanModule() {
   const [maxKm, setMaxKm] = useState(0);
   const [flood, setFlood] = useState(false);
   const [rain, setRain] = useState(false);
+  // Sumber air yang terakhir ditekan: keterangannya yang ditampilkan,
+  // karena kedua tombol bisa menyala bersamaan.
+  const [lastSource, setLastSource] = useState<"flood" | "rain" | null>(null);
   const [triedFlood, setTriedFlood] = useState(false);
   const [triedRain, setTriedRain] = useState(false);
   const [opened, setOpened] = useState<Set<string>>(new Set());
@@ -46,6 +49,7 @@ export default function HutanModule() {
     setMaxKm(0);
     setFlood(false);
     setRain(false);
+    setLastSource(null);
     setTriedFlood(false);
     setTriedRain(false);
     setOpened(new Set());
@@ -70,6 +74,7 @@ export default function HutanModule() {
         setAct(i);
         setFlood(false);
         setRain(false);
+        setLastSource(null);
       }}
       actDone={actDone}
       progress={progress}
@@ -144,6 +149,7 @@ export default function HutanModule() {
                   aria-pressed={flood}
                   onClick={() => {
                     setFlood((v) => !v);
+                    setLastSource("flood");
                     setTriedFlood(true);
                   }}
                   className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
@@ -157,6 +163,7 @@ export default function HutanModule() {
                   aria-pressed={rain}
                   onClick={() => {
                     setRain((v) => !v);
+                    setLastSource("rain");
                     setTriedRain(true);
                   }}
                   className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
@@ -167,7 +174,15 @@ export default function HutanModule() {
                 </button>
               </div>
               <p className="mt-2 text-[12px] leading-snug text-white/75">
-                {flood ? HUTAN_TEXT.floodNote : rain ? HUTAN_TEXT.rainNote : "Tekan salah satu sumber air."}
+                {lastSource === "rain" && rain
+                  ? HUTAN_TEXT.rainNote
+                  : lastSource === "flood" && flood
+                    ? HUTAN_TEXT.floodNote
+                    : rain
+                      ? HUTAN_TEXT.rainNote
+                      : flood
+                        ? HUTAN_TEXT.floodNote
+                        : "Tekan salah satu sumber air."}
               </p>
             </div>
           )}

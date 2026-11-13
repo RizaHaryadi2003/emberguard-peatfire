@@ -43,7 +43,7 @@ export const HUTAN_ACTS: readonly ShellAct[] = [
     title: "Hidup dari hujan",
     body: "Air sungai membawa lumpur dan hara, tetapi hanya membasahi tepi hutan. Bagian tengah kubah lebih tinggi daripada jangkauan banjir sungai.",
     task: "Coba Banjir sungai, lalu coba Hujan. Perhatikan bagian hutan mana yang dicapai masing-masing.",
-    observe: "Sungai hanya mencapai tepinya. Hutan di tengah kubah hanya diberi makan hujan dan debu, karena itu pohonnya lebih rendah daripada hutan di tanah biasa.",
+    observe: "Sungai hanya mencapai tepinya. Hutan di atas kubah hanya diberi makan hujan dan debu, karena itu kanopinya umumnya lebih rendah daripada hutan di tanah mineral. Hutan tiang rendah bahkan hanya 12–15 m.",
     term: {
       word: "Ombrogen",
       meaning: "mendapat air dan hara hanya dari hujan dan debu, tidak dari sungai atau tanah di bawahnya.",
