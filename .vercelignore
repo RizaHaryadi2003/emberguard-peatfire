@@ -1,0 +1,13 @@
+# Berkas yang tidak ikut diunggah saat deploy lewat Vercel CLI.
+# CLI tidak membaca .gitignore, jadi dokumen skripsi dan berkas pribadi
+# di docs/ harus dikecualikan di sini juga.
+docs/
+.claude/
+.playwright-mcp/
+Claude outputs/
+node_modules/
+.next/
+*.png
+!public/**
+.env*
+.DS_Store
