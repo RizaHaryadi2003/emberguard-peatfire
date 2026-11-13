@@ -201,7 +201,7 @@ export default function ActModuleShell({
                 className={`group flex flex-col items-start gap-2 text-left ${locked ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 <span
-                  className={`h-0.5 w-14 rounded-full transition-colors duration-500 ${
+                  className={`h-0.5 w-10 rounded-full transition-colors sm:w-14 duration-500 ${
                     i === act ? "bg-white" : i < act ? "bg-[#e8702a]" : locked ? "bg-white/12" : "bg-white/20 group-hover:bg-white/50"
                   }`}
                 />

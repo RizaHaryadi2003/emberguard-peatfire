@@ -46,7 +46,7 @@ function imageBox(west: number, south: number, east: number, north: number): Box
   return [west * KX, -north * KY, (east - west) * KX, (north - south) * KY];
 }
 const IMAGERY = {
-  indonesia: { href: "/images/sekitarmu/indonesia.jpg", box: imageBox(92, -13, 144, 9) },
+  indonesia: { href: "/images/sekitarmu/indonesia.jpg", box: imageBox(86, -11.5, 150, 14) },
   kalbar: { href: "/images/sekitarmu/kalbar.jpg", box: imageBox(107.5, -3.5, 115, 2.6) },
   pontianak: { href: "/images/sekitarmu/pontianak.jpg", box: imageBox(109.22, -0.13, 109.44, 0.07) },
 };
@@ -194,14 +194,14 @@ export default function SekitarmuMap({
               terlihat sebagai garis lurus saat tampilan lebih lebar dari citra. */}
           <linearGradient id="sekitarmu-fade-x">
             <stop offset="0" stopColor="#fff" stopOpacity="0" />
-            <stop offset="0.05" stopColor="#fff" />
-            <stop offset="0.95" stopColor="#fff" />
+            <stop offset="0.08" stopColor="#fff" />
+            <stop offset="0.92" stopColor="#fff" />
             <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="sekitarmu-fade-y" x2="0" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity="0" />
-            <stop offset="0.05" stopColor="#fff" />
-            <stop offset="0.95" stopColor="#fff" />
+            <stop offset="0.14" stopColor="#fff" />
+            <stop offset="0.86" stopColor="#fff" />
             <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
           <mask id="sekitarmu-feather-x" maskContentUnits="objectBoundingBox">
@@ -214,8 +214,8 @@ export default function SekitarmuMap({
             <path d={idn.d} />
           </clipPath>
           <pattern id="sekitarmu-hatch" patternUnits="userSpaceOnUse" width={px * 7} height={px * 7} patternTransform="rotate(45)">
-            <rect width={px * 7} height={px * 7} fill="#e8823a" fillOpacity="0.28" />
-            <rect width={px * 2.6} height={px * 7} fill="#f0a35e" fillOpacity="0.85" />
+            <rect width={px * 7} height={px * 7} fill="#e8823a" fillOpacity="0.16" />
+            <rect width={px * 2} height={px * 7} fill="#f0a35e" fillOpacity="0.7" />
           </pattern>
           {/* Arsiran lembut untuk babak 03–04: gambutnya sudah diketahui, dan
               yang dibaca sekarang titik-titik di atasnya. */}
@@ -264,7 +264,7 @@ export default function SekitarmuMap({
           width={box[2] * 9}
           height={box[3] * 9}
           fill="#050a08"
-          fillOpacity={0.3}
+          fillOpacity={0.2}
           pointerEvents="none"
         />
 
@@ -290,7 +290,7 @@ export default function SekitarmuMap({
             d={mapData.kalbar}
             clipPath="url(#sekitarmu-land)"
             fill="#c9773a"
-            fillOpacity={(act === 0 ? 0.22 : 0.08) * (1 - cityMix)}
+            fillOpacity={(act === 0 ? 0.14 : 0.06) * (1 - cityMix)}
             stroke="#f0a35e"
             strokeOpacity={0.85 * (1 - cityMix)}
             strokeWidth={1.4}
@@ -443,7 +443,10 @@ export default function SekitarmuMap({
           );
         })}
 
-      <p className="pointer-events-none absolute right-0 top-0 max-w-full text-right text-[9px] leading-tight text-white/45 [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">{SEKITARMU_TEXT.attribution}</p>
+      <p className="pointer-events-none absolute right-0 top-0 max-w-full rounded-sm bg-black/45 px-1.5 py-0.5 text-right text-[9px] leading-tight text-white/60">
+        <span className="hidden sm:inline">{SEKITARMU_TEXT.attribution}</span>
+        <span className="sm:hidden">{SEKITARMU_TEXT.attributionShort}</span>
+      </p>
     </div>
   );
 }

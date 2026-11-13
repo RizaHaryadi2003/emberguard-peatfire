@@ -208,5 +208,7 @@ export const SEKITARMU_TEXT = {
   guessWrong: "tebakanmu meleset",
   firePeat: (depth: string) => `Di bawah api ini: gambut ${depth}.`,
   attribution: "Citra Sentinel-2 cloudless 2024 © EOX (CC BY-NC-SA 4.0, data Copernicus) · Peta © kontributor OpenStreetMap (ODbL) · Natural Earth",
+  /** Atribusi ringkas untuk layar ponsel; lisensi lengkap ada di data/SUMBER.md. */
+  attributionShort: "Citra © EOX, Copernicus · Peta © OpenStreetMap",
   reset: "Mulai dari awal",
 };

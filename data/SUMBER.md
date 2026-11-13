@@ -41,7 +41,7 @@ non-komersial; turunan citra ini tunduk pada lisensi yang sama. Diunduh
 
 | Berkas | Kotak (barat, selatan, timur, utara) | Piksel |
 |---|---|---|
-| indonesia.jpg | 92, −13, 144, 9 | 1600 × 676 |
+| indonesia.jpg | 86, −11,5, 150, 14 | 1800 × 717 |
 | kalbar.jpg | 107,5, −3,5, 115, 2,6 | 1200 × 976 |
 | pontianak.jpg | 109,22, −0,13, 109,44, 0,07 | 1700 × 1545 |
 
