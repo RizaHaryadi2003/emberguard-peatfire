@@ -24,7 +24,7 @@ export default function Navbar() {
       </Link>
 
       {/* Tengah: menu pil (desktop) */}
-      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-black/25 backdrop-blur-md border border-white/25 rounded-full px-2 py-2 items-center gap-1">
+      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-black/55 border border-white/25 rounded-full px-2 py-2 items-center gap-1">
         {NAV_LINKS.map((link) => {
           const active = isActive(pathname, link.href);
           return (
@@ -50,14 +50,14 @@ export default function Navbar() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Tutup menu" : "Buka menu"}
         aria-expanded={open}
-        className="md:hidden text-white p-2 rounded-full bg-black/25 backdrop-blur-md border border-white/25 cursor-pointer"
+        className="md:hidden text-white p-2 rounded-full bg-black/55 border border-white/25 cursor-pointer"
       >
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Panel menu seluler */}
       {open && (
-        <div className="md:hidden absolute top-full left-4 right-4 mt-1 flex flex-col gap-1 bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl p-3">
+        <div className="md:hidden absolute top-full left-4 right-4 mt-1 flex flex-col gap-1 bg-black/85 border border-white/20 rounded-2xl p-3">
           {NAV_LINKS.map((link) => {
             const active = isActive(pathname, link.href);
             return (

@@ -226,6 +226,12 @@ export default function SekitarmuMap({
               opacity,
               transform: `translate3d(${at.left}px, ${at.top}px, 0) scale(${sx}, ${sy})`,
               willChange: "transform, opacity",
+              // Peredup: citra asli terlalu terang untuk label putih dan arsiran.
+              // Dikerjakan sebagai filter pada lapisan citra itu sendiri, bukan
+              // lapisan hitam selebar beberapa layar di atasnya: lapisan seperti
+              // itu ikut dijadikan lapisan GPU raksasa karena menindih citra
+              // yang bergerak.
+              filter: "brightness(0.8)",
               maskImage: FEATHER,
               WebkitMaskImage: FEATHER,
               maskComposite: "intersect",
@@ -234,9 +240,6 @@ export default function SekitarmuMap({
           />
         );
       })}
-
-      {/* Peredup: citra asli terlalu terang untuk label putih dan arsiran. */}
-      <div className="pointer-events-none absolute -inset-[100vmax] bg-[#050a08]/20" />
 
       <svg
         viewBox={box.join(" ")}

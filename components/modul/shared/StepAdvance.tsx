@@ -63,9 +63,9 @@ export default function StepAdvance({
       <ArrowRight size={14} className="transition-transform group-enabled:group-hover:translate-x-0.5" />
     </>
   );
-  const pill = `group inline-flex items-center gap-2 rounded-full border bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors ${
+  const pill = `group inline-flex items-center gap-2 rounded-full border bg-black/55 px-4 py-2 text-xs font-medium text-white transition-colors ${
     locked
-      ? `cursor-not-allowed bg-white/5 text-white/45 ${urgent ? "border-amber-300/50" : "border-white/12"}`
+      ? `cursor-not-allowed bg-black/45 text-white/45 ${urgent ? "border-amber-300/50" : "border-white/12"}`
       : "cursor-pointer border-white/25 hover:bg-white/20"
   }`;
 
@@ -79,7 +79,7 @@ export default function StepAdvance({
           teksnya dibuat satu baris agar kotaknya pas mengikuti tulisan. */}
       <p
         aria-live="polite"
-        className={`max-w-[210px] rounded-2xl bg-black/35 px-3 py-1.5 text-right text-[11px] leading-snug backdrop-blur-[2px] transition-colors duration-300 max-md:max-w-none max-md:whitespace-nowrap md:max-w-[260px] md:rounded-none md:bg-transparent md:p-0 md:backdrop-blur-none ${
+        className={`max-w-[210px] rounded-2xl bg-black/55 px-3 py-1.5 text-right text-[11px] leading-snug transition-colors duration-300 max-md:max-w-none max-md:whitespace-nowrap md:max-w-[260px] md:rounded-none md:bg-transparent md:p-0 ${
           locked ? (urgent ? "text-amber-200" : "text-white/55") : "text-white/45"
         }`}
       >

@@ -112,7 +112,11 @@ export default function ActModuleShell({
   );
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden" style={{ background }}>
+    <div className="relative h-[100dvh] w-full overflow-clip" style={{ background }}>
+      {/* `overflow-clip`, bukan `overflow-hidden`: lapisan peta dan citra
+          sengaja membentang melewati layar, dan wadah `overflow-hidden` masih
+          bisa tergulir lewat kode (fokus tombol, cari di halaman) sehingga
+          seluruh tampilan bergeser. `clip` memotong tanpa membuka gulir. */}
       {/* Gambar: di layar lebar mengisi ruang di kanan panel cerita, di layar
           sempit pita di antara panel cerita dan panel kendali. */}
       <div className="absolute bottom-[34%] left-4 right-4 top-[44%] md:bottom-[8%] md:left-[36%] md:right-[4%] md:top-[12%]">{figure}</div>
@@ -148,8 +152,8 @@ export default function ActModuleShell({
             <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
           </p>
           <div
-            className={`pointer-events-auto mt-3 rounded-2xl border p-3 backdrop-blur-md transition-colors duration-500 ${
-              done ? "border-emerald-300/30 bg-emerald-950/40" : "border-[#6fb6d8]/30 bg-black/45"
+            className={`pointer-events-auto mt-3 rounded-2xl border p-3 transition-colors duration-500 ${
+              done ? "border-emerald-300/30 bg-[#06231a]/80" : "border-[#6fb6d8]/30 bg-black/65"
             }`}
           >
             <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${done ? "text-emerald-200" : "text-[#8fcce8]"}`}>
@@ -173,7 +177,7 @@ export default function ActModuleShell({
         inert={hookOpen}
         className={`absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}
       >
-        <div className="rounded-3xl border border-white/10 bg-black/55 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        <div className="rounded-3xl border border-white/10 bg-black/75 p-3.5 shadow-2xl shadow-black/60">
           {controls}
           <button
             type="button"
@@ -218,7 +222,7 @@ export default function ActModuleShell({
             next?.href && (
               <Link
                 href={next.href}
-                className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md md:hidden"
+                className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white md:hidden"
               >
                 Modul berikutnya
               </Link>
@@ -227,7 +231,7 @@ export default function ActModuleShell({
             <button
               type="button"
               onClick={() => goToAct(act + 1)}
-              className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md md:hidden"
+              className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white md:hidden"
             >
               Babak berikutnya
             </button>
