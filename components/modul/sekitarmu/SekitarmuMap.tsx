@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, Check, Flame } from "lucide-react";
+import { ArrowDown, Check, Flame, X } from "lucide-react";
 import mapData from "@/data/sekitarmu-map.json";
 import { BORE_SITES, DISTRICT_PEAT, FIRE_SITES, SEKITARMU_TEXT } from "@/config/modul/sekitarmu";
 
@@ -92,6 +92,10 @@ type Props = {
   zoom: number;
   selected: ReadonlySet<string>;
   revealed: boolean;
+  /** Jumlah kecamatan yang hasilnya sudah dibuka, berurutan setelah Periksa. */
+  revealCount: number;
+  /** Bertambah setiap titik ditekan, untuk memutar ulang riak di peta. */
+  tapKey: number;
   boresOpened: ReadonlySet<string>;
   activeBore: string | null;
   firesOpened: ReadonlySet<string>;
@@ -107,6 +111,8 @@ export default function SekitarmuMap({
   zoom,
   selected,
   revealed,
+  revealCount,
+  tapKey,
   boresOpened,
   activeBore,
   firesOpened,
@@ -211,29 +217,38 @@ export default function SekitarmuMap({
         )}
 
         {detail &&
-          mapData.districts.map((d) => {
+          mapData.districts.map((d, i) => {
             const peat = DISTRICT_PEAT[d.name];
             const picked = selected.has(d.name);
-            const fill = revealed
-              ? peat
-                ? act >= 2
-                  ? "url(#sekitarmu-hatch-soft)"
-                  : "url(#sekitarmu-hatch)"
-                : "#25302a"
-              : picked
-                ? "rgba(111,182,216,0.45)"
-                : "#25302a";
+            // Setelah Periksa, kecamatan dibuka satu per satu. Yang belum
+            // dibuka tetap menampilkan tebakan pembaca.
+            const shown = revealed && i < revealCount;
+            const fill = !shown && picked ? "rgba(111,182,216,0.45)" : "#25302a";
             return (
-              <path
-                key={d.name}
-                d={d.d}
-                fill={fill}
-                stroke="rgba(255,255,255,0.75)"
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-                className={districtClickable ? "cursor-pointer transition-[fill] hover:brightness-125" : undefined}
-                onClick={districtClickable ? () => onToggleDistrict(d.name) : undefined}
-              />
+              <g key={d.name}>
+                <path
+                  d={d.d}
+                  fill={fill}
+                  stroke="rgba(255,255,255,0.75)"
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                  className={districtClickable ? "cursor-pointer transition-[fill] hover:brightness-125" : undefined}
+                  onClick={districtClickable ? () => onToggleDistrict(d.name) : undefined}
+                />
+                {/* Arsiran gambut ditumpuk di atas dasar dan dimunculkan
+                    perlahan: isi pola tidak bisa dianimasikan langsung. */}
+                {shown && peat && (
+                  <path
+                    d={d.d}
+                    fill={act >= 2 ? "url(#sekitarmu-hatch-soft)" : "url(#sekitarmu-hatch)"}
+                    stroke="rgba(255,255,255,0.75)"
+                    strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
+                    pointerEvents="none"
+                    className="sekitarmu-fill"
+                  />
+                )}
+              </g>
             );
           })}
 
@@ -253,19 +268,33 @@ export default function SekitarmuMap({
       {/* Nama kecamatan, dan hasilnya setelah diperiksa. */}
       {detail &&
         act <= 1 &&
-        mapData.districts.map((d) => {
+        mapData.districts.map((d, i) => {
           const peat = DISTRICT_PEAT[d.name];
+          const shown = revealed && i < revealCount;
+          // Tebakan tepat bila pembaca memilih kecamatan bergambut, atau
+          // tidak memilih kecamatan yang bukan gambut.
+          const right = selected.has(d.name) === Boolean(peat);
           return (
             <span
               key={d.name}
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black/55 px-1.5 py-0.5 text-center text-[10px] leading-tight text-white/90 sm:text-[11px]"
               style={toScreen(d.label[0], d.label[1])}
             >
-              {d.name.replace("Pontianak ", "")}
-              {revealed && (
+              <span className="inline-flex items-center gap-1">
+                {shown && act === 1 && (
+                  <span
+                    className={`sekitarmu-reveal inline-flex h-3.5 w-3.5 items-center justify-center rounded-full ${right ? "bg-[#7bc47f] text-black" : "bg-[#e06a5a] text-white"}`}
+                    aria-label={right ? SEKITARMU_TEXT.guessRight : SEKITARMU_TEXT.guessWrong}
+                  >
+                    {right ? <Check size={9} strokeWidth={3} /> : <X size={9} strokeWidth={3} />}
+                  </span>
+                )}
+                {d.name.replace("Pontianak ", "")}
+              </span>
+              {shown && (
                 // Di ponsel petanya kecil: hanya kecamatan bergambut yang
                 // diberi baris kedua, supaya labelnya tidak bertumpuk.
-                <span className={`font-medium ${peat ? "block text-[#f0a35e]" : "hidden text-white/50 sm:block"}`}>
+                <span className={`sekitarmu-reveal font-medium ${peat ? "block text-[#f0a35e]" : "hidden text-white/50 sm:block"}`}>
                   {peat ? SEKITARMU_TEXT.peat(peat.percent) : SEKITARMU_TEXT.notPeat}
                 </span>
               )}
@@ -279,6 +308,8 @@ export default function SekitarmuMap({
           const bore = BORE_SITES.find((b) => b.id === s.id)!;
           const fire = FIRE_SITES.find((f) => f.id === s.id);
           if (act === 3 && !fire) return null;
+          // Urutan menyala di babak 04, supaya kedua titik tidak menyala serentak.
+          const igniteDelay = act === 3 ? FIRE_SITES.findIndex((f) => f.id === s.id) * 0.35 : 0;
           const opened = act === 2 ? boresOpened.has(s.id) : firesOpened.has(s.id);
           const active = act === 2 ? activeBore === s.id : activeFire === s.id;
           return (
@@ -290,16 +321,24 @@ export default function SekitarmuMap({
               style={toScreen(s.x, s.y)}
               aria-label={act === 2 ? `Titik bor ${bore.title}` : `Titik api ${bore.title}`}
             >
+              {/* Riak dari titik yang baru ditekan; `key` memutarnya ulang. */}
+              {active && (
+                <span
+                  key={tapKey}
+                  className={`sekitarmu-ripple pointer-events-none absolute inset-0 rounded-full border-2 ${act === 3 ? "border-[#ff9a5c]" : "border-white"}`}
+                />
+              )}
               <span
                 className={`relative flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-semibold transition-colors ${
                   act === 3
-                    ? "border-[#ff7a3c] bg-[#ff7a3c]/30 text-white"
+                    ? `sekitarmu-ignite ${active ? "border-[#ffd2b0] bg-[#ff7a3c] text-white" : "border-[#ff7a3c] bg-[#ff7a3c]/30 text-white"}`
                     : active
                       ? "border-white bg-white text-black"
                       : opened
                         ? "border-white/70 bg-black/60 text-white"
                         : "border-white bg-[#6fb6d8]/40 text-white"
-                } ${!opened ? "animate-pulse" : ""}`}
+                } ${!opened && act !== 3 ? "animate-pulse" : ""}`}
+                style={act === 3 ? { animationDelay: `${igniteDelay}s, ${igniteDelay + 0.7}s` } : undefined}
               >
                 {act === 3 ? <Flame size={13} /> : opened ? <Check size={13} /> : <ArrowDown size={13} />}
               </span>

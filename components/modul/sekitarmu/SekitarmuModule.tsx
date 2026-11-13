@@ -23,6 +23,83 @@ const CORE_MAX_M = 15;
 /** Tinggi orang dewasa sebagai pembanding pada kolom bor (m). */
 const PERSON_M = 1.7;
 
+/** Jeda antarkecamatan saat hasil tebakan dibuka (ms). */
+const REVEAL_STEP_MS = 320;
+
+/** Lama mata bor turun sampai dasar gambut (ms). */
+const DRILL_MS = 1600;
+
+type Bore = (typeof BORE_SITES)[number];
+
+/**
+ * Kolom bor babak 03. Mata bor turun dari permukaan, angka kedalaman ikut
+ * berjalan, dan setiap 1,7 m ditandai satu garis: pembaca menghitung sendiri
+ * berapa orang dewasa yang muat ditumpuk di dalam gambut itu.
+ */
+function BoreCore({ bore, reducedMotion }: { bore: Bore; reducedMotion: boolean }) {
+  const [drilled, setDrilled] = useState(0);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    let frame = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / DRILL_MS);
+      // Melambat di dasar, seperti mata bor yang makin berat ditekan.
+      setDrilled(bore.maxM * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [bore, reducedMotion]);
+
+  // Gerak dikurangi: kolom langsung penuh, tanpa mata bor yang turun.
+  const depth = reducedMotion ? bore.maxM : drilled;
+  const done = depth >= bore.maxM - 1e-6;
+  const people = Math.floor(depth / PERSON_M);
+  const pct = (m: number) => `${(m / CORE_MAX_M) * 100}%`;
+
+  return (
+    <div className="flex gap-4">
+      <div className="relative h-36 w-16 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-[#6b5a45]" aria-hidden>
+        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-[#3a2a1c] to-[#2a1e14]" style={{ height: pct(depth) }} />
+        {/* Garis jingga: batas tertipis yang terukur di lokasi ini. */}
+        {depth >= bore.minM && (
+          <div className="sekitarmu-fill absolute inset-x-0 border-t border-dashed border-[#f0a35e]" style={{ top: pct(bore.minM) }} />
+        )}
+        {/* Satu garis untuk setiap tinggi orang dewasa yang sudah dilewati bor. */}
+        {Array.from({ length: people }, (_, k) => (
+          <div key={k} className="sekitarmu-fill absolute right-0 w-3 border-t border-white/70" style={{ top: pct((k + 1) * PERSON_M) }} />
+        ))}
+        {/* Tinggi orang dewasa, diukur dari permukaan ke bawah. */}
+        <div className="absolute right-1 top-0 w-1.5 rounded-b bg-white/85" style={{ height: pct(PERSON_M) }} />
+        {/* Mata bor. */}
+        {!done && (
+          <div className="absolute left-1/2 h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[7px] border-x-transparent border-t-white" style={{ top: pct(depth) }} />
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{bore.title}</p>
+        <p className="mt-1 font-playfair text-2xl italic leading-none text-[#f0a35e]" aria-live="polite">
+          {done ? bore.display : `${depth.toFixed(1).replace(".", ",")} m`}
+        </p>
+        {done ? (
+          <>
+            <p className="sekitarmu-rise mt-1 text-[12px] font-medium text-white">{SEKITARMU_TEXT.personStack(Math.round(bore.maxM / PERSON_M))}</p>
+            <p className="sekitarmu-rise mt-1 text-[12px] leading-snug text-white/80">{bore.reading}</p>
+            <p className="mt-1 text-[10px] text-white/45">
+              {bore.method} · {bore.source}
+            </p>
+            <p className="mt-1 text-[10px] text-white/40">Kolom 0–15 m · garis putih: {SEKITARMU_TEXT.personNote}</p>
+          </>
+        ) : (
+          <p className="mt-1.5 text-[12px] text-white/60">{SEKITARMU_TEXT.drilling}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Modul 01 — Gambut di Sekitarmu.
  *
@@ -37,6 +114,8 @@ export default function SekitarmuModule() {
   const [zoom, setZoom] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [revealed, setRevealed] = useState(false);
+  const [revealCount, setRevealCount] = useState(0);
+  const [tapKey, setTapKey] = useState(0);
   const [boresOpened, setBoresOpened] = useState<Set<string>>(new Set());
   const [activeBore, setActiveBore] = useState<string | null>(null);
   const [firesOpened, setFiresOpened] = useState<Set<string>>(new Set());
@@ -51,12 +130,28 @@ export default function SekitarmuModule() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Setelah Periksa, buka hasil kecamatan satu per satu.
+  useEffect(() => {
+    if (!revealed || reducedMotion) return;
+    const total = mapData.districts.length;
+    let n = 0;
+    const id = window.setInterval(() => {
+      n += 1;
+      setRevealCount(n);
+      if (n >= total) window.clearInterval(id);
+    }, REVEAL_STEP_MS);
+    return () => window.clearInterval(id);
+  }, [revealed, reducedMotion]);
+
   const allDistricts = mapData.districts.map((d) => d.name);
+  // Gerak dikurangi: semua kecamatan dibuka sekaligus.
+  const shownCount = reducedMotion ? allDistricts.length : revealCount;
+  const revealDone = revealed && shownCount >= allDistricts.length;
   const rightGuesses = allDistricts.filter((n) => selected.has(n) === Boolean(DISTRICT_PEAT[n])).length;
 
   const actDone = [
     zoom >= ZOOM_MAX - 0.02,
-    revealed,
+    revealDone,
     BORE_SITES.every((b) => boresOpened.has(b.id)),
     FIRE_SITES.every((f) => firesOpened.has(f.id)),
   ];
@@ -76,6 +171,7 @@ export default function SekitarmuModule() {
     setZoom(0);
     setSelected(new Set());
     setRevealed(false);
+    setRevealCount(0);
     setBoresOpened(new Set());
     setActiveBore(null);
     setFiresOpened(new Set());
@@ -91,17 +187,20 @@ export default function SekitarmuModule() {
     });
   const openBore = (id: string) => {
     setActiveBore(id);
+    setTapKey((k) => k + 1);
     setBoresOpened((prev) => new Set(prev).add(id));
   };
   const openFire = (id: string) => {
     setActiveFire(id);
+    setTapKey((k) => k + 1);
     setFiresOpened((prev) => new Set(prev).add(id));
   };
 
   const level = ZOOM_LEVELS[Math.min(2, Math.round(zoom))];
   const bore = BORE_SITES.find((b) => b.id === activeBore);
   const fire = FIRE_SITES.find((f) => f.id === activeFire);
-  const fireTitle = fire ? BORE_SITES.find((b) => b.id === fire.id)?.title : null;
+  const fireBore = fire ? BORE_SITES.find((b) => b.id === fire.id) : undefined;
+  const fireTitle = fireBore?.title ?? null;
 
   return (
     <ActModuleShell
@@ -115,8 +214,8 @@ export default function SekitarmuModule() {
       onReset={reset}
       taskExtra={
         act === 1 &&
-        revealed && (
-          <p className="mt-2 border-t border-white/10 pt-2 text-[12px] font-medium leading-snug text-[#f0a35e]">
+        revealDone && (
+          <p className="sekitarmu-rise mt-2 border-t border-white/10 pt-2 text-[12px] font-medium leading-snug text-[#f0a35e]">
             {SEKITARMU_TEXT.checked(rightGuesses, allDistricts.length)}
           </p>
         )
@@ -127,6 +226,8 @@ export default function SekitarmuModule() {
           zoom={zoom}
           selected={selected}
           revealed={revealed}
+          revealCount={shownCount}
+          tapKey={tapKey}
           boresOpened={boresOpened}
           activeBore={activeBore}
           firesOpened={firesOpened}
@@ -198,34 +299,7 @@ export default function SekitarmuModule() {
 
       {act === 2 &&
         (bore ? (
-          <div className="flex gap-4">
-            {/* Kolom bor: tebal gambut terhadap tinggi orang dewasa. */}
-            <div className="relative h-36 w-16 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-[#6b5a45]" aria-hidden>
-              <div
-                className="absolute inset-x-0 top-0 bg-gradient-to-b from-[#3a2a1c] to-[#2a1e14]"
-                style={{ height: `${(bore.maxM / CORE_MAX_M) * 100}%` }}
-              />
-              {/* Garis jingga: batas tertipis yang terukur di lokasi ini. */}
-              <div
-                className="absolute inset-x-0 border-t border-dashed border-[#f0a35e]"
-                style={{ top: `${(bore.minM / CORE_MAX_M) * 100}%` }}
-              />
-              {/* Tinggi orang dewasa, diukur dari permukaan ke bawah:
-                  itulah pembanding yang dipahami pembaca. */}
-              <div className="absolute right-1 top-0 w-1.5 rounded-b bg-white/85" style={{ height: `${(PERSON_M / CORE_MAX_M) * 100}%` }} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{bore.title}</p>
-              <p className="mt-1 font-playfair text-2xl italic leading-none text-[#f0a35e]">
-                {bore.display}
-              </p>
-              <p className="mt-1.5 text-[12px] leading-snug text-white/80">{bore.reading}</p>
-              <p className="mt-1 text-[10px] text-white/45">
-                {bore.method} · {bore.source}
-              </p>
-              <p className="mt-1 text-[10px] text-white/40">Kolom 0–15 m · garis putih: {SEKITARMU_TEXT.personNote}</p>
-            </div>
-          </div>
+          <BoreCore key={bore.id} bore={bore} reducedMotion={reducedMotion} />
         ) : (
           <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik bor di peta.</p>
         ))}
@@ -234,9 +308,11 @@ export default function SekitarmuModule() {
         (fire ? (
           <div>
             <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{fireTitle}</p>
-            <ul className="mt-2 space-y-2">
-              {fire.events.map((e) => (
-                <li key={e.when}>
+            {fireBore && <p className="mt-1 text-[12px] font-medium text-[#f0a35e]">{SEKITARMU_TEXT.firePeat(fireBore.display)}</p>}
+            {/* Kejadian muncul berurutan menurut waktu: terbakar, lalu terbakar lagi. */}
+            <ul key={fire.id} className="mt-2 space-y-2">
+              {fire.events.map((e, i) => (
+                <li key={e.when} className="sekitarmu-rise" style={{ animationDelay: `${0.15 + i * 0.35}s` }}>
                   <p className="text-[12px] font-medium text-[#ff9a5c]">{e.when}</p>
                   <p className="text-[12px] leading-snug text-white/80">{e.text}</p>
                   <p className="text-[10px] text-white/40">{e.source}</p>

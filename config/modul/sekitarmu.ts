@@ -193,6 +193,12 @@ export const SEKITARMU_TEXT = {
   notPeat: "bukan gambut",
   hatchNote: "Arsiran: sebagian kecamatan ini gambut. Batas gambutnya tidak digambar, hanya luasnya yang diketahui.",
   personNote: "Orang dewasa ± 1,7 m",
+  /** Tebal gambut dinyatakan sebagai tumpukan orang dewasa setinggi 1,7 m. */
+  personStack: (n: number) => `sampai ≈ ${n} orang dewasa bertumpuk`,
+  drilling: "Mengebor…",
+  guessRight: "tebakanmu tepat",
+  guessWrong: "tebakanmu meleset",
+  firePeat: (depth: string) => `Di bawah api ini: gambut ${depth}.`,
   attribution: "Peta © kontributor OpenStreetMap (ODbL) · Natural Earth",
   reset: "Mulai dari awal",
 };
