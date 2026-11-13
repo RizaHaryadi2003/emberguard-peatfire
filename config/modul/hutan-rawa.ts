@@ -75,6 +75,8 @@ export const HUTAN_ACTS: readonly ShellAct[] = [
 export type ForestZone = {
   id: "campuran" | "tiang" | "tinggi";
   name: string;
+  /** Nama pendek untuk layar ponsel. */
+  short: string;
   /** Batas zona di sepanjang penampang (km dari tepi hutan). */
   fromKm: number;
   toKm: number;
@@ -97,6 +99,7 @@ export const FOREST_ZONES: readonly ForestZone[] = [
   {
     id: "campuran",
     name: "Hutan rawa campuran",
+    short: "Campuran",
     fromKm: 0,
     toKm: 5.5,
     peat: "paling dangkal",
@@ -110,6 +113,7 @@ export const FOREST_ZONES: readonly ForestZone[] = [
   {
     id: "tiang",
     name: "Hutan tiang rendah",
+    short: "Tiang rendah",
     fromKm: 5.5,
     toKm: 10,
     peat: "6–10 m",
@@ -123,6 +127,7 @@ export const FOREST_ZONES: readonly ForestZone[] = [
   {
     id: "tinggi",
     name: "Hutan tinggi pedalaman",
+    short: "Hutan tinggi",
     fromKm: 10,
     toKm: 14,
     peat: "10–13 m",
@@ -158,5 +163,12 @@ export const HUTAN_TEXT = {
   apes: "Orangutan dan owa",
   totals: "Tercatat di Sebangau sejak 1993",
   scaleNote: "Tegak: tinggi pohon dan tebal gambut dalam meter. Mendatar: jarak dalam kilometer.",
+  you: "kamu",
+  /** Tebal gambut di bawah kaki pejalan; angka dibulatkan dari kurva kubah. */
+  gauge: (m: number) => `gambut ± ${m} m`,
+  floodCarry: "air sungai: lumpur dan hara",
+  floodLimit: "batas banjir sungai",
+  rainSoak: "hujan meresap ke seluruh kubah",
+  apesNote: "Jumlah siluet menunjukkan tingkat relatif, bukan hitungan.",
   source: "Husson dkk., 2018; Page dkk., 1999",
 };

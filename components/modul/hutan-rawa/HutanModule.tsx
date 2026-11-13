@@ -202,15 +202,17 @@ export default function HutanModule() {
                   </div>
                 </dl>
                 <p className="mt-2 text-[12px] leading-snug text-white/75">{zone.note}</p>
-                <p className="mt-3 border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.totals}</p>
-                <ul className="mt-1 grid grid-cols-3 gap-x-2 gap-y-1">
+                {/* Di ponsel daftar jenis disembunyikan supaya panel tidak
+                    menutupi penampang; versi laptop memuatnya lengkap. */}
+                <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block">{HUTAN_TEXT.totals}</p>
+                <ul className="mt-1 hidden grid-cols-3 gap-x-2 gap-y-1 sm:grid">
                   {SEBANGAU_SPECIES.map((s) => (
                     <li key={s.label} className="text-[11px] text-white/70">
                       <span className="font-medium tabular-nums text-white">{s.value}</span> {s.label}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1 text-[10px] text-white/40">{HUTAN_TEXT.source}</p>
+                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.source}</p>
               </div>
             ) : (
               <p className="text-[12px] leading-snug text-white/75">Tekan salah satu jenis hutan di bawah penampang.</p>

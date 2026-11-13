@@ -109,14 +109,31 @@ body {
 /* ---------- Animasi gambar 2D pada modul ---------- */
 
 /* Hujan pada penampang kubah gambut (Modul Hutan Rawa Gambut). */
+/*
+ * Hujan pada penampang kubah gambut (Modul Hutan Rawa Gambut). Satu lapisan
+ * HTML bergambar tetes yang digeser dengan transform: dikerjakan GPU sebagai
+ * satu lapisan, tanpa menggambar ulang penampang SVG di bawahnya.
+ */
 @keyframes hutanRain {
-  from { transform: translateY(-30px); opacity: 0; }
-  30% { opacity: 1; }
-  to { transform: translateY(40px); opacity: 0; }
+  from { transform: translate3d(0, -60px, 0); }
+  to { transform: translate3d(-10px, 0, 0); }
 }
 
 .hutan-rain {
-  animation: hutanRain 0.9s linear infinite;
+  animation: hutanRain 0.45s linear infinite;
+  will-change: transform;
+}
+
+/* Siluet satwa muncul di tajuk saat jenis hutannya dibuka. */
+@keyframes hutanPop {
+  from { opacity: 0; transform: translateY(6px) scale(0.6); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hutan-pop {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: hutanPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Daerah rawan pada peta lahan melebar dari kanal ke kedua sisi. */
@@ -196,6 +213,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .kanal-spread,
   .hutan-rain,
+  .hutan-pop,
   .sekitarmu-reveal,
   .sekitarmu-fill,
   .sekitarmu-ripple,
