@@ -39,6 +39,12 @@ const SITE_VIEW: Box = (() => {
  * lintang–bujur cukup ditempel sebagai satu persegi panjang tanpa dilengkungkan.
  * Tiga tingkat, dari kasar ke halus; tiap citra baru diunduh saat peta sudah
  * mendekati tingkatnya, supaya halaman awal tetap ringan.
+ *
+ * Citra digambar sebagai <img> HTML di bawah SVG, digeser dan diperbesar
+ * dengan CSS `transform`. Dengan begitu GPU cukup memindahkan gambar yang
+ * sudah jadi pada setiap bingkai. Bila citra diletakkan di dalam SVG, seluruh
+ * citra beserta pemudar tepinya digambar ulang setiap kali viewBox berubah,
+ * dan perbesaran menjadi patah-patah.
  */
 const KX = mapData.projection.kmPerDegLon;
 const KY = mapData.projection.kmPerDegLat;
@@ -46,10 +52,14 @@ function imageBox(west: number, south: number, east: number, north: number): Box
   return [west * KX, -north * KY, (east - west) * KX, (north - south) * KY];
 }
 const IMAGERY = {
-  indonesia: { href: "/images/sekitarmu/indonesia.jpg", box: imageBox(86, -11.5, 150, 14) },
-  kalbar: { href: "/images/sekitarmu/kalbar.jpg", box: imageBox(107.5, -3.5, 115, 2.6) },
-  pontianak: { href: "/images/sekitarmu/pontianak.jpg", box: imageBox(109.22, -0.13, 109.44, 0.07) },
-};
+  indonesia: { href: "/images/sekitarmu/indonesia.jpg", box: imageBox(86, -11.5, 150, 14), px: [1800, 717] },
+  kalbar: { href: "/images/sekitarmu/kalbar.jpg", box: imageBox(107.5, -3.5, 115, 2.6), px: [1200, 976] },
+  pontianak: { href: "/images/sekitarmu/pontianak.jpg", box: imageBox(109.22, -0.13, 109.44, 0.07), px: [1700, 1545] },
+} as const;
+
+/** Pemudar tepi citra ke warna laut, supaya batas gambarnya tidak terlihat. */
+const FEATHER =
+  "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent)";
 
 /** 0 → 1 selama lebar tampilan menyusut dari `from` ke `to` (km). */
 function mixBetween(width: number, from: number, to: number) {
@@ -182,6 +192,52 @@ export default function SekitarmuMap({
 
   return (
     <div ref={wrapRef} className="absolute inset-0">
+      {/* Laut, dibentangkan jauh melewati wadah; dipotong oleh bingkai modul.
+          Warnanya disamakan dengan laut pada citra yang sudah digelapkan. */}
+      <div className="pointer-events-none absolute -inset-[100vmax] bg-[#0a1830]" />
+
+      {/* Citra satelit, dari kasar ke halus. Citra yang lebih halus menumpuk
+          di atas yang kasar; citra di bawahnya baru dilepas setelah tertutup
+          penuh, supaya laut gelap tidak tembus di tengah peralihan. */}
+      {(
+        [
+          ["indonesia", 1, kalbarMix < 1],
+          ["kalbar", kalbarMix, loadKalbar && cityMix < 1],
+          ["pontianak", cityMix, loadCity],
+        ] as const
+      ).map(([id, opacity, load]) => {
+        if (!load || opacity <= 0) return null;
+        const img = IMAGERY[id];
+        const at = toScreen(img.box[0], img.box[1]);
+        const sx = (img.box[2] * scale) / img.px[0];
+        const sy = (img.box[3] * scale) / img.px[1];
+        return (
+          // eslint-disable-next-line @next/next/no-img-element -- citra digeser dengan transform setiap bingkai; next/image tidak dibutuhkan di sini
+          <img
+            key={id}
+            src={img.href}
+            alt=""
+            draggable={false}
+            decoding="async"
+            className="pointer-events-none absolute left-0 top-0 max-w-none origin-top-left select-none"
+            style={{
+              width: img.px[0],
+              height: img.px[1],
+              opacity,
+              transform: `translate3d(${at.left}px, ${at.top}px, 0) scale(${sx}, ${sy})`,
+              willChange: "transform, opacity",
+              maskImage: FEATHER,
+              WebkitMaskImage: FEATHER,
+              maskComposite: "intersect",
+              WebkitMaskComposite: "source-in",
+            }}
+          />
+        );
+      })}
+
+      {/* Peredup: citra asli terlalu terang untuk label putih dan arsiran. */}
+      <div className="pointer-events-none absolute -inset-[100vmax] bg-[#050a08]/20" />
+
       <svg
         viewBox={box.join(" ")}
         preserveAspectRatio="xMidYMid meet"
@@ -190,26 +246,6 @@ export default function SekitarmuMap({
         aria-label="Peta Indonesia sampai Kota Pontianak"
       >
         <defs>
-          {/* Tepi citra dipudarkan ke warna laut, supaya batas gambarnya tidak
-              terlihat sebagai garis lurus saat tampilan lebih lebar dari citra. */}
-          <linearGradient id="sekitarmu-fade-x">
-            <stop offset="0" stopColor="#fff" stopOpacity="0" />
-            <stop offset="0.08" stopColor="#fff" />
-            <stop offset="0.92" stopColor="#fff" />
-            <stop offset="1" stopColor="#fff" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="sekitarmu-fade-y" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff" stopOpacity="0" />
-            <stop offset="0.14" stopColor="#fff" />
-            <stop offset="0.86" stopColor="#fff" />
-            <stop offset="1" stopColor="#fff" stopOpacity="0" />
-          </linearGradient>
-          <mask id="sekitarmu-feather-x" maskContentUnits="objectBoundingBox">
-            <rect width="1" height="1" fill="url(#sekitarmu-fade-x)" />
-          </mask>
-          <mask id="sekitarmu-feather-y" maskContentUnits="objectBoundingBox">
-            <rect width="1" height="1" fill="url(#sekitarmu-fade-y)" />
-          </mask>
           <clipPath id="sekitarmu-land">
             <path d={idn.d} />
           </clipPath>
@@ -224,49 +260,6 @@ export default function SekitarmuMap({
             <rect width={px * 1.5} height={px * 12} fill="#f0a35e" fillOpacity="0.35" />
           </pattern>
         </defs>
-
-        {/* Laut, dibentangkan jauh melewati kotak supaya tidak pernah ada tepi.
-            Warnanya disamakan dengan laut pada citra yang sudah digelapkan. */}
-        <rect x={box[0] - box[2] * 4} y={box[1] - box[3] * 4} width={box[2] * 9} height={box[3] * 9} fill="#0a1830" />
-
-        {/* Citra satelit, dari kasar ke halus. */}
-        {(
-          [
-            // Citra yang lebih halus menumpuk di atas yang kasar; citra di
-            // bawahnya baru dilepas setelah tertutup penuh, supaya laut gelap
-            // tidak tembus di tengah peralihan.
-            ["indonesia", 1, kalbarMix < 1],
-            ["kalbar", kalbarMix, loadKalbar && cityMix < 1],
-            ["pontianak", cityMix, loadCity],
-          ] as const
-        ).map(([id, opacity, load]) => {
-          if (!load || opacity <= 0) return null;
-          const img = IMAGERY[id];
-          return (
-            <g key={id} mask="url(#sekitarmu-feather-x)" opacity={opacity}>
-              <image
-                href={img.href}
-                x={img.box[0]}
-                y={img.box[1]}
-                width={img.box[2]}
-                height={img.box[3]}
-                preserveAspectRatio="none"
-                mask="url(#sekitarmu-feather-y)"
-              />
-            </g>
-          );
-        })}
-
-        {/* Peredup: citra asli terlalu terang untuk label putih dan arsiran. */}
-        <rect
-          x={box[0] - box[2] * 4}
-          y={box[1] - box[3] * 4}
-          width={box[2] * 9}
-          height={box[3] * 9}
-          fill="#050a08"
-          fillOpacity={0.2}
-          pointerEvents="none"
-        />
 
         {/* Negara lain digelapkan supaya Indonesia menonjol; garis pantai Natural
             Earth disederhanakan 4 km, jadi garisnya dipudarkan saat mendekat. */}
