@@ -30,6 +30,9 @@ uniform sampler2D uNormal0;
 uniform sampler2D uNormal1;
 uniform sampler2D uNormal2;
 uniform float uSoak;
+uniform vec2 uProbe;      // x letak pengukur, 0/1 tampak
+uniform vec3 uZone;       // x awal, x akhir, 0/1 jenis hutan yang disorot
+uniform vec2 uZoneEdges;  // x batas hutan campuran–tiang dan tiang–tinggi
 varying float vDepth;
 varying float vHeight;
 varying vec2 vFaceUv;
@@ -108,6 +111,38 @@ const FACE_DIFFUSE = /* glsl */ `
   float kWet = max(smoothstep(0.25, 0.9, vDepth) * 0.6, uSoak);
   kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.6, 0.56, 0.54), kWet);
 
+  // Jenis hutan yang disorot: bagian lain diredupkan, bukan diberi garis.
+  float kInZone = smoothstep(uZone.x - 0.3, uZone.x + 0.3, vFaceWorld.x) * (1.0 - smoothstep(uZone.y - 0.3, uZone.y + 0.3, vFaceWorld.x));
+  kAlbedo *= mix(1.0, mix(0.5, 1.12, kInZone), uZone.z);
+
+  // Batas antarjenis hutan: garis putus-putus tipis, lebarnya tetap satu
+  // piksel berapa pun jauhnya kamera.
+  float kEdgeDist = min(abs(vFaceWorld.x - uZoneEdges.x), abs(vFaceWorld.x - uZoneEdges.y)) / fwidth(vFaceWorld.x);
+  float kDash = step(0.5, fract(vFaceWorld.y * 1.2));
+  kAlbedo = mix(kAlbedo, vec3(0.95, 0.85, 0.7), (1.0 - smoothstep(0.5, 1.3, kEdgeDist)) * kDash * 0.28);
+
+  // Pengukur tebal gambut di babak 01: kolom muka potong di bawah kaki
+  // pejalan diterangi, diberi garis skala tiap meter dari permukaan, dan
+  // dasar gambutnya ditandai. Yang diukur adalah gambutnya sendiri.
+  float kProbeHalf = 1.0;
+  float kProbeDx = vFaceWorld.x - uProbe.x;
+  float kInProbe = (1.0 - smoothstep(kProbeHalf - 0.25, kProbeHalf, abs(kProbeDx))) * uProbe.y;
+  if (kInProbe > 0.0) {
+    // Sorotan lembut, paling terang di tengah kolom.
+    kAlbedo = mix(kAlbedo, kAlbedo * 2.1 + vec3(0.09, 0.055, 0.02), kInProbe * 0.85);
+    // Garis skala di sisi kiri kolom seperti penggaris: pendek tiap meter,
+    // panjang tiap lima meter.
+    float kTickPx = abs(fract(vDepth + 0.5) - 0.5) / fwidth(vDepth);
+    float kFive = 1.0 - step(0.5, abs(fract(vDepth / 5.0 + 0.5) - 0.5) * 5.0);
+    float kTickLen = mix(0.35, 0.75, kFive);
+    float kOnRuler = step(-kProbeHalf, kProbeDx) * (1.0 - step(-kProbeHalf + kTickLen * kProbeHalf * 2.0, kProbeDx));
+    float kTick = (1.0 - smoothstep(0.4, 1.3, kTickPx)) * kOnRuler * step(0.5, vDepth);
+    kAlbedo = mix(kAlbedo, vec3(1.0, 0.93, 0.82), kTick * 0.9);
+    // Dasar gambut di bawah kaki: garis jingga setebal dua piksel.
+    float kBasePx = abs(vHeight) / fwidth(vHeight);
+    kAlbedo = mix(kAlbedo, vec3(0.98, 0.6, 0.3), (1.0 - smoothstep(1.0, 2.4, kBasePx)) * kInProbe);
+  }
+
   diffuseColor.rgb *= kAlbedo;
   kFaceRoughness = mix(0.97, 0.55, kWet);
 `;
@@ -123,13 +158,18 @@ const FACE_NORMAL = /* glsl */ `
   normal = normalize(tbn * kMapN);
 `;
 
-export type PeatFaceMaterial = THREE.MeshStandardMaterial & { soak: { value: number } };
+export type PeatFaceUniforms = {
+  soak: { value: number };
+  probe: { value: THREE.Vector2 };
+  zone: { value: THREE.Vector3 };
+};
+export type PeatFaceMaterial = THREE.MeshStandardMaterial & PeatFaceUniforms;
 
 /**
  * Bahan muka potong gambut. `colors` dan `normals` berurutan fibrik, hemik,
  * saprik. Geometrinya wajib membawa atribut `aDepth` dan `aHeight`.
  */
-export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.Texture[], noise: THREE.Texture): PeatFaceMaterial {
+export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.Texture[], noise: THREE.Texture, zoneEdges: [number, number]): PeatFaceMaterial {
   const material = new THREE.MeshStandardMaterial({
     // Dipasang hanya supaya jalur map dan normalMap three.js menyala.
     map: colors[0],
@@ -142,7 +182,9 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
     side: THREE.DoubleSide,
   }) as PeatFaceMaterial;
   const soak = { value: 0 };
-  material.soak = soak;
+  const probe = { value: new THREE.Vector2(0, 0) };
+  const zone = { value: new THREE.Vector3(0, 0, 0) };
+  Object.assign(material, { soak, probe, zone });
 
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, {
@@ -154,6 +196,9 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
       uNormal2: { value: normals[2] },
       uNoise: { value: noise },
       uSoak: soak,
+      uProbe: probe,
+      uZone: zone,
+      uZoneEdges: { value: new THREE.Vector2(...zoneEdges) },
     });
     shader.vertexShader = shader.vertexShader
       .replace(
@@ -193,4 +238,62 @@ export function ownTexture(tex: THREE.Texture, color: boolean, anisotropy: numbe
   if (color) t.colorSpace = THREE.SRGBColorSpace;
   t.needsUpdate = true;
   return t;
+}
+
+// ---------------------------------------------------------------------------
+//  LANTAI HUTAN
+// ---------------------------------------------------------------------------
+//
+// Permukaan atas kubah. Selain serasah dan genangan di cekungan, bahan ini
+// menyimpan bekas banjir: lumpur yang ditinggalkan air sungai. Lumpur hanya
+// mengendap sejauh air banjir sampai, jadi setelah banjir surut pembaca
+// masih melihat bahwa hara sungai berhenti di tepi hutan, sedangkan tengah
+// kubah tidak pernah menerimanya.
+
+export type FloorUniforms = {
+  silt: { value: number };
+  siltLevel: { value: number };
+  zone: { value: THREE.Vector3 };
+};
+export type FloorMaterial = THREE.MeshStandardMaterial & FloorUniforms;
+
+export function createFloorMaterial(map: THREE.Texture, normalMap: THREE.Texture, noise: THREE.Texture): FloorMaterial {
+  const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.9, color: "#7d7a5c", vertexColors: true }) as FloorMaterial;
+  const silt = { value: 0 };
+  const siltLevel = { value: 0 };
+  const zone = { value: new THREE.Vector3(0, 0, 0) };
+  Object.assign(material, { silt, siltLevel, zone });
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, { uNoise: { value: noise }, uSilt: silt, uSiltLevel: siltLevel, uZone: zone });
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vFloorWorld;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvFloorWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         uniform float uSilt;
+         uniform float uSiltLevel;
+         uniform vec3 uZone;
+         varying vec3 vFloorWorld;
+         ${NOISE_GLSL}`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         // Endapan lumpur: kelabu kecoklatan, tepinya bergerigi mengikuti
+         // genangan terakhir.
+         float kEdge = uSiltLevel + (kNoise(vFloorWorld.xz * 1.3) - 0.5) * 0.35;
+         float kMud = (1.0 - smoothstep(kEdge - 0.25, kEdge, vFloorWorld.y)) * uSilt;
+         float kMudGrain = 0.85 + kNoise(vFloorWorld.xz * 5.0) * 0.3;
+         // Lumpur kering kelabu kecoklatan, sedikit lebih terang daripada serasah
+         // (nilai linear, setara sRGB ± 0,36 0,32 0,25).
+         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.106, 0.084, 0.051) * kMudGrain, kMud * 0.75);
+         // Jenis hutan yang disorot.
+         float kInZone = smoothstep(uZone.x - 0.3, uZone.x + 0.3, vFloorWorld.x) * (1.0 - smoothstep(uZone.y - 0.3, uZone.y + 0.3, vFloorWorld.x));
+         diffuseColor.rgb *= mix(1.0, mix(0.55, 1.15, kInZone), uZone.z);`,
+      );
+  };
+  material.customProgramCacheKey = () => "hutan-floor";
+  return material;
 }

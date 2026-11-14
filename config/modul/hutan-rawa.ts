@@ -175,6 +175,8 @@ export const HUTAN_TEXT = {
   stepLabel: "Langkah",
   fromRiver: (km: number) => `${km.toFixed(1).replace(".", ",")} km dari tepi hutan`,
   peat: "Tebal gambut",
+  peatHere: "Gambut di bawah kakimu",
+  peatRange: (zone: string) => `Di jenis hutan ini: ${zone} · puncak kubah ± 13 m`,
   canopy: "Tinggi kanopi",
   flood: "Banjir sungai",
   rain: "Hujan",

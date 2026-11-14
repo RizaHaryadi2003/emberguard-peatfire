@@ -6,13 +6,20 @@ import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
-import { zoneAt } from "./scene/dome";
+import { peatThicknessM, zoneAt } from "./scene/dome";
 
 // Adegan 3D hanya dimuat di peramban (WebGL), sama seperti modul 3D lainnya.
 const HutanScene = dynamic(() => import("./scene/HutanScene"), { ssr: false });
 
 /** Panjang penampang yang dapat dijalani (km). */
 const SPAN_KM = 14;
+
+/** Warna tiap jenis hutan pada trek penggeser, dari tepi sungai ke puncak. */
+const ZONE_COLOR: Record<ForestZone["id"], string> = {
+  campuran: "linear-gradient(90deg, #5fb0dc, #6fb98f)",
+  tiang: "linear-gradient(90deg, #8fbf72, #a9b86a)",
+  tinggi: "linear-gradient(90deg, #6fa65a, #3f7f45)",
+};
 
 /** Jarak dari tepi hutan yang dihitung sudah "sampai puncak kubah" (km). */
 const SUMMIT_KM = 12;
@@ -100,6 +107,7 @@ export default function HutanModule() {
             walkerKm={act === 0 ? walkKm : null}
             flood={act === 1 && flood}
             rain={act === 1 && rain}
+            waterAct={act === 1}
             openedZones={act === 2 ? opened : null}
             activeZone={act === 2 ? activeZone : null}
             onZone={openZone}
@@ -129,9 +137,18 @@ export default function HutanModule() {
                 </label>
                 <span className="text-[11px] tabular-nums text-white/70">{HUTAN_TEXT.fromRiver(walkKm)}</span>
               </div>
-              <div className="relative mt-2">
-                <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#5fb0dc] to-[#4f8a4a]" style={{ width: `${(walkKm / SPAN_KM) * 100}%` }} />
+              {/* Trek penggeser dibagi tiga menurut batas jenis hutan (Husson
+                  dkk., 2018), jadi pembaca melihat di mana hutan berganti. */}
+              <div className="relative mt-2.5">
+                <div className="pointer-events-none absolute inset-x-0 top-1/2 flex h-2 -translate-y-1/2 gap-[3px]">
+                  {FOREST_ZONES.map((z) => {
+                    const fill = Math.min(1, Math.max(0, (walkKm - z.fromKm) / (z.toKm - z.fromKm)));
+                    return (
+                      <div key={z.id} className="relative h-full overflow-hidden rounded-full bg-white/10" style={{ flexGrow: z.toKm - z.fromKm, flexBasis: 0 }}>
+                        <div className="h-full rounded-full transition-[width] duration-75" style={{ width: `${fill * 100}%`, background: ZONE_COLOR[z.id] }} />
+                      </div>
+                    );
+                  })}
                 </div>
                 <input
                   id="hutan-walk"
@@ -149,24 +166,40 @@ export default function HutanModule() {
                   className="water-slider relative z-10 w-full"
                 />
               </div>
-              <div className="mt-1 flex justify-between text-[10px] text-white/45">
-                <span>Tepi sungai</span>
-                <span>Puncak kubah</span>
+              <div className="mt-1 flex gap-[3px] text-[10px] leading-tight">
+                {FOREST_ZONES.map((z) => (
+                  <span
+                    key={z.id}
+                    className={`truncate transition-colors ${z.id === here.id ? "font-medium text-white" : "text-white/35"}`}
+                    style={{ flexGrow: z.toKm - z.fromKm, flexBasis: 0 }}
+                  >
+                    {z.short}
+                  </span>
+                ))}
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
-                <div className="col-span-2">
-                  <dt className="sr-only">Jenis hutan</dt>
-                  <dd className="font-playfair text-xl italic leading-none text-white">{here.name}</dd>
+
+              {/* Di ponsel batang pembanding dan keterangan rentang disembunyikan
+                  supaya panel tidak menutupi penampang; angkanya tetap ada. */}
+              <div className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3">
+                <p className="font-playfair text-xl italic leading-none text-white">{here.name}</p>
+                <div className="mt-2 grid sm:mt-2.5 grid-cols-[1fr_auto] items-end gap-x-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.peatHere}</p>
+                    <p className="mt-0.5 font-playfair text-2xl italic leading-none tabular-nums text-[#f0a35e] sm:text-3xl">
+                      ± {Math.max(1, Math.round(peatThicknessM(walkKm)))} m
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.canopy}</p>
+                    <p className="mt-0.5 text-sm tabular-nums text-[#9fd3a0]">{here.canopy}</p>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.peat}</dt>
-                  <dd className="text-sm text-[#f0a35e]">{here.peat}</dd>
+                {/* Batang tebal gambut terhadap tebal terbesar di puncak kubah. */}
+                <div className="mt-2 hidden h-1 overflow-hidden rounded-full bg-white/10 sm:block" aria-hidden>
+                  <div className="h-full rounded-full bg-[#f0a35e] transition-[width] duration-150" style={{ width: `${(peatThicknessM(walkKm) / peatThicknessM(SPAN_KM)) * 100}%` }} />
                 </div>
-                <div>
-                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.canopy}</dt>
-                  <dd className="text-sm text-[#9fd3a0]">{here.canopy}</dd>
-                </div>
-              </dl>
+                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.peatRange(here.peat)}</p>
+              </div>
             </div>
           )}
 
