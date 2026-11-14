@@ -5,12 +5,14 @@ import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import FpsMeter, { wantsFpsMeter } from "@/components/modul/shared/scene/FpsMeter";
 import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { QUALITY_PROFILE, type AtmosphereState, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import { collectVariants } from "@/components/modul/shared/scene/plantVariants";
+import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { FOREST_ZONES, HUTAN_TEXT, type ForestZone } from "@/config/modul/hutan-rawa";
 import {
   apeSpots,
@@ -24,12 +26,34 @@ import {
   PERSON_M,
   plantFerns,
   plantTrees,
-  SPAN_KM,
+  seeded,
   xOfKm,
   zoneAt,
   type ApeSpot,
   type TreeSpot,
 } from "./dome";
+import {
+  frontZ,
+  hummock,
+  mineralFrontGrid,
+  mineralSideGrid,
+  peatFrontGrid,
+  peatSideGrid,
+  peatTopGrid,
+  peatBaseY,
+  riverBedGrid,
+  RIVER_BED_M,
+  RIVER_LEVEL,
+  RIVER_WIDTH,
+  surfaceY,
+  X_LEFT,
+  X_RIVER,
+  Z_BACK,
+  Z_FRONT,
+  type Grid,
+} from "./domeShape";
+import { createPeatFaceMaterial, ownTexture } from "./domeMaterial";
+import { buildApe, disposeApe, type ApePose } from "./apeFigure";
 
 // Diorama 3D kubah gambut Modul Hutan Rawa Gambut.
 //
@@ -62,10 +86,6 @@ const WORLD_SCALE = 14;
 
 /** Batas resolusi render modul ini; PerformanceGuard dapat menurunkannya lagi. */
 const MODULE_MAX_DPR = { high: 1.25, low: 1 } as const;
-
-/** Sungai di tepi kiri (satuan adegan). */
-const RIVER_WIDTH = 9;
-const RIVER_LEVEL = peatThicknessM(0) - 0.5;
 
 /** Kotak isi yang harus muat di bingkai gambar. */
 const CONTENT_BOX = new THREE.Box3(
@@ -104,9 +124,10 @@ export default function HutanScene(props: HutanSceneProps) {
 
   return (
     <>
-      {/* Bingkai tempat diorama dipaskan. Di ponsel panel kendali babak 01–02
-          menindih tepi bawah bingkai, jadi bingkainya dipendekkan di sana. */}
-      <div ref={anchorRef} className={`pointer-events-none absolute inset-0 ${props.openedZones ? "" : "bottom-12 sm:bottom-0"}`} />
+      {/* Bingkai tempat diorama dipaskan. Di ponsel panel kendali menindih
+          tepi bawah bingkai, jadi bingkainya dipendekkan di sana; di babak 03
+          sedikit lebih pendek lagi supaya tombol jenis hutan tetap terlihat. */}
+      <div ref={anchorRef} className={`pointer-events-none absolute inset-0 ${props.openedZones ? "bottom-16 sm:bottom-0" : "bottom-12 sm:bottom-0"}`} />
       <div className="fixed inset-0">
         <Canvas
           orthographic
@@ -210,34 +231,116 @@ function CameraRig({ anchorRef }: { anchorRef: RefObject<HTMLDivElement | null> 
   return null;
 }
 
-/** Tekstur pindaian dengan pengulangan dalam satuan adegan. */
-function prepare(tex: THREE.Texture, repeat: number, color: boolean, anisotropy: number) {
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(repeat, repeat);
-  tex.anisotropy = anisotropy;
-  if (color) tex.colorSpace = THREE.SRGBColorSpace;
-  tex.needsUpdate = true;
+/** Kisi bidang menjadi geometri three.js, dengan atribut kedalaman untuk peneduh. */
+function toGeometry(grid: Grid): THREE.BufferGeometry {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(grid.positions, 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(grid.uvs, 2));
+  geo.setAttribute("aDepth", new THREE.BufferAttribute(grid.depths, 1));
+  geo.setAttribute("aHeight", new THREE.BufferAttribute(grid.heights, 1));
+  geo.setIndex(new THREE.BufferAttribute(grid.indices, 1));
+  geo.computeVertexNormals();
+  return geo;
 }
 
-/** Bentuk penampang kubah (x mendatar, y tegak), dasar gambut di y = 0. */
-function domeShape(): THREE.Shape {
-  const s = new THREE.Shape();
-  s.moveTo(xOfKm(0), 0);
-  for (let k = 0; k <= SPAN_KM + 1e-6; k += 0.1) s.lineTo(xOfKm(k), peatThicknessM(k));
-  s.lineTo(xOfKm(SPAN_KM), 0);
-  s.closePath();
-  return s;
+/** Beberapa kisi digabung menjadi satu geometri: satu panggilan gambar. */
+function mergeGrids(grids: Grid[]): THREE.BufferGeometry {
+  const parts = grids.map(toGeometry);
+  const merged = mergeGeometries(parts, false);
+  parts.forEach((p) => p.dispose());
+  return merged;
+}
+
+/**
+ * Warna titik lantai hutan: cekungan di antara gundukan lebih gelap dan
+ * kebiruan karena tergenang, gundukan sedikit lebih terang.
+ */
+function shadeFloor(geo: THREE.BufferGeometry) {
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const h = hummock(pos.getX(i), pos.getZ(i)) / 0.32;
+    const lift = 0.86 + 0.22 * h;
+    const pool = Math.max(0, -h - 0.35) * 1.4;
+    colors[i * 3] = lift * (1 - pool * 0.45);
+    colors[i * 3 + 1] = lift * (1 - pool * 0.35);
+    colors[i * 3 + 2] = lift * (1 - pool * 0.18);
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+}
+
+/** Warna titik tanah mineral: makin dalam makin gelap. */
+function shadeMineral(geo: THREE.BufferGeometry) {
+  const h = geo.attributes.aHeight as THREE.BufferAttribute;
+  const colors = new Float32Array(h.count * 3);
+  for (let i = 0; i < h.count; i++) {
+    const f = 1 - Math.min(1, Math.max(0, -h.getX(i) / MINERAL_M)) * 0.55;
+    colors.set([f, f, f], i * 3);
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+}
+
+/**
+ * Akar dan ranting yang mencuat dari dua meter teratas muka gambut. Separuh
+ * tiap model tertanam di dalam gambut, separuhnya keluar dan merunduk.
+ */
+function buildRoots(scene: THREE.Object3D, quality: Quality): THREE.Group {
+  const rand = seeded(88);
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const longest = Math.max(size.x, size.y, size.z);
+  // Sumbu terpanjang model diarahkan ke +z (keluar dari muka depan).
+  const align = new THREE.Matrix4();
+  if (longest === size.x) align.makeRotationY(-Math.PI / 2);
+  else if (longest === size.y) align.makeRotationX(Math.PI / 2);
+  const base = align
+    .multiply(new THREE.Matrix4().makeScale(1 / longest, 1 / longest, 1 / longest))
+    .multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+
+  const count = quality === "high" ? 38 : 16;
+  const spots = Array.from({ length: count }, () => {
+    const x = X_LEFT + 1.5 + rand() * (LENGTH - 3);
+    const depth = 0.12 + Math.pow(rand(), 1.6) * 1.6;
+    const y = surfaceY(x, Z_FRONT) - depth;
+    const m = new THREE.Matrix4().compose(
+      new THREE.Vector3(x, y, frontZ(x, y)),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0.25 + rand() * 0.55, (rand() - 0.5) * 1.1, rand() * Math.PI * 2)),
+      new THREE.Vector3().setScalar(1.6 + rand() * 2.2),
+    );
+    return m.multiply(base);
+  });
+
+  const group = new THREE.Group();
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    // Ranting kering dijadikan akar: lebih gelap dan lembap.
+    const material = (mesh.material as THREE.MeshStandardMaterial).clone();
+    material.color.set("#6a5646");
+    const inst = new THREE.InstancedMesh(mesh.geometry, material, count);
+    const m = new THREE.Matrix4();
+    spots.forEach((s, i) => inst.setMatrixAt(i, m.copy(s).multiply(mesh.matrixWorld)));
+    inst.instanceMatrix.needsUpdate = true;
+    inst.castShadow = true;
+    inst.receiveShadow = true;
+    inst.frustumCulled = false;
+    group.add(inst);
+  });
+  return group;
 }
 
 /** Air banjir: ruang antara muka banjir dan tanah, dari sungai sampai lereng. */
 function floodShape(): THREE.Shape {
   const s = new THREE.Shape();
-  const left = xOfKm(0) - RIVER_WIDTH;
-  s.moveTo(left, RIVER_LEVEL - 3);
-  s.lineTo(left, FLOOD_LEVEL_M);
+  // Ujung kiri mundur dari tepi diorama supaya tidak berimpit dengan muka
+  // samping tanah mineral.
+  s.moveTo(X_RIVER + 0.12, RIVER_LEVEL - 3);
+  s.lineTo(X_RIVER + 0.12, FLOOD_LEVEL_M);
   s.lineTo(xOfKm(FLOOD_KM), FLOOD_LEVEL_M);
   for (let k = FLOOD_KM; k >= 0; k -= 0.05) s.lineTo(xOfKm(k), peatThicknessM(k) - 0.02);
-  s.lineTo(xOfKm(0), RIVER_LEVEL - 3);
+  s.lineTo(X_LEFT, RIVER_LEVEL - 3);
   s.closePath();
   return s;
 }
@@ -245,48 +348,69 @@ function floodShape(): THREE.Shape {
 function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality }: HutanSceneProps) {
   const profile = QUALITY_PROFILE[quality];
   const invalidate = useThree((s) => s.invalidate);
-  const [peatC, peatN, topC, topN, minC, minN] = useLoader(THREE.TextureLoader, [
+  const [fibC, fibN, hemC, hemN, sapC, sapN, topC, topN, minC, minN] = useLoader(THREE.TextureLoader, [
+    "/textures/gambut/fibrik_color.webp",
+    "/textures/gambut/fibrik_normal.webp",
     "/textures/gambut/hemik_color.webp",
     "/textures/gambut/hemik_normal.webp",
+    "/textures/gambut/saprik_color.webp",
+    "/textures/gambut/saprik_normal.webp",
     "/textures/gambut/permukaan_color.webp",
     "/textures/gambut/permukaan_normal.webp",
     "/textures/gambut/mineral_color.webp",
     "/textures/gambut/mineral_normal.webp",
   ]);
-  const [treeGltf, fernGltf] = useLoader(GLTFLoader, ["/models/gambut/pohon_pachira.glb", "/models/gambut/pakis.glb"]);
+  const [treeGltf, fernGltf, branchGltf] = useLoader(GLTFLoader, ["/models/gambut/pohon_pachira.glb", "/models/gambut/pakis.glb", "/models/gambut/ranting.glb"]);
 
   const res = useMemo(() => {
-    prepare(peatC, 0.22, true, profile.anisotropy);
-    prepare(peatN, 0.22, false, profile.anisotropy);
-    prepare(topC, 0.07, true, profile.anisotropy);
-    prepare(topN, 0.07, false, profile.anisotropy);
-    prepare(minC, 0.25, true, profile.anisotropy);
-    prepare(minN, 0.25, false, profile.anisotropy);
+    const an = profile.anisotropy;
+    // Tekstur disalin: modul lain memakai berkas yang sama dengan pengulangan
+    // yang berbeda.
+    const own = [ownTexture(fibC, true, an), ownTexture(hemC, true, an), ownTexture(sapC, true, an)];
+    const ownN = [ownTexture(fibN, false, an), ownTexture(hemN, false, an), ownTexture(sapN, false, an)];
+    const noise = createNoiseTexture();
+    const peatFace = createPeatFaceMaterial(own, ownN, noise);
+    const peatGeo = mergeGrids([peatFrontGrid(quality), peatSideGrid("left", quality), peatSideGrid("right", quality)]);
 
-    const peatGeo = new THREE.ExtrudeGeometry(domeShape(), { depth: DEPTH, bevelEnabled: false, steps: 1 });
-    peatGeo.translate(0, 0, -DEPTH / 2);
-    const peatFace = new THREE.MeshStandardMaterial({ map: peatC, normalMap: peatN, roughness: 0.95, color: "#d9c6b0" });
+    const topGeo = toGeometry(peatTopGrid(quality));
+    shadeFloor(topGeo);
+    const topMapC = ownTexture(topC, true, an);
+    const topMapN = ownTexture(topN, false, an);
     // Serasah di bawah tajuk: digelapkan, karena lantai hutan rawa teduh.
-    const peatTop = new THREE.MeshStandardMaterial({ map: topC, normalMap: topN, roughness: 0.9, color: "#7d7a5c" });
+    const peatTop = new THREE.MeshStandardMaterial({ map: topMapC, normalMap: topMapN, roughness: 0.9, color: "#7d7a5c", vertexColors: true });
 
-    const mineralGeo = new THREE.BoxGeometry(LENGTH + RIVER_WIDTH, MINERAL_M, DEPTH);
-    mineralGeo.translate(-RIVER_WIDTH / 2, -MINERAL_M / 2, 0);
-    const mineral = new THREE.MeshStandardMaterial({ map: minC, normalMap: minN, roughness: 1, color: "#b9b4a4" });
+    const bottom = -MINERAL_M;
+    const mineralGeo = mergeGrids([mineralFrontGrid(quality, bottom), mineralSideGrid("left", quality, bottom), mineralSideGrid("right", quality, bottom), riverBedGrid(quality)]);
+    shadeMineral(mineralGeo);
+    const minMapC = ownTexture(minC, true, an);
+    const minMapN = ownTexture(minN, false, an);
+    const mineral = new THREE.MeshStandardMaterial({ map: minMapC, normalMap: minMapN, roughness: 1, color: "#6c6f72", vertexColors: true, side: THREE.DoubleSide });
 
-    const riverGeo = new THREE.BoxGeometry(RIVER_WIDTH, RIVER_LEVEL + 3, DEPTH);
-    riverGeo.translate(xOfKm(0) - RIVER_WIDTH / 2, (RIVER_LEVEL - 3) / 2, 0);
-    const water = new THREE.MeshStandardMaterial({ color: "#2b5e78", roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.88 });
+    // Sungai air hitam: air gambut berwarna teh pekat karena asam humat.
+    // Muka depannya mundur sedikit dari muka tanah, supaya relief tanah
+    // mineral selalu berada di depannya dan dasar alur tetap terbaca.
+    const riverFront = Z_FRONT - 0.8;
+    // Ujung kirinya juga mundur sedikit dari tepi diorama supaya tidak
+    // berimpit dengan muka samping tanah mineral.
+    const riverLeft = X_RIVER + 0.12;
+    const riverGeo = new THREE.BoxGeometry(X_LEFT - 0.05 - riverLeft, RIVER_LEVEL - RIVER_BED_M + 0.1, riverFront - Z_BACK);
+    riverGeo.translate((riverLeft + X_LEFT - 0.05) / 2, (RIVER_LEVEL + RIVER_BED_M - 0.1) / 2, (riverFront + Z_BACK) / 2);
+    const water = new THREE.MeshStandardMaterial({ color: "#24160d", roughness: 0.22, metalness: 0, envMapIntensity: 0.35, transparent: true, opacity: 0.93 });
 
-    const floodGeo = new THREE.ExtrudeGeometry(floodShape(), { depth: DEPTH - 0.3, bevelEnabled: false });
-    floodGeo.translate(0, 0, -(DEPTH - 0.3) / 2);
-    const floodMat = new THREE.MeshStandardMaterial({ color: "#5a7f73", roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0 });
+    // Muka depannya sejajar muka depan sungai, di belakang relief tanah.
+    const floodGeo = new THREE.ExtrudeGeometry(floodShape(), { depth: riverFront - Z_BACK - 0.1, bevelEnabled: false });
+    floodGeo.translate(0, 0, Z_BACK + 0.05);
+    // Banjir membawa lumpur sungai, jadi warnanya keruh kecoklatan.
+    const floodMat = new THREE.MeshStandardMaterial({ color: "#6b6448", roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0 });
 
-    return { peatGeo, peatFace, peatTop, mineralGeo, mineral, riverGeo, water, floodGeo, floodMat };
-  }, [peatC, peatN, topC, topN, minC, minN, profile.anisotropy]);
+    const textures = [...own, ...ownN, noise, topMapC, topMapN, minMapC, minMapN];
+    return { peatGeo, peatFace, topGeo, peatTop, mineralGeo, mineral, riverGeo, water, floodGeo, floodMat, textures };
+  }, [fibC, fibN, hemC, hemN, sapC, sapN, topC, topN, minC, minN, profile.anisotropy, quality]);
 
   useEffect(
     () => () => {
       for (const v of Object.values(res)) (v as { dispose?: () => void }).dispose?.();
+      res.textures.forEach((t) => t.dispose());
     },
     [res],
   );
@@ -312,7 +436,8 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
           mine.forEach((t, i) => {
             q.setFromAxisAngle(up, t.yaw);
             const w = widthOf(t);
-            m.compose(new THREE.Vector3(t.x, peatThicknessM(t.km) - 0.15, t.z), q, new THREE.Vector3(w, t.heightM, w));
+            // Pohon berdiri di atas gundukan, seperti di hutan rawa sungguhan.
+            m.compose(new THREE.Vector3(t.x, surfaceY(t.x, t.z) - 0.15, t.z), q, new THREE.Vector3(w, t.heightM, w));
             inst.setMatrixAt(i, m);
           });
           inst.instanceMatrix.needsUpdate = true;
@@ -340,7 +465,7 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
           const inst = new THREE.InstancedMesh(part.geometry, part.material, mine.length);
           mine.forEach((f, i) => {
             q.setFromAxisAngle(up, f.yaw);
-            m.compose(new THREE.Vector3(f.x, peatThicknessM(f.km) - 0.05, f.z), q, new THREE.Vector3(f.scale * 0.6, f.scale, f.scale * 0.6));
+            m.compose(new THREE.Vector3(f.x, surfaceY(f.x, f.z) - 0.05, f.z), q, new THREE.Vector3(f.scale * 0.6, f.scale, f.scale * 0.6));
             inst.setMatrixAt(i, m);
           });
           inst.instanceMatrix.needsUpdate = true;
@@ -350,14 +475,13 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
         }
       });
     }
+    group.add(buildRoots(branchGltf.scene, quality));
     return group;
-  }, [treeGltf, fernGltf, trees, quality]);
+  }, [treeGltf, fernGltf, branchGltf, trees, quality]);
 
-  // Keadaan yang dianimasikan: air banjir, basahnya gambut, satwa.
+  // Keadaan yang dianimasikan: air banjir dan basahnya gambut.
   const anim = useRef({ flood: 0, soak: 0 });
   const floodRef = useRef<THREE.Mesh>(null);
-  const dryColor = useMemo(() => new THREE.Color("#d9c6b0"), []);
-  const wetColor = useMemo(() => new THREE.Color("#7f8fa0"), []);
   const topDry = useMemo(() => new THREE.Color("#7d7a5c"), []);
   const topWet = useMemo(() => new THREE.Color("#4f6670"), []);
 
@@ -372,8 +496,7 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
       floodRef.current.visible = a.flood > 0.01;
     }
     res.floodMat.opacity = 0.82 * Math.min(1, a.flood * 1.6);
-    res.peatFace.color.copy(dryColor).lerp(wetColor, a.soak);
-    res.peatFace.roughness = 0.95 - 0.5 * a.soak;
+    res.peatFace.soak.value = a.soak;
     res.peatTop.color.copy(topDry).lerp(topWet, a.soak);
     res.peatTop.roughness = 0.9 - 0.55 * a.soak;
     // Selama air atau basahnya masih bergerak, minta bingkai berikutnya.
@@ -385,8 +508,9 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
 
   return (
     <group>
-      {/* Gambut: muka depan bertekstur gambut, permukaan atas serasah. */}
-      <mesh geometry={res.peatGeo} material={[res.peatFace, res.peatTop]} receiveShadow castShadow />
+      {/* Gambut: muka potong berlapis, lantai hutan bergundukan. */}
+      <mesh geometry={res.peatGeo} material={res.peatFace} receiveShadow castShadow />
+      <mesh geometry={res.topGeo} material={res.peatTop} receiveShadow />
       <mesh geometry={res.mineralGeo} material={res.mineral} receiveShadow />
       <mesh geometry={res.riverGeo} material={res.water} />
       <mesh ref={floodRef} geometry={res.floodGeo} material={res.floodMat} visible={false} />
@@ -395,7 +519,7 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
       {rain && <Rain quality={quality} />}
 
       {/* Satwa di tajuk jenis hutan yang sudah dibuka (babak 03). */}
-      {openedZones && apes.filter((a) => openedZones.has(a.zone)).map((a, i) => <ApeSprite key={`${a.zone}-${i}`} spot={a} />)}
+      {openedZones && apes.map((a, i) => openedZones.has(a.zone) && <ApeMarker key={i} spot={a} pose={a.kind === "owa" ? "hang1" : i % 4 === 0 ? "sit" : "hang2"} />)}
 
       {/* Pejalan dan pengukur tebal gambut (babak 01). */}
       {walkerKm !== null && <Walker km={walkerKm} />}
@@ -407,7 +531,7 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
         const x0 = xOfKm(z.fromKm);
         const x1 = xOfKm(z.toKm);
         return (
-          <mesh key={z.id} position={[(x0 + x1) / 2, -MINERAL_M - 0.6, DEPTH / 2]}>
+          <mesh key={z.id} position={[(x0 + x1) / 2, -MINERAL_M - 0.6, Z_FRONT + 0.8]}>
             <boxGeometry args={[x1 - x0 - 0.6, 0.5, 0.5]} />
             <meshBasicMaterial color="#f0a35e" toneMapped={false} />
           </mesh>
@@ -419,26 +543,30 @@ function Dome({ walkerKm, flood, rain, openedZones, activeZone, onZone, quality 
   );
 }
 
+/** Pengukur selalu di depan relief muka gambut, supaya tidak tertelan tonjolannya. */
+const GAUGE_Z = Z_FRONT + 1.1;
+
 /** Pejalan setinggi 1,7 m di tepi depan, dengan pengukur tebal gambut. */
 function Walker({ km }: { km: number }) {
   const x = xOfKm(km);
-  const peat = peatThicknessM(km);
-  const z = DEPTH / 2;
+  const top = surfaceY(x, Z_FRONT);
+  const base = peatBaseY(x);
+  const zStand = Z_FRONT - 0.6;
   return (
     <group>
-      {/* Pengukur: batang jingga di muka depan, dari permukaan sampai mineral. */}
-      <mesh position={[x, peat / 2, z + 0.06]}>
-        <boxGeometry args={[0.7, peat, 0.1]} />
+      {/* Pengukur: batang jingga di depan muka potong, dari permukaan sampai mineral. */}
+      <mesh position={[x, (top + base) / 2, GAUGE_Z]}>
+        <boxGeometry args={[0.7, top - base, 0.1]} />
         <meshBasicMaterial color="#f0a35e" toneMapped={false} />
       </mesh>
-      {Array.from({ length: Math.floor(peat) }, (_, i) => (
-        <mesh key={i} position={[x, peat - (i + 1), z + 0.13]}>
+      {Array.from({ length: Math.floor(top - base) }, (_, i) => (
+        <mesh key={i} position={[x, top - (i + 1), GAUGE_Z + 0.07]}>
           <boxGeometry args={[1.1, 0.12, 0.05]} />
           <meshBasicMaterial color="#2a1d14" />
         </mesh>
       ))}
       {/* Orang dewasa 1,7 m, pada skala tegak yang sama dengan pohon. */}
-      <group position={[x, peat, z - 0.6]}>
+      <group position={[x, surfaceY(x, zStand), zStand]}>
         <mesh position={[0, 0.65, 0]} castShadow>
           <capsuleGeometry args={[0.22, 0.85, 4, 8]} />
           <meshStandardMaterial color="#f0a35e" emissive="#f0a35e" emissiveIntensity={0.35} />
@@ -516,98 +644,44 @@ function Rain({ quality }: { quality: Quality }) {
   return <lineSegments geometry={res.geo} material={res.mat} frustumCulled={false} />;
 }
 
-/** Gambar siluet satwa pada kanvas, dipakai sebagai tekstur sprite. */
-function apeTexture(kind: ApeSpot["kind"]): THREE.CanvasTexture {
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
-  const g = c.getContext("2d")!;
-  g.lineCap = "round";
-  if (kind === "orangutan") {
-    // Orangutan bergelantung: lengan panjang ke dahan, tubuh besar kemerahan.
-    g.strokeStyle = "#b4562a";
-    g.lineWidth = 11;
-    g.beginPath();
-    g.moveTo(34, 6);
-    g.quadraticCurveTo(30, 40, 50, 58);
-    g.moveTo(94, 6);
-    g.quadraticCurveTo(98, 40, 78, 58);
-    g.stroke();
-    g.fillStyle = "#c0602e";
-    g.beginPath();
-    g.ellipse(64, 76, 25, 30, 0, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = "#a24c25";
-    g.beginPath();
-    g.arc(64, 42, 15, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = "#b4562a";
-    g.lineWidth = 9;
-    g.beginPath();
-    g.moveTo(52, 100);
-    g.lineTo(48, 122);
-    g.moveTo(76, 100);
-    g.lineTo(80, 122);
-    g.stroke();
-  } else {
-    // Owa berayun: tubuh ramping, lengan sangat panjang terentang.
-    g.strokeStyle = "#cbbda8";
-    g.lineWidth = 7;
-    g.beginPath();
-    g.moveTo(8, 10);
-    g.quadraticCurveTo(36, 30, 64, 44);
-    g.quadraticCurveTo(92, 30, 120, 8);
-    g.stroke();
-    g.fillStyle = "#d6c8b2";
-    g.beginPath();
-    g.arc(64, 46, 11, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = "#3a332d";
-    g.beginPath();
-    g.arc(64, 47, 6, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = "#cbbda8";
-    g.beginPath();
-    g.ellipse(64, 76, 12, 20, 0, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = "#cbbda8";
-    g.lineWidth = 6;
-    g.beginPath();
-    g.moveTo(58, 92);
-    g.lineTo(52, 116);
-    g.moveTo(70, 92);
-    g.lineTo(76, 116);
-    g.stroke();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-const APE_TEXTURES: Partial<Record<ApeSpot["kind"], THREE.CanvasTexture>> = {};
+/** Arah dari adegan ke kamera; sosok satwa digeser di sepanjang arah ini. */
+const TOWARD_CAMERA = new THREE.Vector3(
+  Math.sin(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
+  Math.sin(CAMERA_ELEVATION),
+  Math.cos(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
+);
 
 /**
- * Siluet satwa yang muncul membesar. Dibesarkan dari ukuran aslinya (±1,2 m)
- * supaya terbaca di samping pohon 45 m; keterangan di bawah gambar menyatakan
- * bahwa siluet adalah lambang tingkat relatif, bukan hitungan.
+ * Pembesaran sosok satwa. Ukuran aslinya ±1,2 m; diperbesar supaya terbaca
+ * di samping pohon 45 m, dan keterangan di atas gambar menyatakannya.
  */
-function ApeSprite({ spot }: { spot: ApeSpot }) {
-  const ref = useRef<THREE.Sprite>(null);
+const APE_SCALE = 3.2;
+
+/**
+ * Sosok satwa yang muncul membesar di tajuk.
+ *
+ * Kamera ortografik: benda yang digeser di sepanjang garis pandang tetap
+ * jatuh di titik layar yang sama. Sosoknya karena itu dimajukan ke arah
+ * kamera, sehingga tetap terlihat di tajuknya tanpa tertelan ribuan helai
+ * daun di depannya, tetapi tetap diterangi matahari seperti benda lain.
+ */
+function ApeMarker({ spot, pose }: { spot: ApeSpot; pose: ApePose }) {
+  const ref = useRef<THREE.Group>(null);
   const grow = useRef(0);
-  const material = useMemo(() => {
-    APE_TEXTURES[spot.kind] ??= apeTexture(spot.kind);
-    // Tidak diuji kedalamannya: siluet adalah lambang, dan tanpa ini ia
-    // tenggelam di antara ribuan helai daun pachira.
-    return new THREE.SpriteMaterial({ map: APE_TEXTURES[spot.kind], transparent: true, depthWrite: false, depthTest: false });
-  }, [spot.kind]);
-  useEffect(() => () => material.dispose(), [material]);
+  const figure = useMemo(() => buildApe(spot.kind, pose), [spot.kind, pose]);
+  useEffect(() => () => disposeApe(figure), [figure]);
+  const position = useMemo(() => new THREE.Vector3(spot.x, spot.y, spot.z).addScaledVector(TOWARD_CAMERA, 16), [spot]);
   useFrame(({ invalidate }, delta) => {
     if (grow.current >= 1 || !ref.current) return;
     grow.current = Math.min(1, grow.current + delta * 2.2);
-    const s = 6.5 * (1 - Math.pow(1 - grow.current, 3));
-    ref.current.scale.set(s, s, 1);
+    ref.current.scale.setScalar(APE_SCALE * (1 - Math.pow(1 - grow.current, 3)));
     invalidate();
   });
-  return <sprite ref={ref} position={[spot.x, spot.y, DEPTH / 2 + 1]} material={material} scale={[0.01, 0.01, 1]} renderOrder={10} />;
+  return (
+    <group ref={ref} position={position} rotation={[0, CAMERA_AZIMUTH, 0]} scale={0.01}>
+      <primitive object={figure} />
+    </group>
+  );
 }
 
 /**

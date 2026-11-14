@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
-import { FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
+import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import { zoneAt } from "./scene/dome";
 
@@ -109,6 +109,14 @@ export default function HutanModule() {
           <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
             {act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}
           </p>
+          {/* Foto satwa di ruang kosong di atas diorama (laptop). Di layar
+              sempit fotonya pindah ke panel kendali. */}
+          {act === 2 && opened.size > 0 && (
+            <figure className="sekitarmu-rise absolute left-0 top-8 hidden w-[min(460px,50%)] rounded-2xl border border-white/10 bg-black/70 p-2.5 md:block">
+              <figcaption className="px-0.5 pb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">{HUTAN_TEXT.residents}</figcaption>
+              <ApePhotos size="large" />
+            </figure>
+          )}
         </>
       }
       controls={
@@ -212,17 +220,25 @@ export default function HutanModule() {
             (zone ? (
               <div>
                 <p className="font-playfair text-xl italic leading-none text-white">{zone.name}</p>
+                {/* Di ponsel label dan nilainya sebaris, supaya panel tidak
+                    menindih tombol jenis hutan di bawah penampang. */}
                 <dl className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
+                  <div className="flex items-baseline gap-1.5 sm:block">
                     <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.richness}</dt>
                     <dd className="text-sm capitalize text-[#9fd3a0]">{zone.richness}</dd>
                   </div>
-                  <div>
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.apes}</dt>
+                  <div className="flex items-baseline gap-1.5 sm:block">
+                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      <span className="sm:hidden">{HUTAN_TEXT.apesShort}</span>
+                      <span className="hidden sm:inline">{HUTAN_TEXT.apes}</span>
+                    </dt>
                     <dd className="text-sm capitalize text-[#f0a35e]">{zone.apes}</dd>
                   </div>
                 </dl>
                 <p className="mt-2 text-[12px] leading-snug text-white/75">{zone.note}</p>
+                <div className="mt-2 md:hidden">
+                  <ApePhotos size="small" />
+                </div>
                 {/* Di ponsel daftar jenis disembunyikan supaya panel tidak
                     menutupi penampang; versi laptop memuatnya lengkap. */}
                 <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block">{HUTAN_TEXT.totals}</p>
@@ -241,5 +257,40 @@ export default function HutanModule() {
         </>
       }
     />
+  );
+}
+
+/**
+ * Foto asli kedua satwa, berdampingan, dengan nama dan pemotretnya. Rupa
+ * aslinya hanya bisa ditunjukkan di sini: di diorama, satwa setinggi ±1,2 m
+ * di samping pohon 45 m tinggal sebesar satu dua piksel.
+ */
+function ApePhotos({ size }: { size: "large" | "small" }) {
+  const large = size === "large";
+  return (
+    <ul className="grid grid-cols-2 gap-2">
+      {APE_PHOTOS.map((p) => (
+        // Di layar sempit foto mengecil menjadi gambar kecil di samping
+        // namanya, supaya panel tidak menutupi penampang.
+        <li key={p.src} className={`min-w-0 ${large ? "" : "flex items-center gap-2"}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- foto kecil berukuran tetap, sudah dikompres ke WebP */}
+          <img
+            src={p.src}
+            alt={`${p.name} (${p.latin})`}
+            width={720}
+            height={540}
+            loading="lazy"
+            className={`rounded-lg object-cover ${large ? "aspect-[4/3] w-full" : "h-9 w-12 shrink-0"}`}
+          />
+          <div className="min-w-0">
+            <p className={`truncate font-medium text-white ${large ? "mt-1 text-[12px]" : "text-[11px] leading-tight"}`}>{p.name}</p>
+            {large && <p className="truncate text-[11px] italic text-white/55">{p.latin}</p>}
+            <a href={p.href} target="_blank" rel="noopener noreferrer" className={`block text-[9px] leading-tight text-white/40 hover:text-white/70 ${large ? "" : "truncate"}`}>
+              {p.credit}
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

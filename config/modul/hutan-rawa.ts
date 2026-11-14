@@ -150,6 +150,27 @@ export const SEBANGAU_SPECIES = [
   { label: "jenis amfibi", value: 11 },
 ] as const;
 
+/**
+ * Foto satwa di babak 03. Sumber dan lisensinya dicatat di
+ * public/images/hutan-rawa/SUMBER.md; keterangan pemotret wajib tampil.
+ */
+export const APE_PHOTOS = [
+  {
+    src: "/images/hutan-rawa/orangutan.webp",
+    name: "Orangutan Kalimantan",
+    latin: "Pongo pygmaeus wurmbii",
+    credit: "Foto: Mankdhay rahman, TN Sebangau · CC BY-SA 4.0",
+    href: "https://commons.wikimedia.org/wiki/File:Pongo_Pygmaeus_wrumbii.jpg",
+  },
+  {
+    src: "/images/hutan-rawa/owa.webp",
+    name: "Owa janggut-putih",
+    latin: "Hylobates albibarbis",
+    credit: "Foto: Svetlana Tsarakhova · CC0",
+    href: "https://commons.wikimedia.org/wiki/File:Hylobates_albibarbis_638057505.jpg",
+  },
+] as const;
+
 export const HUTAN_TEXT = {
   stepLabel: "Langkah",
   fromRiver: (km: number) => `${km.toFixed(1).replace(".", ",")} km dari tepi hutan`,
@@ -161,6 +182,7 @@ export const HUTAN_TEXT = {
   rainNote: "Hujan turun di seluruh kubah. Bagi hutan di tengah, inilah satu-satunya sumber air dan hara.",
   richness: "Kekayaan jenis",
   apes: "Orangutan dan owa",
+  apesShort: "Kera",
   totals: "Tercatat di Sebangau sejak 1993",
   scaleNote: "Tinggi pohon, tebal gambut, dan orang dalam meter sungguhan. Jarak mendatar dimampatkan: 14 km dari sungai ke puncak kubah.",
   you: "kamu",
@@ -169,6 +191,7 @@ export const HUTAN_TEXT = {
   floodCarry: "air sungai: lumpur dan hara",
   floodLimit: "batas banjir sungai",
   rainSoak: "hujan meresap ke seluruh kubah",
-  apesNote: "Jumlah siluet menunjukkan tingkat relatif, bukan hitungan.",
+  apesNote: "Jumlah sosok satwa menunjukkan tingkat relatif, bukan hitungan. Sosoknya diperbesar dari ukuran asli ±1,2 m.",
+  residents: "Penghuni tajuknya",
   source: "Husson dkk., 2018; Page dkk., 1999",
 };
