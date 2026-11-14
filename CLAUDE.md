@@ -10,6 +10,9 @@ rancangan. Jangan mengasumsikan apa pun dari isi proyek sebelumnya.
   mutu kode maupun pengujian.
 - Proyek memakai git sejak 30 September 2026. Sebelum mengubah banyak berkas,
   pastikan pohon kerja bersih agar perubahan mudah ditinjau dan dibatalkan.
+- Dua cabang: kerjakan, commit, dan push ke `dev` (Vercel membuat deploy
+  pratinjau). `main` adalah produksi dan otomatis ter-deploy ke Vercel, jadi
+  `dev` digabung ke `main` hanya setelah pengguna menyatakan final.
 - Dokumen skripsi, berkas administrasi, dan arsip pihak ketiga di dalam docs/
   tidak diikutsertakan ke repositori. Jangan mendaftarkannya secara paksa.
 
