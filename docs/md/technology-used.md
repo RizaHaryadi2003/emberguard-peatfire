@@ -1,420 +1,425 @@
 # Teknologi yang Digunakan
 
-Dokumen ini merangkum seluruh teknologi yang dipakai proyek **Emberguard-peatfire**,
-beserta alasan tiap pilihan. Disusun dari pemeriksaan langsung berkas proyek,
-bukan dari rencana atau perkiraan.
+Dokumen ini merangkum teknologi yang dipakai proyek **Emberguard-peatfire**
+beserta alasan tiap pilihan. Isinya disusun dari pemeriksaan langsung berkas
+proyek, bukan dari rencana.
 
-- Tanggal pemeriksaan: **28 Oktober 2026**
-- Diverifikasi dengan: `npm test` (157 uji lolos), `npm run lint`, dan
-  `npx tsc --noEmit` (keduanya tanpa keluhan)
-
----
-
-## 1. Ringkasan Jawaban
-
-| Pertanyaan                       | Jawaban                                                                                                                                       |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bahasa pemrograman               | **TypeScript** (mode `strict`) untuk seluruh kode sumber; **GLSL** untuk peneduh (_shader_); **JavaScript ESM** hanya pada berkas konfigurasi |
-| Kerangka kerja                   | **Next.js 16.3.5** dengan App Router, di atas **React 19.2.8**                                                                                |
-| Bahasa sisi depan (_frontend_)   | TypeScript + TSX, ditata dengan Tailwind CSS v4, digrafiskan dengan Three.js melalui React Three Fiber, dianimasikan dengan GSAP              |
-| Bahasa sisi belakang (_backend_) | **Tidak ada.** Proyek tidak memiliki basis data, API sisi server, maupun autentikasi. Seluruh perhitungan berjalan di peramban pengguna       |
-
-Arsitekturnya adalah **aplikasi sisi klien yang dibangkitkan sebagai situs
-statis**. Alasan lengkapnya ada pada bagian 6.
+- Tanggal pemeriksaan: **19 November 2026** (sebelumnya 28 Oktober 2026)
+- Diverifikasi dengan: `npm test` (21 berkas, **244 uji lolos**),
+  `npx tsc --noEmit` (tanpa keluhan), `npm run lint` (0 galat), dan
+  `npm run build` (berhasil, 14 rute)
 
 ---
 
-## 2. Daftar Teknologi
+## Daftar Isi
+
+1. [Ringkasan](#1-ringkasan)
+2. [Tumpukan teknologi](#2-tumpukan-teknologi)
+3. [Struktur proyek](#3-struktur-proyek)
+4. [Next.js pada proyek ini](#4-nextjs-pada-proyek-ini)
+5. [Grafis 3D](#5-grafis-3d)
+6. [Animasi antarmuka dan suara](#6-animasi-antarmuka-dan-suara)
+7. [Performa](#7-performa)
+8. [Pengujian](#8-pengujian)
+9. [Penyebaran (deploy)](#9-penyebaran-deploy)
+10. [Mengapa tanpa basis data](#10-mengapa-tanpa-basis-data)
+11. [Aksesibilitas dan ponsel](#11-aksesibilitas-dan-ponsel)
+12. [Aset dan lisensi](#12-aset-dan-lisensi)
+13. [Perkakas bantu pengembangan](#13-perkakas-bantu-pengembangan)
+
+---
+
+## 1. Ringkasan
+
+| Pertanyaan | Jawaban |
+|---|---|
+| Bahasa pemrograman | **TypeScript** (mode `strict`) untuk seluruh kode; **GLSL** untuk peneduh (*shader*); JavaScript ESM hanya untuk berkas konfigurasi |
+| Kerangka kerja | **Next.js 16.4.5** (App Router) di atas **React 19.2.8** |
+| Sisi depan (*frontend*) | TSX + Tailwind CSS v4; grafis 3D dengan Three.js lewat React Three Fiber; animasi antarmuka dengan GSAP |
+| Sisi belakang (*backend*) | **Tidak ada basis data, akun, atau API data.** Satu-satunya kode sisi server adalah pembuat gambar kartu hasil (bagian 4.4) |
+| Tempat berjalan | Vercel: cabang `dev` = pratinjau, `main` = produksi |
+
+Seluruh simulasi ilmiah berjalan **di peramban pengguna**. Alasannya ada di
+bagian 10.
+
+---
+
+## 2. Tumpukan teknologi
+
+Versi di bawah adalah versi yang benar-benar terpasang (`package-lock.json`).
 
 ### 2.1 Bahasa
 
-| Bahasa           | Versi | Cakupan                                                        | Catatan                                                      |
-| ---------------- | ----- | -------------------------------------------------------------- | ------------------------------------------------------------ |
-| TypeScript       | ^5    | Seluruh `.ts` dan `.tsx`                                       | `strict: true`, `target: ES2017`, alias impor `@/*`          |
-| GLSL             | —     | `components/modul/bara/scene/faceMaterial.ts`                  | Peneduh titik & fragmen, ditulis tangan sebagai templat teks |
-| JavaScript (ESM) | —     | `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.mts` | Hanya konfigurasi                                            |
-| CSS              | —     | `app/globals.css`                                              | Beserta arahan Tailwind v4                                   |
+| Bahasa | Cakupan | Catatan |
+|---|---|---|
+| TypeScript 5.9 | Seluruh `.ts` dan `.tsx` | `strict: true`, alias impor `@/*` |
+| GLSL | Peneduh di `components/modul/*/scene/` (lihat 5.2) | Ditulis tangan sebagai templat teks |
+| CSS | `app/globals.css` | Beserta arahan Tailwind v4 |
+| JavaScript ESM | `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.mts` | Hanya konfigurasi |
 
-### 2.2 Pustaka Terpasang
+### 2.2 Pustaka aplikasi
 
-| Kelompok   | Paket                                  | Versi            | Peran nyata                                                     |
-| ---------- | -------------------------------------- | ---------------- | --------------------------------------------------------------- |
-| Kerangka   | `next`                                 | 16.3.5           | Perutean, pembangkitan halaman, optimasi aset, pemecahan berkas |
-| Kerangka   | `react` / `react-dom`                  | 19.2.8           | Komponen, keadaan, daur hidup                                   |
-| Tata letak | `tailwindcss` + `@tailwindcss/postcss` | ^4               | Penataan berbasis kelas utilitas                                |
-| Grafis     | `three`                                | ^0.186.0         | Mesin WebGL: jala, bahan, cahaya, bayangan                      |
-| Grafis     | `@react-three/fiber`                   | ^9.7.0           | Menulis adegan Three.js sebagai JSX                             |
-| Grafis     | `@react-three/drei`                    | ^10.7.8          | Pembantu siap pakai (langit fisik, pemuat GLTF)                 |
-| Animasi    | `gsap` + `@gsap/react`                 | ^3.15.0 / ^2.1.2 | Garis waktu, ScrollTrigger, hook `useGSAP`                      |
-| Ikon       | `lucide-react`                         | ^1.47.0          | Ikon SVG                                                        |
-| Audio      | `howler`                               | ^2.2.4           | **Terpasang, belum dipakai.** Lihat bagian 5.3                  |
+| Kelompok | Paket | Versi | Peran |
+|---|---|---|---|
+| Kerangka | `next` | 16.4.5 | Perutean, pembangkitan halaman, optimasi font dan aset |
+| Kerangka | `react`, `react-dom` | 19.2.8 | Komponen, keadaan, daur hidup |
+| Tata letak | `tailwindcss` + `@tailwindcss/postcss` | 4.3.3 | Penataan dengan kelas utilitas |
+| Grafis | `three` | 0.186.0 | Mesin WebGL: jala, bahan, cahaya, bayangan |
+| Grafis | `@react-three/fiber` | 9.7.0 | Menulis adegan Three.js sebagai JSX |
+| Grafis | `@react-three/drei` | 10.7.8 | Pembantu siap pakai (langit, pemuat GLTF) |
+| Animasi | `gsap` + `@gsap/react` | 3.15.0 / 2.1.2 | Garis waktu, ScrollTrigger, hook `useGSAP` |
+| Ikon | `lucide-react` | 1.47.0 | Ikon SVG |
+| Audio | `howler` | 2.2.4 | **Terpasang, belum dipakai** (lihat 6.2) |
 
-### 2.3 Perkakas Pengembangan
+### 2.3 Perkakas pengembangan
 
-| Perkakas  | Versi          | Keterangan                                                                    |
-| --------- | -------------- | ----------------------------------------------------------------------------- |
-| Vitest    | ^5.0.0         | Lingkungan `node`, menguji `lib/**` dan berkas perhitungan di `components/**` |
-| ESLint    | ^9             | Konfigurasi rata (_flat config_) + `eslint-config-next`                       |
-| Turbopack | bawaan Next 16 | Penyusun berkas, dipakai otomatis oleh `next build`                           |
-| npm       | —              | `package-lock.json`                                                           |
-| Git       | 2.50.1         | Dipasang 30 September 2026; dokumen pribadi dikecualikan lewat `.gitignore`   |
-
-### 2.4 MCP Server & Skill (perkakas bantu, bukan bagian aplikasi)
-
-| Server       | Sumber      | Jenis | Fungsi                                                               |
-| ------------ | ----------- | ----- | -------------------------------------------------------------------- |
-| `context7`   | `.mcp.json` | HTTP  | Mengambil dokumentasi resmi pustaka versi terkini                    |
-| `playwright` | `.mcp.json` | stdio | Mengendalikan peramban: navigasi, klik, tangkapan layar, baca konsol |
-
-Keduanya diaktifkan lewat `.claude/settings.local.json`. Skill GSAP, Three.js,
-dan UI/UX tersimpan di `.claude/skills/`. Baik `.claude/` maupun arsip unduhan
-di `docs/Skills and MCP/` tidak disertakan ke repositori karena bukan karya
-sendiri.
+| Perkakas | Versi | Keterangan |
+|---|---|---|
+| Vitest | 5.1.0 | Uji otomatis model ilmiah (bagian 8) |
+| ESLint | 9.39 | Konfigurasi rata + `eslint-config-next` |
+| Turbopack | bawaan Next 16 | Penyusun berkas untuk `next dev` dan `next build` |
+| npm | — | Pengelola paket (`package-lock.json`) |
+| Git | 2.50 | Sejak 30 September 2026; dua cabang `dev` dan `main` |
+| Vercel CLI | — | Menautkan proyek (`.vercel/`) dan variabel lingkungan |
 
 ---
 
-## 3. Cara Kerja Next.js pada Proyek Ini
+## 3. Struktur proyek
 
-### 3.1 Perutean dari struktur folder
+### 3.1 Letak berkas
 
-App Router tidak memakai berkas konfigurasi rute. **Struktur folder adalah
-struktur URL**, dan hanya berkas bernama `page.tsx` yang menjadi halaman.
+| Folder | Isi |
+|---|---|
+| `app/` | Rute halaman (`page.tsx`), tata letak, kartu hasil (`kartu/route.tsx`) |
+| `components/layout/` | Navbar dan halaman penanda |
+| `components/hero/` | Beranda |
+| `components/modul/shared/` | Kerangka bersama semua modul: hook, babak, penutup, dialog bagikan, ajakan buka di laptop |
+| `components/modul/shared/scene/` | Fondasi adegan 3D bersama: langit dan cahaya, tanah, tumbuhan, profil mutu, penjaga performa |
+| `components/modul/<nama>/` | Komponen dan adegan per modul |
+| `config/` | Seluruh teks Bahasa Indonesia; `config/modul/<nama>.ts` per modul, `config/modules-content.ts` daftar modul |
+| `lib/model/` | Model ilmiah murni |
+| `lib/kartu/` | Penyandi nilai kartu hasil dan fon kartu |
+| `lib/` (akar) | Pembantu umum: suara, batas bingkai, kursor, acak ber-*seed* |
+| `hooks/` | Hook React bersama (`useSmoothCursor`) |
+| `data/` | Data peta Modul Gambut di Sekitarmu + sumbernya |
+| `public/` | Model 3D, tekstur, foto, citra satelit |
+| `assets/fonts/` | Fon untuk gambar kartu hasil |
+| `docs/md/` | Dokumen acuan, storyboard, dan dokumen ini |
+
+### 3.2 Empat lapis dengan arah ketergantungan satu arah
+
+Lapis atas boleh memanggil lapis bawah, tidak sebaliknya.
+
+| Lapis | Letak | Isi | Bergantung pada |
+|---|---|---|---|
+| 4. Konten | `config/` | Teks dan angka yang tampil | — |
+| 3. Antarmuka | `components/**/*.tsx` | React, Tailwind, GSAP | 4, 2, 1 |
+| 2. Visual 3D | `components/**/scene/` | React Three Fiber, GLSL | 1 |
+| 1. Logika murni | `lib/` | Model ilmiah, tanpa React, Three.js, atau DOM | — |
+
+Pemisahan lapis 1 adalah keputusan paling menentukan: isinya bisa diuji
+otomatis di Node tanpa peramban, dan bisa dikutip sebagai algoritma di naskah.
+
+### 3.3 Model ilmiah (`lib/model/`)
+
+| Berkas | Baris | Isi | Dipakai modul |
+|---|---|---|---|
+| `smolder.ts` | 857 | Sel-otomata perambatan bara gambut | Bara di Bawah Tanah |
+| `drainage.ts` | 546 | Kerucut penurunan muka air, lesak, emisi | Kanal & Pengeringan |
+| `carbon.ts` | 484 | Cadangan karbon, CO₂ lepas, umur menurut kedalaman, pemulihan | Gudang Karbon |
+| `peat.ts` | 243 | Profil lapisan, status muka air, indeks bahaya | Anatomi Gambut |
+| `atmosphere.ts` | 92 | Peralihan langit cerah ke berasap | Adegan bersama |
+
+Model besar memakai pola yang sama: langkah waktu tetap (`STEP_*`) agar hasil
+tidak bergantung kecepatan perangkat, satu kelas `*Sim` penyimpan keadaan, dan
+satu tipe `*Stats` yang dibaca React. Setiap tetapan menyebut sumbernya di
+komentar; sumbernya dirinci di `docs/md/acuan-modul-<nama>.md`.
+
+---
+
+## 4. Next.js pada proyek ini
+
+### 4.1 Rute dari struktur folder
+
+Struktur folder adalah struktur URL; hanya `page.tsx` yang menjadi halaman.
 
 ```
-app/page.tsx                 →  /
-app/gambut/page.tsx          →  /gambut
-app/gambut/anatomi/page.tsx  →  /gambut/anatomi
-app/gambut/bara/page.tsx     →  /gambut/bara
-app/simulasi/page.tsx        →  /simulasi
-app/dampak/page.tsx          →  /dampak
-app/pencegahan/page.tsx      →  /pencegahan
+app/page.tsx                    →  /
+app/modul/page.tsx              →  /modul             daftar 13 modul
+app/modul/sekitarmu/page.tsx    →  /modul/sekitarmu
+app/modul/anatomi/page.tsx      →  /modul/anatomi
+app/modul/hutan-rawa/page.tsx   →  /modul/hutan-rawa
+app/modul/kanal/page.tsx        →  /modul/kanal
+app/modul/bara/page.tsx         →  /modul/bara
+app/modul/karbon/page.tsx       →  /modul/karbon
+app/simulasi/page.tsx           →  /simulasi          penanda
+app/kuis/page.tsx               →  /kuis              penanda
 ```
 
-`app/layout.tsx` membungkus semuanya: menetapkan `<html lang="id">`, memuat
-font, dan menempatkan `<Navbar />` yang tampil di setiap halaman.
+`app/layout.tsx` membungkus semuanya: `<html lang="id">`, font, dan
+`<Navbar />`.
 
-### 3.2 Komponen Server dan Komponen Klien
+### 4.2 Komponen server dan komponen klien
 
-Secara bawaan setiap komponen adalah **Komponen Server**: dirender menjadi HTML
-saat pembangunan, dan kode JavaScript-nya tidak pernah dikirim ke peramban.
-Komponen yang memerlukan keadaan, penanganan peristiwa, atau antarmuka peramban
-harus ditandai `"use client"`.
-
-Proyek ini menerapkannya dalam tiga lapis yang konsisten:
+Bawaannya setiap komponen adalah **komponen server** (dirender menjadi HTML,
+JavaScript-nya tidak dikirim). Komponen yang butuh keadaan atau antarmuka
+peramban ditandai `"use client"`. Polanya tiga lapis:
 
 ```
-app/gambut/bara/page.tsx              Komponen Server
-  • hanya mengekspor metadata dan merakit komponen
-  • tidak mengirim JavaScript apa pun
-        │
+app/modul/bara/page.tsx                  komponen server: metadata + merakit
         ▼
-components/modul/bara/BaraModule.tsx   "use client"
-  • useState, useRef, useEffect, GSAP, AudioContext
-        │
-        ▼ dynamic(..., { ssr: false })
-components/modul/bara/scene/BaraScene.tsx
-  • <Canvas> WebGL — tidak dapat dirender di sisi server
+components/modul/bara/BaraModule.tsx     "use client": keadaan, GSAP, suara
+        ▼  dynamic(..., { ssr: false })
+components/modul/bara/scene/BaraScene.tsx   <Canvas> WebGL
 ```
 
-Lapis ketiga wajib dipisah karena WebGL memerlukan objek `window` dan
-`document` yang tidak tersedia di Node.js. Pemisahan itu sekaligus memberi
-manfaat: teks dan tombol tampil seketika, sementara berkas Three.js yang besar
-diunduh di belakang layar.
+Lapis ketiga wajib dipisah karena WebGL butuh `window` dan `document` yang
+tidak ada di server. Manfaat tambahannya: teks dan tombol tampil seketika,
+sementara berkas Three.js yang besar diunduh di belakang.
 
-### 3.3 Metadata
-
-Tiap halaman mengekspor objek `metadata`, dan Next.js mengubahnya menjadi tag
-`<head>` saat pembangunan:
-
-```ts
-export const metadata: Metadata = { title: "Bara di Bawah Tanah — Emberguard" };
-```
-
-### 3.4 Optimasi font
-
-`next/font/google` mengunduh Inter dan Playfair Display **saat pembangunan**,
-menyajikannya dari server sendiri, lalu menyediakannya sebagai variabel CSS.
-Akibatnya tidak ada permintaan ke `fonts.googleapis.com` saat halaman dibuka,
-dan tidak ada pergeseran tata letak ketika font selesai dimuat.
-
-### 3.5 Konfigurasi khusus
-
-```ts
-// next.config.ts
-allowedDevOrigins: ["192.168.66.26", "192.168.1.*", "192.168.0.*"],
-```
-
-Diperlukan untuk pengujian dari ponsel pada jaringan yang sama. Tanpa ini,
-peramban ponsel memuat HTML tetapi berkas JavaScript ditolak, sehingga hidrasi
-gagal dan seluruh tombol tidak merespons.
-
-### 3.6 Hasil pembangunan produksi
+### 4.3 Hasil pembangunan
 
 ```
-Route (app)
-┌ ○ /                  ┌ ○ /gambut/anatomi
-├ ○ /_not-found        ├ ○ /gambut/bara
-├ ○ /dampak            ├ ○ /pencegahan
-├ ○ /gambut            └ ○ /simulasi
+○ /                     ○ /modul/hutan-rawa
+○ /kuis                 ○ /modul/karbon
+○ /modul                ○ /modul/sekitarmu
+○ /simulasi             ○ /_not-found
+ƒ /modul/anatomi        ƒ /modul/anatomi/kartu
+ƒ /modul/bara           ƒ /modul/bara/kartu
+ƒ /modul/kanal          ƒ /modul/kanal/kartu
 
-○  (Static)  prerendered as static content
+○ statis   ƒ dirender saat diminta
 ```
 
-Kedelapan rute berstatus **statis**. Ini bukti bahwa aplikasi memang tidak
-memerlukan server saat dijalankan: seluruh keluaran dapat ditempatkan pada
-layanan hosting statis.
+Halaman Anatomi, Bara, dan Kanal dirender saat diminta karena membaca
+parameter alamat untuk metadata kartu yang dibagikan (4.4). Halaman lainnya
+statis.
+
+### 4.4 Kartu hasil untuk media sosial
+
+Modul Anatomi, Bara, dan Kanal punya rute `kartu/route.tsx` (*Route Handler*)
+yang membuat gambar PNG memakai `ImageResponse` dari `next/og`:
+
+- Nilai hasil pembaca (mis. kedalaman kanal dan tebakannya) dibawa di
+  parameter alamat, lalu dibaca oleh penyandi di `lib/kartu/`.
+- `generateMetadata` di `page.tsx` memasang gambar itu sebagai `og:image`,
+  sehingga tautan yang dibagikan menampilkan kartu pembaca.
+- Fon kartu dibaca dari `assets/fonts/` (Inter dan Playfair Display, lisensi
+  OFL disertakan), tidak diunduh dari internet.
+- Gambar disimpan di tembolok 24 jam (`Cache-Control: max-age=86400`).
+
+### 4.5 Font halaman
+
+`next/font/google` memuat Inter dan Playfair Display, lalu menyajikannya dari
+server sendiri sebagai variabel CSS (`--font-inter`, `--font-playfair`).
+Pengunjung tidak menghubungi Google, dan tata letak tidak bergeser ketika
+font selesai dimuat.
+
+**Catatan (19 November 2026):** berkas font diunduh dari `fonts.gstatic.com`
+**saat `next dev` atau `next build` berjalan**. Bila koneksi putus atau
+lambat, server pengembangan gagal dengan galat `Module not found:
+Can't resolve '@vercel/turbopack-next/internal/font/google/font'` dan semua
+halaman menjadi 500. Penyelesaiannya: hentikan server lalu jalankan ulang
+`npm run dev`. Build di Vercel tidak terdampak.
+
+### 4.6 Konfigurasi khusus (`next.config.ts`)
+
+| Pengaturan | Gunanya |
+|---|---|
+| `allowedDevOrigins: ["192.168.*.*", "172.*.*.*", "10.*.*.*"]` | Pengujian dari ponsel di jaringan yang sama. Tanpa ini ponsel memuat HTML tetapi JavaScript ditolak, sehingga tombol tidak merespons |
+| `redirects()` | Alamat lama tetap hidup: `/gambut/*` → `/modul/*`, `/dampak` → `/modul#dampak`, `/pencegahan` → `/modul#mencegah` (permanen, termasuk tautan kartu yang sudah dibagikan) |
 
 ---
 
-## 4. Arsitektur Aplikasi
-
-Proyek dibagi menjadi empat lapis dengan arah ketergantungan satu arah — lapis
-atas boleh memanggil lapis bawah, tidak sebaliknya.
-
-| Lapis           | Letak                  | Isi                                    | Bergantung pada |
-| --------------- | ---------------------- | -------------------------------------- | --------------- |
-| 4. Konten       | `config/`              | Seluruh teks Bahasa Indonesia          | —               |
-| 3. Antarmuka    | `components/**/*.tsx`  | React, Tailwind, GSAP                  | Lapis 4, 2, 1   |
-| 2. Visual 3D    | `components/**/scene/` | React Three Fiber, GLSL                | Lapis 1         |
-| 1. Logika murni | `lib/`                 | Model ilmiah, tanpa React/Three.js/DOM | —               |
-
-Pemisahan lapis 1 adalah keputusan yang paling menentukan. Karena `lib/` tidak
-mengimpor React maupun Three.js, isinya dapat diuji otomatis di lingkungan Node
-tanpa menjalankan peramban, dan dapat dikutip sebagai algoritma pada naskah.
-
-Isi `lib/`:
-
-| Berkas            | Baris | Isi                                                                           |
-| ----------------- | ----- | ----------------------------------------------------------------------------- |
-| `smolder.ts`      | 622   | Model sel-otomata perambatan bara gambut (Modul 03)                           |
-| `drainage.ts`     | 519   | Hidrologi kanal: kerucut penurunan muka air, subsiden, emisi (Modul 02)       |
-| `carbon.ts`       | 475   | Cadangan karbon, CO₂ yang lepas, umur menurut kedalaman, pemulihan (Modul 04) |
-| `peat.ts`         | 228   | Profil lapisan gambut, status muka air, indeks bahaya (Modul 01)              |
-| `ambientSound.ts` | 168   | Sintesis suara suasana lewat Web Audio API                                    |
-| `atmosphere.ts`   | 92    | Peralihan langit cerah menuju langit berasap                                  |
-| `spotlight.ts`    | 35    | Penghalusan gerak sorot kursor                                                |
-| `random.ts`       | 14    | Pembangkit acak ber-_seed_ (Lehmer)                                           |
-
-Tiga model terbesar memakai pola yang sama: `STEP_*` tetap supaya hasilnya
-tidak bergantung pada kecepatan perangkat, satu kelas `*Sim` yang menyimpan
-keadaan, dan satu tipe `*Stats` yang dibaca komponen React. Pada `drainage.ts`
-dan `carbon.ts`, tetapan kuantitatif yang belum memiliki sumber dikumpulkan
-dalam satu blok bertanda di kepala berkas — diurutkan menurut besar
-pengaruhnya pada kesimpulan — supaya dapat diganti sekaligus dan tidak
-terkutip sebelum waktunya.
-
----
-
-## 5. Catatan Tiap Teknologi Besar
+## 5. Grafis 3D
 
 ### 5.1 Three.js dan React Three Fiber
 
-Three.js adalah mesin render WebGL; React Three Fiber memungkinkan adegannya
-ditulis sebagai JSX, sehingga komposisi adegan mengikuti pola React yang sama
-dengan antarmuka.
+Three.js adalah mesin WebGL; React Three Fiber membuat adegannya ditulis
+sebagai JSX dengan pola yang sama seperti antarmuka. Semua diorama memakai
+fondasi bersama di `components/modul/shared/scene/` (langit dan cahaya,
+tanah, varian tumbuhan, tekstur prosedural), sehingga modul baru tidak
+membangun dari nol.
 
-Tantangan utamanya adalah menggambar 5.376 sel simulasi setiap bingkai.
-Membuat satu jala per sel tidak mungkin dilakukan. Penyelesaiannya: keadaan
-simulasi ditulis ke **satu tekstur data 96 × 56 piksel**, di mana setiap piksel
-mewakili satu sel —
+Animasi di dalam kanvas memakai `useFrame` dengan peredaman berbasis waktu
+(`THREE.MathUtils.damp`), bukan GSAP, agar kecepatan gerak sama pada 30 fps
+maupun 144 fps.
 
-| Saluran | Isi                  |
-| ------- | -------------------- |
-| R       | tingkat abu / rongga |
-| G       | panas bara           |
-| B       | kelembapan           |
-| A       | tingkat hangus       |
+### 5.2 Peneduh buatan sendiri
 
-— lalu tekstur itu dibaca oleh peneduh sendiri di GPU. Hasilnya satu perintah
-gambar untuk seluruh bidang penampang.
+| Berkas | Modul | Gunanya |
+|---|---|---|
+| `bara/scene/faceMaterial.ts` | Bara | Muka potong yang membaca keadaan simulasi |
+| `bara/scene/burnMaterial.ts`, `SurfaceFlame.tsx` | Bara | Permukaan hangus dan nyala |
+| `kanal/scene/transectMaterial.ts` | Kanal | Dinding penampang kanal berlapis |
+| `karbon/scene/archiveMaterial.ts` | Karbon | Bidang potong sebagai arsip umur |
+| `hutan-rawa/scene/domeMaterial.ts` | Hutan Rawa | Lapisan, akar, dan kayu di kubah gambut |
+| `hutan-rawa/scene/waterMaterial.ts` | Hutan Rawa | Riak sungai, banjir berlumpur, endapan |
+| `shared/scene/noiseTexture.ts` | Bersama | Derau untuk tekstur alami |
 
-Peneduh ditulis sendiri, bukan memakai `MeshStandardMaterial`, karena yang
-dibutuhkan bukan sekadar pewarnaan: peneduh titik **menggeser geometri ke
-dalam** sebesar tingkat abu, sehingga rongga bekas terbakar memiliki kedalaman
-fisik dan berbayang dengan benar ketika kamera bergerak.
+Contoh teknik terpenting (Modul Bara): 5.376 sel simulasi tidak mungkin
+digambar satu jala per sel. Keadaannya ditulis ke **satu tekstur data
+96 × 56 piksel** (R = abu/rongga, G = panas bara, B = kelembapan, A = hangus),
+lalu dibaca peneduh di GPU. Seluruh penampang jadi satu perintah gambar, dan
+peneduh titik menggeser geometri ke dalam sebesar tingkat abu sehingga rongga
+bekas terbakar punya kedalaman nyata.
 
-### 5.2 GSAP
+---
 
-Dipakai untuk dua hal berbeda:
+## 6. Animasi antarmuka dan suara
 
-- **ScrollTrigger** pada Modul 01 — menahan bagian di layar selama empat layar
-  gulir, dan memindahkan tahap cerita mengikuti posisi gulir.
-- **`useGSAP`** — hook resmi yang membersihkan animasi secara otomatis ketika
-  komponen dilepas, sehingga tidak ada animasi tertinggal.
+### 6.1 GSAP
 
-Animasi di dalam kanvas 3D **tidak** memakai GSAP, melainkan `useFrame` dari
-React Three Fiber dengan peredaman berbasis waktu (`THREE.MathUtils.damp`),
-supaya kecepatan geraknya sama pada 30 fps maupun 144 fps.
+- **`useGSAP`**: hook resmi yang membersihkan animasi otomatis saat komponen
+  dilepas. Dipakai di daftar modul, Modul Anatomi, dan Modul Bara.
+- **ScrollTrigger**: menahan bagian di layar dan memindahkan tahap mengikuti
+  gulir, di Modul Anatomi dan daftar modul.
 
-### 5.3 Audio — mengapa `howler` belum dipakai
+### 6.2 Suara
 
-`lib/ambientSound.ts` membangun seluruh suasana suara **langsung di peramban**
-memakai Web Audio API, tanpa satu pun berkas suara: derau coklat tersaring
-untuk angin, derau pita-sempit untuk riak air, letupan pendek untuk derak bara,
-dan osilator sinus untuk kicau burung. Kicau burung berhenti saat asap menebal.
+`lib/ambientSound.ts` membuat suara suasana **langsung di peramban** dengan
+Web Audio API, tanpa berkas suara: derau tersaring untuk angin, riak air,
+derak bara, dan kicau burung yang berhenti saat asap menebal. Suara mati
+secara bawaan.
 
-Howler.js adalah pemutar **berkas** suara (`.mp3`, `.ogg`): tugasnya memuat,
-memutar, mengulang, dan mengatur volume rekaman. Karena proyek ini tidak
-memiliki berkas suara apa pun, Howler belum memiliki pekerjaan. Paketnya tetap
-dipertahankan untuk kebutuhan narasi atau efek suara berbasis rekaman pada
-modul berikutnya.
+`howler` adalah pemutar **berkas** suara. Proyek belum punya berkas suara,
+jadi paketnya belum dipakai; dipertahankan untuk narasi atau efek rekaman
+kelak.
 
-### 5.4 Vitest
+---
 
-Konfigurasinya sengaja sempit:
+## 7. Performa
+
+Patokannya **laptop kelas menengah**, bukan laptop kencang. Efek mahal
+(blur, *mask*, lapisan raksasa di atas konten bergerak) dihindari.
+
+| Teknik | Letak | Cara kerja |
+|---|---|---|
+| Dua profil mutu | `shared/scene/dioramaConstants.ts` (`QUALITY_PROFILE`) | `high` vs `low`: resolusi (1,5× / 1×), peta bayangan (1024 / 512), bayangan lunak, *antialias*, anisotropi (8 / 2), langkah simulasi per bingkai (24 / 8), jumlah tumbuhan bawah (10 / 5), kepulan asap (30 / 14) |
+| Penurunan resolusi adaptif | `shared/scene/PerformanceGuard.tsx` | Mengukur laju bingkai tiap 1,5 detik dan menurunkan resolusi bila tersendat |
+| Batas bingkai | `lib/frameBudget.ts` | 60 fps saat pembaca berinteraksi, 30 fps saat diam (4 detik sesudah masukan terakhir); mutu diturunkan bila < 24 fps tiga jendela berturut-turut |
+| Ref untuk data per bingkai | komponen adegan | Posisi kamera, nyala, dan muka air disimpan di `useRef`, bukan `useState`, agar menggeser pengatur tidak merender ulang kanvas puluhan kali per detik |
+| Larik bertipe | `lib/model/` | `Uint8Array`, `Float32Array`, `Int32Array` dialokasikan sekali, agar tidak tersendat karena pengumpul sampah memori |
+| Gambar besar | Modul Sekitarmu | Citra satelit sebagai `<img>` + `transform`, dimuat bertahap |
+| Pengukur `?fps` | `shared/scene/FpsMeter.tsx` | Tambahkan `?fps` di alamat untuk melihat laju bingkai |
+
+Angka performa hanya sah dari `npm run build` + `npm start`; `next dev`
+kira-kira dua kali lebih lambat.
+
+---
+
+## 8. Pengujian
+
+Yang diuji adalah **model ilmiah dan perhitungan murni**, bukan tampilan.
+Komponen React dan adegan 3D diperiksa manual di peramban (laptop 1440 × 900
+dan ponsel 390 × 844), dengan tangkapan layar di `docs/screenshots/`.
 
 ```ts
-test: {
-  environment: "node",
-  include: ["lib/**/*.test.ts", "components/**/*.test.ts"],
-}
+// vitest.config.mts
+test: { environment: "node", include: ["lib/**/*.test.ts", "components/**/*.test.ts"] }
 ```
 
-Yang diuji adalah **model ilmiahnya**, bukan tampilannya. Komponen React dan
-adegan 3D diuji secara manual dan visual, dengan bukti tangkapan layar di
-`docs/screenshots/`.
+Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 
-Cakupannya diperluas ke `components/**` karena sebagian bentuk geometri
-diorama dan penilaian jawaban pembaca masih berada di sana bersama
-komponennya. Yang diuji tetap hanya berkas yang murni perhitungan — tidak
-satu pun uji merender React.
-
-Keadaan terakhir: **11 berkas uji, 157 uji, seluruhnya lolos** (durasi 3,41
-detik).
-
-| Berkas uji                                         | Uji | Cakupan                                                 |
-| -------------------------------------------------- | --- | ------------------------------------------------------- |
-| `lib/model/carbon.test.ts`                         | 32  | Cadangan karbon, CO₂, umur menurut kedalaman, pemulihan |
-| `lib/model/peat.test.ts`                           | 28  | Klasifikasi lapisan, status air, indeks bahaya          |
-| `lib/model/drainage.test.ts`                       | 25  | Panjang pengaruh kanal, subsiden, emisi, pemadatan      |
-| `lib/model/smolder.test.ts`                        | 23  | Penyalaan, perambatan, pemadaman, subsiden              |
-| `components/modul/bara/scene/crossSection.test.ts` | 12  | Pemetaan sel simulasi ke geometri penampang             |
-| `components/modul/kanal/probe.test.ts`             | 9   | Penilaian penanda jarak babak 02 Modul 02               |
-| `components/modul/karbon/depthProbe.test.ts`       | 8   | Penilaian penanda kedalaman babak 01 Modul 04           |
-| `lib/spotlight.test.ts`                            | 7   | Interpolasi dan penghalusan kursor                      |
-| `components/modul/bara/scene/baraState.test.ts`    | 7   | Keadaan adegan Modul 03                                 |
-| `lib/model/atmosphere.test.ts`                     | 4   | Peralihan suasana langit                                |
-| `lib/ambientSound.test.ts`                         | 2   | Laju derak bara dan peluang kicau burung                |
-
----
-
-## 6. Mengapa Tidak Ada Backend
-
-Pemeriksaan berkas menunjukkan tidak ada satu pun dari berikut ini:
-
-- berkas `route.ts` di dalam `app/` (Route Handler)
-- arahan `"use server"` (Server Action)
-- paket basis data atau ORM
-- paket autentikasi
-- pemanggilan `fetch` ke layanan luar
-- berkas variabel lingkungan
-
-Ketiadaan itu disengaja, dengan tiga alasan:
-
-1. **Simulasi harus berjalan pada 60 bingkai per detik.** Model dijalankan
-   puluhan langkah setiap bingkai. Bila tiap langkah harus menunggu jawaban
-   server, jeda jaringan sebesar 50–200 milidetik membuatnya mustahil.
-   Menghitung di peramban menghilangkan jeda itu sepenuhnya.
-2. **Tidak ada data yang perlu disimpan.** Aplikasi tidak memiliki akun, tidak
-   menyimpan kemajuan belajar, dan tidak mengumpulkan masukan pengguna.
-3. **Dapat ditempatkan sebagai situs statis.** Hasil pembangunan tidak
-   memerlukan server yang berjalan terus-menerus, sehingga penguji dapat
-   membukanya kapan saja tanpa biaya dan tanpa pemeliharaan.
-
-Meskipun demikian, Next.js tetap dipilih karena menyediakan perutean, optimasi
-font dan aset, pemecahan berkas otomatis, serta pembangkitan HTML statis. Bila
-kelak dibutuhkan penyimpanan data — misalnya hasil kuis atau statistik
-penggunaan — kerangka ini sudah siap merangkap sisi belakang melalui Route
-Handler tanpa perlu berganti teknologi.
+| Berkas uji | Uji | Cakupan |
+|---|---|---|
+| `lib/model/smolder.test.ts` | 44 | Penyalaan, perambatan, pemadaman, lesak |
+| `lib/model/carbon.test.ts` | 32 | Cadangan karbon, CO₂, umur, pemulihan |
+| `lib/model/drainage.test.ts` | 29 | Pengaruh kanal, lesak, emisi |
+| `lib/model/peat.test.ts` | 28 | Klasifikasi lapisan, status air, bahaya |
+| `lib/frameBudget.test.ts` | 13 | Batas bingkai dan penurunan mutu |
+| `components/modul/bara/scene/crossSection.test.ts` | 12 | Sel simulasi ke geometri penampang |
+| `lib/kartu/anatomiCard.test.ts` | 9 | Penyandi kartu Anatomi |
+| `lib/kartu/kanalCard.test.ts` | 9 | Penyandi kartu Kanal |
+| `components/modul/bara/scene/layerHint.test.ts` | 8 | Petunjuk lapisan Bara |
+| `lib/spotlight.test.ts` | 7 | Penghalusan kursor beranda |
+| `lib/kartu/baraCard.test.ts` | 7 | Penyandi kartu Bara |
+| `components/modul/bara/scene/layerContents.test.ts` | 7 | Isi lapisan Bara |
+| `components/modul/hutan-rawa/scene/domeShape.test.ts` | 6 | Bentuk kubah gambut |
+| `components/modul/kanal/scene/transect.test.ts` | 6 | Penampang kanal |
+| `lib/modules.test.ts` | 5 | Daftar dan nomor modul |
+| `components/modul/hutan-rawa/scene/dome.test.ts` | 5 | Zona kubah |
+| `components/modul/bara/scene/viewFit.test.ts` | 5 | Pembingkaian kamera |
+| `lib/model/atmosphere.test.ts` | 4 | Peralihan langit |
+| `components/modul/bara/scene/burnMaterial.test.ts` | 4 | Bahan hangus |
+| `lib/ambientSound.test.ts` | 2 | Laju derak dan kicau |
+| `components/modul/bara/baraContent.test.ts` | 2 | Isi teks Bara |
 
 ---
 
-## 7. Strategi Performa
+## 9. Penyebaran (deploy)
 
-### 7.1 Anggaran grafis dua tingkat
-
-`components/modul/shared/scene/dioramaConstants.ts` menetapkan dua profil mutu yang
-dipakai bersama oleh seluruh modul:
-
-| Parameter    | `high` | `low` | Arti                                           |
-| ------------ | ------ | ----- | ---------------------------------------------- |
-| `maxDpr`     | 1,5    | 1     | Batas resolusi render                          |
-| `shadowSize` | 1024   | 512   | Sisi peta bayangan                             |
-| `softShadow` | ya     | tidak | Bayangan lunak                                 |
-| `antialias`  | ya     | tidak | Penghalusan tepi                               |
-| `envHz`      | 4      | 1,5   | Frekuensi pembuatan ulang peta lingkungan      |
-| `simSteps`   | 24     | 8     | Batas langkah simulasi per bingkai             |
-| `fieldHz`    | 30     | 15    | Frekuensi penyalinan hasil simulasi ke tekstur |
-| `subsideSec` | 0,5    | 1,2   | Jeda pembentukan ulang geometri permukaan      |
-| `understory` | 10     | 5     | Jumlah tumbuhan bawah                          |
-
-Perhatikan bahwa yang diturunkan bukan hanya mutu gambar, tetapi juga frekuensi
-simulasi — sehingga perangkat lemah tetap lancar.
-
-### 7.2 Penurunan resolusi adaptif
-
-`PerformanceGuard` mengukur laju bingkai tiap 1,5 detik. Bila rata-ratanya di
-bawah 55 fps, resolusi render diturunkan bertahap sebesar 0,25 hingga batas 1×.
-Tiga detik pertama diabaikan karena tekstur dan model masih diunggah ke GPU.
-
-### 7.3 Ref, bukan keadaan React, untuk data per bingkai
-
-Nilai yang berubah setiap bingkai — posisi kamera, kekuatan nyala, muka air
-yang dituju — disimpan dalam `useRef`, bukan `useState`. Bila disimpan sebagai
-keadaan React, menggeser satu pengatur akan memicu render ulang seluruh kanvas
-puluhan kali per detik.
-
-### 7.4 Larik bertipe
-
-Simulasi memakai `Uint8Array`, `Float32Array`, dan `Int32Array`, dan penampung
-sel penyebar dialokasikan sekali lalu dipakai ulang. Tanpa itu, pengumpul
-sampah memori akan menyebabkan tersendat berkala pada kecepatan waktu
-tertinggi.
-
-### 7.5 Pengukuran harus memakai pembangunan produksi
-
-Server pengembangan `next dev` kira-kira dua kali lebih lambat karena menyusun
-berkas ketika diminta. Angka performa hanya sah bila diambil dari `npm run
-build` lalu `npm start`; keputusan rancangan tidak boleh diambil berdasarkan
-angka dari server pengembangan.
+| Hal | Keadaan |
+|---|---|
+| Layanan | Vercel, proyek tertaut lewat `.vercel/` |
+| Cabang `dev` | Tempat bekerja; setiap push membuat **deploy pratinjau** |
+| Cabang `main` | **Produksi**; otomatis ter-deploy. `dev` digabung ke `main` hanya setelah dinyatakan final |
+| `.vercelignore` | Mengecualikan `docs/`, `.claude/`, `.playwright-mcp/`, `.env*`, dan PNG di luar `public/`, karena Vercel CLI tidak membaca `.gitignore` |
+| `.env.local` | Hanya `VERCEL_OIDC_TOKEN` dari Vercel CLI; tidak dibaca kode aplikasi dan tidak masuk git |
 
 ---
 
-## 8. Aksesibilitas
+## 10. Mengapa tanpa basis data
 
-| Aspek             | Penerapan                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| Pengurangan gerak | Nilai `reducedMotion` mematikan paralaks dan mempercepat peredaman kamera hingga nyaris seketika |
-| Pembaca layar     | `aria-current` pada menu aktif; `lang="id"` pada elemen `<html>`                                 |
-| Format lokal      | Angka memakai `toLocaleString("id-ID")` sehingga tertulis "0,6" bukan "0.6"                      |
-| Layar sempit      | Kamera menjauh 1,65× saat rasio layar di bawah 0,8                                               |
-| Suara             | Mati secara bawaan, dinyalakan lewat tombol                                                      |
+Pemeriksaan berkas menunjukkan tidak ada: basis data atau ORM, paket
+autentikasi, Server Action (`"use server"`), pemanggilan `fetch` ke layanan
+luar, maupun variabel lingkungan yang dibaca kode. Kode sisi server hanya
+pembuat gambar kartu (4.4), yang tidak menyimpan apa pun.
+
+Alasannya:
+
+1. **Simulasi harus berjalan ±60 bingkai per detik.** Model dijalankan
+   puluhan langkah tiap bingkai; menunggu server 50–200 ms per langkah
+   membuatnya mustahil.
+2. **Tidak ada data yang perlu disimpan.** Tidak ada akun, kemajuan belajar,
+   atau masukan pengguna. Hasil pembaca dibawa di alamat kartu, bukan
+   disimpan.
+3. **Murah dan tahan lama.** Penguji bisa membukanya kapan saja tanpa server
+   yang harus dirawat.
+
+Bila kelak perlu menyimpan data (mis. hasil kuis untuk Bab 4 naskah),
+Next.js sudah bisa merangkap sisi belakang lewat *Route Handler* tanpa
+berganti teknologi.
 
 ---
 
-## 9. Aset
+## 11. Aksesibilitas dan ponsel
 
-| Jenis              | Format              | Jumlah | Catatan                                           |
-| ------------------ | ------------------- | ------ | ------------------------------------------------- |
-| Model 3D           | `.glb` (GLTF biner) | 6      | Tumbuhan, batu, ranting                           |
-| Tekstur            | `.webp`             | 13     | Warna dan peta normal tiap lapisan gambut         |
-| Tekstur prosedural | dibuat saat jalan   | —      | Bara, percikan, dan asap digambar lewat kanvas 2D |
-
-Sumber dan lisensi tercatat pada `public/models/gambut/SUMBER.md` dan
-`public/textures/gambut/SUMBER.md`.
+| Aspek | Penerapan |
+|---|---|
+| Pengurangan gerak | `prefers-reduced-motion` dihormati: paralaks mati, peredaman kamera nyaris seketika |
+| Pembaca layar | `lang="id"` di `<html>`; `aria-current` pada menu aktif |
+| Format lokal | Angka memakai `toLocaleString("id-ID")`, tertulis "0,6" bukan "0.6" |
+| Suara | Mati secara bawaan, dinyalakan lewat tombol |
+| Ponsel dan tablet | Tampilan sederhana tetapi alur dan penjelasan utuh; panel diringkas agar tidak tumpang tindih |
+| Ajakan ke laptop | `LaptopNudge` di layar sempit mengajak mencoba versi lengkap di laptop |
+| Panel tanpa gulir | Panel dan kotak modul tidak bergulir; isinya diringkas bila ruang kurang |
 
 ---
 
-## 10. Keadaan Pengerjaan
+## 12. Aset dan lisensi
 
-| Bagian                                | Keadaan                                          |
-| ------------------------------------- | ------------------------------------------------ |
-| Beranda, Navbar, halaman `/gambut`    | Selesai                                          |
-| Modul 01 — Anatomi Gambut             | Selesai                                          |
-| Modul 03 — Bara di Bawah Tanah        | Selesai — empat babak berjalan dengan gerbangnya |
-| Modul 02 — Kanal & Pengeringan        | Selesai — empat babak berjalan dengan gerbangnya |
-| Modul 04 — Gudang Karbon              | Selesai — empat babak berjalan dengan gerbangnya |
-| `/simulasi`, `/dampak`, `/pencegahan` | Halaman penanda                                  |
+| Jenis | Letak | Jumlah | Catatan sumber |
+|---|---|---|---|
+| Model 3D `.glb` | `public/models/gambut/` | 6 | Tumbuhan, batu, ranting · `SUMBER.md` |
+| Tekstur `.webp` | `public/textures/gambut/` | 13 | Warna dan peta normal lapisan gambut · `SUMBER.md` |
+| Foto satwa | `public/images/hutan-rawa/` | 2 | Orangutan Sebangau dan owa · `SUMBER.md` |
+| Citra satelit | `public/images/sekitarmu/` | 3 | EOX Sentinel-2 cloudless 2024 (CC BY-NC-SA) · `data/SUMBER.md` |
+| Data peta | `data/sekitarmu-map.json` | 1 | Natural Earth (domain publik) + OpenStreetMap (ODbL) · `data/SUMBER.md` |
+| Fon kartu | `assets/fonts/` | 3 | Inter, Playfair Display (OFL; lisensi disertakan) |
+| Tekstur prosedural | dibuat saat berjalan | — | Bara, percikan, asap, derau digambar lewat kode |
 
-Satu hal yang masih tertunda: `config/assets.ts` masih berisi teks kosong untuk
-kedua gambar latar halaman awal, sehingga efek sorot kursor belum terlihat.
+---
+
+## 13. Perkakas bantu pengembangan
+
+Bukan bagian aplikasi; hanya dipakai selama pengembangan.
+
+| Perkakas | Sumber | Fungsi |
+|---|---|---|
+| `context7` (MCP, HTTP) | `.mcp.json` | Mengambil dokumentasi resmi pustaka versi terkini |
+| `playwright` (MCP, stdio) | `.mcp.json` | Mengendalikan peramban untuk memeriksa tampilan laptop dan ponsel |
+| Skill GSAP, Three.js, UI/UX | `.claude/skills/` | Panduan penulisan kode |
+
+`.claude/`, `.playwright-mcp/`, dan arsip unduhan di `docs/` tidak disertakan
+ke repositori karena bukan karya sendiri atau berkas lokal.
