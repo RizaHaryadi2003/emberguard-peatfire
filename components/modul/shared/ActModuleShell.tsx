@@ -217,12 +217,12 @@ export default function ActModuleShell({
               Babak {current.number} <span className="text-white/30">/ {acts[acts.length - 1].number}</span>
             </p>
             <h1
-              className={`mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl ${stageClass}`}
+              className={`mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:821px)]:text-4xl ${stageClass}`}
               style={{ letterSpacing: "-0.03em", ...stage(0.15) }}
             >
               {current.title}
             </h1>
-            <p className={`mt-2 hidden text-sm leading-relaxed text-white/80 sm:block ${stageClass}`} style={stage(0.35)}>
+            <p className={`mt-2 hidden text-sm leading-relaxed text-white/80 sm:block [@media(max-height:820px)]:text-[13px] [@media(max-height:820px)]:leading-snug ${stageClass}`} style={stage(0.35)}>
               {current.body}
             </p>
             <p className={`mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.06] md:px-3 md:py-2 ${stageClass}`} style={stage(0.6)}>
@@ -230,7 +230,7 @@ export default function ActModuleShell({
             </p>
             <div
               style={stage(0.85)}
-              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 ${stageClass} ${
+              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 [@media(max-height:820px)]:mt-2.5 [@media(max-height:820px)]:p-2.5 ${stageClass} ${
                 done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/55" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/35"
               }`}
             >
@@ -238,7 +238,7 @@ export default function ActModuleShell({
                 {done ? <Check size={12} /> : <MousePointerClick size={12} />}
                 {done ? "Berhasil · perhatikan" : "Tugasmu"}
               </p>
-              <p className="mt-1.5 text-[13px] leading-snug text-white">{done ? current.observe : current.task}</p>
+              <p className="mt-1.5 text-[13px] leading-snug text-white [@media(max-height:820px)]:text-[12.5px]">{done ? current.observe : current.task}</p>
               {!done && <p className="mt-1.5 text-[11px] tabular-nums text-white/55">{progress}</p>}
               {taskExtra}
             </div>
@@ -331,11 +331,11 @@ export default function ActModuleShell({
       {aside && (
         <div
           inert={hookOpen}
-          className={`absolute bottom-6 right-5 top-14 z-20 hidden w-[272px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
+          className={`absolute bottom-6 right-5 top-14 z-20 hidden w-[272px] flex-col gap-3 lg:flex xl:right-10 [@media(max-height:820px)]:gap-2 [@media(min-height:801px)]:top-24 ${panelFade}`}
         >
           {/* Lantai kolom kanan diatur modulnya sendiri: modul dengan
               tuntunan memunculkannya satu per satu mengikuti aksi pembaca. */}
-          <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3">
+          <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3 [@media(max-height:820px)]:gap-2">
             {aside}
           </div>
           <div data-guide="next" className="max-w-full shrink-0 self-end">

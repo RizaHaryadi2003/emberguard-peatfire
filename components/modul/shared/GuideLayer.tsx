@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Hand } from "lucide-react";
 
 /**
@@ -51,6 +51,16 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
   const [box, setBox] = useState<Box | null>(null);
   const [shown, setShown] = useState(false);
   const last = useRef("");
+  // Tinggi gelembung yang sebenarnya, untuk menjepitnya di dalam layar.
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const [bubbleH, setBubbleH] = useState(96);
+  useLayoutEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    const h = el.offsetHeight;
+    // Ukuran DOM baru diketahui sesudah gelembung tergambar.
+    setBubbleH((prev) => (Math.abs(h - prev) > 1 ? h : prev));
+  }, [text, shown]);
 
   // Muncul sesudah jeda singkat. Induknya memberi `key` per arahan, jadi
   // komponen ini dipasang ulang (dan jedanya diulang) tiap arahan berganti.
@@ -93,9 +103,11 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
 
   // Sisi gelembung: menjauh dari tepi layar terdekat. Target di kiri →
   // gelembung di kanannya; di kanan → di kirinya; gambar besar → di atas
-  // tengahnya; di ponsel (sempit) selalu di atas atau di bawah.
+  // tengahnya; di ponsel (sempit) di atas atau di bawah. Bila sisi itu tidak
+  // muat, pindah ke sisi seberangnya.
+  const M = 12;
   const narrow = vw < 768;
-  const side: "right" | "left" | "top" | "bottom" = large
+  let side: "right" | "left" | "top" | "bottom" = large
     ? "top"
     : narrow
       ? box.top > vh / 2
@@ -106,26 +118,41 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
         : cx > vw * 0.55
           ? "left"
           : "top";
+  const fits = {
+    right: box.left + box.width + GAP + BUBBLE_W <= vw - M,
+    left: box.left - GAP - BUBBLE_W >= M,
+    top: (large ? cy - 36 : box.top) - GAP - bubbleH >= M,
+    bottom: box.top + box.height + GAP + bubbleH <= vh - M,
+  };
+  const opposite = { right: "left", left: "right", top: "bottom", bottom: "top" } as const;
+  if (!fits[side] && fits[opposite[side]]) side = opposite[side];
+  else if (!fits[side]) side = fits.top ? "top" : fits.bottom ? "bottom" : side;
 
-  const clampX = (x: number) => Math.min(vw - BUBBLE_W - 12, Math.max(12, x));
-  const bubbleStyle: React.CSSProperties =
-    side === "right"
-      ? { left: box.left + box.width + GAP, top: Math.min(vh - 24, Math.max(24, cy)), transform: "translateY(-50%)" }
-      : side === "left"
-        ? { left: box.left - GAP - BUBBLE_W, top: Math.min(vh - 24, Math.max(24, cy)), transform: "translateY(-50%)" }
-        : side === "top"
-          ? { left: clampX(cx - BUBBLE_W / 2), bottom: vh - (large ? cy - 36 : box.top) + GAP }
-          : { left: clampX(cx - BUBBLE_W / 2), top: box.top + box.height + GAP };
+  // Letak pojok kiri atas gelembung, dijepit seluruhnya di dalam layar.
+  const clampX = (x: number) => Math.min(vw - BUBBLE_W - M, Math.max(M, x));
+  const clampY = (y: number) => Math.min(vh - bubbleH - M, Math.max(M, y));
+  const bx =
+    side === "right" ? clampX(box.left + box.width + GAP) : side === "left" ? clampX(box.left - GAP - BUBBLE_W) : clampX(cx - BUBBLE_W / 2);
+  const by =
+    side === "right" || side === "left"
+      ? clampY(cy - bubbleH / 2)
+      : side === "top"
+        ? clampY((large ? cy - 36 : box.top) - GAP - bubbleH)
+        : clampY(box.top + box.height + GAP);
+  const bubbleStyle: React.CSSProperties = { left: bx, top: by };
 
-  // Panah kecil di tepi gelembung yang menghadap target.
+  // Panah kecil di tepi gelembung yang menghadap target, mengikuti letak
+  // target walau gelembungnya sempat digeser agar muat.
+  const arrowX = Math.min(BUBBLE_W - 18, Math.max(12, cx - bx - 5));
+  const arrowY = Math.min(bubbleH - 18, Math.max(12, cy - by - 5));
   const arrowStyle: React.CSSProperties =
     side === "right"
-      ? { left: -5, top: "50%", marginTop: -5 }
+      ? { left: -5, top: arrowY }
       : side === "left"
-        ? { right: -5, top: "50%", marginTop: -5 }
+        ? { right: -5, top: arrowY }
         : side === "top"
-          ? { bottom: -5, left: Math.min(BUBBLE_W - 20, Math.max(14, cx - clampX(cx - BUBBLE_W / 2) - 5)) }
-          : { top: -5, left: Math.min(BUBBLE_W - 20, Math.max(14, cx - clampX(cx - BUBBLE_W / 2) - 5)) };
+          ? { bottom: -5, left: arrowX }
+          : { top: -5, left: arrowX };
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40" aria-live="polite">
@@ -141,6 +168,7 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
         />
       )}
       <div
+        ref={bubbleRef}
         key={`${target}-${text}`}
         role="status"
         className="stage-in absolute rounded-2xl border border-[#8fd8ff]/40 bg-[#0b1820]/90 p-3 text-white shadow-2xl shadow-black/50"

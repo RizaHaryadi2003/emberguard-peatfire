@@ -319,7 +319,7 @@ export default function MusimApiModule() {
               </p>
               <StageChip stage={stage} />
             </div>
-            <div data-guide="chart" className="mt-2 hidden sm:block">
+            <div data-guide="chart" className="mt-2 hidden [@media(min-height:900px)]:sm:block">
               <SeasonChart
                 revealDelay={1.5}
                 kind={act === 2 ? kind : "normal"}
@@ -358,13 +358,13 @@ export default function MusimApiModule() {
               <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">
                 {MUSIM_TEXT.today(date.date, MONTH_SHORT[date.month])}
               </p>
-              <p className="mt-1.5 font-playfair text-4xl italic leading-none tabular-nums text-white">
+              <p className="mt-1.5 font-playfair text-4xl italic leading-none tabular-nums text-white [@media(max-height:820px)]:mt-1 [@media(max-height:820px)]:text-3xl">
                 {MUSIM_TEXT.depthValue(depthCm)}
               </p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/40">
+              <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/40 [@media(max-height:820px)]:hidden">
                 {MUSIM_TEXT.depthBelow}
               </p>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2.5 [@media(max-height:820px)]:mt-2 [@media(max-height:820px)]:pt-2">
                 <span className="text-[11px] tabular-nums text-[#9fd3f0]">
                   {MUSIM_TEXT.rain}:{" "}
                   {rainMmDay > 0
@@ -379,7 +379,7 @@ export default function MusimApiModule() {
           {/* Lantai 2: setahun dalam satu gambar. */}
           {floorShown("chart") && (
             <section data-guide="chart" className={`${CARD} stage-in`}>
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45 [@media(max-height:820px)]:mb-1.5">
                 {MUSIM_TEXT.yearChart}
               </p>
               <SeasonChart
@@ -452,7 +452,7 @@ export default function MusimApiModule() {
 
 /** Gaya kartu kolom kanan, sama untuk tiap lantai. */
 const CARD =
-  "rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]";
+  "rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 [@media(max-height:820px)]:p-3 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]";
 
 /** Penanda golongan bahaya hari ini. */
 function StageChip({ stage }: { stage: FireStage }) {
