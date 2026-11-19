@@ -1,3 +1,4 @@
+import { PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
 import * as THREE from "three";
 import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 
@@ -18,6 +19,8 @@ import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 // Rangkanya tetap MeshStandardMaterial supaya cahaya matahari, langit,
 // bayangan pohon, dan kabut dikerjakan three.js. Warna dan normalnya diganti
 // lewat onBeforeCompile, sama seperti bahan bidang potong Modul Kanal.
+
+const tint = (id: keyof typeof PEAT_LAYER_TINT) => PEAT_LAYER_TINT[id].map((v) => v.toFixed(3)).join(", ");
 
 const FACE_PARS = /* glsl */ `
 uniform sampler2D uColor0;
@@ -49,23 +52,26 @@ vec3 kWeights(float depth) {
 `;
 
 const FACE_DIFFUSE = /* glsl */ `
-  vec3 kW = kWeights(vDepth);
-  vec2 kUv = vFaceUv;
-  // Rupa dinding sama dengan bongkahan Modul Kanal: pita warna rata dengan
-  // guratan mendatar yang tipis, TANPA foto tekstur tanah dan tanpa peta
-  // normal. Foto kerikil-tanah yang dulu dipakai, dilihat dari jarak
-  // diorama, terbaca sebagai bintik dan benjolan.
-  // Warna (sRGB → linear): serasah/gambut muda coklat kemerahan, gambut tua
-  // kelabu-coklat gelap — diambil dari tampilan dinding Kanal.
-  vec3 kFib = vec3(0.155, 0.062, 0.030);
-  vec3 kHem = vec3(0.118, 0.052, 0.030);
-  vec3 kSap = vec3(0.066, 0.052, 0.042);
-  vec3 kAlbedo = kFib * kW.x + kHem * kW.y + kSap * kW.z;
-  // Guratan mendatar halus: bahan tumbuhan mengendap lapis demi lapis.
-  float kStreak = kNoise(vec2(vFaceWorld.x * 0.12, vFaceWorld.y * 5.0));
-  // Butiran mendatar sangat halus, seperti guratan tipis dinding Kanal.
-  float kGrain = kNoise(vec2(vFaceWorld.x * 0.5, vFaceWorld.y * 9.0));
-  kAlbedo *= 0.92 + kStreak * 0.12 + (kGrain - 0.5) * 0.06;
+  // Rumus dinding DISALIN dari Modul Kanal (transectMaterial.ts,
+  // FACE_DIFFUSE): foto tiga lapisan gambut dikalikan warna lapisan bersama
+  // (PEAT_LAYER_TINT), batas lapisan tegas di 0,6 m dan 1,6 m (PEAT_LAYERS),
+  // lalu belang skala besar dan guratan pengendapan. Skala tekstur per
+  // 3 satuan (Kanal 1,5 m) karena diorama ini dilihat ±2× lebih jauh,
+  // sehingga butirannya di layar sama besar.
+  vec2 kUv = vFaceWorld.xy / 3.0;
+  float kBw = 0.07;
+  float kB0 = smoothstep(0.6 - kBw, 0.6 + kBw, vDepth);
+  float kB1 = smoothstep(1.6 - kBw, 1.6 + kBw, vDepth);
+  vec3 kW = vec3(1.0 - kB0, kB0 - kB1, kB1);
+  vec3 kAlbedo =
+    texture2D(uColor0, kUv).rgb * kW.x * vec3(${tint("fibrik")}) +
+    texture2D(uColor1, kUv).rgb * kW.y * vec3(${tint("hemik")}) +
+    texture2D(uColor2, kUv).rgb * kW.z * vec3(${tint("saprik")});
+  float kMottle = kNoise(kUv * 0.5) * 0.58;
+  float kBedding = kNoise(vec2(vFaceWorld.x * 0.7, vFaceWorld.y * 16.0));
+  float kFibrous = kW.x * 1.0 + kW.y * 0.6 + kW.z * 0.25;
+  kAlbedo *= 0.8 + kMottle * 0.46;
+  kAlbedo *= 1.0 + (kBedding - 0.5) * 0.3 * kFibrous;
 
   // Makin dalam makin gelap: gambut tua yang sudah lama hancur.
   kAlbedo *= mix(1.0, 0.74, smoothstep(1.5, 8.0, vDepth));
@@ -116,11 +122,16 @@ const FACE_DIFFUSE = /* glsl */ `
 `;
 
 const FACE_NORMAL = /* glsl */ `
-  vec3 kNw = kWeights(vDepth);
+  // Relief halus dari peta normal foto yang sama, pada skala dan batas
+  // lapisan yang sama dengan warnanya (seperti Modul Kanal).
+  vec2 kNuv = vFaceWorld.xy / 3.0;
+  float kNb0 = smoothstep(0.53, 0.67, vDepth);
+  float kNb1 = smoothstep(1.53, 1.67, vDepth);
+  vec3 kNw = vec3(1.0 - kNb0, kNb0 - kNb1, kNb1);
   vec3 kMapN =
-    texture2D(uNormal0, vFaceUv).xyz * kNw.x +
-    texture2D(uNormal1, vFaceUv * 0.9 + 0.31).xyz * kNw.y +
-    texture2D(uNormal2, vFaceUv * 0.8 + 0.57).xyz * kNw.z;
+    texture2D(uNormal0, kNuv).xyz * kNw.x +
+    texture2D(uNormal1, kNuv).xyz * kNw.y +
+    texture2D(uNormal2, kNuv).xyz * kNw.z;
   kMapN = kMapN * 2.0 - 1.0;
   kMapN.xy *= normalScale;
   normal = normalize(tbn * kMapN);
@@ -142,7 +153,7 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
     // Dipasang hanya supaya jalur map dan normalMap three.js menyala.
     map: colors[0],
     normalMap: normals[0],
-    normalScale: new THREE.Vector2(0.0, 0.0),
+    normalScale: new THREE.Vector2(0.6, 0.6),
     roughness: 1,
     metalness: 0,
     // Dua sisi: muka samping kiri dan kanan dibentuk dengan arah yang

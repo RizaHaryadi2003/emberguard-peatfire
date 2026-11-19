@@ -9,6 +9,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import FpsMeter, { wantsFpsMeter } from "@/components/modul/shared/scene/FpsMeter";
 import { createHutanGrass } from "./grass";
+import { PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
 import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { QUALITY_PROFILE, type AtmosphereState, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
@@ -344,7 +345,15 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     const minMapN = ownTexture(minN, false, an);
     // Tanah mineral rata seperti pasir di dasar bongkahan Kanal: tanpa foto
     // tekstur dan peta normal yang terbaca sebagai benjolan kerikil.
-    const mineral = new THREE.MeshStandardMaterial({ roughness: 1, color: "#9a8669", vertexColors: true, side: THREE.DoubleSide });
+    const mineral = new THREE.MeshStandardMaterial({
+      map: minMapC,
+      normalMap: minMapN,
+      normalScale: new THREE.Vector2(0.6, 0.6),
+      roughness: 1,
+      color: new THREE.Color(...PEAT_LAYER_TINT.mineral),
+      vertexColors: true,
+      side: THREE.DoubleSide,
+    });
 
     // Sungai air hitam: air gambut berwarna teh pekat karena asam humat.
     // Muka depannya mundur sedikit dari muka tanah, supaya relief tanah
