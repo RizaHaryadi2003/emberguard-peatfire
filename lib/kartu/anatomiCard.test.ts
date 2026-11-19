@@ -40,7 +40,8 @@ describe("getResultCard", () => {
 
   it("hanya mengutip angka Andriesse saat muka air melewati batas", () => {
     expect(getResultCard(62).note).toContain("400 tahun");
-    expect(getResultCard(62).source).toContain("Andriesse");
+    // Kutipan tidak tampil di kartu (19 November 2026); sumbernya di dokumen acuan.
+    expect(getResultCard(62).source).not.toMatch(/dkk\.|Andriesse/);
     expect(getResultCard(35).note).not.toContain("400 tahun");
     expect(getResultCard(10).note).not.toContain("400 tahun");
   });

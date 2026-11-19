@@ -57,9 +57,9 @@ describe("jangkauan dan lapangan bola", () => {
 });
 
 describe("isi dan alamat kartu", () => {
-  it("menyebut sumber dan kalimat tebakan bila ada", () => {
+  it("tanpa kutipan penulis, dengan kalimat tebakan bila ada", () => {
     const card = getKanalCard({ cm: 100, guess: 0 });
-    expect(card.source).toMatch(/Hooijer/);
+    expect(card.source).not.toMatch(/dkk\.|Hooijer/);
     expect(card.guessLine).toMatch(/± 5 m/);
     expect(getKanalCard({ cm: 100, guess: null }).guessLine).toBeNull();
   });

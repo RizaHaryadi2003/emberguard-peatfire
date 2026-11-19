@@ -56,7 +56,7 @@ export const KARBON_ACTS: readonly KarbonAct[] = [
     hint: "Bakar gambutnya sampai sedalam setengah meter.",
     fact: {
       value: "33–50 cm",
-      caption: "Rata-rata gambut yang habis terbakar di Kalimantan Tengah, diukur dengan LiDAR pada 2006 dan di lapangan pada 1997 (Ballhorn dkk., 2009; Page dkk., 2002)",
+      caption: "Rata-rata gambut yang habis terbakar di Kalimantan Tengah, diukur dengan LiDAR pada 2006 dan di lapangan pada 1997",
     },
   },
   {
@@ -67,7 +67,7 @@ export const KARBON_ACTS: readonly KarbonAct[] = [
     hint: "Samakan karbonnya dengan kebakaran yang diberitakan, tetapi pada lahan yang jauh lebih sempit.",
     fact: {
       value: `${HEADLINE_FIRE.areaHa} ha`,
-      caption: "Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD (ANTARA, 13 Agustus 2019), tanpa satu pun keterangan sedalam apa",
+      caption: "Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD, tanpa satu pun keterangan sedalam apa",
     },
   },
   {
@@ -149,8 +149,8 @@ export const FIGURE_NOTE = {
 
 /** Keterangan skala yang wajib tampil pada gambar. */
 export const SCALE_NOTE = {
-  density: "Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³ (Warren dkk., 2012)",
-  person: `Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun (Global Carbon Budget, 2024)`,
+  density: "Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³",
+  person: `Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun`,
   burn: (maxM: number) => `Kedalaman terbakar dibatasi ${maxM * 100} cm`,
   area: (maxHa: number) => `Luas dibatasi ${maxHa} ha`,
   time: (maxYears: number) => `Waktu pemulihan dibatasi ${maxYears} tahun`,

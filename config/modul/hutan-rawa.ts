@@ -36,7 +36,7 @@ export const HUTAN_ACTS: readonly ShellAct[] = [
     hint: "Berjalanlah sampai puncak kubah.",
     fact: {
       value: "45 m",
-      caption: "Tinggi pohon tertinggi di hutan puncak kubah Sebangau, di atas gambut setebal 10–13 m (Husson dkk., 2018)",
+      caption: "Tinggi pohon tertinggi di hutan puncak kubah Sebangau, di atas gambut setebal 10–13 m",
     },
   },
   {
@@ -52,7 +52,7 @@ export const HUTAN_ACTS: readonly ShellAct[] = [
     hint: "Coba kedua sumber air.",
     fact: {
       value: "15–25 m",
-      caption: "Tinggi kanopi hutan rawa gambut, lebih rendah daripada hutan di tanah mineral, karena haranya hanya dari hujan (Page dkk., 1999)",
+      caption: "Tinggi kanopi hutan rawa gambut, lebih rendah daripada hutan di tanah mineral, karena haranya hanya dari hujan",
     },
   },
   {
@@ -68,7 +68,7 @@ export const HUTAN_ACTS: readonly ShellAct[] = [
     hint: "Buka ketiga jenis hutan.",
     fact: {
       value: "46 jenis",
-      caption: "Satwa dan tumbuhan terancam punah secara global yang tercatat di hutan rawa gambut Sebangau (Husson dkk., 2018)",
+      caption: "Satwa dan tumbuhan terancam punah secara global yang tercatat di hutan rawa gambut Sebangau",
     },
   },
 ];

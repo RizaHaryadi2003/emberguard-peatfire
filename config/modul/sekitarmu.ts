@@ -50,7 +50,7 @@ export const SEKITARMU_ACTS: readonly SekitarmuAct[] = [
     hint: "Perbesar peta sampai ke Kota Pontianak.",
     fact: {
       value: "13,43 juta ha",
-      caption: "Luas gambut Indonesia dari pemetaan semi-detail 1:50.000 tahun 2013–2019 (Anda dkk., 2021)",
+      caption: "Luas gambut Indonesia dari pemetaan semi-detail 1:50.000 tahun 2013–2019",
     },
   },
   {
@@ -66,7 +66,7 @@ export const SEKITARMU_ACTS: readonly SekitarmuAct[] = [
     hint: "Pilih tebakanmu, lalu tekan Periksa.",
     fact: {
       value: "23,1 km²",
-      caption: "Gambut Kota Pontianak hasil pemeriksaan 614 titik lapangan dan 68 contoh tanah (Parabi dkk., 2026)",
+      caption: "Gambut Kota Pontianak hasil pemeriksaan 614 titik lapangan dan 68 contoh tanah",
     },
   },
   {
@@ -82,7 +82,7 @@ export const SEKITARMU_ACTS: readonly SekitarmuAct[] = [
     hint: "Buka ketiga titik bor.",
     fact: {
       value: "3–15 m",
-      caption: "Tebal lapisan gambut di sekitar Jl. Reformasi Untan, diukur dengan geolistrik (Fajania dkk., 2021)",
+      caption: "Tebal lapisan gambut di sekitar Jl. Reformasi Untan, diukur dengan geolistrik",
     },
   },
   {
@@ -98,7 +98,7 @@ export const SEKITARMU_ACTS: readonly SekitarmuAct[] = [
     hint: "Buka kedua titik api.",
     fact: {
       value: "hampir tiap tahun",
-      caption: "Kebakaran berulang di lahan gambut Kota Pontianak (Rahsia dkk., 2020)",
+      caption: "Kebakaran berulang di lahan gambut Kota Pontianak",
     },
   },
 ];

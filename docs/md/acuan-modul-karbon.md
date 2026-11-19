@@ -134,3 +134,14 @@ paragraf dampak karbon di naskah II.B.4.
 | Babak 02–03: karbon per volume | Warren dkk. (2012) |
 | Babak 04: laju menabung | Anshari dkk. (2026) |
 | Pembanding per orang | Sumber emisi nasional yang dipilih |
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/karbon.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Rata-rata gambut yang habis terbakar di Kalimantan Tengah, diukur dengan LiDAR pada 2006 dan di lapangan pada 1997 | Ballhorn dkk., 2009; Page dkk., 2002 |
+| Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD, tanpa satu pun keterangan sedalam apa | ANTARA, 13 Agustus 2019 |
+| Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³ | Warren dkk., 2012 |
+| Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun | Global Carbon Budget, 2024 |

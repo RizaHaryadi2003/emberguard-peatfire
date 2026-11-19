@@ -153,3 +153,15 @@ sementara dikutip dari abstrak atau kutipan sekunder.
 | Babak 03: lesak dan oksidasi | Hooijer dkk. (2012); Anshari dkk. (2021) |
 | Babak 04: sekat kanal | Ritzema dkk. (2014) |
 | Naskah II.B.3: pengeringan sebagai penyebab | Nurhidayah dkk. (2023); Horton dkk. (2021) (sudah ada di naskah) |
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/kanal.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Baris sumber kartu hasil: "Simulasi Emberguard" | Simulasi Emberguard, dikalibrasi ke Hooijer dkk. (2012) |
+| Muka air lebih dalam dari ini menaikkan risiko kebakaran gambut, dan kini menjadi batas PP 57/2016 | Wösten dkk., 2008 |
+| Di Kalampangan, Kalimantan Tengah, muka air sejauh ini dari kanal masih 40–50 cm lebih dangkal daripada di tepinya | Ritzema dkk., 2014 |
+| Lesak hutan gambut yang dikeringkan untuk tiap satu meter muka air turun, dan terus berlangsung selama drainasenya dijaga | Hooijer dkk., 2012 |
+| Jangkauan sekat kanal menaikkan muka air di kiri dan kanan kanal Kalampangan | Ritzema dkk., 2014 |

@@ -18,7 +18,7 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   {
     title: "Hutan di atas spons",
     body: "Gambut terbentuk dari batang, akar, dan daun yang tertimbun di rawa yang selalu tergenang. Karena kekurangan oksigen, sisa tumbuhan itu tidak membusuk sempurna, melainkan menumpuk sedikit demi sedikit. Seret pengatur waktu di bawah untuk menumbuhkannya sendiri.",
-    fact: { value: "≥ 50 cm", caption: "Ketebalan minimum bahan organik agar suatu lahan disebut gambut (PP 71/2014)" },
+    fact: { value: "≥ 50 cm", caption: "Ketebalan minimum bahan organik agar suatu lahan disebut gambut" },
   },
   {
     title: "Lapis demi lapis",
@@ -28,12 +28,12 @@ export const ANATOMI_STEPS: readonly AnatomiStep[] = [
   {
     title: "Menyimpan air",
     body: "Gambut bekerja seperti spons. Sebagian besar volumenya berupa pori, dan dalam keadaan alami pori itu penuh berisi air. Satu kilogram gambut fibrik kering dapat menahan 8,5 sampai lebih dari 30 kg air, sedangkan saprik yang lebih matang dan rapat kurang dari 4,5 kg. Muka air tanah berada dekat permukaan, sehingga gambut tetap basah sepanjang tahun, bahkan saat kemarau.",
-    fact: { value: "± 90%", caption: "Bagian volume gambut fibrik yang berupa pori, terisi air saat jenuh (Boelter 1974, dalam Andriesse 1988)" },
+    fact: { value: "± 90%", caption: "Bagian volume gambut fibrik yang berupa pori, terisi air saat jenuh" },
   },
   {
     title: "Saat air surut",
     body: "Kanal dan kemarau panjang menurunkan muka air tanah. Gambut di atasnya mengering dan berubah menjadi bahan bakar. Geser pengatur di bawah untuk melihat akibatnya.",
-    fact: { value: "0,4 m", caption: "Batas muka air tanah. Lebih dalam dari ini, ekosistem gambut dinyatakan rusak (PP 57/2016)" },
+    fact: { value: "0,4 m", caption: "Batas muka air tanah. Lebih dalam dari ini, ekosistem gambut dinyatakan rusak" },
   },
 ];
 
@@ -75,7 +75,7 @@ export const RESULT_CARD_TEXT: Record<WaterStatus, { headline: string; note: str
     headline: "Aku menurunkan muka air gambut melewati batas.",
     note: "30 cm gambut butuh 400 tahun untuk terbentuk, dan bisa hilang dalam kurang dari 10 tahun.",
     challenge: "Kamu bisa menjaganya lebih baik? Coba sendiri.",
-    source: "Andriesse (1988), FAO Soils Bulletin 59 · PP 57/2016",
+    source: "Simulasi Emberguard",
   },
 };
 

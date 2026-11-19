@@ -97,7 +97,7 @@ function StoryCard({ card, host }: { card: KanalCard; host: string }) {
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.3 }}>{card.challenge}</div>
         <div style={{ marginTop: 18, fontSize: 32, color: ORANGE }}>{host}</div>
-        <div style={{ marginTop: 14, fontSize: 24, color: "rgba(255,255,255,0.5)" }}>{`Sumber: ${card.source}`}</div>
+        <div style={{ marginTop: 14, fontSize: 24, color: "rgba(255,255,255,0.5)" }}>{card.source}</div>
       </div>
     </div>
   );

@@ -55,21 +55,21 @@ export const BARA_CARD_TEXT: Record<BaraCardZone, { zoneLabel: string; headline:
     headline: "Baraku hanya sampai lapisan atas.",
     note: "Di Kalimantan Tengah, bara permukaan membakar 0–20 cm teratas.",
     challenge: "Asapnya dari mana? Coba sendiri.",
-    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+    source: "Simulasi Emberguard",
   },
   dalam: {
     zoneLabel: "Bara dalam",
     headline: "Baraku menembus lapisan dalam.",
     note: "Bara dalam teramati pada 20–50 cm, dan sulit padam walau hujan lebat.",
     challenge: "Asapnya dari mana? Coba sendiri.",
-    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+    source: "Simulasi Emberguard",
   },
   lebih: {
     zoneLabel: "Lebih dalam dari pengamatan",
     headline: "Baraku turun lebih dalam lagi.",
     note: "Melewati 20–50 cm yang teramati di Kalimantan Tengah, karena gambutnya makin kering.",
     challenge: "Bisa kamu jaga lebih basah? Coba sendiri.",
-    source: "Simulasi Emberguard, kedalaman bara: Usup dkk. (2004)",
+    source: "Simulasi Emberguard",
   },
 };
 
@@ -85,7 +85,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     lead: "Api harus menahan panasnya 1–2 jam di satu titik. Kalau tidak, titik panas di gambut hilang sendiri.",
     task: "Pilih cara api membakar, lalu klik permukaan gambut.",
     // Suhu sulut arang: Usup dkk. (2004), Tabel 1. Puncak lapangan: Santoso dkk. (2022).
-    fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C (Usup dkk., 2004; Santoso dkk., 2022)" },
+    fact: { value: "340–369 °C", caption: "Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C" },
   },
   {
     number: "02",
@@ -94,7 +94,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     // Usup dkk. (2004), hlm. 10–13.
     lead: "Bara cepat di 20 cm teratas, lalu melambat di lapisan dalam. Ia berhenti di gambut yang masih basah.",
     task: "Majukan waktu sampai bara berumur dua hari.",
-    fact: { value: "Berminggu-minggu", caption: "Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama (Santoso dkk., 2022)" },
+    fact: { value: "Berminggu-minggu", caption: "Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama" },
   },
   {
     number: "03",
@@ -106,7 +106,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     lead: "Siraman hanya memadamkan permukaan. Bara di bawah tetap hidup, lalu naik lagi saat tanahnya kering.",
     task: "Siram permukaan, buka tampilan termal, lalu tunggu sampai permukaan menyala lagi.",
     // Usup dkk. (2004), hlm. 12.
-    fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering (Usup dkk., 2004)" },
+    fact: { value: "Hujan lebat", caption: "Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering" },
   },
   {
     number: "04",
@@ -115,7 +115,7 @@ export const BARA_ACTS: readonly BaraAct[] = [
     // Usup dkk. (2004), hlm. 12–13.
     lead: "Hujan saja sulit memadamkan bara dalam. Rambatannya berhenti saat muka air tanah naik sampai ke bara.",
     task: "Naikkan muka air tanah sampai seluruh bara padam.",
-    fact: { value: "≤ 0,4 m", caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya (PP 57/2016)" },
+    fact: { value: "≤ 0,4 m", caption: "Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya" },
   },
 ];
 

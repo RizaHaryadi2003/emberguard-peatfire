@@ -66,3 +66,14 @@ Angka 858,4 ha di naskah Bab 1 perlu ditinjau ulang oleh pengguna.
 
 Jembatan ke modul berikutnya: "Tanah apa sebenarnya yang ada di bawah
 kakimu?" → Modul 02 Anatomi Gambut.
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/sekitarmu.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Luas gambut Indonesia dari pemetaan semi-detail 1:50.000 tahun 2013–2019 | Anda dkk., 2021 |
+| Gambut Kota Pontianak hasil pemeriksaan 614 titik lapangan dan 68 contoh tanah | Parabi dkk., 2026 |
+| Tebal lapisan gambut di sekitar Jl. Reformasi Untan, diukur dengan geolistrik | Fajania dkk., 2021 |
+| Kebakaran berulang di lahan gambut Kota Pontianak | Rahsia dkk., 2020 |

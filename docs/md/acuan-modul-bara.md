@@ -275,3 +275,15 @@ bara sudah menyala lagi sesudah siraman (atau sudah padam seluruhnya).
 | Babak 04: tinggi air pemadaman | Santoso dkk. (2022) |
 | Babak 04: batas muka air 0,4 m | PP 57/2016 |
 | Skala: luas terbakar 1997 | Page dkk. (2002) |
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/bara.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Baris sumber kartu hasil: "Simulasi Emberguard" | Simulasi Emberguard, kedalaman bara: Usup dkk. (2004) |
+| Suhu arang gambut Kalimantan mulai menyala. Di dalam gambut, puncak terukurnya 470–700 °C | Usup dkk., 2004; Santoso dkk., 2022 |
+| Lama bara gambut dapat bertahan di bawah permukaan, bahkan melewati hujan pertama | Santoso dkk., 2022 |
+| Bara gambut dalam tetap sulit padam walau hujan lebat. Air lewat retakan tidak terserap gambut yang sudah kering | Usup dkk., 2004 |
+| Muka air tanah yang wajib dijaga pada ekosistem gambut budidaya | PP 57/2016 |

@@ -160,7 +160,6 @@ export default function HutanModule() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1 hidden text-[10px] text-white/40 sm:block lg:hidden">{HUTAN_TEXT.source}</p>
               </div>
             ) : (
               <p className="text-[12px] leading-snug text-white/75">Tekan salah satu jenis hutan di bawah penampang.</p>

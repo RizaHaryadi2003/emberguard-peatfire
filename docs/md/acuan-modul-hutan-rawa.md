@@ -88,3 +88,13 @@ Penutup: kanal penebangan di tengah hutan ini (B) → Modul 04 Kanal.
 Bentuk visual: penampang samping kubah gambut dalam SVG 2D, bukan adegan 3D —
 yang dibandingkan di sini panjang (km), tebal (m), dan tinggi (m), dan untuk
 itu penampang berskala adalah bentuk yang paling jujur.
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/hutan-rawa.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Tinggi pohon tertinggi di hutan puncak kubah Sebangau, di atas gambut setebal 10–13 m | Husson dkk., 2018 |
+| Tinggi kanopi hutan rawa gambut, lebih rendah daripada hutan di tanah mineral, karena haranya hanya dari hujan | Page dkk., 1999 |
+| Satwa dan tumbuhan terancam punah secara global yang tercatat di hutan rawa gambut Sebangau | Husson dkk., 2018 |

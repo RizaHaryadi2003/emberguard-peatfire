@@ -91,7 +91,7 @@ function BoreCore({ bore, reducedMotion }: { bore: Bore; reducedMotion: boolean 
             <p className="sekitarmu-rise mt-1 text-[12px] font-medium text-white">{SEKITARMU_TEXT.personStack(Math.round(bore.maxM / PERSON_M))}</p>
             <p className="sekitarmu-rise mt-1 text-[12px] leading-snug text-white/80">{bore.reading}</p>
             <p className="mt-1 text-[10px] text-white/45">
-              {bore.method} · {bore.source}
+              {bore.method}
             </p>
             <p className="mt-1 text-[10px] text-white/40">Kolom 0–15 m · garis putih: {SEKITARMU_TEXT.personNote}</p>
           </>
@@ -222,6 +222,31 @@ export default function SekitarmuModule() {
   const fireBore = fire ? BORE_SITES.find((b) => b.id === fire.id) : undefined;
   const fireTitle = fireBore?.title ?? null;
 
+  const borePanel = bore ? (
+    <div data-guide="siteInfo">
+      <BoreCore key={bore.id} bore={bore} reducedMotion={reducedMotion} />
+    </div>
+  ) : (
+    <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik bor di peta.</p>
+  );
+  const firePanel = fire ? (
+    <div data-guide="siteInfo">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{fireTitle}</p>
+      {fireBore && <p className="mt-1 text-[12px] font-medium text-[#f0a35e]">{SEKITARMU_TEXT.firePeat(fireBore.display)}</p>}
+      {/* Kejadian muncul berurutan menurut waktu: terbakar, lalu terbakar lagi. */}
+      <ul key={fire.id} className="mt-2 space-y-2">
+        {fire.events.map((e, i) => (
+          <li key={e.when} className="sekitarmu-rise" style={{ animationDelay: `${0.15 + i * 0.35}s` }}>
+            <p className="text-[12px] font-medium text-[#ff9a5c]">{e.when}</p>
+            <p className="text-[12px] leading-snug text-white/80">{e.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : (
+    <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik api di peta.</p>
+  );
+
   return (
     <ActModuleShell
       href="/modul/sekitarmu"
@@ -269,6 +294,17 @@ export default function SekitarmuModule() {
           reducedMotion={reducedMotion}
         />
       }
+      // Kolom kanan selalu dipasang supaya ukuran peta tidak berubah saat
+      // pindah babak; isinya hanya ada di babak 03 dan 04.
+      aside={
+        act === 2 || act === 3 ? (
+          <section className="stage-in rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+            {act === 2 ? borePanel : firePanel}
+          </section>
+        ) : (
+          <></>
+        )
+      }
       controls={
         <>
       {act === 0 && (
@@ -306,7 +342,6 @@ export default function SekitarmuModule() {
               <span key={l.id}>{l.label}</span>
             ))}
           </div>
-          <p className="mt-1.5 text-[10px] text-white/40">Sumber: {level.note}</p>
         </div>
       )}
 
@@ -329,34 +364,20 @@ export default function SekitarmuModule() {
         </div>
       )}
 
-      {act === 2 &&
-        (bore ? (
-          <div data-guide="siteInfo">
-            <BoreCore key={bore.id} bore={bore} reducedMotion={reducedMotion} />
-          </div>
-        ) : (
-          <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik bor di peta.</p>
-        ))}
-
-      {act === 3 &&
-        (fire ? (
-          <div data-guide="siteInfo">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{fireTitle}</p>
-            {fireBore && <p className="mt-1 text-[12px] font-medium text-[#f0a35e]">{SEKITARMU_TEXT.firePeat(fireBore.display)}</p>}
-            {/* Kejadian muncul berurutan menurut waktu: terbakar, lalu terbakar lagi. */}
-            <ul key={fire.id} className="mt-2 space-y-2">
-              {fire.events.map((e, i) => (
-                <li key={e.when} className="sekitarmu-rise" style={{ animationDelay: `${0.15 + i * 0.35}s` }}>
-                  <p className="text-[12px] font-medium text-[#ff9a5c]">{e.when}</p>
-                  <p className="text-[12px] leading-snug text-white/80">{e.text}</p>
-                  <p className="text-[10px] text-white/40">{e.source}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik api di peta.</p>
-        ))}
+      {/* Rincian titik bor dan titik api: di laptop pindah ke kolom kanan
+          supaya panel cerita tidak terjepit; di sini tinggal ajakannya. */}
+      {act === 2 && (
+        <>
+          <div className="lg:hidden">{borePanel}</div>
+          <p className="hidden text-[12px] leading-snug text-white/75 lg:block">Tekan titik bor di peta. Rinciannya muncul di kanan.</p>
+        </>
+      )}
+      {act === 3 && (
+        <>
+          <div className="lg:hidden">{firePanel}</div>
+          <p className="hidden text-[12px] leading-snug text-white/75 lg:block">Tekan titik api di peta. Kejadiannya muncul di kanan.</p>
+        </>
+      )}
         </>
       }
     />

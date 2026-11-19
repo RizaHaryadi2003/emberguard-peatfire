@@ -25,10 +25,10 @@ describe("isi kartu", () => {
     expect(zoneOf(51)).toBe("lebih");
   });
 
-  it("menyebut sumber pada setiap kemungkinan", () => {
+  it("tidak memuat kutipan penulis pada setiap kemungkinan", () => {
     for (const cm of [10, 39, 70]) {
       const card = getBaraCard({ cm, resurfaced: false });
-      expect(card.source).toContain("Usup");
+      expect(card.source).not.toMatch(/dkk\.|Usup/);
       expect(card.depth).toBe(`${cm} cm`);
     }
   });

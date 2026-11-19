@@ -331,3 +331,14 @@ gambar penampang tersendiri sebelum kamera mendekat ke bongkahan pada Tahap 2.
 | Tahap 4: muka air ± 40 cm | Andriesse (1988), §8.2.2; PP 57/2016 |
 | Pembuka: "sebagian besar isinya air" | Boelter (1974) dalam Andriesse (1988), §4.2.4; Driessen & Rochimah (1976), Tabel 10 |
 | Kartu hasil: 400 tahun → < 10 tahun, batas 40 cm | Andriesse (1988), §7.4; PP 57/2016 |
+
+## Kutipan yang dipindah dari layar (19 November 2026)
+
+Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tanpa kutipan; sumbernya dicatat di sini agar tetap dapat ditelusuri. Kolom `source`/`note` pada data titik dan tingkat tetap disimpan di `config/modul/anatomi.ts` tetapi tidak ditampilkan.
+
+| Teks di layar sekarang | Sumber (dulu ditulis di layar) |
+|---|---|
+| Baris sumber kartu hasil: "Simulasi Emberguard" | Andriesse (1988), FAO Soils Bulletin 59 · PP 57/2016 |
+| Ketebalan minimum bahan organik agar suatu lahan disebut gambut | PP 71/2014 |
+| Bagian volume gambut fibrik yang berupa pori, terisi air saat jenuh | Boelter 1974, dalam Andriesse 1988 |
+| Batas muka air tanah. Lebih dalam dari ini, ekosistem gambut dinyatakan rusak | PP 57/2016 |

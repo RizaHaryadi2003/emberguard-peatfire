@@ -71,7 +71,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     term: { word: "Muka air tanah", meaning: "batas atas air yang tersimpan di dalam tanah. Gambut di bawahnya basah, gambut di atasnya kering." },
     fact: {
       value: "40 cm",
-      caption: "Muka air lebih dalam dari ini menaikkan risiko kebakaran gambut (Wösten dkk., 2008), dan kini menjadi batas PP 57/2016",
+      caption: "Muka air lebih dalam dari ini menaikkan risiko kebakaran gambut, dan kini menjadi batas PP 57/2016",
     },
   },
   {
@@ -95,7 +95,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     // peluruhannya — tetapan yang membuat jaraknya sejauh itu, bukan jaraknya.
     fact: {
       value: "1 km",
-      caption: "Di Kalampangan, Kalimantan Tengah, muka air sejauh ini dari kanal masih 40–50 cm lebih dangkal daripada di tepinya (Ritzema dkk., 2014)",
+      caption: "Di Kalampangan, Kalimantan Tengah, muka air sejauh ini dari kanal masih 40–50 cm lebih dangkal daripada di tepinya",
     },
   },
   {
@@ -108,7 +108,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     term: { word: "Lesak (subsidensi)", meaning: "permukaan gambut turun karena gambut yang kering mengempis dan perlahan terurai menjadi gas karbon." },
     fact: {
       value: "7 cm/tahun",
-      caption: "Lesak hutan gambut yang dikeringkan untuk tiap satu meter muka air turun, dan terus berlangsung selama drainasenya dijaga (Hooijer dkk., 2012)",
+      caption: "Lesak hutan gambut yang dikeringkan untuk tiap satu meter muka air turun, dan terus berlangsung selama drainasenya dijaga",
     },
   },
   {
@@ -122,7 +122,7 @@ export const KANAL_ACTS: readonly KanalAct[] = [
     term: { word: "Sekat kanal", meaning: "bendung kecil di dalam kanal yang menahan air agar tidak terus mengalir keluar dari gambut." },
     fact: {
       value: "± 400 m",
-      caption: "Jangkauan sekat kanal menaikkan muka air di kiri dan kanan kanal Kalampangan (Ritzema dkk., 2014)",
+      caption: "Jangkauan sekat kanal menaikkan muka air di kiri dan kanan kanal Kalampangan",
     },
   },
 ];
@@ -241,7 +241,7 @@ export const KANAL_CARD_TEXT = {
   guessLine: (guess: string, reach: string) => `Tebakanku ${guess}. Ternyata ${reach} ke tiap sisi.`,
   note: "Airnya bisa dikembalikan dengan sekat. Tanah yang sudah melesak tidak.",
   challenge: "Menurutmu sejauh apa? Tebak sendiri.",
-  source: "Simulasi Emberguard, dikalibrasi ke Hooijer dkk. (2012)",
+  source: "Simulasi Emberguard",
 };
 
 /* ============================================================================
