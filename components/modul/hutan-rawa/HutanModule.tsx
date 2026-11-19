@@ -159,15 +159,15 @@ export default function HutanModule() {
                 </div>
                 {/* Di ponsel daftar jenis disembunyikan supaya panel tidak
                     menutupi penampang; versi laptop memuatnya lengkap. */}
-                <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block">{HUTAN_TEXT.totals}</p>
-                <ul className="mt-1 hidden grid-cols-3 gap-x-2 gap-y-1 sm:grid">
+                <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block lg:hidden">{HUTAN_TEXT.totals}</p>
+                <ul className="mt-1 hidden grid-cols-3 gap-x-2 gap-y-1 sm:grid lg:hidden">
                   {SEBANGAU_SPECIES.map((s) => (
                     <li key={s.label} className="text-[11px] text-white/70">
                       <span className="font-medium tabular-nums text-white">{s.value}</span> {s.label}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.source}</p>
+                <p className="mt-1 hidden text-[10px] text-white/40 sm:block lg:hidden">{HUTAN_TEXT.source}</p>
               </div>
             ) : (
               <p className="text-[12px] leading-snug text-white/75">Tekan salah satu jenis hutan di bawah penampang.</p>
@@ -240,7 +240,7 @@ export default function HutanModule() {
               <ThreatenedList />
             </section>
           )}
-          <p className={`${CARD} stage-in text-[11px] leading-snug text-white/60`}>{act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}</p>
+          {act !== 2 && <p className={`${CARD} stage-in text-[11px] leading-snug text-white/60`}>{HUTAN_TEXT.scaleNote}</p>}
         </>
       }
       controls={
@@ -409,6 +409,7 @@ function ThreatenedList() {
   return (
     <div>
       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{HUTAN_TEXT.threatened}</p>
+      <p className="mt-1 text-[10px] leading-snug text-white/45">{HUTAN_TEXT.apesNote}</p>
       <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#9fd3a0]">{HUTAN_TEXT.animals}</p>
       <ul className="mt-1 space-y-1">{SEBANGAU_THREATENED.animals.map(row)}</ul>
       <div className="mt-2">

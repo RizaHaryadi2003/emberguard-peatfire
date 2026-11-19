@@ -336,7 +336,7 @@ export default function ActModuleShell({
         >
           {/* Lantai kolom kanan diatur modulnya sendiri: modul dengan
               tuntunan memunculkannya satu per satu mengikuti aksi pembaca. */}
-          <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3 [@media(max-height:820px)]:gap-2">
+          <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden [@media(max-height:820px)]:gap-2">
             {aside}
           </div>
           <div data-guide="next" className="max-w-full shrink-0 self-end">

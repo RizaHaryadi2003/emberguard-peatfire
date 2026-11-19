@@ -502,8 +502,9 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
   // basahnya gambut.
   const anim = useRef({ flood: 0, soak: 0, silt: 0, siltLevel: RIVER_LEVEL });
   const floodRef = useRef<THREE.Mesh>(null);
-  const topDry = useMemo(() => new THREE.Color("#7d7a5c"), []);
-  const topWet = useMemo(() => new THREE.Color("#58654f"), []);
+  // Lantai hutan hijau-coklat alami seperti permukaan Modul Kanal.
+  const topDry = useMemo(() => new THREE.Color("#6f8a52"), []);
+  const topWet = useMemo(() => new THREE.Color("#5a7449"), []);
   const walkerZone = walkerKm === null ? null : zoneAt(walkerKm);
   const lit = FOREST_ZONES.find((z) => z.id === (activeZone ?? walkerZone?.id));
 

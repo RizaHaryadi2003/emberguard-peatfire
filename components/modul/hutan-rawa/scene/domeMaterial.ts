@@ -58,46 +58,14 @@ const FACE_DIFFUSE = /* glsl */ `
     texture2D(uColor1, kUv * 0.9 + 0.31).rgb * kW.y * vec3(${tint("hemik")}) +
     texture2D(uColor2, kUv * 0.8 + 0.57).rgb * kW.z * vec3(${tint("saprik")});
 
-  // Ragam skala besar supaya tekstur foto tidak tampak berulang di sepanjang
-  // muka selebar seratus dua puluh satuan.
+  // Rupa bersih, sama dengan bongkahan Modul Anatomi dan Kanal: hanya foto
+  // tiga lapisan gambut dengan peralihan halus, ditambah ragam skala besar
+  // yang tipis supaya muka selebar ini tidak tampak berulang. Bongkah kayu,
+  // guratan akar, serat pucat, tikar akar gelap, dan rona kemerahan yang
+  // dulu ada dibuang: dari jarak pandang diorama semuanya terbaca sebagai
+  // noda kotor, bukan sebagai gambut.
   float kMottle = kNoise(vFaceWorld.xy * vec2(0.08, 0.35));
-  kAlbedo *= 0.7 + kMottle * 0.6;
-  // Rona gambut: coklat kemerahan, bukan kelabu. Foto tanah di bawahnya
-  // diambil dari tanah mineral yang lebih pucat.
-  kAlbedo *= vec3(1.08, 0.84, 0.66);
-
-  // Guratan mendatar: bahan tumbuhan mengendap lapis demi lapis.
-  float kBedding = kNoise(vec2(vFaceWorld.x * 0.25, vFaceWorld.y * 7.0));
-  kAlbedo *= 1.0 + (kBedding - 0.5) * 0.28;
-
-  // Tikar akar di bawah lantai hutan: lebih gelap dan rapat.
-  float kMat = 1.0 - smoothstep(0.05, 0.45, vDepth);
-  kAlbedo *= mix(1.0, 0.5, kMat);
-
-  // Akar: guratan tegak yang gelap, habis dalam dua meter pertama.
-  float kRootRidge = 1.0 - abs(kNoise(vec2(vFaceWorld.x * 3.2, vFaceWorld.y * 0.45)) * 2.0 - 1.0);
-  float kRoot = smoothstep(0.9, 0.985, kRootRidge) * (1.0 - smoothstep(0.4, 2.2, vDepth));
-  kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.48, 0.4, 0.34), kRoot * 0.8);
-
-  // Serat pucat mendatar: sisa daun dan ranting yang masih utuh.
-  float kFiberRidge = 1.0 - abs(kNoise(vec2(vFaceWorld.x * 1.6, vFaceWorld.y * 9.0) + 3.7) * 2.0 - 1.0);
-  float kFiber = smoothstep(0.93, 0.99, kFiberRidge) * (kW.x + kW.y * 0.6);
-  kAlbedo *= 1.0 + kFiber * 0.5;
-
-  // Sisa kayu tertimbun: bongkah coklat kemerahan yang memanjang mendatar.
-  // Gambut hutan rawa tropis tersusun dari kayu pohon rawa, jadi bongkah ini
-  // muncul di seluruh kedalaman, bukan hanya di dekat permukaan.
-  // Ukurannya beberapa satuan mendatar dan setengah meter tegak, supaya
-  // tetap terbaca dari jarak pandang diorama.
-  float kWoodN = kNoise(vec2(vFaceWorld.x * 0.22, vFaceWorld.y * 1.3) + 11.0);
-  float kWoodGrain = kNoise(vec2(vFaceWorld.x * 0.9, vFaceWorld.y * 14.0) + 5.0);
-  float kWood = smoothstep(0.71, 0.75, kWoodN) * smoothstep(0.4, 1.0, vDepth);
-  // Kayu yang terendam gambut berwarna coklat kemerahan pekat, sedikit
-  // lebih merah daripada gambut di sekitarnya, dengan serat memanjang.
-  kAlbedo = mix(kAlbedo, kAlbedo * vec3(1.25, 0.82, 0.6) * (0.7 + kWoodGrain * 0.6), kWood * 0.9);
-  // Tepi bongkah kayu lebih gelap supaya terbaca sebagai benda, bukan noda.
-  float kWoodRim = smoothstep(0.68, 0.71, kWoodN) * (1.0 - smoothstep(0.71, 0.74, kWoodN)) * smoothstep(0.4, 1.0, vDepth);
-  kAlbedo *= 1.0 - kWoodRim * 0.5;
+  kAlbedo *= 0.92 + kMottle * 0.16;
 
   // Makin dalam makin gelap: gambut tua yang sudah lama hancur.
   kAlbedo *= mix(1.0, 0.74, smoothstep(1.5, 8.0, vDepth));
@@ -258,7 +226,7 @@ export type FloorUniforms = {
 export type FloorMaterial = THREE.MeshStandardMaterial & FloorUniforms;
 
 export function createFloorMaterial(map: THREE.Texture, normalMap: THREE.Texture, noise: THREE.Texture): FloorMaterial {
-  const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.9, color: "#7d7a5c", vertexColors: true }) as FloorMaterial;
+  const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.9, color: "#6f8a52", vertexColors: true }) as FloorMaterial;
   const silt = { value: 0 };
   const siltLevel = { value: 0 };
   const zone = { value: new THREE.Vector3(0, 0, 0) };
