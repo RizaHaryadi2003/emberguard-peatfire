@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, MousePointerClick, RotateCcw } from "lucide-react";
+import { Check, Lock, MousePointerClick, RotateCcw } from "lucide-react";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
 import { BACK_TO_MODULE_LIST, moduleAt, nextAvailableModule } from "@/config/modules-content";
@@ -132,65 +132,111 @@ export default function ActModuleShell({
       />
 
       {/* Peredup di sisi kiri agar teks terbaca di atas gambar. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/80 via-black/30 to-transparent md:w-[55%]" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/80 via-black/30 to-transparent md:w-[55%] md:from-black/60 md:via-black/15" />
 
-      {/* Panel cerita (kiri atas). */}
-      <div
-        inert={hookOpen}
-        className={`pointer-events-none absolute left-5 right-5 top-14 z-20 sm:left-10 md:left-14 md:right-auto md:max-w-[404px] [@media(min-height:651px)]:top-16 [@media(min-height:901px)]:top-24 ${panelFade}`}
-      >
-        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
-          Modul {meta.number} · {meta.title}
-        </p>
-        <div key={act} aria-live="polite">
-          <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8]">Babak {current.number}</p>
-          <h1 className="mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl" style={{ letterSpacing: "-0.03em" }}>
-            {current.title}
-          </h1>
-          <p className="mt-2 hidden text-sm leading-snug text-white/75 sm:block">{current.body}</p>
-          <p className="mt-2 text-[11px] leading-snug text-white/60">
-            <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
-          </p>
-          <div
-            className={`pointer-events-auto mt-3 rounded-2xl border p-3 transition-colors duration-500 ${
-              done ? "border-emerald-300/30 bg-[#06231a]/80" : "border-[#6fb6d8]/30 bg-black/65"
-            }`}
-          >
-            <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${done ? "text-emerald-200" : "text-[#8fcce8]"}`}>
-              {done ? <Check size={12} /> : <MousePointerClick size={12} />}
-              {done ? "Berhasil · perhatikan" : "Tugasmu"}
+      {/* Kolom kiri. Di layar lebar panel cerita dan panel kendali disusun
+          dalam satu kolom bertumpuk (flex), bukan dua kotak yang masing-masing
+          dipaku ke atas dan ke bawah layar: dengan begitu keduanya tidak
+          mungkin saling tindih, berapa pun tinggi isinya. Di layar sempit
+          kolom ini lenyap (`contents`) dan kedua panel kembali ke tempatnya
+          di atas dan di bawah pita gambar. */}
+      <div className="contents md:absolute md:inset-y-0 md:left-14 md:z-20 md:flex md:w-[404px] md:flex-col md:gap-3 md:pb-6 md:pt-16 [@media(min-height:901px)]:md:pt-24">
+        {/* Panel cerita. */}
+        <div
+          inert={hookOpen}
+          className={`pointer-events-none absolute left-5 right-5 top-14 z-20 sm:left-10 md:pointer-events-auto md:static md:min-h-0 md:shrink md:overflow-hidden md:rounded-3xl md:border md:border-white/10 md:bg-[#0a0d0f]/80 md:p-5 md:shadow-2xl md:shadow-black/50 [@media(min-height:651px)]:top-16 ${panelFade}`}
+        >
+          {/* Kepala: nama modul dan penanda babak (layar lebar). */}
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
+              Modul {meta.number} · {meta.title}
             </p>
-            <p className="mt-1.5 text-[13px] leading-snug text-white">{done ? current.observe : current.task}</p>
-            {!done && <p className="mt-1.5 text-[11px] tabular-nums text-white/55">{progress}</p>}
-            {taskExtra}
+            <ol aria-label="Babak modul" className="hidden shrink-0 items-center gap-1.5 md:flex">
+              {acts.map((a, i) => {
+                const locked = i > act && !done;
+                const passed = i < act;
+                return (
+                  <li key={a.number}>
+                    <button
+                      type="button"
+                      onClick={() => goToAct(i)}
+                      disabled={locked}
+                      aria-current={i === act ? "step" : undefined}
+                      aria-label={`Babak ${a.number}: ${a.title}`}
+                      title={locked ? current.hint : a.title}
+                      className={`grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums transition-colors duration-300 ${
+                        i === act
+                          ? "bg-white text-black"
+                          : passed
+                            ? "cursor-pointer bg-[#e8702a]/25 text-[#f3a56f] hover:bg-[#e8702a]/40"
+                            : locked
+                              ? "cursor-not-allowed border border-white/10 text-white/25"
+                              : "cursor-pointer border border-white/25 text-white/70 hover:border-white/50"
+                      }`}
+                    >
+                      {passed ? <Check size={11} strokeWidth={3} /> : locked ? <Lock size={10} /> : a.number}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
-          {/* Angka kunci babak, beserta sumbernya. */}
-          <div className="mt-3 hidden items-baseline gap-3 border-t border-white/10 pt-3 [@media(min-height:760px)]:sm:flex">
-            <span className="shrink-0 font-playfair text-2xl italic text-[#f0a35e]">{current.fact.value}</span>
-            <span className="text-[11px] leading-snug text-white/55">{current.fact.caption}</span>
+
+          <div key={act} aria-live="polite">
+            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8]">
+              Babak {current.number} <span className="text-white/30">/ {acts[acts.length - 1].number}</span>
+            </p>
+            <h1 className="mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl" style={{ letterSpacing: "-0.03em" }}>
+              {current.title}
+            </h1>
+            <p className="mt-2 hidden text-sm leading-relaxed text-white/80 sm:block">{current.body}</p>
+            <p className="mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.04] md:px-3 md:py-2">
+              <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
+            </p>
+            <div
+              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 ${
+                done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/80" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/55"
+              }`}
+            >
+              <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${done ? "text-emerald-200" : "text-[#8fcce8]"}`}>
+                {done ? <Check size={12} /> : <MousePointerClick size={12} />}
+                {done ? "Berhasil · perhatikan" : "Tugasmu"}
+              </p>
+              <p className="mt-1.5 text-[13px] leading-snug text-white">{done ? current.observe : current.task}</p>
+              {!done && <p className="mt-1.5 text-[11px] tabular-nums text-white/55">{progress}</p>}
+              {taskExtra}
+            </div>
+            {/* Angka kunci babak. Sumbernya dicatat di dokumen acuan modul. */}
+            <div className="mt-3 hidden items-baseline gap-3 border-t border-white/10 pt-3 [@media(min-height:760px)]:sm:flex">
+              <span className="shrink-0 font-playfair text-2xl italic text-[#f0a35e]">{current.fact.value}</span>
+              <span className="text-[11px] leading-snug text-white/60">{current.fact.caption}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel kendali. */}
+        <div
+          inert={hookOpen}
+          className={`absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${panelFade}`}
+        >
+          <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/85 p-3.5 shadow-2xl shadow-black/60 md:p-4">
+            {controls}
+            <div className="mt-3 flex justify-end border-t border-white/10 pt-2.5">
+              <button
+                type="button"
+                onClick={onReset}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <RotateCcw size={12} /> Mulai dari awal
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Panel kendali (kiri bawah). */}
-      <div
-        inert={hookOpen}
-        className={`absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}
-      >
-        <div className="rounded-3xl border border-white/10 bg-black/75 p-3.5 shadow-2xl shadow-black/60">
-          {controls}
-          <button
-            type="button"
-            onClick={onReset}
-            className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-3.5 py-2 text-xs font-medium text-white/75 transition-colors hover:border-white/40 hover:text-white"
-          >
-            <RotateCcw size={14} /> Mulai dari awal
-          </button>
-        </div>
-      </div>
-
-      {/* Navigasi babak (bawah). */}
-      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 z-20 flex items-end gap-4 sm:left-10 md:left-14 ${panelFade}`}>
+      {/* Navigasi babak (bawah), hanya di layar sempit; di layar lebar
+          penanda babak ada di kepala panel cerita. */}
+      <nav inert={hookOpen} aria-label="Babak modul" className={`absolute bottom-6 left-5 z-20 flex items-end gap-4 sm:left-10 md:hidden ${panelFade}`}>
         <div className="flex gap-2">
           {acts.map((a, i) => {
             const locked = i > act && !done;
@@ -214,7 +260,7 @@ export default function ActModuleShell({
             );
           })}
         </div>
-        {/* Di ponsel tombolnya baru muncul setelah tugas selesai, di samping
+        {/* Tombol lanjut baru muncul setelah tugas selesai, di samping
             penanda babak: lebar layar tidak cukup untuk panah terkunci beserta
             arahannya, dan arahannya sudah ada di kartu tugas. */}
         {done &&
@@ -222,7 +268,7 @@ export default function ActModuleShell({
             next?.href && (
               <Link
                 href={next.href}
-                className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white md:hidden"
+                className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
               >
                 Modul berikutnya
               </Link>
@@ -231,7 +277,7 @@ export default function ActModuleShell({
             <button
               type="button"
               onClick={() => goToAct(act + 1)}
-              className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white md:hidden"
+              className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
             >
               Babak berikutnya
             </button>

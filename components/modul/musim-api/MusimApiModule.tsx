@@ -13,6 +13,7 @@ import {
   MUSIM_TEXT,
   STAGE_COLOR,
   STAGE_LABEL,
+  explainDay,
 } from "@/config/modul/musim-api";
 import {
   BURN_CM,
@@ -224,7 +225,10 @@ export default function MusimApiModule() {
               />
             )}
           </div>
-          <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{MUSIM_TEXT.source}</p>
+          {/* Alasan keadaan hari ini, berubah mengikuti setiap geseran. */}
+          <p aria-live="polite" className="mt-2 rounded-xl bg-white/[0.05] px-3 py-2 text-[12px] leading-snug text-white/80">
+            {explainDay({ depthCm, rainMmDay, dryRun: extended, dryDays })}
+          </p>
         </div>
       }
     />

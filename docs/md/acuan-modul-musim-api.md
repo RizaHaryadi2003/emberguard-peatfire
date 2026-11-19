@@ -128,6 +128,25 @@ kalender 12 bulan menjadi pengendali waktu.
 40 cm. El Niño hanya membuatnya bertahan lebih lama." + tautan ke Modul Bara
 (apa yang terjadi di bawah tanah) dan Modul Kanal (siapa yang menurunkan air).
 
+### Sumber tiap angka di layar
+
+Sejak 19 November 2026 layar tidak menampilkan kutipan (permintaan
+pengguna: pembaca 17 tahun tidak perlu membaca nama penulis). Sumbernya
+dicatat di sini.
+
+| Letak di layar | Angka / klaim | Sumber |
+|---|---|---|
+| Babak 01, angka kunci | "2 kali" masa kering: Februari–Maret, Agustus | D, G |
+| Babak 01, tugas selesai | tahun biasa tidak sampai 40 cm | model §6.5 |
+| Babak 02, pengantar | turun ±1,3 cm/hari di lahan berparit | I |
+| Babak 02, tugas selesai | 12 hari → 40 cm, 28 hari → 60 cm | model §6.5 |
+| Babak 02, angka kunci | 40 cm bahaya tinggi, 60 cm terbakar, Kubu Raya | F |
+| Babak 03, pengantar | September 2026 hujan Kalbar ±⅓ normal (117/304 mm) | H |
+| Babak 03, tugas selesai | dua bulan di bawah 60 cm, reda setelah hujan November | model §6.5 |
+| Babak 03, tugas selesai | asap besar biasanya Agustus–Oktober | D (pengaruh El Niño Juni–November), G (tahun api parah = tahun El Niño) |
+| Babak 03, angka kunci | ±10× luas terbakar pada tahun kekeringan | E |
+| Panel, kalimat keadaan | "akar dan penguapan mengambil air" | I, J |
+
 ### Yang sengaja tidak dibuat
 
 - Grafik ONI/indeks El Niño, peta suhu laut Pasifik: benar secara ilmiah,

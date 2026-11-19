@@ -17,9 +17,9 @@ import { MUSIM_TEXT, STAGE_COLOR } from "@/config/modul/musim-api";
 
 /** Ukuran gambar dalam satuan viewBox; SVG melebar mengikuti panel. */
 const W = 360;
-const RAIN_H = 30;
-const GAP = 6;
-const DEPTH_H = 56;
+const RAIN_H = 24;
+const GAP = 5;
+const DEPTH_H = 48;
 const AXIS_H = 12;
 const H = RAIN_H + GAP + DEPTH_H + AXIS_H;
 
@@ -87,7 +87,18 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
         />
       ))}
 
+      {/* Keterangan warna batang, di pojok kanan atas pita hujan. */}
+      <g fontSize={7} fill="#ffffff" opacity={0.6}>
+        <rect x={W - 118} y={1} width={6} height={6} rx={1} fill="#5fb0dc" />
+        <text x={W - 109} y={6.5}>{MUSIM_TEXT.legendRain}</text>
+        <rect x={W - 78} y={1} width={6} height={6} rx={1} fill="#f0a35e" />
+        <text x={W - 69} y={6.5}>{MUSIM_TEXT.legendDry}</text>
+      </g>
+
       {/* Bidang muka air: 0 di atas (permukaan), makin ke bawah makin dalam. */}
+      <text x={2} y={RAIN_H + GAP + DEPTH_H - 2} fontSize={7} fill="#8fd8ff" opacity={0.7}>
+        {MUSIM_TEXT.legendDepth} ↓
+      </text>
       <rect x={0} y={RAIN_H + GAP} width={W} height={DEPTH_H} rx={3} fill="#ffffff" opacity={0.04} />
       <line x1={0} x2={W} y1={yOfDepth(HIGH_DANGER_CM)} y2={yOfDepth(HIGH_DANGER_CM)} stroke={STAGE_COLOR.bahaya} strokeWidth={0.8} strokeDasharray="3 2" />
       <line x1={0} x2={W} y1={yOfDepth(BURN_CM)} y2={yOfDepth(BURN_CM)} stroke={STAGE_COLOR.terbakar} strokeWidth={0.8} strokeDasharray="3 2" />
@@ -122,7 +133,6 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
           {MONTH_SHORT[m]}
         </text>
       ))}
-      <title>{`${MUSIM_TEXT.legendRain}; jingga = ${MUSIM_TEXT.legendDry}; garis = ${MUSIM_TEXT.legendDepth}`}</title>
     </svg>
   );
 }

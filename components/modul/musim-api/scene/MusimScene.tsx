@@ -63,8 +63,19 @@ const RAIN_BOX = { x: 2.5, z: 1.6, top: 5.2, bottom: 0.05 };
 const DROP_SPEED = 7.5;
 const DROP_LENGTH = 0.22;
 
-/** Sudut dinding (radian) tempat label ambang ditempel: sisi yang menghadap kamera. */
-const LABEL_THETA = 0.62;
+/**
+ * Selisih sudut (radian) antara arah kamera dan titik tempel label ambang di
+ * dinding. Sekitar satu radian menaruh label di tepi kanan bongkahan seperti
+ * terlihat dari kamera, sehingga tulisannya menjulur ke ruang kosong dan
+ * tidak menutupi muka gambut.
+ */
+const LABEL_SIDE = 1.1;
+
+/** Radian putaran per piksel seretan. */
+const DRAG_SPEED = 0.008;
+
+/** Radian putaran per tekan tombol panah. */
+const KEY_STEP = 0.2;
 
 export type MusimSceneProps = {
   /** Kedalaman muka air tanah hari ini (cm di bawah permukaan). */
@@ -107,14 +118,69 @@ export default function MusimScene(props: MusimSceneProps) {
     stateRef.current.reducedMotion = reducedMotion;
   }, [props.depthCm, reducedMotion]);
 
+  // Putaran hasil seretan. Disimpan di keadaan bersama (dibaca tiap
+  // bingkai) dan di state React hanya untuk keterangan aksesibilitas.
+  const dragFrom = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [turned, setTurned] = useState(false);
+  const degrees = (((Math.round((rotation * 180) / Math.PI) % 360) + 360) % 360);
+  const rotate = (delta: number) => {
+    stateRef.current.rotation += delta;
+    setRotation(stateRef.current.rotation);
+    setTurned(true);
+  };
+
   return (
     <>
-      {/* Bingkai tempat diorama dipaskan. Di ponsel panel kendali menindih
-          tepi bawah bingkai, jadi bingkainya dipendekkan di sana. */}
-      <div ref={anchorRef} className="pointer-events-none absolute inset-0 bottom-10 sm:bottom-0" />
-      {/* Diorama ini hanya ditonton, tidak disentuh: semua kendali ada di
-          panel. Kanvas dibuat tembus klik supaya kursor tidak berubah
-          menjadi tangan di atas lapisan seperti di Modul Anatomi. */}
+      {/* Bingkai tempat diorama dipaskan, sekaligus bidang seret untuk
+          memutarnya. Di ponsel panel kendali menindih tepi bawah bingkai,
+          jadi bingkainya dipendekkan di sana. */}
+      <div
+        ref={anchorRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Putar bongkahan gambut"
+        aria-valuemin={0}
+        aria-valuemax={359}
+        aria-valuenow={degrees}
+        aria-valuetext={`diputar ${degrees} derajat`}
+        className={`absolute inset-0 bottom-10 touch-none select-none rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:bottom-0 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          dragFrom.current = e.clientX;
+          setDragging(true);
+        }}
+        onPointerMove={(e) => {
+          if (dragFrom.current === null) return;
+          const dx = e.clientX - dragFrom.current;
+          dragFrom.current = e.clientX;
+          rotate(dx * DRAG_SPEED);
+        }}
+        onPointerUp={() => {
+          dragFrom.current = null;
+          setDragging(false);
+        }}
+        onPointerCancel={() => {
+          dragFrom.current = null;
+          setDragging(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") rotate(-KEY_STEP);
+          else if (e.key === "ArrowRight") rotate(KEY_STEP);
+          else return;
+          e.preventDefault();
+        }}
+      >
+        {!turned && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[11px] text-white/55 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+            ↔ {MUSIM_TEXT.dragHint}
+          </p>
+        )}
+      </div>
+      {/* Kanvas dibuat tembus klik: seretan ditangkap bingkai di bawahnya,
+          dan kursor tidak berubah menjadi tangan di atas lapisan seperti di
+          Modul Anatomi. */}
       <div className="pointer-events-none fixed inset-0">
         <Canvas
           dpr={[1, profile.maxDpr]}
@@ -214,7 +280,6 @@ function CameraRig({ anchorRef }: { anchorRef: RefObject<HTMLDivElement | null> 
 function Diorama({
   stateRef,
   reducedMotion,
-  depthCm,
   rainMmDay,
   fire,
   quality,
@@ -228,7 +293,7 @@ function Diorama({
     fireRef.current = fire;
   }, [rainMmDay, fire]);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const s = stateRef.current;
     const g = ref.current;
     if (!s || !g) return;
@@ -237,8 +302,8 @@ function Diorama({
     // Bahaya dihaluskan di sini, satu kali untuk seluruh adegan: dipakai
     // bara, pijar lapisan kering, dan kabut asap di langit.
     s.danger = THREE.MathUtils.damp(s.danger, fireRef.current, fast ? 30 : 1.6, dt);
-    const idle = fast ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.06;
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, DIORAMA_BASE_YAW + idle, 4, dt);
+    // Bongkahan hanya berputar bila diseret; tanpa seretan ia diam.
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, DIORAMA_BASE_YAW + s.rotation, fast ? 30 : 10, dt);
   });
 
   return (
@@ -249,7 +314,7 @@ function Diorama({
       <ThresholdRibbons />
       <Rain intensityRef={rainRef} count={DROPS[quality]} reducedMotion={reducedMotion} />
       <Clouds intensityRef={rainRef} />
-      <Labels depthCm={depthCm} />
+      <Labels />
     </group>
   );
 }
@@ -286,42 +351,55 @@ function ThresholdRibbons() {
 }
 
 /**
- * Label di dinding bongkahan: kedua ambang, dan muka air hari ini.
+ * Label kedua ambang di dinding bongkahan.
  *
- * Ditempel pada sisi yang menghadap kamera dan ikut berputar bersama
- * diorama, jadi selalu menunjuk lapisan yang sama.
+ * Ditempel di tepi kanan bongkahan seperti terlihat dari kamera, dan pindah
+ * mengikuti putaran, sehingga selalu terbaca dan tidak pernah tertutup
+ * bongkahan atau menutupi muka gambut. Kedalaman muka air hari ini tidak
+ * dilabeli di sini: angkanya sudah besar di panel kendali, dan garis birunya
+ * terlihat di dinding.
  */
-function Labels({ depthCm }: { depthCm: number }) {
-  const dangerAt = useMemo(() => wallPoint(LABEL_THETA, -HIGH_DANGER_CM / 100, -0.05), []);
-  const burnAt = useMemo(() => wallPoint(LABEL_THETA, -BURN_CM / 100, -0.05), []);
-  // Label muka air dipindah ke sisi lain bila terlalu dekat dengan salah
-  // satu label ambang, supaya tulisannya tidak bertumpuk.
-  const nearThreshold = Math.abs(depthCm - HIGH_DANGER_CM) < 7 || Math.abs(depthCm - BURN_CM) < 7;
-  const waterAt = useMemo(
-    () => wallPoint(nearThreshold ? LABEL_THETA + 0.55 : LABEL_THETA + 0.28, -Math.min(depthCm, 100) / 100, -0.05),
-    [depthCm, nearThreshold],
-  );
-  const style = "pointer-events-none whitespace-nowrap rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]";
+function Labels() {
+  const camera = useThree((s) => s.camera);
+  const anchorRef = useRef<THREE.Group>(null);
+  const [theta, setTheta] = useState<number | null>(null);
+  const local = useMemo(() => new THREE.Vector3(), []);
+
+  // Arah kamera dalam koordinat diorama (yang ikut berputar). State hanya
+  // diperbarui bila arahnya bergeser cukup jauh, supaya label tidak
+  // dirender ulang tiap bingkai.
+  useFrame(() => {
+    const g = anchorRef.current;
+    if (!g) return;
+    local.copy(camera.position);
+    g.worldToLocal(local);
+    const camTheta = Math.atan2(local.z, local.x);
+    if (theta === null || Math.abs(Math.atan2(Math.sin(camTheta - theta), Math.cos(camTheta - theta))) > 0.03) setTheta(camTheta);
+  });
+
+  const at = (cm: number) => (theta === null ? null : wallPoint(theta - LABEL_SIDE, -cm / 100, -0.04));
+  const dangerAt = at(HIGH_DANGER_CM);
+  const burnAt = at(BURN_CM);
+  // Label menjulur ke kanan dari titik tempelnya, ke ruang kosong di luar bongkahan.
+  const style =
+    "pointer-events-none ml-2 inline-block translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-medium sm:text-[10px] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]";
   return (
-    <>
-      <Html position={dangerAt} center zIndexRange={[10, 0]}>
-        <span className={style} style={{ color: STAGE_COLOR.bahaya }}>
-          {MUSIM_TEXT.danger}
-        </span>
-      </Html>
-      <Html position={burnAt} center zIndexRange={[10, 0]}>
-        <span className={style} style={{ color: STAGE_COLOR.terbakar }}>
-          {MUSIM_TEXT.burn}
-        </span>
-      </Html>
-      {depthCm > 2 && (
-        <Html position={waterAt} center zIndexRange={[10, 0]}>
-          <span className={style} style={{ color: STAGE_COLOR.aman }}>
-            {MUSIM_TEXT.waterLabel(depthCm)}
+    <group ref={anchorRef}>
+      {dangerAt && (
+        <Html position={dangerAt} center zIndexRange={[10, 0]}>
+          <span className={style} style={{ color: STAGE_COLOR.bahaya }}>
+            {MUSIM_TEXT.danger}
           </span>
         </Html>
       )}
-    </>
+      {burnAt && (
+        <Html position={burnAt} center zIndexRange={[10, 0]}>
+          <span className={style} style={{ color: STAGE_COLOR.terbakar }}>
+            {MUSIM_TEXT.burn}
+          </span>
+        </Html>
+      )}
+    </group>
   );
 }
 
