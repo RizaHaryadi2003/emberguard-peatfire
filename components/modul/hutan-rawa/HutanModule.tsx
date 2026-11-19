@@ -296,7 +296,9 @@ export default function HutanModule() {
 
               {/* Di ponsel batang pembanding dan keterangan rentang disembunyikan
                   supaya panel tidak menutupi penampang; angkanya tetap ada. */}
-              <div data-guide="peatHere" className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3 lg:hidden">{peatReadout}</div>
+              {/* Di ponsel rincian ini disembunyikan supaya panel tidak menutupi
+                  bongkahan; nama zona tetap terbaca di bawah penggeser. */}
+              <div data-guide="peatHere" className="mt-2 hidden border-t border-white/10 pt-2 sm:mt-3 sm:block sm:pt-3 lg:hidden">{peatReadout}</div>
             </div>
           )}
 
@@ -339,6 +341,8 @@ export default function HutanModule() {
           )}
 
           {act === 2 && <div className="lg:hidden">{zonePanel}</div>}
+          {/* Di laptop rinciannya ada di kolom kanan; di sini tinggal ajakannya. */}
+          {act === 2 && <p className="hidden text-[12px] leading-snug text-white/75 lg:block">Tekan jenis hutan di bawah penampang. Rinciannya muncul di kanan.</p>}
         </>
       }
     />

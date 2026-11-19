@@ -143,7 +143,7 @@ export default function ActModuleShell({
       <div
         data-guide="figure"
         className={`absolute bottom-[34%] left-4 right-4 top-[44%] md:bottom-[8%] md:left-[36%] md:right-[4%] md:top-[12%] ${
-          aside ? "lg:right-[300px] xl:right-[320px]" : ""
+          aside ? "lg:left-[480px] lg:right-[300px] xl:right-[320px]" : ""
         }`}
       >
         {figure}

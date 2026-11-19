@@ -16,9 +16,13 @@ import { FOREST_ZONES, type ForestZone } from "@/config/modul/hutan-rawa";
 /** Panjang penampang (km), dari tepi hutan di sungai ke puncak kubah. */
 export const SPAN_KM = 14;
 /** Panjang diorama (satuan adegan) yang mewakili SPAN_KM. */
-export const LENGTH = 120;
-/** Tebal diorama ke belakang (satuan adegan). */
-export const DEPTH = 18;
+export const LENGTH = 100;
+/**
+ * Tebal diorama ke belakang (satuan adegan). Dibuat tebal seperti bongkahan
+ * Modul Kanal (dulu 18), supaya lantai hutan terlihat luas dari atas dan
+ * hutannya terbaca sebagai hutan, bukan deretan batang.
+ */
+export const DEPTH = 38;
 /** Tebal tanah mineral yang ikut terlihat di bawah gambut (m). */
 export const MINERAL_M = 5;
 /** Tinggi orang dewasa sebagai pejalan (m). */
@@ -114,8 +118,8 @@ export type TreeSpot = {
  * memang kurus), jadi ia boleh lebih rapat dengan biaya yang sama.
  */
 export const TREE_COUNT = {
-  high: { campuran: 9, tiang: 15, tinggi: 8 },
-  low: { campuran: 6, tiang: 9, tinggi: 5 },
+  high: { campuran: 11, tiang: 16, tinggi: 10 },
+  low: { campuran: 6, tiang: 9, tinggi: 6 },
 } as const;
 
 /**
@@ -133,8 +137,9 @@ export function plantTrees(quality: "high" | "low"): TreeSpot[] {
       const lo = z.fromKm + (z.id === "campuran" ? 0.35 : 0.1);
       const hi = z.toKm - 0.15;
       const km = Math.min(hi, Math.max(lo, z.fromKm + ((i + 0.2 + rand() * 0.6) / n) * span));
-      // Selang-seling depan–belakang, supaya pohon depan tidak menutup semuanya.
-      const row = i % 2 === 0 ? 0.25 + rand() * 0.25 : -0.05 - rand() * 0.35;
+      // Disebar di tiga baris dari depan ke belakang, supaya lantai hutan
+      // yang tebal terisi dan pohon depan tidak menutup semuanya.
+      const row = -0.38 + ((i % 3) / 2) * 0.72 + (rand() - 0.5) * 0.12;
       const heightM = z.treeMinM + (z.treeMaxM - z.treeMinM) * Math.pow(rand(), z.id === "tinggi" ? 1.4 : 1);
       out.push({ km, x: xOfKm(km), z: row * DEPTH, heightM, zone: z.id, yaw: rand() * Math.PI * 2, variant: i });
     }

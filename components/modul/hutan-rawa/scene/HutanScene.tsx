@@ -71,9 +71,13 @@ import { createGroundTexture, createWaterMaterial } from "./waterMaterial";
 // dijarangkan, karena pohonnya memang kurus. Hujan adalah satu LineSegments
 // yang digerakkan di peneduh titik, bukan ribuan objek.
 
-/** Sudut kamera: sedikit dari kiri depan dan sedikit dari atas. */
+/**
+ * Sudut kamera: dari kiri depan dan dari atas, seperti Modul Kanal (±27°),
+ * supaya lantai hutan dan tajuknya terlihat; dulu 13° sehingga yang tampak
+ * hanya batang-batang tinggi.
+ */
 const CAMERA_AZIMUTH = (-24 * Math.PI) / 180;
-const CAMERA_ELEVATION = (13 * Math.PI) / 180;
+const CAMERA_ELEVATION = (27 * Math.PI) / 180;
 const CAMERA_DISTANCE = 260;
 
 /**
@@ -433,7 +437,7 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     // menyebar lubang ke seluruh tajuk sehingga pohon terbaca seperti
     // rumput/meranggas. Yang dikurangi jumlah pohonnya (TREE_COUNT), bukan
     // kerapatan daunnya. Mutu rendah tetap sedikit dijarangkan untuk ponsel.
-    const leaf = quality === "high" ? 1 : 0.6;
+    const leaf = quality === "high" ? 1 : 0.85;
     const full = collectVariants(treeGltf.scene, leaf);
     const thin = collectVariants(treeGltf.scene, leaf);
     const group = new THREE.Group();
@@ -464,8 +468,10 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     };
     // Tajuk dibuat lebih ramping daripada tingginya, karena jarak mendatar
     // dimampatkan; tanpa itu tajuk hutan tinggi selebar seperlima kubah.
-    plant(full, trees.filter((t) => t.zone !== "tiang"), (t) => t.heightM * (t.zone === "tinggi" ? 0.6 : 0.75));
-    plant(thin, trees.filter((t) => t.zone === "tiang"), (t) => t.heightM * 0.45);
+    // Tajuk dilebarkan dari bentuk asli pachira yang ramping, supaya dari
+    // atas terbaca sebagai pohon hutan yang rimbun, bukan batang menjulang.
+    plant(full, trees.filter((t) => t.zone !== "tiang"), (t) => t.heightM * (t.zone === "tinggi" ? 0.95 : 1.05));
+    plant(thin, trees.filter((t) => t.zone === "tiang"), (t) => t.heightM * 0.75);
 
     // Pakis lantai hutan (mutu tinggi saja): tanpa bayangan, murah, tetapi
     // membuat lantai hutan tidak lagi tampak seperti lapangan kosong.
@@ -691,7 +697,7 @@ function SceneLabels({
           <Html position={[xOfKm(walkerKm), peat + PERSON_M + 1.2, DEPTH / 2]} center zIndexRange={[10, 0]}>
             <span className="pointer-events-none rounded-full bg-[#f0a35e] px-2 py-0.5 text-[11px] font-bold text-[#1a120b]">{HUTAN_TEXT.you}</span>
           </Html>
-          <Html position={[xOfKm(walkerKm) + 1.2, peat / 2, DEPTH / 2]} zIndexRange={[10, 0]} style={{ transform: "translateY(-50%)" }}>
+          <Html position={[xOfKm(walkerKm) + 2.5, peat / 2 - 1.5, DEPTH / 2]} zIndexRange={[10, 0]} style={{ transform: "translateY(-50%)" }}>
             <span className="pointer-events-none whitespace-nowrap rounded-md bg-black/65 px-1.5 py-0.5 text-[12px] font-semibold text-[#ffd7b0]">
               {HUTAN_TEXT.gauge(Math.max(1, Math.round(peat)))}
             </span>
@@ -722,7 +728,7 @@ function SceneLabels({
           <span className="pointer-events-none hidden text-[11px] font-medium text-[#e0bb90] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:inline">gambut</span>
         </Html>
       )}
-      <Html position={[xOfKm(2.5), -MINERAL_M / 2, DEPTH / 2]} center zIndexRange={[10, 0]}>
+      <Html position={[xOfKm(6.5), -MINERAL_M / 2, DEPTH / 2]} center zIndexRange={[10, 0]}>
         <span className="pointer-events-none hidden whitespace-nowrap text-[11px] text-white/70 sm:inline [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">tanah mineral</span>
       </Html>
 
