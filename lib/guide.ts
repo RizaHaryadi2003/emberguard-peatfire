@@ -3,18 +3,20 @@
  *
  * Satu modul menulis naskah arahan per babak: tiap arahan menunjuk satu
  * bagian layar (`target`, nilai atribut `data-guide`) dan menunggu syaratnya
- * (`done`) atau tombol "Oke". Komponen `GuideLayer` yang menggambarnya.
+ * (`done`); arahan tanpa syarat ("Perhatikan") pindah sendiri setelah
+ * waktu bacanya habis. Komponen `GuideLayer` yang menggambarnya.
  */
 export type GuideStep<S> = {
   /** Bagian layar yang ditunjuk; boleh bergantung pada keadaan. */
   target: string | ((s: S) => string);
   text: string;
-  /** Syarat selesai; tanpa syarat, arahan menunggu tombol "Oke". */
+  /** Syarat selesai; tanpa syarat, arahan pindah sendiri setelah waktu baca. */
   done?: (s: S) => boolean;
 };
 
 /**
- * Arahan yang sedang aktif: yang pertama belum selesai dan belum di-"Oke".
+ * Arahan yang sedang aktif: yang pertama belum selesai dan belum lewat
+ * waktu bacanya (`acked` = jumlah arahan yang sudah lewat).
  * Syarat sebaiknya dibaca dari nilai terjauh yang pernah dicapai, supaya
  * menggeser mundur tidak menarik arahan kembali. Arahan terakhir (biasanya
  * menunjuk tombol lanjut) tidak pernah dilewati.

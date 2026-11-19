@@ -113,7 +113,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
-  // Arahan yang sudah di-"Oke" per tahap (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per tahap (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   /**
@@ -712,8 +712,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           text={guideStep.text}
           index={guideAt + 1}
           total={guideSteps.length}
-          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === step ? Math.max(v, guideAt + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={guideAt < guideSteps.length - 1 && !guideStep.done ? () => setAcked((a) => a.map((v, i) => (i === step ? Math.max(v, guideAt + 1) : v))) : undefined}
           delayMs={guideAt === 0 ? 1200 : 350}
         />
       )}

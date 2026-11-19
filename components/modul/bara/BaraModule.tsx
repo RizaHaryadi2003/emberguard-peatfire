@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -123,7 +123,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
-  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
@@ -409,6 +409,15 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
 
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+  // Kemunculan bertahap (lihat .stage-in di globals.css): kuncinya berganti
+  // saat layar pembuka ditutup dan saat babak berganti, sehingga urutannya
+  // diputar ulang tepat ketika pembaca mulai membaca.
+  const stageKey = `${act}-${hookOpen ? "pembuka" : "buka"}`;
+  const stageIn = hookOpen ? "" : "stage-in";
+  const stageKids = hookOpen ? "" : "stage-kids";
+  const stageDelay = (sec: number) => (hookOpen ? undefined : ({ "--stage-delay": `${sec}s` } as CSSProperties));
+  const stageBase = (sec: number) => (hookOpen ? undefined : ({ "--stage-base": `${sec}s` } as CSSProperties));
+
 
   const actDone = [
     ignited,
@@ -685,6 +694,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           menindih. Di layar sempit navigasi itu tidak ada, jadi panelnya turun
           dan panah lanjut duduk di atasnya, sama dengan Modul Anatomi. */}
       <div ref={dockRef} inert={hookOpen} className={`absolute bottom-6 left-5 right-5 z-30 sm:left-10 md:bottom-14 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:md:bottom-20 ${panelFade}`}>
+        <div key={stageKey} className={stageIn} style={stageDelay(0.9)}>
         <div ref={dockStackRef} className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
           {/* Kolom kanan tidak ada di bawah lg, jadi pesannya tampil di sini.
               Di ponsel pesannya sudah pindah ke panel cerita di atas. */}
@@ -716,6 +726,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
             urgeThermal={dousedOnce && !thermalSeen}
           />
         )}
+              </div>
       </div>
 
       {/* Kolom kanan: angka hidup, keterangan warna, dan pesan kejadian.
@@ -725,7 +736,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           angka di tengah — pada 1280×600 keduanya bertindih 136 px. Dengan
           satu tumpukan, keduanya tidak mungkin lagi saling menindih, dan
           pesannya pun kini muncul berdampingan dengan angka yang dibahasnya. */}
-      <div inert={hookOpen} className={`absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 ${panelFade}`}>
+      <div key={stageKey} style={stageBase(1.1)} inert={hookOpen} className={`${stageKids} absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 ${panelFade}`}>
         <div data-guide="stats">
           <StatsPanel stats={stats} fact={current.fact} compact={message !== null} />
         </div>
@@ -809,8 +820,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           text={guideStep.text}
           index={guideAt + 1}
           total={guideSteps.length}
-          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={guideAt < guideSteps.length - 1 && !guideStep.done ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
           delayMs={guideAt === 0 ? 1500 : 350}
         />
       )}

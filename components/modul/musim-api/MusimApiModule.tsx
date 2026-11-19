@@ -68,7 +68,7 @@ export default function MusimApiModule() {
   // Bagian bongkahan yang sedang dijelaskan setelah diklik.
   const [inspect, setInspect] = useState<InspectPart | null>(null);
   // Tuntunan: hari tanpa hujan terjauh (babak 02), babak yang sudah pernah
-  // mengeklik bongkahan, dan arahan yang sudah di-"Oke" per babak.
+  // mengeklik bongkahan, dan arahan "Perhatikan" yang sudah lewat per babak.
   const [maxDryDays, setMaxDryDays] = useState(0);
   const [inspectedActs, setInspectedActs] = useState<readonly boolean[]>([
     false,
@@ -440,8 +440,7 @@ export default function MusimApiModule() {
           text={step.text}
           index={level + 1}
           total={guideSteps.length}
-          onAck={level < guideSteps.length - 1 ? ackStep : undefined}
-          okLabel={MUSIM_TEXT.guideOk}
+          onAuto={level < guideSteps.length - 1 && !step.done ? ackStep : undefined}
           // Arahan pertama tiap babak menunggu penjelasan babaknya tampil dulu.
           delayMs={level === 0 ? 1500 : 350}
         />

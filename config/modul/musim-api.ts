@@ -130,7 +130,6 @@ export const MUSIM_TEXT = {
   dragHint: "Seret untuk memutar · klik bagian gambut untuk penjelasannya",
   inspectToday: (cm: number) => `Hari ini muka air ${Math.round(cm)} cm`,
   close: "Tutup",
-  guideOk: "Oke",
   guideCount: (i: number, n: number) => `${i} / ${n}`,
   today: (date: number, month: string) => `Hari ini · ${date} ${month}`,
   depthBelow: "muka air di bawah permukaan",
@@ -223,7 +222,7 @@ export function inspectText(part: InspectPart, depthCm: number): { title: string
  * ============================================================================
  *  Tiap babak punya urutan arahan. Satu arahan menunjuk satu bagian layar
  *  (target) dan menunggu sampai pembaca melakukan sesuatu (`done`), atau
- *  sampai ia menekan "Oke". Begitu satu arahan selesai, bagian layar
+ *  sampai waktu bacanya habis. Begitu satu arahan selesai, bagian layar
  *  berikutnya muncul dan arahan pindah menunjuknya. Dengan begitu tiap kotak
  *  muncul sebagai akibat dari aksi pembaca, bukan karena waktu.
  * ========================================================================== */
@@ -276,7 +275,8 @@ export const MUSIM_GUIDE: readonly (readonly GuideStep[])[] = [
 ];
 
 /**
- * Arahan yang sedang aktif: yang pertama belum selesai dan belum di-"Oke".
+ * Arahan yang sedang aktif: yang pertama belum selesai dan belum lewat
+ * waktu bacanya (`acked` = jumlah arahan yang sudah lewat).
  * Syarat selesai dibaca dari nilai terjauh yang pernah dicapai, jadi
  * menggeser mundur tidak menarik arahan kembali.
  */

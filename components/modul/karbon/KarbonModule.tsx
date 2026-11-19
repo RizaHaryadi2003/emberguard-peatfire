@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, MousePointerClick, Pause, RotateCcw } from "lucide-react";
 import {
@@ -87,7 +87,7 @@ export default function KarbonModule() {
    * dengan `probeSolvedOnce` pada Modul Kanal.
    */
   const [matchSolvedOnce, setMatchSolvedOnce] = useState(false);
-  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0]);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -247,6 +247,15 @@ export default function KarbonModule() {
 
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi, Kanal, dan Bara. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+  // Kemunculan bertahap (lihat .stage-in di globals.css): kuncinya berganti
+  // saat layar pembuka ditutup dan saat babak berganti, sehingga urutannya
+  // diputar ulang tepat ketika pembaca mulai membaca.
+  const stageKey = `${act}-${hookOpen ? "pembuka" : "buka"}`;
+  const stageIn = hookOpen ? "" : "stage-in";
+  const stageKids = hookOpen ? "" : "stage-kids";
+  const stageDelay = (sec: number) => (hookOpen ? undefined : ({ "--stage-delay": `${sec}s` } as CSSProperties));
+  const stageBase = (sec: number) => (hookOpen ? undefined : ({ "--stage-base": `${sec}s` } as CSSProperties));
+
 
   return (
     <div ref={rootRef} id="modul-karbon" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
@@ -295,7 +304,7 @@ export default function KarbonModule() {
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
-        <div key={act} aria-live="polite">
+        <div key={stageKey} aria-live="polite" className={stageKids} style={stageBase(0.05)}>
           <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-[#e0a265] [@media(min-height:901px)]:mt-3">
             Babak {current.number}
           </p>
@@ -335,7 +344,7 @@ export default function KarbonModule() {
 
       {/* Panel kendali (kiri bawah) */}
       <div inert={hookOpen} className={`absolute bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
-        <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
+        <div key={stageKey} style={stageDelay(0.95)} className={`${stageIn} rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4`}>
           {/* Kedalaman terbakar — sejak babak pertama, babak yang membakarnya. */}
           {act >= TOOL_FROM.burn && (
             <div data-guide="burn">
@@ -481,7 +490,7 @@ export default function KarbonModule() {
 
       {/* Kolom kanan: angka hidup dan keterangan. Tingginya dibatasi sejak
           awal, jadi ia tidak pernah dapat menjulur melewati tepi layar. */}
-      <div inert={hookOpen} className={`absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
+      <div key={stageKey} style={stageBase(1.15)} inert={hookOpen} className={`${stageKids} absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
         {/* Angka kunci babak */}
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <p className="font-playfair text-2xl italic leading-none text-[#e0a265]">{current.fact.value}</p>
@@ -605,8 +614,7 @@ export default function KarbonModule() {
           text={guideStep.text}
           index={guideAt + 1}
           total={guideSteps.length}
-          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={guideAt < guideSteps.length - 1 && !guideStep.done ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
           delayMs={guideAt === 0 ? 1500 : 350}
         />
       )}

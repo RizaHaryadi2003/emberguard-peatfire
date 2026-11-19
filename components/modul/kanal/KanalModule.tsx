@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { Check, FastForward, Info, MousePointerClick, Pause, RotateCcw, Waves, X } from "lucide-react";
 import {
@@ -102,7 +102,7 @@ export default function KanalModule() {
    * dijawab.
    */
   const [guess, setGuess] = useState<number | null>(null);
-  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
   const [reducedMotion, setReducedMotion] = useState(false);
   /** Catatan skala gambar terbuka. Lihat kolom kanan. */
@@ -338,6 +338,15 @@ export default function KanalModule() {
 
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi dan Bara. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+  // Kemunculan bertahap (lihat .stage-in di globals.css): kuncinya berganti
+  // saat layar pembuka ditutup dan saat babak berganti, sehingga urutannya
+  // diputar ulang tepat ketika pembaca mulai membaca.
+  const stageKey = `${act}-${hookOpen ? "pembuka" : "buka"}`;
+  const stageIn = hookOpen ? "" : "stage-in";
+  const stageKids = hookOpen ? "" : "stage-kids";
+  const stageDelay = (sec: number) => (hookOpen ? undefined : ({ "--stage-delay": `${sec}s` } as CSSProperties));
+  const stageBase = (sec: number) => (hookOpen ? undefined : ({ "--stage-base": `${sec}s` } as CSSProperties));
+
 
   /**
    * Panah lanjut, sama dengan Modul Anatomi dan Bara. Selalu terlihat: terkunci
@@ -405,7 +414,7 @@ export default function KanalModule() {
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
           Modul {MODULE.number} · {MODULE.title}
         </p>
-        <div key={act} aria-live="polite">
+        <div key={stageKey} aria-live="polite" className={stageKids} style={stageBase(0.05)}>
           <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8] [@media(min-height:901px)]:mt-3">
             Babak {current.number}
           </p>
@@ -498,6 +507,7 @@ export default function KanalModule() {
       {/* z-20: label 3D (`SceneLabels`, z ≤ 10) tidak boleh muncul di atas
           panel ini maupun panel cerita. */}
       <div inert={hookOpen} className={`absolute z-20 bottom-14 left-5 right-5 sm:left-10 md:left-14 md:right-auto md:w-[404px] [@media(min-height:651px)]:bottom-20 ${panelFade}`}>
+        <div key={stageKey} className={stageIn} style={stageDelay(0.95)}>
         {showSummary ? (
           <SummaryCard
             stats={stats}
@@ -648,6 +658,7 @@ export default function KanalModule() {
 
         </div>
         )}
+              </div>
       </div>
 
       {/* Kolom kanan: grafik dan angka hidup.
@@ -670,7 +681,9 @@ export default function KanalModule() {
           pun dan pada tinggi layar berapa pun. */}
       <div
         inert={hookOpen}
-        className={`absolute bottom-6 right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
+        key={stageKey}
+        style={stageBase(1.15)}
+        className={`${stageKids} absolute bottom-6 right-5 top-14 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
       >
         {/* Grafik satu kilometer. Ditempatkan di atas angka-angkanya, bukan di
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
@@ -867,8 +880,7 @@ export default function KanalModule() {
           text={guideStep.text}
           index={guideAt + 1}
           total={guideSteps.length}
-          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={guideAt < guideSteps.length - 1 && !guideStep.done ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
           delayMs={guideAt === 0 ? 1500 : 350}
         />
       )}

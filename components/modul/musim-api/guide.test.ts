@@ -16,7 +16,7 @@ describe("tuntunan langkah demi langkah", () => {
     expect(guideLevel(0, { ...start, maxDay: DAYS_PER_YEAR - 1, inspected: true }, 0)).toBe(5);
   });
 
-  it("babak 02 maju mengikuti kedalaman, lalu menunggu Oke", () => {
+  it("babak 02 maju mengikuti kedalaman, lalu menunggu waktu baca", () => {
     expect(guideLevel(1, { ...start, maxDryDays: 5, maxDepthCm: 32 }, 0)).toBe(1);
     expect(guideLevel(1, { ...start, maxDryDays: 30, maxDepthCm: 62 }, 0)).toBe(3);
     expect(guideLevel(1, { ...start, maxDryDays: 30, maxDepthCm: 62 }, 4)).toBe(4);
@@ -28,7 +28,7 @@ describe("tuntunan langkah demi langkah", () => {
     expect(guideLevel(2, { ...start, kind: "elnino", elninoMaxDay: DAYS_PER_YEAR - 1 }, 2)).toBe(5);
   });
 
-  it("tombol Oke bisa melewati arahan mana pun, tetapi tidak melewati yang terakhir", () => {
+  it("arahan yang lewat waktu tidak pernah melewati arahan terakhir", () => {
     for (let act = 0; act < MUSIM_GUIDE.length; act++) {
       const last = MUSIM_GUIDE[act].length - 1;
       expect(guideLevel(act, start, 99)).toBe(last);

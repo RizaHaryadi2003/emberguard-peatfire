@@ -27,7 +27,7 @@ describe("naskah tuntunan tiap modul", () => {
   it("Hutan Rawa: tugas tiap babak membawa arahan sampai tombol lanjut", () => {
     const done = { maxKm: 14, triedFlood: true, triedRain: true, opened: FOREST_ZONES.map((z) => z.id) };
     expect(guideLevel(HUTAN_GUIDE[0], done, 0)).toBe(HUTAN_GUIDE[0].length - 1);
-    // Babak 02 punya dua arahan "Oke" (melihat air sungai, lalu hujan).
+    // Babak 02 punya dua arahan "Perhatikan" (air sungai, lalu hujan).
     expect(guideLevel(HUTAN_GUIDE[1], done, 4)).toBe(HUTAN_GUIDE[1].length - 1);
     expect(guideLevel(HUTAN_GUIDE[2], done, 0)).toBe(HUTAN_GUIDE[2].length - 1);
   });
@@ -55,7 +55,7 @@ describe("naskah tuntunan tiap modul", () => {
 
   it("Kanal, Bara, Karbon: tugas yang tuntas membawa arahan sampai langkah penjelasan pertama atau tombol lanjut", () => {
     const all = [true, true, true, true];
-    // Tanpa "Oke": arahan maju melewati semua langkah bersyarat yang sudah
+    // Tanpa arahan yang lewat waktu: arahan maju melewati semua langkah bersyarat yang sudah
     // terpenuhi, lalu berhenti di langkah penjelasan pertama (tanpa syarat)
     // atau di tombol lanjut.
     const firstWait = <S,>(steps: readonly { done?: (s: S) => boolean }[]) => {

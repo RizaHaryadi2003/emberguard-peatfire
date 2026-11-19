@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Hand } from "lucide-react";
+import { ArrowRight, Eye, Hand, MousePointerClick } from "lucide-react";
 
 /**
  * Lapisan arahan: cincin berdenyut di sekeliling satu bagian layar dan
@@ -12,9 +12,14 @@ import { Hand } from "lucide-react";
  * benar-benar terlihat. Letaknya diukur ulang tiap bingkai selama arahan
  * tampil, karena kotak di sekitarnya bisa sedang muncul bergerak.
  *
- * Lapisan ini tidak pernah menghalangi klik: hanya tombol "Oke" di
- * gelembung yang menangkapnya. Untuk target berukuran besar (gambar 3D),
- * cincin diganti tangan kecil berdenyut di tengahnya.
+ * Lapisan ini tidak pernah menghalangi klik: seluruhnya tembus klik. Ada
+ * tiga jenis arahan:
+ *   - Lakukan    : menunggu aksi pembaca (syaratnya dibaca induknya);
+ *   - Perhatikan : penjelasan tanpa syarat, pindah sendiri setelah waktu
+ *                  baca yang dihitung dari panjang teksnya, dengan garis
+ *                  waktu tipis yang menunjukkan kapan ia pindah;
+ *   - Lanjut     : arahan terakhir ke tombol lanjut.
+ * Untuk target berukuran besar (gambar 3D), cincin diganti tangan berdenyut.
  */
 type Props = {
   /** Nilai `data-guide` bagian yang ditunjuk. */
@@ -23,15 +28,21 @@ type Props = {
   /** Urutan arahan ini, untuk penanda "2 / 6". */
   index: number;
   total: number;
-  /** Ditekan "Oke"; tidak diisi bila arahan ini terakhir. */
-  onAck?: () => void;
-  okLabel: string;
+  /**
+   * Diisi untuk arahan "Perhatikan": dipanggil setelah waktu baca habis
+   * supaya tuntunan pindah sendiri. Kosong untuk arahan "Lakukan" dan untuk
+   * arahan terakhir.
+   */
+  onAuto?: () => void;
   /** Jeda sebelum arahan muncul (ms), memberi waktu kotaknya tampil dulu. */
   delayMs?: number;
 };
 
 /** Lebar gelembung (px) dan jaraknya dari target. */
-const BUBBLE_W = 248;
+const BUBBLE_W = 264;
+
+/** Waktu baca arahan "Perhatikan" (ms): ±55 ms per huruf, dijepit 3,5–7 detik. */
+const readMs = (text: string) => Math.min(7000, Math.max(3500, text.length * 55));
 const GAP = 14;
 /** Target selebar ini dianggap "gambar": ditunjuk dengan tangan, bukan cincin. */
 const LARGE_TARGET = 360;
@@ -47,7 +58,7 @@ function findVisible(target: string): HTMLElement | null {
   return null;
 }
 
-export default function GuideLayer({ target, text, index, total, onAck, okLabel, delayMs = 250 }: Props) {
+export default function GuideLayer({ target, text, index, total, onAuto, delayMs = 250 }: Props) {
   const [box, setBox] = useState<Box | null>(null);
   const [shown, setShown] = useState(false);
   const last = useRef("");
@@ -68,6 +79,23 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
     const t = window.setTimeout(() => setShown(true), delayMs);
     return () => window.clearTimeout(t);
   }, [delayMs]);
+
+  // Arahan "Perhatikan" pindah sendiri setelah waktu bacanya habis, dihitung
+  // sejak gelembungnya tampil.
+  // Fungsinya disimpan di ref: modul seperti Kanal dan Bara merender ulang
+  // hampir tiap bingkai, dan bila pewaktu bergantung pada fungsi yang selalu
+  // baru itu, pewaktunya terus diulang dan arahan tidak pernah pindah.
+  const autoMs = readMs(text);
+  const autoRef = useRef(onAuto);
+  useEffect(() => {
+    autoRef.current = onAuto;
+  });
+  const hasAuto = onAuto !== undefined;
+  useEffect(() => {
+    if (!shown || !hasAuto) return;
+    const t = window.setTimeout(() => autoRef.current?.(), autoMs);
+    return () => window.clearTimeout(t);
+  }, [shown, hasAuto, autoMs]);
 
   // Ukur letak target tiap bingkai; state hanya diperbarui bila berubah.
   useEffect(() => {
@@ -154,40 +182,58 @@ export default function GuideLayer({ target, text, index, total, onAck, okLabel,
           ? { bottom: -5, left: arrowX }
           : { top: -5, left: arrowX };
 
+  const kind: "do" | "look" | "next" = index === total ? "next" : onAuto ? "look" : "do";
+  const Icon = kind === "next" ? ArrowRight : kind === "look" ? Eye : large ? Hand : MousePointerClick;
+  const label = kind === "next" ? "Lanjut" : kind === "look" ? "Perhatikan" : "Lakukan";
+
   return (
     <div className="pointer-events-none fixed inset-0 z-40" aria-live="polite">
       {large ? (
-        // Gambar 3D: tangan berdenyut di tengahnya mengajak mengeklik.
-        <span className="guide-hand absolute grid h-11 w-11 place-items-center rounded-full bg-white/90 text-black shadow-lg" style={{ left: cx - 22, top: cy - 22 }}>
-          <Hand size={20} />
+        // Gambar 3D: tangan berdenyut di tengahnya, dengan riak yang memancar.
+        <span className="absolute" style={{ left: cx - 26, top: cy - 26 }}>
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#8fd8ff]/40 motion-reduce:hidden" />
+          <span className="guide-hand relative grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-white to-[#cfefff] text-[#06121a] shadow-[0_6px_24px_rgba(143,216,255,0.55)]">
+            <Hand size={22} />
+          </span>
         </span>
       ) : (
         <span
-          className="guide-ring absolute rounded-2xl"
+          className="guide-spot absolute rounded-2xl"
           style={{ left: box.left - 6, top: box.top - 6, width: box.width + 12, height: box.height + 12 }}
         />
       )}
-      <div
-        ref={bubbleRef}
-        key={`${target}-${text}`}
-        role="status"
-        className="stage-in absolute rounded-2xl border border-[#8fd8ff]/40 bg-[#0b1820]/90 p-3 text-white shadow-2xl shadow-black/50"
-        style={{ width: BUBBLE_W, ...bubbleStyle }}
-      >
-        <span className="absolute h-2.5 w-2.5 rotate-45 bg-[#0b1820]" style={arrowStyle} />
-        <p className="text-[12.5px] leading-snug">{text}</p>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="text-[10px] tabular-nums text-white/45">
-            {index} / {total}
-          </span>
-          {onAck && (
-            <button
-              type="button"
-              onClick={onAck}
-              className="pointer-events-auto cursor-pointer rounded-full bg-[#8fd8ff] px-3 py-1 text-[11px] font-semibold text-[#06121a] transition-colors hover:bg-white"
-            >
-              {okLabel}
-            </button>
+      <div ref={bubbleRef} key={`${target}-${text}`} role="status" className="stage-in absolute" style={{ width: BUBBLE_W, ...bubbleStyle }}>
+        {/* Panah ke target. */}
+        <span className="absolute h-3 w-3 rotate-45 border border-[#8fd8ff]/35 bg-[#0e2230]" style={arrowStyle} />
+        <div className="relative overflow-hidden rounded-2xl border border-[#8fd8ff]/35 bg-gradient-to-br from-[#11293a]/95 to-[#0a141b]/95 p-3 text-white shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
+          {/* Kilau tipis di tepi atas. */}
+          <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-[#8fd8ff]/70 to-transparent" />
+          <div className="flex gap-2.5">
+            <span className="guide-badge mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#8fd8ff]/15 text-[#bfe9ff] ring-1 ring-[#8fd8ff]/45">
+              <Icon size={14} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8fd8ff]">{label}</p>
+              <p className="mt-0.5 text-[12.5px] leading-snug text-white/95">{text}</p>
+            </div>
+          </div>
+          {/* Kemajuan tuntunan babak ini: satu titik per arahan. */}
+          <div className="mt-2.5 flex items-center gap-1 pl-[38px]" aria-label={`Arahan ${index} dari ${total}`}>
+            {Array.from({ length: total }, (_, i) => (
+              <span
+                key={i}
+                className={`h-1 rounded-full transition-all duration-500 ${
+                  i + 1 === index ? "w-5 bg-[#8fd8ff]" : i + 1 < index ? "w-1.5 bg-[#8fd8ff]/55" : "w-1.5 bg-white/15"
+                }`}
+              />
+            ))}
+          </div>
+          {/* Garis waktu arahan "Perhatikan": habis = pindah ke arahan berikutnya. */}
+          {kind === "look" && (
+            <span
+              className="guide-timer absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#8fd8ff] to-[#f0a35e]"
+              style={{ animationDuration: `${autoMs}ms` }}
+            />
           )}
         </div>
       </div>

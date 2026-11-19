@@ -15,7 +15,7 @@ describe("tuntunan", () => {
     expect(guideLevel(steps, { n: 1 }, 0)).toBe(1);
   });
 
-  it("arahan tanpa syarat menunggu Oke", () => {
+  it("arahan tanpa syarat menunggu waktu bacanya habis", () => {
     expect(guideLevel(steps, { n: 5 }, 0)).toBe(1);
     expect(guideLevel(steps, { n: 5 }, 2)).toBe(3);
   });

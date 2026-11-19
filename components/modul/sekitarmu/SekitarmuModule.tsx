@@ -124,7 +124,7 @@ export default function SekitarmuModule() {
   const [firesOpened, setFiresOpened] = useState<Set<string>>(new Set());
   const [activeFire, setActiveFire] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
-  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   useEffect(() => {
@@ -239,8 +239,7 @@ export default function SekitarmuModule() {
           text={guideStep.text}
           index={guideAt + 1}
           total={guideSteps.length}
-          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={guideAt < guideSteps.length - 1 && !guideStep.done ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
           delayMs={guideAt === 0 ? 1500 : 350}
         />
       }

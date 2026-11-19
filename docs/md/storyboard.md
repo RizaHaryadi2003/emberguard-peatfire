@@ -161,14 +161,17 @@ membaca: judul → penjelasan → istilah → tugas → angka kunci → panel ke
 dirinya dari Januari ke Desember. Selesai ±2,5 detik, tidak menghalangi
 klik, mati bila pembaca memilih "kurangi gerak". Ini **menuntun urutan
 membaca**, bukan interaktivitas: interaktivitas tetap datang dari aksi
-pembaca (2.3).
+pembaca (2.3). Dipakai ketujuh modul; Anatomi dan Bara memakai animasi teks
+GSAP-nya sendiri untuk panel cerita.
 
 **Tuntunan langkah demi langkah** (19 November 2026, `GuideLayer` bersama;
 sejak 19 November 2026 dipakai **ketujuh modul**; logika murni di
 `lib/guide.ts`, naskah per modul `<NAMA>_GUIDE` di `config/modul/<nama>.ts`): tiap babak punya
 urutan arahan. Satu gelembung berpanah menunjuk satu bagian layar (cincin
 berdenyut; tangan berdenyut untuk diorama) dan menunggu aksi pembaca
-(mis. "geser kalender sampai Agustus") atau tombol "Oke". Begitu selesai,
+(mis. "geser kalender sampai Agustus"); arahan penjelasan ("Perhatikan")
+pindah sendiri setelah waktu baca (±55 ms per huruf, 3,5–7 detik) dengan
+garis waktu tipis di gelembungnya. Tidak ada tombol yang harus ditekan. Begitu selesai,
 kotak berikutnya (keadaan hari ini → grafik → "mengapa begitu" → ajakan
 klik) baru muncul dengan animasi, dan arahan pindah menunjuknya. Jadi tiap
 kotak muncul **sebagai akibat aksi pembaca**, bukan karena waktu.

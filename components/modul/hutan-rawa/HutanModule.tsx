@@ -48,7 +48,7 @@ export default function HutanModule() {
   const [triedRain, setTriedRain] = useState(false);
   const [opened, setOpened] = useState<Set<string>>(new Set());
   const [activeZone, setActiveZone] = useState<ForestZone["id"] | null>(null);
-  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0]);
   // Mutu grafis: rendah di ponsel sejak awal, dan turun sendiri bila
   // PerformanceGuard mendapati perangkat kewalahan.
@@ -124,8 +124,7 @@ export default function HutanModule() {
           text={step.text}
           index={level + 1}
           total={guideSteps.length}
-          onAck={level < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, level + 1) : v))) : undefined}
-          okLabel="Oke"
+          onAuto={level < guideSteps.length - 1 && !step.done ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, level + 1) : v))) : undefined}
           // Arahan pertama tiap babak menunggu penjelasan babaknya tampil dulu.
           delayMs={level === 0 ? 1500 : 350}
         />
