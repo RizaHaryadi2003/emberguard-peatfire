@@ -9,7 +9,7 @@ import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-rea
 import { ANATOMI_GUIDE, ANATOMI_HOOK, ANATOMI_STEPS } from "@/config/modul/anatomi";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
-import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
+import { moduleAt } from "@/config/modules-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/model/peat";
 import { AmbientSound } from "@/lib/ambientSound";
 import DepthLegend from "./DepthLegend";
@@ -19,6 +19,7 @@ import LaptopNudge from "@/components/modul/shared/LaptopNudge";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import ResultCardDialog from "./ResultCardDialog";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import WaterControl from "./WaterControl";
 import { EXPLODE_STEP, GROWTH_STEP, INTERACTIVE_STEP, MAX_ROTATION, type Quality, type SceneState } from "./scene/sceneState";
 
@@ -629,7 +630,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
             <div data-guide="next" className="absolute bottom-full right-0 mb-3 flex flex-col items-end gap-2 md:hidden">
               <div className="flex items-end gap-2">
                 {restartButton}
-                <StepAdvance {...BACK_TO_MODULE_LIST} />
+                <NextModuleAdvance href="/modul/anatomi" />
               </div>
               <LaptopNudge />
             </div>
@@ -698,7 +699,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           ) : (
             <>
               <div className="hidden md:block">{restartButton}</div>
-              <StepAdvance {...BACK_TO_MODULE_LIST} className={hasPanel ? "hidden md:flex" : "flex"} />
+              <NextModuleAdvance href="/modul/anatomi" className={hasPanel ? "hidden md:flex" : "flex"} />
             </>
           )}
         </div>

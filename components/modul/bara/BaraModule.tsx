@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, BARA_GUIDE, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
-import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
+import { moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
 import IgnitionPicker from "./IgnitionPicker";
@@ -17,6 +17,7 @@ import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import type { SharedBurn } from "@/lib/kartu/baraCard";
@@ -482,7 +483,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
         onAdvance={() => goToAct(act + 1)}
       />
     ) : (
-      <StepAdvance {...BACK_TO_MODULE_LIST} />
+      <NextModuleAdvance href="/modul/bara" />
     );
 
   // Seret mendatar untuk memutar diorama, sama dengan Modul Anatomi. Jarak tempuhnya

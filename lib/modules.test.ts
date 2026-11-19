@@ -22,6 +22,9 @@ describe("daftar modul", () => {
     expect(moduleAt("/modul/sekitarmu").number).toBe("01");
     expect(nextAvailableModule("/modul/sekitarmu")?.href).toBe("/modul/anatomi");
     expect(nextAvailableModule("/modul/kanal")?.href).toBe("/modul/musim-api");
+    // Tujuan panah lanjut babak terakhir (NextModuleAdvance).
+    expect(nextAvailableModule("/modul/anatomi")?.href).toBe("/modul/hutan-rawa");
+    expect(nextAvailableModule("/modul/bara")?.href).toBe("/modul/karbon");
     // Sesudah Musim Api ada Siapa yang Menyalakan? yang belum dibuat.
     expect(nextModule("/modul/musim-api")?.available).toBe(false);
     expect(nextAvailableModule("/modul/musim-api")?.href).toBe("/modul/bara");

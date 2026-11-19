@@ -14,9 +14,10 @@ import {
   SCALE_NOTE,
   TIME_SPEEDS,
 } from "@/config/modul/kanal";
-import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
+import { moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
@@ -363,7 +364,7 @@ export default function KanalModule() {
         onAdvance={() => goToAct(act + 1)}
       />
     ) : (
-      <StepAdvance {...BACK_TO_MODULE_LIST} />
+      <NextModuleAdvance href="/modul/kanal" />
     );
 
   return (
