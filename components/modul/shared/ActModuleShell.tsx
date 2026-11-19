@@ -214,7 +214,7 @@ export default function ActModuleShell({
           </div>
 
           <div key={stageKey} aria-live="polite">
-            <p className={`mt-3 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8] ${stageClass}`} style={stage(0.05)}>
+            <p className={`mt-3 text-[11px] uppercase tracking-[0.2em] text-white/45 ${stageClass}`} style={stage(0.05)}>
               Babak {current.number} <span className="text-white/30">/ {acts[acts.length - 1].number}</span>
             </p>
             <h1
@@ -227,15 +227,15 @@ export default function ActModuleShell({
               {current.body}
             </p>
             <p className={`mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.06] md:px-3 md:py-2 ${stageClass}`} style={stage(0.6)}>
-              <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
+              <span className="font-medium text-white/85">{current.term.word}:</span> {current.term.meaning}
             </p>
             <div
               style={stage(0.85)}
-              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 [@media(max-height:820px)]:mt-2.5 [@media(max-height:820px)]:p-2.5 ${stageClass} ${
-                done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/55" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/35"
+              className={`pointer-events-auto mt-3 rounded-2xl border p-3 transition-colors duration-500 [@media(max-height:820px)]:mt-2.5 [@media(max-height:820px)]:p-2.5 ${stageClass} ${
+                done ? "border-white/15 bg-white/[0.06]" : "border-white/12 bg-black/35"
               }`}
             >
-              <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${done ? "text-emerald-200" : "text-[#8fcce8]"}`}>
+              <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-white/50`}>
                 {done ? <Check size={12} /> : <MousePointerClick size={12} />}
                 {done ? "Berhasil · perhatikan" : "Tugasmu"}
               </p>

@@ -416,7 +416,7 @@ export default function KanalModule() {
           Modul {MODULE.number} · {MODULE.title}
         </p>
         <div key={stageKey} aria-live="polite" className={stageKids} style={stageBase(0.05)}>
-          <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8] [@media(min-height:901px)]:mt-3">
+          <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-white/45 [@media(min-height:901px)]:mt-3">
             Babak {current.number}
           </p>
           <h1
@@ -438,7 +438,7 @@ export default function KanalModule() {
           {/* Kartu penutup menjulang dari bawah; selama ia tampil, panel ini
               menyisakan judulnya saja supaya keduanya tidak bertumpuk. */}
           <p className={`mt-2 max-w-[404px] text-[11px] leading-snug text-white/60 ${showSummary ? "hidden" : ""}`}>
-            <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
+            <span className="font-medium text-white/85">{current.term.word}:</span> {current.term.meaning}
           </p>
           {/* Kartu tugas.
               Sebelumnya tugasnya satu baris kecil di bawah judul, dan alat
@@ -450,12 +450,12 @@ export default function KanalModule() {
               pembaca sudah boleh lanjut. */}
           <div
             className={`mt-3 rounded-2xl border p-3 backdrop-blur-md transition-colors duration-500 [@media(min-height:901px)]:mt-4 ${showSummary ? "hidden" : ""} ${
-              actDone[act] ? "border-emerald-300/30 bg-emerald-950/40" : "border-[#6fb6d8]/30 bg-black/45"
+              actDone[act] ? "border-white/15 bg-white/[0.06]" : "border-white/12 bg-black/45"
             }`}
           >
             <p
               className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${
-                actDone[act] ? "text-emerald-200" : "text-[#8fcce8]"
+                "text-white/50"
               }`}
             >
               {actDone[act] ? <Check size={12} /> : <MousePointerClick size={12} />}
@@ -492,7 +492,7 @@ export default function KanalModule() {
                 {progressRatio !== null && (
                   <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-white/10">
                     <div
-                      className="h-full rounded-full bg-[#6fb6d8] transition-[width] duration-300"
+                      className="h-full rounded-full bg-white/70 transition-[width] duration-300"
                       style={{ width: `${Math.round(progressRatio * 100)}%` }}
                     />
                   </div>
@@ -723,7 +723,7 @@ export default function KanalModule() {
               masing-masing) sekitar 265 px. */}
           <div className="min-h-0 flex-1 overflow-hidden [container-type:size]">
           <div className="mb-2 border-b border-white/10 pb-2 [@media(min-height:769px)]:mb-3 [@media(min-height:769px)]:pb-3">
-            <p className="font-playfair text-2xl italic leading-none text-[#6fb6d8]">{fact.value}</p>
+            <p className="font-playfair text-2xl italic leading-none text-[#f0a35e]">{fact.value}</p>
             <p className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@container(min-height:200px)]:block">
               {fact.caption}
             </p>

@@ -193,7 +193,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
       {large ? (
         // Gambar 3D: tangan berdenyut di tengahnya, dengan riak yang memancar.
         <span className="absolute" style={{ left: cx - 26, top: cy - 26 }}>
-          <span className="guide-hand relative grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-white to-[#cfefff] text-[#06121a] shadow-lg shadow-black/40">
+          <span className="guide-hand relative grid h-[52px] w-[52px] place-items-center rounded-full bg-white text-black shadow-lg shadow-black/40">
             <Hand size={22} />
           </span>
         </span>
@@ -205,16 +205,14 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
       )}
       <div ref={bubbleRef} key={`${target}-${text}`} role="status" className="stage-in absolute" style={{ width: BUBBLE_W, ...bubbleStyle }}>
         {/* Panah ke target. */}
-        <span className="absolute h-3 w-3 rotate-45 border border-[#8fd8ff]/35 bg-[#0e2230]" style={arrowStyle} />
-        <div className="relative overflow-hidden rounded-2xl border border-[#8fd8ff]/35 bg-gradient-to-br from-[#11293a]/95 to-[#0a141b]/95 p-3 text-white shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
-          {/* Kilau tipis di tepi atas. */}
-          <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-[#8fd8ff]/70 to-transparent" />
+        <span className="absolute h-3 w-3 rotate-45 border border-white/15 bg-[#111416]" style={arrowStyle} />
+        <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111416]/95 p-3 text-white shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
           <div className="flex gap-2.5">
-            <span className="guide-badge mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#8fd8ff]/15 text-[#bfe9ff] ring-1 ring-[#8fd8ff]/45">
+            <span className="guide-badge mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 text-white/80 ring-1 ring-white/15">
               <Icon size={14} />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8fd8ff]">{label}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">{label}</p>
               <p className="mt-0.5 text-[12.5px] leading-snug text-white/95">{text}</p>
             </div>
           </div>
@@ -224,7 +222,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
               <span
                 key={i}
                 className={`h-1 rounded-full transition-all duration-500 ${
-                  i + 1 === index ? "w-5 bg-[#8fd8ff]" : i + 1 < index ? "w-1.5 bg-[#8fd8ff]/55" : "w-1.5 bg-white/15"
+                  i + 1 === index ? "w-5 bg-white/80" : i + 1 < index ? "w-1.5 bg-white/45" : "w-1.5 bg-white/15"
                 }`}
               />
             ))}
@@ -232,7 +230,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
           {/* Garis waktu arahan "Perhatikan": habis = pindah ke arahan berikutnya. */}
           {kind === "look" && (
             <span
-              className="guide-timer absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#8fd8ff] to-[#f0a35e]"
+              className="guide-timer absolute bottom-0 left-0 h-px bg-white/40"
               style={{ animationDuration: `${autoMs}ms` }}
             />
           )}
