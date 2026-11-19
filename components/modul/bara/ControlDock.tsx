@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Droplets, Eye, FastForward, Pause, ShowerHead, Thermometer, Waves } from "lucide-react";
+import { Clock, Droplets, FastForward, Pause } from "lucide-react";
 import { SUPPRESSION_TEXT, TIME_SPEEDS, VIEW_TEXT, type ViewMode } from "@/config/modul/bara";
 import { formatDay, formatElapsed } from "@/lib/model/smolder";
 
@@ -161,11 +161,10 @@ export default function ControlDock({
                     view === mode
                       ? "bg-white text-black"
                       : urge
-                        ? "animate-pulse bg-[#e8702a]/25 text-[#ffcfa8] ring-1 ring-[#e8702a]/60"
+                        ? "text-white ring-1 ring-white/60"
                         : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  {mode === "permukaan" ? <Eye size={12} /> : <Thermometer size={12} />}
                   {VIEW_TEXT[mode].label}
                 </button>
               );
@@ -189,9 +188,8 @@ export default function ControlDock({
               data-guide="douse"
               onClick={onDouse}
               disabled={dousing}
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-300/35 bg-sky-400/15 px-3.5 py-2 text-xs font-medium text-sky-100 transition-colors hover:bg-sky-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${showRewet ? "max-md:hidden" : ""}`}
+              className={`btn-mono ${showRewet ? "max-md:hidden" : ""}`}
             >
-              <ShowerHead size={14} />
               {dousing ? SUPPRESSION_TEXT.douse.running : SUPPRESSION_TEXT.douse.label}
             </button>
           )}
@@ -200,9 +198,8 @@ export default function ControlDock({
               type="button"
               data-guide="rewet"
               onClick={onRewet}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25"
+              className="btn-mono"
             >
-              <Waves size={14} />
               {SUPPRESSION_TEXT.rewet.label}
             </button>
           )}

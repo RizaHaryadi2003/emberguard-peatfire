@@ -704,7 +704,7 @@ function SceneLabels({
         // ada di kolom kanan, supaya ketiga nama tidak saling menindih.
         const body = (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium leading-none text-white">
-            {opened ? <span className="text-[10px] text-[#9fd3a0]">✓</span> : <span className="h-2 w-2 rounded-full" style={{ background: ZONE_DOT[z.id] }} />}
+            {opened && <span className="text-[10px]">✓</span>}
             {z.short}
           </span>
         );
@@ -715,9 +715,7 @@ function SceneLabels({
                 type="button"
                 data-guide={`zone-${z.id}`}
                 onClick={() => onZone?.(z.id)}
-                className={`cursor-pointer rounded-full border px-2.5 py-1.5 transition-colors ${
-                  active ? "border-[#f0a35e] bg-[#f0a35e]/30" : opened ? "border-white/25 bg-black/55 hover:bg-black/70" : "animate-pulse border-[#6fb6d8] bg-[#6fb6d8]/25"
-                }`}
+                className={`btn-mono bg-black/50 !px-2.5 !py-1.5 ${active ? "is-on" : ""}`}
               >
                 {body}
               </button>
@@ -730,10 +728,3 @@ function SceneLabels({
     </>
   );
 }
-
-/** Warna titik tiap jenis hutan pada namanya di bawah bongkahan. */
-const ZONE_DOT: Record<ForestZone["id"], string> = {
-  campuran: "#7cc4a0",
-  tiang: "#c9c77c",
-  tinggi: "#5fa864",
-};

@@ -321,7 +321,7 @@ export default function SekitarmuModule() {
               data-guide="check"
               onClick={() => setRevealed(true)}
               disabled={selected.size === 0}
-              className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-medium text-black transition-colors hover:bg-[#6fb6d8] disabled:cursor-not-allowed disabled:opacity-40 ${guide(1)}`}
+              className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-medium text-black transition-colors hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-40 ${guide(1)}`}
             >
               {SEKITARMU_TEXT.check}
             </button>

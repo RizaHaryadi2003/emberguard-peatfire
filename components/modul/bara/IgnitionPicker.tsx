@@ -38,7 +38,7 @@ export default function IgnitionPicker({ selected, onSelect, ignited, fizzled }:
                   : "border-white/12 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
               }`}
             >
-              <Icon size={18} className={active ? "text-[#f0a060]" : "text-white/70"} />
+              <Icon size={18} className={active ? "text-white" : "text-white/60"} />
               <span className="mt-2 block text-xs font-medium leading-tight text-white">{source.label}</span>
               <span className="mt-0.5 block text-[10px] leading-tight text-white/50">{source.caption}</span>
             </button>

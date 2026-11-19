@@ -59,7 +59,7 @@ export default function SummaryCard({ stats, onReset }: { stats: SmolderStats; o
         <button
           type="button"
           onClick={() => setCardOpen(true)}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-[#f0a060]"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-white/85"
         >
           <Share2 size={14} /> Buat kartu hasilmu
         </button>

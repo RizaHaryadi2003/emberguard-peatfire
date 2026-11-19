@@ -379,3 +379,46 @@ body {
     animation: none;
   }
 }
+
+/*
+ * Tombol monokrom bersama semua modul (sejak 19 November 2026).
+ * Sederhana: garis tipis, hover hanya mengubah warna (tanpa gerak, denyut,
+ * atau ikon dekoratif), terpilih = putih penuh, nonaktif = redup.
+ */
+.btn-mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: transparent;
+  color: rgb(255 255 255 / 0.82);
+  padding: 0.5rem 0.95rem;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+/* Hover tidak berlaku pada tombol terpilih, supaya putihnya tidak tertimpa. */
+.btn-mono:hover:not(:disabled):not([aria-pressed="true"]):not([aria-checked="true"]):not(.is-on) {
+  border-color: rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.07);
+  color: #fff;
+}
+.btn-mono[aria-pressed="true"],
+.btn-mono[aria-checked="true"],
+.btn-mono.is-on {
+  border-color: #fff;
+  background: #fff;
+  color: #0a0a0a;
+}
+.btn-mono:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-mono:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 0.7);
+  outline-offset: 2px;
+}

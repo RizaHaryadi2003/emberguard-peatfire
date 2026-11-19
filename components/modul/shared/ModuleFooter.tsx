@@ -22,7 +22,7 @@ export default function ModuleFooter({ href }: { href: string }) {
               <span className="block text-[11px] uppercase tracking-[0.2em] text-white/45">Modul berikutnya</span>
               <span className="mt-1 inline-flex items-center gap-2 font-playfair text-2xl italic">
                 {next.title}
-                <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={18} />
               </span>
             </Link>
           ) : (

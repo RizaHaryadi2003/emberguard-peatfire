@@ -92,7 +92,7 @@ export default function SummaryCard({ stats, canalDepthCm, guess, onReset, onClo
         <button
           type="button"
           onClick={() => setCardOpen(true)}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-[#f0a35e]"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-white/85"
         >
           <Share2 size={14} /> {KANAL_SUMMARY.share}
         </button>
@@ -100,7 +100,7 @@ export default function SummaryCard({ stats, canalDepthCm, guess, onReset, onClo
           <Link
             href={NEXT_MODULE.href}
             title={KANAL_SUMMARY.next}
-            className="inline-flex items-center gap-2 rounded-full border border-[#f0a35e]/50 bg-[#f0a35e]/10 px-3.5 py-2 text-xs font-medium text-[#ffd2a8] transition-colors hover:bg-[#f0a35e]/20"
+            className="btn-mono"
           >
             Modul {NEXT_MODULE.number}: {NEXT_MODULE.title} <ArrowRight size={14} />
           </Link>

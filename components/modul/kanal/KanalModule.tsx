@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
-import { Check, FastForward, Info, MousePointerClick, Pause, RotateCcw, Waves, X } from "lucide-react";
+import { Check, FastForward, Info, MousePointerClick, Pause, RotateCcw, X } from "lucide-react";
 import {
   CANAL_TEXT,
   FIGURE_NOTE,
@@ -631,9 +631,8 @@ export default function KanalModule() {
               data-guide="weir"
               onClick={() => setBlocked(true)}
               disabled={blocked || canalDepthCm === 0}
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${guide(3)}`}
+              className={`btn-mono ${guide(3)}`}
             >
-              <Waves size={14} />
               {blocked ? CANAL_TEXT.blockedLabel : CANAL_TEXT.blockLabel}
             </button>
             )}
@@ -650,7 +649,7 @@ export default function KanalModule() {
               <button
                 type="button"
                 onClick={() => setSummaryHidden(false)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-[#f0a35e]"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-black transition-colors hover:bg-white/85"
               >
                 {CANAL_TEXT.summaryLabel}
               </button>

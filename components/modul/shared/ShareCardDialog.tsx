@@ -139,7 +139,7 @@ export default function ShareCardDialog({ imageSrc, imageAlt, fileName, link, sh
 
           <div className="mt-4 flex flex-col gap-2.5">
             {canShare && (
-              <button type="button" onClick={share} disabled={busy} className={`${ACTION} bg-white text-black hover:bg-[#f0a060]`}>
+              <button type="button" onClick={share} disabled={busy} className={`${ACTION} bg-white text-black hover:bg-white/85`}>
                 <Share2 size={16} /> Bagikan
               </button>
             )}
@@ -147,7 +147,7 @@ export default function ShareCardDialog({ imageSrc, imageAlt, fileName, link, sh
               type="button"
               onClick={download}
               disabled={busy}
-              className={canShare ? ACTION_SECONDARY : `${ACTION} bg-white text-black hover:bg-[#f0a060]`}
+              className={canShare ? ACTION_SECONDARY : `${ACTION} bg-white text-black hover:bg-white/85`}
             >
               <Download size={16} /> Unduh gambar
             </button>

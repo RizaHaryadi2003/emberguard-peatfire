@@ -48,7 +48,7 @@ export default function ModuleHook({ open, kicker, setup, question, cta, scrollH
           <button
             type="button"
             onClick={onStart}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-[#f0a060]"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-white/85"
           >
             {cta}
             <ArrowDown size={16} />

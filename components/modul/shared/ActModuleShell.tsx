@@ -199,7 +199,7 @@ export default function ActModuleShell({
                         i === act
                           ? "bg-white text-black"
                           : passed
-                            ? "cursor-pointer bg-[#e8702a]/25 text-[#f3a56f] hover:bg-[#e8702a]/40"
+                            ? "cursor-pointer bg-white/15 text-white/85 hover:bg-white/25"
                             : locked
                               ? "cursor-not-allowed border border-white/10 text-white/25"
                               : "cursor-pointer border border-white/25 text-white/70 hover:border-white/50"

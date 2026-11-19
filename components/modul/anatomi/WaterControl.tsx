@@ -87,7 +87,7 @@ export default function WaterControl({ waterCm, onChange, onInteract, canCreateC
         type="button"
         onClick={onCreateCard}
         disabled={!canCreateCard}
-        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-[#f0a060] enabled:cursor-pointer disabled:bg-white/10 disabled:text-white/50"
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/85 enabled:cursor-pointer disabled:bg-white/10 disabled:text-white/50"
       >
         <Share2 size={15} />
         {canCreateCard ? "Buat kartu hasilmu" : "Geser pengatur untuk membuat kartumu"}

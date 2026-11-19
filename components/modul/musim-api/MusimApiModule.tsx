@@ -231,13 +231,7 @@ export default function MusimApiModule() {
                   role="radio"
                   aria-checked={kind === k}
                   onClick={() => chooseKind(k)}
-                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                    kind === k
-                      ? k === "elnino"
-                        ? "border-[#ff8a4d] bg-[#ff8a4d]/20 text-white"
-                        : "border-[#8fd8ff] bg-[#8fd8ff]/15 text-white"
-                      : "border-white/20 text-white/75 hover:border-white/40"
-                  }`}
+                  className="btn-mono"
                 >
                   {k === "elnino"
                     ? MUSIM_TEXT.elninoYear

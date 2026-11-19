@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
@@ -314,11 +313,9 @@ export default function HutanModule() {
                     setLastSource("flood");
                     setTriedFlood(true);
                   }}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
-                    flood ? "border-[#5fb0dc] bg-[#5fb0dc]/25 text-white" : "border-white/20 text-white/80 hover:border-white/40"
-                  }`}
+                  className="btn-mono"
                 >
-                  <Waves size={14} /> {HUTAN_TEXT.flood}
+                  {HUTAN_TEXT.flood}
                 </button>
                 <button
                   type="button"
@@ -329,11 +326,9 @@ export default function HutanModule() {
                     setLastSource("rain");
                     setTriedRain(true);
                   }}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
-                    rain ? "border-[#9fd3f0] bg-[#9fd3f0]/20 text-white" : "border-white/20 text-white/80 hover:border-white/40"
-                  }`}
+                  className="btn-mono"
                 >
-                  <CloudRain size={14} /> {HUTAN_TEXT.rain}
+                  {HUTAN_TEXT.rain}
                 </button>
               </div>
               <p className="mt-2 text-[12px] leading-snug text-white/75 lg:hidden">{waterNote}</p>

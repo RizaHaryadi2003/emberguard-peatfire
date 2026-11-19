@@ -53,21 +53,18 @@ export default function StepAdvance({
   // sorotan; tombol hanya bergeser selama ia memang dapat diklik.
   const body = href && !forward ? (
     <>
-      <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
+      <ArrowLeft size={14} />
       {label}
     </>
   ) : (
     <>
       {locked ? <Lock size={13} /> : null}
       {label}
-      <ArrowRight size={14} className="transition-transform group-enabled:group-hover:translate-x-0.5" />
+      <ArrowRight size={14} />
     </>
   );
-  const pill = `group inline-flex items-center gap-2 rounded-full border bg-black/55 px-4 py-2 text-xs font-medium text-white transition-colors ${
-    locked
-      ? `cursor-not-allowed bg-black/45 text-white/45 ${urgent ? "border-amber-300/50" : "border-white/12"}`
-      : "cursor-pointer border-white/25 hover:bg-white/20"
-  }`;
+  // Tombol monokrom bersama (.btn-mono): hover hanya mengubah warna.
+  const pill = `btn-mono bg-black/40 ${urgent && locked ? "!border-white/60" : ""}`;
 
   return (
     <div className={`flex flex-col items-end gap-2 ${className}`}>
