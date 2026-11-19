@@ -288,9 +288,11 @@ pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.
   Buletin Iklim BMKG Kalbar Oktober 2026.
 - **Panggung:** bongkahan gambut 3D Modul Anatomi (dipakai ulang) dengan muka
   air tanah serta garis **40 cm** dan **60 cm** di dinding; hujan dan awan
-  mengikuti kalender; bara dan asap mengikuti tingkat api. Di panel: grafik
-  kalender setahun (hujan per 10 hari, muka air, kedua ambang) dan
-  penggeser hari.
+  mengikuti kalender; bara dan asap mengikuti tingkat api. Tata letak
+  mengikuti Modul Kanal: kiri = cerita + penggeser; kolom kanan ramping =
+  keadaan hari ini, grafik setahun (hujan per 10 hari, muka air, kedua
+  ambang), kalimat "mengapa begitu", kartu bagian yang diklik, lalu panah
+  lanjut di dasarnya.
 - **Hook:** "Setiap tahun asap datang di bulan yang sama. Kebetulan?" +
   "September 2026, hujan di Kalbar hanya 117 mm dari normal 304 mm."
 

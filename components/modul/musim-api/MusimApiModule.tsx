@@ -30,6 +30,7 @@ import {
   fireStage,
   rainfall,
   simulateYear,
+  type FireStage,
   type YearKind,
 } from "@/lib/model/fireSeason";
 import SeasonChart from "./SeasonChart";
@@ -133,7 +134,6 @@ export default function MusimApiModule() {
       progress={progress}
       onReset={reset}
       background="#10120f"
-      controlsSide="right"
       figure={
         <>
           <MusimScene
@@ -145,30 +145,11 @@ export default function MusimApiModule() {
             inspect={inspect}
             onInspect={setInspect}
           />
-          {/* Kartu penjelasan bagian yang diklik. Teksnya mengikuti hari
-              yang sedang dilihat, jadi tetap benar saat kalender digeser. */}
+          {/* Kartu penjelasan di atas gambar, hanya di layar < 1024 px; di
+              layar lebih lebar kartunya ada di kolom kanan. */}
           {inspect && (
-            <div
-              key={inspect}
-              role="dialog"
-              aria-label={inspectText(inspect, depthCm).title}
-              // Di laptop lebar kartu duduk di kolom kanan, di atas panel
-              // kendali; di layar lebih sempit di pojok kiri atas gambar.
-              className="sekitarmu-rise absolute left-0 right-0 top-0 z-20 rounded-2xl border border-white/10 bg-[#0a0d0f]/90 p-3.5 shadow-2xl shadow-black/60 md:right-auto md:top-6 md:w-[300px] xl:fixed xl:left-auto xl:right-14 xl:top-20 xl:w-[376px]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-playfair text-lg italic leading-tight text-white">{inspectText(inspect, depthCm).title}</p>
-                <button
-                  type="button"
-                  onClick={() => setInspect(null)}
-                  aria-label={MUSIM_TEXT.close}
-                  className="-mr-1 -mt-1 cursor-pointer rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              <p className="mt-1.5 text-[12px] leading-snug text-white/80">{inspectText(inspect, depthCm).body}</p>
-              <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.inspectToday(depthCm)}</p>
+            <div className="absolute left-0 right-0 top-0 z-20 md:right-auto md:top-6 md:w-[300px] lg:hidden">
+              <InspectCard part={inspect} depthCm={depthCm} onClose={() => setInspect(null)} />
             </div>
           )}
           <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
@@ -179,7 +160,7 @@ export default function MusimApiModule() {
       controls={
         <div className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(act)}`}>
           {act === 2 && (
-            <div role="radiogroup" aria-label="Jenis tahun" className="mb-2 flex gap-2">
+            <div role="radiogroup" aria-label="Jenis tahun" className="mb-2.5 flex gap-2">
               {(["normal", "elnino"] as const).map((k) => (
                 <button
                   key={k}
@@ -201,29 +182,92 @@ export default function MusimApiModule() {
             </div>
           )}
 
-          {/* Pembacaan hari ini: tanggal, hujan, muka air, dan golongan bahaya. */}
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}</p>
-              <p className="mt-0.5 font-playfair text-2xl italic leading-none tabular-nums text-white">
+          {/* Penggeser: kalender di babak 01 dan 03, hari tanpa hujan di babak 02. */}
+          <div className="flex items-baseline justify-between gap-3">
+            <label htmlFor="musim-slider" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+              {extended ? MUSIM_TEXT.dryDays : MUSIM_TEXT.calendar}
+            </label>
+            <span className="text-[11px] tabular-nums text-white/75">
+              {extended ? MUSIM_TEXT.dryDaysValue(dryDays) : MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}
+            </span>
+          </div>
+          {extended ? (
+            <input
+              id="musim-slider"
+              type="range"
+              min={0}
+              max={MAX_DRY_DAYS}
+              step={1}
+              value={dryDays}
+              onChange={(e) => setDryDays(Number(e.target.value))}
+              aria-valuetext={`${MUSIM_TEXT.dryDaysValue(dryDays)}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
+              className="water-slider w-full"
+            />
+          ) : (
+            <input
+              id="musim-slider"
+              type="range"
+              min={0}
+              max={DAYS_PER_YEAR - 1}
+              step={1}
+              value={day}
+              onChange={(e) => moveDay(Number(e.target.value))}
+              aria-valuetext={`${MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
+              className="water-slider w-full"
+            />
+          )}
+          {/* Kalender bulan di bawah penggeser, supaya posisinya terbaca. */}
+          {!extended && (
+            <div className="mt-0.5 flex justify-between text-[9px] uppercase tracking-[0.08em] text-white/35" aria-hidden>
+              {MONTH_SHORT.filter((_, m) => m % 2 === 0).map((m) => (
+                <span key={m}>{m}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Layar < 1024 px tidak punya kolom kanan: pembacaan hari ini,
+              grafik, dan penjelasannya diringkas di sini. */}
+          <div className="lg:hidden">
+            <div className="mt-2.5 flex items-center justify-between gap-3">
+              <p className="font-playfair text-2xl italic leading-none tabular-nums text-white">
                 {MUSIM_TEXT.depthValue(depthCm)}
                 <span className="ml-1.5 font-sans text-[10px] not-italic uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.depth}</span>
               </p>
+              <StageChip stage={stage} />
             </div>
-            <div className="text-right">
-              <p className="text-[11px] tabular-nums text-[#9fd3f0]">
-                {MUSIM_TEXT.rain}: {rainMmDay > 0 ? MUSIM_TEXT.rainValue(rainMmDay) : MUSIM_TEXT.noRain}
-              </p>
-              <p className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ color: STAGE_COLOR[stage], background: `${STAGE_COLOR[stage]}22` }}>
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: STAGE_COLOR[stage] }} />
-                {STAGE_LABEL[stage]}
-              </p>
+            <div className="mt-2 hidden sm:block">
+              <SeasonChart
+                kind={act === 2 ? kind : "normal"}
+                normal={normal}
+                elnino={act === 2 && kind === "elnino" ? elnino : undefined}
+                day={viewDay}
+                extension={extended ? { from: AUGUST_DRY_END_DAY, days: dryDays, fromCm: AUGUST_START_CM, toCm: depthCm } : undefined}
+              />
             </div>
+            <p aria-live="polite" className="mt-2 rounded-xl bg-white/[0.05] px-3 py-2 text-[12px] leading-snug text-white/80">
+              {explainDay({ depthCm, rainMmDay, dryRun: extended, dryDays })}
+            </p>
           </div>
+        </div>
+      }
+      aside={
+        <>
+          {/* Lantai 1: keadaan hari ini. */}
+          <section className={CARD}>
+            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{MUSIM_TEXT.today(date.date, MONTH_SHORT[date.month])}</p>
+            <p className="mt-1.5 font-playfair text-4xl italic leading-none tabular-nums text-white">{MUSIM_TEXT.depthValue(depthCm)}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.depthBelow}</p>
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+              <span className="text-[11px] tabular-nums text-[#9fd3f0]">
+                {MUSIM_TEXT.rain}: {rainMmDay > 0 ? MUSIM_TEXT.rainValue(rainMmDay) : MUSIM_TEXT.noRain}
+              </span>
+              <StageChip stage={stage} />
+            </div>
+          </section>
 
-          {/* Kalender setahun; di ponsel disembunyikan supaya panel tidak
-              menutupi diorama, angkanya tetap ada di atas. */}
-          <div className="mt-2 hidden sm:block">
+          {/* Lantai 2: setahun dalam satu gambar. */}
+          <section className={CARD}>
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{MUSIM_TEXT.yearChart}</p>
             <SeasonChart
               kind={act === 2 ? kind : "normal"}
               normal={normal}
@@ -231,48 +275,65 @@ export default function MusimApiModule() {
               day={viewDay}
               extension={extended ? { from: AUGUST_DRY_END_DAY, days: dryDays, fromCm: AUGUST_START_CM, toCm: depthCm } : undefined}
             />
-          </div>
+          </section>
 
-          {/* Penggeser: kalender di babak 01 dan 03, hari tanpa hujan di babak 02. */}
-          <div className="mt-2">
-            <div className="flex items-baseline justify-between gap-3">
-              <label htmlFor="musim-slider" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
-                {extended ? MUSIM_TEXT.dryDays : MUSIM_TEXT.calendar}
-              </label>
-              {extended && <span className="text-[11px] tabular-nums text-white/70">{MUSIM_TEXT.dryDaysValue(dryDays)}</span>}
-            </div>
-            {extended ? (
-              <input
-                id="musim-slider"
-                type="range"
-                min={0}
-                max={MAX_DRY_DAYS}
-                step={1}
-                value={dryDays}
-                onChange={(e) => setDryDays(Number(e.target.value))}
-                aria-valuetext={`${MUSIM_TEXT.dryDaysValue(dryDays)}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
-                className="water-slider w-full"
-              />
-            ) : (
-              <input
-                id="musim-slider"
-                type="range"
-                min={0}
-                max={DAYS_PER_YEAR - 1}
-                step={1}
-                value={day}
-                onChange={(e) => moveDay(Number(e.target.value))}
-                aria-valuetext={`${MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
-                className="water-slider w-full"
-              />
-            )}
-          </div>
-          {/* Alasan keadaan hari ini, berubah mengikuti setiap geseran. */}
-          <p aria-live="polite" className="mt-2 rounded-xl bg-white/[0.05] px-3 py-2 text-[12px] leading-snug text-white/80">
-            {explainDay({ depthCm, rainMmDay, dryRun: extended, dryDays })}
-          </p>
-        </div>
+          {/* Lantai 3: mengapa begitu, berubah mengikuti setiap geseran. */}
+          <section className={CARD}>
+            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{MUSIM_TEXT.why}</p>
+            <p aria-live="polite" className="mt-1.5 text-[12px] leading-snug text-white/85">
+              {explainDay({ depthCm, rainMmDay, dryRun: extended, dryDays })}
+            </p>
+          </section>
+
+          {/* Lantai 4: penjelasan bagian yang diklik, atau ajakan mengekliknya. */}
+          {inspect ? (
+            <InspectCard part={inspect} depthCm={depthCm} onClose={() => setInspect(null)} />
+          ) : (
+            <p className="rounded-2xl border border-dashed border-white/15 px-3.5 py-3 text-[11px] leading-snug text-white/55">{MUSIM_TEXT.clickInvite}</p>
+          )}
+        </>
       }
     />
+  );
+}
+
+/** Gaya kartu kolom kanan, sama untuk tiap lantai. */
+const CARD = "rounded-2xl border border-white/10 bg-[#0a0d0f]/80 p-3.5 shadow-xl shadow-black/40";
+
+/** Penanda golongan bahaya hari ini. */
+function StageChip({ stage }: { stage: FireStage }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+      style={{ color: STAGE_COLOR[stage], background: `${STAGE_COLOR[stage]}22` }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: STAGE_COLOR[stage] }} />
+      {STAGE_LABEL[stage]}
+    </span>
+  );
+}
+
+/**
+ * Kartu penjelasan bagian bongkahan yang diklik. Teksnya mengikuti hari yang
+ * sedang dilihat, jadi tetap benar saat kalender digeser.
+ */
+function InspectCard({ part, depthCm, onClose }: { part: InspectPart; depthCm: number; onClose: () => void }) {
+  const { title, body } = inspectText(part, depthCm);
+  return (
+    <div key={part} role="dialog" aria-label={title} className={`sekitarmu-rise ${CARD} bg-[#0a0d0f]/90`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-playfair text-lg italic leading-tight text-white">{title}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={MUSIM_TEXT.close}
+          className="-mr-1 -mt-1 cursor-pointer rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <p className="mt-1.5 text-[12px] leading-snug text-white/80">{body}</p>
+      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.inspectToday(depthCm)}</p>
+    </div>
   );
 }

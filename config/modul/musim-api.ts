@@ -128,6 +128,11 @@ export const MUSIM_TEXT = {
   dragHint: "Seret untuk memutar · klik bagian gambut untuk penjelasannya",
   inspectToday: (cm: number) => `Hari ini muka air ${Math.round(cm)} cm`,
   close: "Tutup",
+  today: (date: number, month: string) => `Hari ini · ${date} ${month}`,
+  depthBelow: "muka air di bawah permukaan",
+  yearChart: "Setahun: hujan dan muka air",
+  why: "Mengapa begitu",
+  clickInvite: "Klik bagian bongkahan (gambut kering, basah, garis 40 atau 60 cm) untuk melihat penjelasannya.",
   scaleNote: "Muka air dihitung dari hujan dan penguapan setiap hari.",
   elninoNote: "Januari–Juli sama dengan tahun biasa. El Niño mengurangi hujan Agustus–Oktober.",
 };

@@ -16,7 +16,7 @@ import {
 import { MUSIM_TEXT, STAGE_COLOR } from "@/config/modul/musim-api";
 
 /** Ukuran gambar dalam satuan viewBox; SVG melebar mengikuti panel. */
-const W = 360;
+const W = 250;
 const RAIN_H = 24;
 const GAP = 5;
 const DEPTH_H = 48;
@@ -72,6 +72,7 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
   const barW = W / DASARIAN_PER_YEAR;
 
   return (
+    <div>
     <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label="Kalender hujan dan muka air gambut setahun">
       {/* Batang hujan per dasarian; dasarian kering berwarna jingga. */}
       {bars.map((b) => (
@@ -87,25 +88,15 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
         />
       ))}
 
-      {/* Keterangan warna batang, di pojok kanan atas pita hujan. */}
-      <g fontSize={7} fill="#ffffff" opacity={0.6}>
-        <rect x={W - 118} y={1} width={6} height={6} rx={1} fill="#5fb0dc" />
-        <text x={W - 109} y={6.5}>{MUSIM_TEXT.legendRain}</text>
-        <rect x={W - 78} y={1} width={6} height={6} rx={1} fill="#f0a35e" />
-        <text x={W - 69} y={6.5}>{MUSIM_TEXT.legendDry}</text>
-      </g>
-
       {/* Bidang muka air: 0 di atas (permukaan), makin ke bawah makin dalam. */}
-      <text x={2} y={RAIN_H + GAP + DEPTH_H - 2} fontSize={7} fill="#8fd8ff" opacity={0.7}>
-        {MUSIM_TEXT.legendDepth} ↓
-      </text>
+
       <rect x={0} y={RAIN_H + GAP} width={W} height={DEPTH_H} rx={3} fill="#ffffff" opacity={0.04} />
       <line x1={0} x2={W} y1={yOfDepth(HIGH_DANGER_CM)} y2={yOfDepth(HIGH_DANGER_CM)} stroke={STAGE_COLOR.bahaya} strokeWidth={0.8} strokeDasharray="3 2" />
       <line x1={0} x2={W} y1={yOfDepth(BURN_CM)} y2={yOfDepth(BURN_CM)} stroke={STAGE_COLOR.terbakar} strokeWidth={0.8} strokeDasharray="3 2" />
-      <text x={W - 2} y={yOfDepth(HIGH_DANGER_CM) - 2} textAnchor="end" fontSize={7} fill={STAGE_COLOR.bahaya}>
+      <text x={W - 2} y={yOfDepth(HIGH_DANGER_CM) - 2} textAnchor="end" fontSize={8} fill={STAGE_COLOR.bahaya}>
         {HIGH_DANGER_CM} cm
       </text>
-      <text x={W - 2} y={yOfDepth(BURN_CM) - 2} textAnchor="end" fontSize={7} fill={STAGE_COLOR.terbakar}>
+      <text x={W - 2} y={yOfDepth(BURN_CM) - 2} textAnchor="end" fontSize={8} fill={STAGE_COLOR.terbakar}>
         {BURN_CM} cm
       </text>
 
@@ -129,10 +120,28 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
 
       {/* Sumbu bulan. */}
       {MONTH_START_DAY.map((d, m) => (
-        <text key={m} x={xOfDay(d) + 1} y={H - 2} fontSize={7} fill="#ffffff" opacity={0.45}>
+        <text key={m} x={xOfDay(d) + 1} y={H - 2} fontSize={8} fill="#ffffff" opacity={0.45}>
           {MONTH_SHORT[m]}
         </text>
       ))}
     </svg>
+      {/* Keterangan warna, di bawah gambar supaya tidak menimpa batang. */}
+      <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/55">
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-sm bg-[#5fb0dc]" /> {MUSIM_TEXT.legendRain}
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-sm bg-[#f0a35e]" /> {MUSIM_TEXT.legendDry}
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-3 rounded-full bg-[#8fd8ff]" /> {MUSIM_TEXT.legendDepth}
+        </li>
+        {elnino && (
+          <li className="inline-flex items-center gap-1.5">
+            <span className="h-0.5 w-3 rounded-full bg-[#ff8a4d]" /> {MUSIM_TEXT.elninoYear}
+          </li>
+        )}
+      </ul>
+    </div>
   );
 }

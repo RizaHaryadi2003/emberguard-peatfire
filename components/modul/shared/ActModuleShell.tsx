@@ -44,11 +44,12 @@ type Props = {
   /** Latar halaman di belakang gambar. */
   background?: string;
   /**
-   * Letak panel kendali di layar laptop lebar (≥ 1280 px). "right" memindahkan
-   * panel ke kolom kanan, sehingga kolom kiri seluruhnya untuk cerita dan
-   * gambar berada di tengah. Di layar yang lebih sempit panel tetap di kiri.
+   * Isi kolom kanan (grafik, angka hidup, penjelasan), seperti kolom kanan
+   * Modul Kanal: ramping, setinggi layar, dengan panah lanjut di dasarnya.
+   * Hanya tampil di layar ≥ 1024 px; modul harus menyediakan isi pentingnya
+   * di panel kendali untuk layar yang lebih sempit.
    */
-  controlsSide?: "left" | "right";
+  aside?: ReactNode;
 };
 
 /**
@@ -74,9 +75,8 @@ export default function ActModuleShell({
   figure,
   onReset,
   background = "#0b1a24",
-  controlsSide = "left",
+  aside,
 }: Props) {
-  const right = controlsSide === "right";
   const meta = moduleAt(href);
   const next = nextAvailableModule(href);
   const [hookOpen, setHookOpen] = useState(true);
@@ -129,7 +129,7 @@ export default function ActModuleShell({
           sempit pita di antara panel cerita dan panel kendali. */}
       <div
         className={`absolute bottom-[34%] left-4 right-4 top-[44%] md:bottom-[8%] md:left-[36%] md:right-[4%] md:top-[12%] ${
-          right ? "xl:left-[488px] xl:right-[448px]" : ""
+          aside ? "lg:right-[300px] xl:right-[320px]" : ""
         }`}
       >
         {figure}
@@ -234,9 +234,7 @@ export default function ActModuleShell({
         {/* Panel kendali. */}
         <div
           inert={hookOpen}
-          className={`pointer-events-auto absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${
-            right ? "xl:fixed xl:bottom-24 xl:left-auto xl:right-14 xl:z-20 xl:mt-0 xl:w-[376px]" : ""
-          } ${panelFade}`}
+          className={`pointer-events-auto absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${panelFade}`}
         >
           <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/85 p-3.5 shadow-2xl shadow-black/60 md:p-4">
             {controls}
@@ -303,8 +301,21 @@ export default function ActModuleShell({
           ))}
       </nav>
 
-      {/* Panah lanjut (kanan bawah), hanya di layar lebar. */}
-      <div inert={hookOpen} className={`absolute bottom-6 right-5 z-20 hidden sm:right-10 md:block ${panelFade}`}>
+      {/* Kolom kanan (layar ≥ 1024 px): isi dari modul, lalu panah lanjut
+          yang ikut mengalir di dasarnya — sama dengan Modul Kanal. */}
+      {aside && (
+        <div
+          inert={hookOpen}
+          className={`absolute bottom-6 right-5 top-14 z-20 hidden w-[272px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-3">{aside}</div>
+          <div className="max-w-full shrink-0 self-end">{advance}</div>
+        </div>
+      )}
+
+      {/* Panah lanjut (kanan bawah), hanya di layar lebar; bila ada kolom
+          kanan, panah ini pindah ke dasarnya. */}
+      <div inert={hookOpen} className={`absolute bottom-6 right-5 z-20 hidden sm:right-10 md:block ${aside ? "lg:hidden" : ""} ${panelFade}`}>
         {advance}
       </div>
     </div>
