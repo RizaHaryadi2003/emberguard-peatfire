@@ -5,6 +5,7 @@
  */
 
 import type { GrowthStatus, WaterStatus } from "@/lib/model/peat";
+import type { GuideStep } from "@/lib/guide";
 
 export type AnatomiStep = {
   title: string;
@@ -107,3 +108,37 @@ export const GROWTH_STATUS_TEXT: Record<GrowthStatus, { label: string; message: 
     message: "Timbunan sudah melewati 50 cm. Pada profil ini, bahan yang lebih dulu tertimbun di bawah sudah lebih hancur dan lebih matang.",
   },
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi tahap di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+export type AnatomiGuideState = {
+  /** Tahap terjauh yang sudah terbuka (unlocked). */
+  unlocked: number;
+  focused: boolean;
+  /** Muka air sudah digeser pembaca melewati batas 40 cm. */
+  waterPastLimit: boolean;
+};
+
+export const ANATOMI_GUIDE: readonly (readonly GuideStep<AnatomiGuideState>[])[] = [
+  [
+    { target: "growth", text: "Seret pengatur waktu ke kanan dan lihat gambut menumpuk sedikit demi sedikit.", done: (s) => s.unlocked >= 1 },
+    { target: "next", text: "Gambut sudah terbentuk. Lanjut ke tahap berikutnya." },
+  ],
+  [
+    { target: "figure", text: "Klik salah satu lapisan untuk melihatnya lebih dekat.", done: (s) => s.focused },
+    { target: "layerDetail", text: "Ini ciri lapisan itu. Coba juga lapisan yang lain dan bandingkan seratnya." },
+    { target: "next", text: "Lanjut ke tahap berikutnya." },
+  ],
+  [
+    { target: "figure", text: "Sebagian besar isi gambut adalah pori yang penuh air, seperti spons yang basah." },
+    { target: "next", text: "Lanjut ke tahap berikutnya." },
+  ],
+  [
+    { target: "water", text: "Geser muka air turun, melewati batas 40 cm.", done: (s) => s.waterPastLimit },
+    { target: "figure", text: "Gambut di atas air mengering dan mulai berpijar. Di bawah garis biru ia tetap basah." },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];

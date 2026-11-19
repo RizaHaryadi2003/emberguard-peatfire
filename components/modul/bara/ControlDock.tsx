@@ -69,7 +69,7 @@ export default function ControlDock({
           <Clock size={12} aria-hidden="true" />
           Waktu
         </p>
-        <div className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
+        <div data-guide="time" className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
           {TIME_SPEEDS.map((speed, i) => (
             <button
               key={speed.label}
@@ -147,7 +147,7 @@ export default function ControlDock({
           tombol yang baru saja ia tekan. */}
       {showDouse && (
         <div className={`mt-2 border-t border-white/10 pt-2 [@media(min-height:651px)]:mt-3 [@media(min-height:651px)]:pt-3 [@media(min-height:901px)]:mt-5 [@media(min-height:901px)]:pt-4 ${showRewet ? "max-md:hidden" : ""}`}>
-          <div className="flex gap-1 rounded-full border border-white/15 bg-black/30 p-1">
+          <div data-guide="view" className="flex gap-1 rounded-full border border-white/15 bg-black/30 p-1">
             {(Object.keys(VIEW_TEXT) as ViewMode[]).map((mode) => {
               const urge = urgeThermal && mode === "termal";
               return (
@@ -186,6 +186,7 @@ export default function ControlDock({
           {showDouse && (
             <button
               type="button"
+              data-guide="douse"
               onClick={onDouse}
               disabled={dousing}
               className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-300/35 bg-sky-400/15 px-3.5 py-2 text-xs font-medium text-sky-100 transition-colors hover:bg-sky-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${showRewet ? "max-md:hidden" : ""}`}
@@ -197,6 +198,7 @@ export default function ControlDock({
           {showRewet && (
             <button
               type="button"
+              data-guide="rewet"
               onClick={onRewet}
               className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25"
             >

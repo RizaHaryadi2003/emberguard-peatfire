@@ -9,6 +9,8 @@
  * ============================================================================
  */
 
+import type { GuideStep } from "@/lib/guide";
+
 export type BaraAct = {
   /** Nomor babak yang tampil di antarmuka. */
   number: string;
@@ -222,3 +224,44 @@ export const CELL_STATE_TEXT: Record<number, { label: string; note: string }> = 
   2: { label: "Rongga abu", note: "Gambut sudah habis terbakar. Permukaan di atasnya kehilangan penopang." },
   3: { label: "Gambut hangus", note: "Pernah membara lalu padam oleh air; tidak habis, tetapi bahannya rusak." },
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+export type BaraGuideState = {
+  sourcePicked: boolean;
+  ignited: boolean;
+  timeOn: boolean;
+  doused: boolean;
+  thermalSeen: boolean;
+  rewet: boolean;
+  /** Tugas tiap babak sudah tuntas (actDone modul). */
+  done: readonly boolean[];
+};
+
+export const BARA_GUIDE: readonly (readonly GuideStep<BaraGuideState>[])[] = [
+  [
+    { target: "ignition", text: "Pilih satu cara api membakar.", done: (s) => s.sourcePicked },
+    { target: "figure", text: "Sekarang klik permukaan gambut untuk menyulutnya.", done: (s) => s.ignited },
+    { target: "stats", text: "Angka di sini menunjukkan baranya: seberapa panas dan seberapa dalam ia turun." },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "time", text: "Majukan waktu: pilih salah satu kecepatan.", done: (s) => s.timeOn },
+    { target: "figure", text: "Bara merambat di bawah permukaan. Tunggu sampai ia berumur dua hari.", done: (s) => s.done[1] },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "douse", text: "Tekan tombol siram untuk menyiram permukaan.", done: (s) => s.doused },
+    { target: "view", text: "Asapnya hilang. Sekarang buka tampilan termal.", done: (s) => s.thermalSeen },
+    { target: "figure", text: "Bara di bawah masih hidup. Tunggu sampai permukaan menyala lagi.", done: (s) => s.done[2] },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "rewet", text: "Tekan Pembasahan untuk menaikkan muka air tanah.", done: (s) => s.rewet },
+    { target: "figure", text: "Air naik sampai ke bara. Tunggu sampai seluruh bara padam.", done: (s) => s.done[3] },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];

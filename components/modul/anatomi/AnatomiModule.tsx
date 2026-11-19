@@ -6,7 +6,9 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { ANATOMI_HOOK, ANATOMI_STEPS } from "@/config/modul/anatomi";
+import { ANATOMI_GUIDE, ANATOMI_HOOK, ANATOMI_STEPS } from "@/config/modul/anatomi";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
 import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/model/peat";
 import { AmbientSound } from "@/lib/ambientSound";
@@ -111,6 +113,8 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
+  // Arahan yang sudah di-"Oke" per tahap (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   /**
    * Buka tahap sesudah `i`. Sekali terbuka tetap terbuka: pembaca yang
@@ -431,6 +435,12 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   );
   const handleReady = useCallback(() => setReady(true), []);
 
+  // Tuntunan: arahan aktif dibaca dari keadaan modul.
+  const guideState = { unlocked, focused: focused !== null, waterPastLimit: waterTouched && userWaterCm > 40 };
+  const guideSteps = ANATOMI_GUIDE[step];
+  const guideAt = guideLevel(guideSteps, guideState, acked[step]);
+  const guideStep = guideSteps[guideAt];
+
   return (
     <div
       ref={rootRef}
@@ -441,6 +451,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
       <div ref={stageRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-[#050505]">
         {/* Lapisan 3D */}
         <div
+          data-guide="figure"
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -518,7 +529,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           </div>
           {/* Rincian lapisan terpilih (tahap "Lapis demi lapis") */}
           {focusedLayer && (
-            <div key={focusedLayer.id} className="hero-anim hero-fade mt-6">
+            <div key={focusedLayer.id} data-guide="layerDetail" className="hero-anim hero-fade mt-6">
               <LayerDetail layer={focusedLayer} onClose={() => setFocused(null)} />
             </div>
           )}
@@ -591,7 +602,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           {/* Di layar sempit panel ini menempati seluruh tepi bawah, jadi panah
               lanjut duduk tepat di atasnya; di layar lebar panahnya ada di
               gugus kanan bawah bersama tombol suara. */}
-          <div className="absolute bottom-full right-0 mb-3 md:hidden">
+          <div data-guide="next" className="absolute bottom-full right-0 mb-3 md:hidden">
             <StepAdvance
               nextTitle={ANATOMI_STEPS[1].title}
               label="Tahap berikutnya"
@@ -601,7 +612,9 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               onAdvance={advance}
             />
           </div>
-          <GrowthControl years={userYears} onChange={applyYears} onInteract={stopGrowthDemo} />
+          <div data-guide="growth">
+            <GrowthControl years={userYears} onChange={applyYears} onInteract={stopGrowthDemo} />
+          </div>
         </div>
 
         {/* Pengatur muka air (tahap interaktif) */}
@@ -613,7 +626,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
         >
           {/* Seperti pada panel umur: di layar sempit panah duduk di atas panel. */}
           {lastStep && (
-            <div className="absolute bottom-full right-0 mb-3 flex flex-col items-end gap-2 md:hidden">
+            <div data-guide="next" className="absolute bottom-full right-0 mb-3 flex flex-col items-end gap-2 md:hidden">
               <div className="flex items-end gap-2">
                 {restartButton}
                 <StepAdvance {...BACK_TO_MODULE_LIST} />
@@ -621,6 +634,7 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
               <LaptopNudge />
             </div>
           )}
+          <div data-guide="water">
           <WaterControl
             waterCm={userWaterCm}
             onChange={setUserWaterCm}
@@ -628,10 +642,12 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
             canCreateCard={waterTouched}
             onCreateCard={() => setCardWaterCm(userWaterCm)}
           />
+          </div>
         </div>
 
         {/* Kanan bawah: petunjuk interaksi, tombol suara, dan panah lanjut */}
         <div
+          data-guide="next"
           inert={hookOpen}
           className={`absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 transition-opacity duration-700 sm:bottom-8 sm:right-10 xl:right-14 ${
             hookOpen ? "opacity-0" : "opacity-100"
@@ -687,6 +703,20 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           )}
         </div>
       </div>
+
+      {/* Tuntunan langkah demi langkah, sesudah layar pembuka dan pemuatan. */}
+      {!hookOpen && ready && (
+        <GuideLayer
+          key={`${step}-${guideAt}`}
+          target={guideTarget(guideStep, guideState)}
+          text={guideStep.text}
+          index={guideAt + 1}
+          total={guideSteps.length}
+          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === step ? Math.max(v, guideAt + 1) : v))) : undefined}
+          okLabel="Oke"
+          delayMs={guideAt === 0 ? 1200 : 350}
+        />
+      )}
 
       {cardWaterCm !== null && <ResultCardDialog waterCm={cardWaterCm} onClose={closeCard} />}
     </div>

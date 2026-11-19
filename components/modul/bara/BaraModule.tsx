@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
-import { BARA_ACTS, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
+import { BARA_ACTS, BARA_GUIDE, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
 import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
 import { AmbientSound } from "@/lib/ambientSound";
@@ -17,6 +17,8 @@ import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
 import type { SharedBurn } from "@/lib/kartu/baraCard";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
@@ -121,6 +123,8 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
   const [soundOn, setSoundOn] = useState(false);
+  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   const stateRef = useRef<BaraState>(createBaraState(START_WATER_CM / 100));
   const hintRef = useRef<LayerHintHandle>(null);
@@ -378,6 +382,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     setDousedOnce(false);
     setThermalSeen(false);
     setRewetOnce(false);
+    setAcked([0, 0, 0, 0]);
     setCollapsed(false);
     setSummaryReady(false);
     Object.assign(stateRef.current, createBaraState(START_WATER_CM / 100));
@@ -412,6 +417,20 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     stats.extinguished && rewetOnce,
   ];
   const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
+
+  // Tuntunan: arahan aktif dibaca dari keadaan modul.
+  const guideState = {
+    sourcePicked: source !== null,
+    ignited,
+    timeOn: speedIndex > 0,
+    doused: dousedOnce,
+    thermalSeen,
+    rewet: rewetOnce,
+    done: actDone,
+  };
+  const guideSteps = BARA_GUIDE[act];
+  const guideAt = guideLevel(guideSteps, guideState, acked[act]);
+  const guideStep = guideSteps[guideAt];
 
   // Kartu hasil menunggu sebentar di layar sempit. Di sana kartu itu
   // menggantikan panel kendali dan cukup tinggi untuk menutupi bagian bawah
@@ -510,6 +529,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
       {/* Lapisan 3D. Seretan tetikus memutar diorama; sentuhan tidak memutar,
           sama dengan Modul Anatomi. */}
       <div
+        data-guide="figure"
         className="absolute inset-0 cursor-grab active:cursor-grabbing"
         onPointerDown={handleDragStart}
         onPointerMove={handleDragMove}
@@ -706,7 +726,9 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           satu tumpukan, keduanya tidak mungkin lagi saling menindih, dan
           pesannya pun kini muncul berdampingan dengan angka yang dibahasnya. */}
       <div inert={hookOpen} className={`absolute right-5 top-32 hidden w-[236px] flex-col gap-3 lg:flex xl:right-10 ${panelFade}`}>
-        <StatsPanel stats={stats} fact={current.fact} compact={message !== null} />
+        <div data-guide="stats">
+          <StatsPanel stats={stats} fact={current.fact} compact={message !== null} />
+        </div>
         {message && (
           <div className="pointer-events-none rounded-2xl border border-[#e8702a]/30 bg-black/60 p-3.5 backdrop-blur-xl">
             <p className="text-xs leading-relaxed text-white/85">{message}</p>
@@ -745,6 +767,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
 
       {/* Kanan bawah: petunjuk interaksi, tombol suara, dan panah lanjut */}
       <div
+        data-guide="next"
         inert={hookOpen}
         className={`absolute bottom-6 right-5 flex items-end gap-4 text-[11px] text-white/60 sm:bottom-8 sm:right-10 xl:right-14 ${panelFade}`}
       >
@@ -778,6 +801,19 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
       <span className="sr-only">
         Rentang pengatur muka air tanah 0 sampai {WATER_MAX_CM} sentimeter. Tanah amblas: {collapsed ? "sudah terjadi" : "belum"}.
       </span>
+      {/* Tuntunan langkah demi langkah, sesudah layar pembuka dan pemuatan. */}
+      {!hookOpen && ready && (
+        <GuideLayer
+          key={`${act}-${guideAt}`}
+          target={guideTarget(guideStep, guideState)}
+          text={guideStep.text}
+          index={guideAt + 1}
+          total={guideSteps.length}
+          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
+          okLabel="Oke"
+          delayMs={guideAt === 0 ? 1500 : 350}
+        />
+      )}
     </div>
   );
 }

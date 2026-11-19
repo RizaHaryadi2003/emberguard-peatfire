@@ -13,6 +13,7 @@
  * ============================================================================
  */
 
+import type { GuideStep } from "@/lib/guide";
 import {
   AREA_MAX_HA,
   BURN_DEPTH_MAX_M,
@@ -170,3 +171,33 @@ export const KARBON_SUMMARY = {
   closing:
     "Inilah sebabnya menjaga gambut tetap basah jauh lebih murah daripada memulihkannya: yang dijaga adalah timbunan ribuan tahun yang tidak dapat dipercepat oleh siapa pun.",
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+export type KarbonGuideState = {
+  burnCm: number;
+  timeOn: boolean;
+  /** Tugas tiap babak sudah tuntas (actDone modul). */
+  done: readonly boolean[];
+};
+
+export const KARBON_GUIDE: readonly (readonly GuideStep<KarbonGuideState>[])[] = [
+  [
+    { target: "burn", text: "Geser Kedalaman terbakar. Lihat gambutnya habis dari atas.", done: (s) => s.burnCm >= 15 },
+    { target: "stats", text: "Di sini yang hilang: karbon yang lepas dan umur gambut yang ikut terbakar. Teruskan sampai 50 cm.", done: (s) => s.done[0] },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "area", text: "Kecilkan luasnya, lalu dalamkan kedalamannya, sampai karbonnya sama besar.", done: (s) => s.done[1] },
+    { target: "stats", text: "Lahan sempit yang terbakar dalam bisa melepas karbon sebanyak lahan luas yang dangkal." },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "time", text: "Jalankan waktu: pilih salah satu kecepatan.", done: (s) => s.timeOn },
+    { target: "stats", text: "Gambut tumbuh lagi, tetapi sangat lambat. Tunggu sampai satu abad berlalu.", done: (s) => s.done[2] },
+    { target: "next", text: "Modul selesai." },
+  ],
+];

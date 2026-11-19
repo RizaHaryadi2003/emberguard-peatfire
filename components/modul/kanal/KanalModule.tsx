@@ -8,6 +8,7 @@ import {
   FIGURE_NOTE,
   GUESS_TEXT,
   KANAL_ACTS,
+  KANAL_GUIDE,
   KANAL_HOOK,
   REACH_GUESSES,
   SCALE_NOTE,
@@ -16,6 +17,8 @@ import {
 import { BACK_TO_MODULE_LIST, moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
 import {
   CANAL_DEPTH_MAX_M,
   DrainageSim,
@@ -99,6 +102,8 @@ export default function KanalModule() {
    * dijawab.
    */
   const [guess, setGuess] = useState<number | null>(null);
+  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
   const [reducedMotion, setReducedMotion] = useState(false);
   /** Catatan skala gambar terbuka. Lihat kolom kanan. */
   const [scaleOpen, setScaleOpen] = useState(false);
@@ -209,6 +214,7 @@ export default function KanalModule() {
     setSpeedIndex(0);
     setBlocked(false);
     setGuess(null);
+    setAcked([0, 0, 0, 0]);
     setSummaryReady(false);
     setSummaryHidden(false);
     Object.assign(stateRef.current, createKanalState());
@@ -324,6 +330,12 @@ export default function KanalModule() {
   })();
   const dense = act >= 2;
 
+  // Tuntunan: arahan aktif dibaca dari keadaan modul.
+  const guideState = { depthCm: canalDepthCm, guessed: guess !== null, timeOn: speedIndex > 0, blocked, done: actDone };
+  const guideSteps = KANAL_GUIDE[act];
+  const guideAt = guideLevel(guideSteps, guideState, acked[act]);
+  const guideStep = guideSteps[guideAt];
+
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi dan Bara. */
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
 
@@ -347,7 +359,7 @@ export default function KanalModule() {
 
   return (
     <div ref={rootRef} id="modul-kanal" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
-      <div className="absolute inset-0">
+      <div data-guide="figure" className="absolute inset-0">
         {mounted && (
           <KanalScene
             sim={sim}
@@ -446,7 +458,7 @@ export default function KanalModule() {
             </p>
             {/* Babak 02: pilihan tebakan, lalu perbandingannya. */}
             {act === 1 && guess === null && (
-              <div className={`pointer-events-auto mt-2.5 grid grid-cols-3 gap-1.5 rounded-xl ${guide(1)}`}>
+              <div data-guide="guess" className={`pointer-events-auto mt-2.5 grid grid-cols-3 gap-1.5 rounded-xl ${guide(1)}`}>
                 {REACH_GUESSES.map((g, i) => (
                   <button
                     key={g.id}
@@ -521,7 +533,7 @@ export default function KanalModule() {
           )}
 
           {/* Kedalaman kanal */}
-          <div className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(0)} ${phoneMapShown ? "max-lg:hidden" : ""}`}>
+          <div data-guide="depth" className={`-mx-2 rounded-2xl px-2 py-1.5 ${guide(0)} ${phoneMapShown ? "max-lg:hidden" : ""}`}>
           <div className="flex items-baseline justify-between">
             <label htmlFor="kanal-depth" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
               {CANAL_TEXT.depthLabel}
@@ -580,7 +592,7 @@ export default function KanalModule() {
                 {formatYears(stats.years)}
               </p>
             </div>
-            <div className={`mt-2 flex justify-between gap-1 rounded-full border border-white/15 bg-black/30 p-1 ${guide(2)}`}>
+            <div data-guide="time" className={`mt-2 flex justify-between gap-1 rounded-full border border-white/15 bg-black/30 p-1 ${guide(2)}`}>
               {TIME_SPEEDS.map((speed, i) => (
                 <button
                   key={speed.label}
@@ -605,6 +617,7 @@ export default function KanalModule() {
             {act >= TOOL_FROM.weir && (
             <button
               type="button"
+              data-guide="weir"
               onClick={() => setBlocked(true)}
               disabled={blocked || canalDepthCm === 0}
               className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3.5 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-45 ${guide(3)}`}
@@ -663,7 +676,7 @@ export default function KanalModule() {
             bawah, karena inilah yang menjawab pertanyaan babak 02 — angka
             "jangkauan rawan" di bawahnya hanya membacakan ulang satu titik
             dari kurva ini. */}
-        <div className="relative shrink-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+        <div data-guide="reachMap" className="relative shrink-0 rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           {/* Selama tebakan babak 02 belum dijawab, grafiknya dikaburkan:
               kurvanya sendiri sudah menunjukkan jawabannya. Tetap dipasang,
               bukan disembunyikan, supaya kolom ini tidak melompat tingginya
@@ -783,7 +796,7 @@ export default function KanalModule() {
             naik melewati kotak di atasnya. */}
         {/* Teks arahannya dibatasi selebar kolom, supaya tidak menjulur
             ke atas gambar di sebelah kirinya. */}
-        <div className="mt-auto shrink-0 self-end pt-1 [&_p]:max-w-[236px]">{advance}</div>
+        <div data-guide="next" className="mt-auto shrink-0 self-end pt-1 [&_p]:max-w-[236px]">{advance}</div>
       </div>
 
       {/* Navigasi babak (bawah) */}
@@ -826,6 +839,7 @@ export default function KanalModule() {
         {canAdvance && (
           <button
             type="button"
+            data-guide="next"
             onClick={() => goToAct(act + 1)}
             className="group mb-1 inline-flex md:hidden cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
           >
@@ -841,9 +855,23 @@ export default function KanalModule() {
           sana. Panah ini selalu terlihat: terkunci dengan arahan, atau
           terbuka dengan nama babak yang menunggu. */}
       {/* Di layar lebar panah ini tinggal di kolom kanan; lihat di sana. */}
-      <div inert={hookOpen} className={`absolute bottom-6 right-5 hidden sm:right-10 md:block lg:hidden ${panelFade}`}>
+      <div data-guide="next" inert={hookOpen} className={`absolute bottom-6 right-5 hidden sm:right-10 md:block lg:hidden ${panelFade}`}>
         {advance}
       </div>
+
+      {/* Tuntunan langkah demi langkah, sesudah layar pembuka dan tirai pemuatan. */}
+      {!hookOpen && ready && (
+        <GuideLayer
+          key={`${act}-${guideAt}`}
+          target={guideTarget(guideStep, guideState)}
+          text={guideStep.text}
+          index={guideAt + 1}
+          total={guideSteps.length}
+          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
+          okLabel="Oke"
+          delayMs={guideAt === 0 ? 1500 : 350}
+        />
+      )}
     </div>
   );
 }

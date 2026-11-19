@@ -164,7 +164,8 @@ membaca**, bukan interaktivitas: interaktivitas tetap datang dari aksi
 pembaca (2.3).
 
 **Tuntunan langkah demi langkah** (19 November 2026, `GuideLayer` bersama;
-dipakai Musim Api, naskahnya `MUSIM_GUIDE` di config): tiap babak punya
+sejak 19 November 2026 dipakai **ketujuh modul**; logika murni di
+`lib/guide.ts`, naskah per modul `<NAMA>_GUIDE` di `config/modul/<nama>.ts`): tiap babak punya
 urutan arahan. Satu gelembung berpanah menunjuk satu bagian layar (cincin
 berdenyut; tangan berdenyut untuk diorama) dan menunggu aksi pembaca
 (mis. "geser kalender sampai Agustus") atau tombol "Oke". Begitu selesai,

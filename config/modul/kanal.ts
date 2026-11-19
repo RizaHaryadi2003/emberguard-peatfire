@@ -13,6 +13,8 @@
  * ============================================================================
  */
 
+import type { GuideStep } from "@/lib/guide";
+
 /** Layar pembuka: pertanyaan yang dijawab oleh babak 01. */
 export const KANAL_HOOK = {
   setup: "Parit di sekitar rumahmu terus mengalirkan air, bahkan di musim kemarau.",
@@ -241,3 +243,41 @@ export const KANAL_CARD_TEXT = {
   challenge: "Menurutmu sejauh apa? Tebak sendiri.",
   source: "Simulasi Emberguard, dikalibrasi ke Hooijer dkk. (2012)",
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+export type KanalGuideState = {
+  depthCm: number;
+  guessed: boolean;
+  /** Waktu sedang berjalan (kecepatan selain "berhenti"). */
+  timeOn: boolean;
+  blocked: boolean;
+  /** Tugas tiap babak sudah tuntas (actDone modul). */
+  done: readonly boolean[];
+};
+
+export const KANAL_GUIDE: readonly (readonly GuideStep<KanalGuideState>[])[] = [
+  [
+    { target: "depth", text: "Geser Kedalaman kanal untuk menggali. Perhatikan garis biru muka air di dinding tanah.", done: (s) => s.depthCm >= 30 },
+    { target: "figure", text: "Muka air turun, mula-mula di dekat kanal. Teruskan sampai 100 cm.", done: (s) => s.done[0] },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "guess", text: "Tebak dulu: sampai sejauh mana lahan ikut kering?", done: (s) => s.guessed },
+    { target: "reachMap", text: "Peta dari atas: jangkauan keringnya dibandingkan dengan lapangan bola." },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "time", text: "Pilih Sedang atau Cepat agar waktu berjalan.", done: (s) => s.timeOn },
+    { target: "figure", text: "Permukaan tanah melesak turun tahun demi tahun. Tunggu sampai turun 50 cm.", done: (s) => s.done[2] },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "weir", text: "Tekan Pasang sekat kanal.", done: (s) => s.blocked },
+    { target: "figure", text: "Air naik lagi. Bandingkan permukaan tanah dengan garis putus-putus.", done: (s) => s.done[3] },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];

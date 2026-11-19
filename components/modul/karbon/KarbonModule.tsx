@@ -8,6 +8,7 @@ import {
   BURN_REFERENCES,
   FIGURE_NOTE,
   KARBON_ACTS,
+  KARBON_GUIDE,
   KARBON_HOOK,
   KARBON_TEXT,
   LIMIT_NOTES,
@@ -16,6 +17,8 @@ import {
 } from "@/config/modul/karbon";
 import { moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
 import {
   AREA_MAX_HA,
   AREA_MIN_HA,
@@ -84,6 +87,8 @@ export default function KarbonModule() {
    * dengan `probeSolvedOnce` pada Modul Kanal.
    */
   const [matchSolvedOnce, setMatchSolvedOnce] = useState(false);
+  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0]);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -188,6 +193,7 @@ export default function KarbonModule() {
     setAreaHa(1);
     setSpeedIndex(0);
     setMatchSolvedOnce(false);
+    setAcked([0, 0, 0]);
     Object.assign(stateRef.current, createKarbonState());
   }, [sim]);
 
@@ -204,6 +210,12 @@ export default function KarbonModule() {
   const matchFound = matchSolved(matchVerdict) || matchSolvedOnce;
 
   const actDone = [stats.burnDepthM >= BURN_TARGET_M, matchFound, stats.years >= RECOVERY_TARGET_YEARS];
+
+  // Tuntunan: arahan aktif dibaca dari keadaan modul.
+  const guideState = { burnCm, timeOn: speedIndex > 0, done: actDone };
+  const guideSteps = KARBON_GUIDE[act];
+  const guideAt = guideLevel(guideSteps, guideState, acked[act]);
+  const guideStep = guideSteps[guideAt];
 
   /**
    * Sisa pekerjaan babak ini, satu baris, dengan angka yang hidup.
@@ -238,7 +250,7 @@ export default function KarbonModule() {
 
   return (
     <div ref={rootRef} id="modul-karbon" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
-      <div className="absolute inset-0">
+      <div data-guide="figure" className="absolute inset-0">
         {mounted && (
           <KarbonScene
             sim={sim}
@@ -326,7 +338,7 @@ export default function KarbonModule() {
         <div className="rounded-3xl border border-white/10 bg-black/50 p-3.5 shadow-2xl shadow-black/60 backdrop-blur-xl [@media(min-height:901px)]:p-4">
           {/* Kedalaman terbakar — sejak babak pertama, babak yang membakarnya. */}
           {act >= TOOL_FROM.burn && (
-            <div>
+            <div data-guide="burn">
               <div className="flex items-baseline justify-between">
                 <label htmlFor="karbon-burn" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
                   {KARBON_TEXT.burnLabel}
@@ -374,7 +386,7 @@ export default function KarbonModule() {
 
           {/* Luas terbakar — babak 02. */}
           {act >= TOOL_FROM.area && (
-            <div className="mt-3 border-t border-white/10 pt-3">
+            <div data-guide="area" className="mt-3 border-t border-white/10 pt-3">
               <div className="flex items-baseline justify-between">
                 <label htmlFor="karbon-area" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
                   {KARBON_TEXT.areaLabel}
@@ -424,7 +436,7 @@ export default function KarbonModule() {
                   )}
                 </p>
               </div>
-              <div className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
+              <div data-guide="time" className="flex shrink-0 gap-1 rounded-full border border-white/15 bg-black/30 p-1">
                 {TIME_SPEEDS.map((speed, i) => (
                   <button
                     key={speed.label}
@@ -482,7 +494,7 @@ export default function KarbonModule() {
         </div>
 
         {/* Angka hidup */}
-        <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
+        <div data-guide="stats" className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
           <dl className="space-y-2 [@media(min-height:769px)]:space-y-2.5">
             {(
               [
@@ -576,6 +588,7 @@ export default function KarbonModule() {
         {canAdvance && (
           <button
             type="button"
+            data-guide="next"
             onClick={() => goToAct(act + 1)}
             className="group mb-1 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
           >
@@ -583,6 +596,20 @@ export default function KarbonModule() {
           </button>
         )}
       </nav>
+
+      {/* Tuntunan langkah demi langkah, sesudah layar pembuka dan pemuatan. */}
+      {!hookOpen && ready && (
+        <GuideLayer
+          key={`${act}-${guideAt}`}
+          target={guideTarget(guideStep, guideState)}
+          text={guideStep.text}
+          index={guideAt + 1}
+          total={guideSteps.length}
+          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
+          okLabel="Oke"
+          delayMs={guideAt === 0 ? 1500 : 350}
+        />
+      )}
     </div>
   );
 }

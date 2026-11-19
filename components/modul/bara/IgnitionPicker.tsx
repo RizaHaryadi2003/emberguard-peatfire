@@ -20,7 +20,7 @@ type Props = {
 /** Babak 01: dua cara api membakar yang dapat dipilih. */
 export default function IgnitionPicker({ selected, onSelect, ignited, fizzled }: Props) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-5">
+    <div data-guide="ignition" className="rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl sm:p-5">
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">Cara api membakar</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {IGNITION_SOURCES.map((source) => {
