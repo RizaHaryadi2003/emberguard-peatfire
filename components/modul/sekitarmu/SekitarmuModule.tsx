@@ -287,7 +287,7 @@ export default function SekitarmuModule() {
               penggeser kedalaman di Modul Kanal. */}
           <div data-guide="zoom" className="relative mt-2">
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#6fb6d8] to-[#f0a35e]" style={{ width: `${(zoom / ZOOM_MAX) * 100}%` }} />
+              <div className="h-full rounded-full bg-white/70" style={{ width: `${(zoom / ZOOM_MAX) * 100}%` }} />
             </div>
           <input
             id="sekitarmu-zoom"

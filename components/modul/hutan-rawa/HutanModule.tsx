@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_GUIDE, HUTAN_HOOK, HUTAN_TEXT, IUCN_LABEL, SEBANGAU_SPECIES, SEBANGAU_THREATENED, type ForestZone } from "@/config/modul/hutan-rawa";
@@ -14,13 +15,6 @@ const HutanScene = dynamic(() => import("./scene/HutanScene"), { ssr: false });
 
 /** Panjang penampang yang dapat dijalani (km). */
 const SPAN_KM = 14;
-
-/** Warna tiap jenis hutan pada trek penggeser, dari tepi sungai ke puncak. */
-const ZONE_COLOR: Record<ForestZone["id"], string> = {
-  campuran: "linear-gradient(90deg, #5fb0dc, #6fb98f)",
-  tiang: "linear-gradient(90deg, #8fbf72, #a9b86a)",
-  tinggi: "linear-gradient(90deg, #6fa65a, #3f7f45)",
-};
 
 /** Jarak dari tepi hutan yang dihitung sudah "sampai puncak kubah" (km). */
 const SUMMIT_KM = 12;
@@ -252,19 +246,10 @@ export default function HutanModule() {
                 </label>
                 <span className="text-[11px] tabular-nums text-white/70">{HUTAN_TEXT.fromRiver(walkKm)}</span>
               </div>
-              {/* Trek penggeser dibagi tiga menurut batas jenis hutan (Husson
-                  dkk., 2018), jadi pembaca melihat di mana hutan berganti. */}
-              <div data-guide="walk" className="relative mt-2.5">
-                <div className="pointer-events-none absolute inset-x-0 top-1/2 flex h-2 -translate-y-1/2 gap-[3px]">
-                  {FOREST_ZONES.map((z) => {
-                    const fill = Math.min(1, Math.max(0, (walkKm - z.fromKm) / (z.toKm - z.fromKm)));
-                    return (
-                      <div key={z.id} className="relative h-full overflow-hidden rounded-full bg-white/10" style={{ flexGrow: z.toKm - z.fromKm, flexBasis: 0 }}>
-                        <div className="h-full rounded-full transition-[width] duration-75" style={{ width: `${fill * 100}%`, background: ZONE_COLOR[z.id] }} />
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Trek seperti Modul Anatomi; garis putih menandai batas jenis
+                  hutan (Husson dkk., 2018), jadi pembaca melihat di mana hutan berganti. */}
+              <SliderTrack className="mt-2.5" pct={(walkKm / SPAN_KM) * 100} ticks={FOREST_ZONES.slice(1).map((z) => (z.fromKm / SPAN_KM) * 100)}>
+              <div data-guide="walk">
                 <input
                   id="hutan-walk"
                   type="range"
@@ -281,6 +266,7 @@ export default function HutanModule() {
                   className="water-slider relative z-10 w-full"
                 />
               </div>
+              </SliderTrack>
               <div className="mt-1 flex gap-[3px] text-[10px] leading-tight">
                 {FOREST_ZONES.map((z) => (
                   <span

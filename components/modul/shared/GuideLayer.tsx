@@ -45,7 +45,7 @@ const BUBBLE_W = 264;
 const readMs = (text: string) => Math.min(7000, Math.max(3500, text.length * 55));
 const GAP = 14;
 /** Target selebar ini dianggap "gambar": ditunjuk dengan tangan, bukan cincin. */
-const LARGE_TARGET = 360;
+const LARGE_TARGET = 480;
 
 type Box = { left: number; top: number; width: number; height: number };
 
@@ -125,7 +125,9 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
 
   const vw = typeof window === "undefined" ? 1440 : window.innerWidth;
   const vh = typeof window === "undefined" ? 900 : window.innerHeight;
-  const large = box.width >= LARGE_TARGET && box.height >= LARGE_TARGET * 0.6;
+  // Hanya gambar diorama yang benar-benar besar yang ditandai tangan; panel
+  // kendali (mis. pengatur Anatomi ±400×340 px) cukup ditunjuk gelembung.
+  const large = box.width >= LARGE_TARGET && box.height >= 420;
   const cx = box.left + box.width / 2;
   const cy = box.top + box.height / 2;
 
@@ -191,8 +193,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
       {large ? (
         // Gambar 3D: tangan berdenyut di tengahnya, dengan riak yang memancar.
         <span className="absolute" style={{ left: cx - 26, top: cy - 26 }}>
-          <span className="absolute inset-0 animate-ping rounded-full bg-[#8fd8ff]/40 motion-reduce:hidden" />
-          <span className="guide-hand relative grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-white to-[#cfefff] text-[#06121a] shadow-[0_6px_24px_rgba(143,216,255,0.55)]">
+          <span className="guide-hand relative grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-white to-[#cfefff] text-[#06121a] shadow-lg shadow-black/40">
             <Hand size={22} />
           </span>
         </span>

@@ -17,6 +17,7 @@ import {
 } from "@/config/modul/karbon";
 import { moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
+import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
@@ -356,6 +357,7 @@ export default function KarbonModule() {
                   {burnCm === 0 ? KARBON_TEXT.burnIdle : formatThickness(burnM)}
                 </span>
               </div>
+              <SliderTrack className="mt-2" pct={(burnCm / (BURN_DEPTH_MAX_M * 100)) * 100}>
               <input
                 id="karbon-burn"
                 type="range"
@@ -369,8 +371,9 @@ export default function KarbonModule() {
                   recordMatch(areaHa, next / 100);
                 }}
                 aria-valuetext={`Terbakar sedalam ${burnCm} sentimeter, yaitu ${Math.round(burnCm * 10)} tahun penimbunan`}
-                className="water-slider relative z-10 mt-2 w-full"
+                className="water-slider relative z-10 w-full"
               />
+              </SliderTrack>
               {/* Kedalaman yang pernah diukur pada kebakaran sungguhan. */}
               <div className="relative mt-0.5 h-4" aria-hidden="true">
                 {BURN_REFERENCES.map((r) => (
@@ -402,6 +405,7 @@ export default function KarbonModule() {
                 </label>
                 <span className="font-playfair text-xl italic tabular-nums text-white">{formatArea(areaHa)}</span>
               </div>
+              <SliderTrack className="mt-2" pct={((areaHa - AREA_MIN_HA) / (AREA_MAX_HA - AREA_MIN_HA)) * 100}>
               <input
                 id="karbon-area"
                 type="range"
@@ -415,8 +419,9 @@ export default function KarbonModule() {
                   recordMatch(next, burnM);
                 }}
                 aria-valuetext={`Terbakar seluas ${areaHa} hektare`}
-                className="water-slider relative z-10 mt-2 w-full"
+                className="water-slider relative z-10 w-full"
               />
+              </SliderTrack>
               {act === TOOL_FROM.area && (
                 <p
                   className={`mt-1.5 text-[11px] leading-snug ${

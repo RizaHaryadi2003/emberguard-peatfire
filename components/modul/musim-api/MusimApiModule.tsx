@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import {
@@ -28,6 +29,8 @@ import {
   MONTH_SHORT,
   MONTH_START_DAY,
   dasarianOfDay,
+  dryDaysToReach,
+  HIGH_DANGER_CM,
   dateOfDay,
   depthAfterDryDays,
   fireLevel,
@@ -256,6 +259,11 @@ export default function MusimApiModule() {
                   : MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}
               </span>
             </div>
+            <SliderTrack
+              tone={extended ? "water" : "neutral"}
+              pct={extended ? (dryDays / MAX_DRY_DAYS) * 100 : (day / (DAYS_PER_YEAR - 1)) * 100}
+              ticks={extended ? [(dryDaysToReach(AUGUST_START_CM, HIGH_DANGER_CM) / MAX_DRY_DAYS) * 100, (dryDaysToReach(AUGUST_START_CM, BURN_CM) / MAX_DRY_DAYS) * 100] : []}
+            >
             {extended ? (
               <input
                 id="musim-slider"
@@ -270,7 +278,7 @@ export default function MusimApiModule() {
                   setMaxDryDays((m) => Math.max(m, v));
                 }}
                 aria-valuetext={`${MUSIM_TEXT.dryDaysValue(dryDays)}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
-                className="water-slider w-full"
+                className="water-slider relative z-10 w-full"
               />
             ) : (
               <input
@@ -282,9 +290,10 @@ export default function MusimApiModule() {
                 value={day}
                 onChange={(e) => moveDay(Number(e.target.value))}
                 aria-valuetext={`${MUSIM_TEXT.date(date.date, MONTH_SHORT[date.month])}, ${MUSIM_TEXT.depth} ${MUSIM_TEXT.depthValue(depthCm)}, ${STAGE_LABEL[stage]}`}
-                className="water-slider w-full"
+                className="water-slider relative z-10 w-full"
               />
             )}
+            </SliderTrack>
             {/* Kalender bulan di bawah penggeser, supaya posisinya terbaca. */}
             {!extended && (
               <div

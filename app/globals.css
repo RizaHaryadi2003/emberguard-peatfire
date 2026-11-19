@@ -234,20 +234,10 @@ body {
  * itu selama tugasnya belum selesai, lalu hilang begitu selesai, sehingga
  * hilangnya cincin pun menjadi tanda bahwa pekerjaannya sudah benar.
  */
-@keyframes guidePulse {
-  0%, 100% { box-shadow: 0 0 0 1.5px rgba(111, 182, 216, 0.9), 0 0 0 5px rgba(111, 182, 216, 0.18); }
-  50% { box-shadow: 0 0 0 1.5px rgba(111, 182, 216, 0.55), 0 0 0 9px rgba(111, 182, 216, 0); }
-}
-
+/* Cincin sorotan di sekitar kendali tugas dihapus (permintaan pengguna:
+   tanpa animasi biru, sederhana seperti Modul Anatomi). Kelasnya dibiarkan
+   kosong supaya pemanggilnya tidak perlu diubah. */
 .guide-ring {
-  animation: guidePulse 1.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .guide-ring {
-    animation: none;
-    box-shadow: 0 0 0 1.5px rgba(111, 182, 216, 0.9);
-  }
 }
 
 /*
@@ -326,7 +316,6 @@ body {
 }
 
 .guide-hand {
-  animation: guideHand 1.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -349,7 +338,7 @@ body {
 }
 
 .guide-spot {
-  animation: guideSpot 1.6s ease-in-out infinite;
+  display: none;
 }
 
 @keyframes guideBadge {
@@ -358,7 +347,6 @@ body {
 }
 
 .guide-badge {
-  animation: guideBadge 1.6s ease-in-out infinite;
 }
 
 @keyframes guideTimer {
@@ -403,8 +391,7 @@ body {
 }
 /* Hover tidak berlaku pada tombol terpilih, supaya putihnya tidak tertimpa. */
 .btn-mono:hover:not(:disabled):not([aria-pressed="true"]):not([aria-checked="true"]):not(.is-on) {
-  border-color: rgb(255 255 255 / 0.6);
-  background: rgb(255 255 255 / 0.07);
+  border-color: rgb(255 255 255 / 0.5);
   color: #fff;
 }
 .btn-mono[aria-pressed="true"],
