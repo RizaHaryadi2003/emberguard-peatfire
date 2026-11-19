@@ -100,17 +100,16 @@ const FACE_DIFFUSE = /* glsl */ `
   kAlbedo *= 1.0 - kWoodRim * 0.5;
 
   // Makin dalam makin gelap: gambut tua yang sudah lama hancur.
-  kAlbedo *= mix(1.0, 0.8, smoothstep(1.5, 8.0, vDepth));
+  kAlbedo *= mix(1.0, 0.74, smoothstep(1.5, 8.0, vDepth));
 
   // Pertemuan dengan tanah mineral: gambut paling tua dan paling hancur.
-  kAlbedo *= mix(0.8, 1.0, smoothstep(0.0, 0.8, vHeight));
+  kAlbedo *= mix(0.74, 1.0, smoothstep(0.0, 0.8, vHeight));
 
   // Hutan rawa yang utuh hampir selalu basah: di bawah tikar akar gambutnya
-  // jenuh air, jadi sedikit lebih gelap dan hangat (dulu kebiruan dan
-  // jauh lebih gelap, sehingga muka potong tampak keruh). Hujan membasahi
+  // jenuh air, jadi lebih gelap dan sedikit kebiruan. Hujan membasahi
   // seluruhnya, sampai ke permukaan.
   float kWet = max(smoothstep(0.25, 0.9, vDepth) * 0.6, uSoak);
-  kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.8, 0.74, 0.66), kWet);
+  kAlbedo = mix(kAlbedo, kAlbedo * vec3(0.74, 0.69, 0.63), kWet);
 
   // Jenis hutan yang disorot: bagian lain diredupkan, bukan diberi garis.
   float kInZone = smoothstep(uZone.x - 0.3, uZone.x + 0.3, vFaceWorld.x) * (1.0 - smoothstep(uZone.y - 0.3, uZone.y + 0.3, vFaceWorld.x));
@@ -175,7 +174,7 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
     // Dipasang hanya supaya jalur map dan normalMap three.js menyala.
     map: colors[0],
     normalMap: normals[0],
-    normalScale: new THREE.Vector2(0.3, 0.3),
+    normalScale: new THREE.Vector2(0.8, 0.8),
     roughness: 1,
     metalness: 0,
     // Dua sisi: muka samping kiri dan kanan dibentuk dengan arah yang

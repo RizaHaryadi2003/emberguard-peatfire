@@ -32,8 +32,8 @@ export const RIVER_LEVEL = peatThicknessM(0) - 0.45;
 export const RIVER_BED_M = -2.2;
 
 /** Besar tonjolan muka depan (satuan adegan) dan gundukan permukaan (m). */
-export const FACE_RELIEF = 0.05;
-export const HUMMOCK_M = 0.04;
+export const FACE_RELIEF = 0.22;
+export const HUMMOCK_M = 0.16;
 
 // ---------------------------------------------------------------------------
 //  Derau nilai deterministik
