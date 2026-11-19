@@ -146,7 +146,7 @@ export default function ActModuleShell({
       />
 
       {/* Peredup di sisi kiri agar teks terbaca di atas gambar. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/80 via-black/30 to-transparent md:w-[55%] md:from-black/60 md:via-black/15" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/80 via-black/30 to-transparent md:w-[55%] md:from-black/40 md:via-black/10" />
 
       {/* Kolom kiri. Di layar lebar panel cerita dan panel kendali disusun
           dalam satu kolom bertumpuk (flex), bukan dua kotak yang masing-masing
@@ -161,7 +161,7 @@ export default function ActModuleShell({
         {/* Panel cerita. */}
         <div
           inert={hookOpen}
-          className={`pointer-events-none absolute left-5 right-5 top-14 z-20 sm:left-10 md:pointer-events-auto md:static md:min-h-0 md:shrink md:overflow-hidden md:rounded-3xl md:border md:border-white/10 md:bg-[#0a0d0f]/80 md:p-5 md:shadow-2xl md:shadow-black/50 [@media(min-height:651px)]:top-16 ${panelFade}`}
+          className={`pointer-events-none absolute left-5 right-5 top-14 z-20 sm:left-10 md:pointer-events-auto md:static md:min-h-0 md:shrink md:overflow-hidden md:rounded-3xl md:border md:border-white/10 md:bg-[#0a0d0f]/50 md:p-5 md:shadow-xl md:shadow-black/25 md:[text-shadow:0_1px_2px_rgba(0,0,0,0.6)] [@media(min-height:651px)]:top-16 ${panelFade}`}
         >
           {/* Kepala: nama modul dan penanda babak (layar lebar). */}
           <div className="flex items-center justify-between gap-3">
@@ -207,12 +207,12 @@ export default function ActModuleShell({
               {current.title}
             </h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/80 sm:block">{current.body}</p>
-            <p className="mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.04] md:px-3 md:py-2">
+            <p className="mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.06] md:px-3 md:py-2">
               <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
             </p>
             <div
               className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 ${
-                done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/80" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/55"
+                done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/55" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/35"
               }`}
             >
               <p className={`inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${done ? "text-emerald-200" : "text-[#8fcce8]"}`}>
@@ -236,7 +236,7 @@ export default function ActModuleShell({
           inert={hookOpen}
           className={`pointer-events-auto absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${panelFade}`}
         >
-          <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/85 p-3.5 shadow-2xl shadow-black/60 md:p-4">
+          <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/55 p-3.5 shadow-xl shadow-black/25 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] md:p-4">
             {controls}
             <div className="mt-3 flex justify-end border-t border-white/10 pt-2.5">
               <button

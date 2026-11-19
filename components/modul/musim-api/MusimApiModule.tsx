@@ -244,7 +244,7 @@ export default function MusimApiModule() {
                 extension={extended ? { from: AUGUST_DRY_END_DAY, days: dryDays, fromCm: AUGUST_START_CM, toCm: depthCm } : undefined}
               />
             </div>
-            <p aria-live="polite" className="mt-2 rounded-xl bg-white/[0.05] px-3 py-2 text-[12px] leading-snug text-white/80">
+            <p aria-live="polite" className="mt-2 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] leading-snug text-white/80">
               {explainDay({ depthCm, rainMmDay, dryRun: extended, dryDays })}
             </p>
           </div>
@@ -289,7 +289,7 @@ export default function MusimApiModule() {
           {inspect ? (
             <InspectCard part={inspect} depthCm={depthCm} onClose={() => setInspect(null)} />
           ) : (
-            <p className="rounded-2xl border border-dashed border-white/15 px-3.5 py-3 text-[11px] leading-snug text-white/55">{MUSIM_TEXT.clickInvite}</p>
+            <p className="rounded-2xl border border-dashed border-white/20 bg-black/15 px-3.5 py-3 text-[11px] leading-snug text-white/65 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{MUSIM_TEXT.clickInvite}</p>
           )}
         </>
       }
@@ -298,7 +298,7 @@ export default function MusimApiModule() {
 }
 
 /** Gaya kartu kolom kanan, sama untuk tiap lantai. */
-const CARD = "rounded-2xl border border-white/10 bg-[#0a0d0f]/80 p-3.5 shadow-xl shadow-black/40";
+const CARD = "rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]";
 
 /** Penanda golongan bahaya hari ini. */
 function StageChip({ stage }: { stage: FireStage }) {
@@ -320,7 +320,7 @@ function StageChip({ stage }: { stage: FireStage }) {
 function InspectCard({ part, depthCm, onClose }: { part: InspectPart; depthCm: number; onClose: () => void }) {
   const { title, body } = inspectText(part, depthCm);
   return (
-    <div key={part} role="dialog" aria-label={title} className={`sekitarmu-rise ${CARD} bg-[#0a0d0f]/90`}>
+    <div key={part} role="dialog" aria-label={title} className={`sekitarmu-rise ${CARD} bg-[#0a0d0f]/65`}>
       <div className="flex items-start justify-between gap-3">
         <p className="font-playfair text-lg italic leading-tight text-white">{title}</p>
         <button

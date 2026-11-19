@@ -614,7 +614,7 @@ function Labels() {
 
   // Label menjulur ke kanan dari titik tempelnya, ke ruang kosong di luar bongkahan.
   const style =
-    "pointer-events-none ml-2 inline-block translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-medium sm:text-[10px] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]";
+    "pointer-events-none ml-2 inline-block translate-x-1/2 whitespace-nowrap rounded-full bg-black/55 px-2 py-0.5 text-[9px] font-medium sm:text-[10px] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]";
   return (
     <group ref={rootRef}>
       <group ref={dangerRef}>
