@@ -26,6 +26,7 @@ import {
   type YearKind,
 } from "@/lib/model/fireSeason";
 import { PEAT_THICKNESS } from "@/lib/model/peat";
+import { guideLevel as sharedGuideLevel, type GuideStep as SharedGuideStep } from "@/lib/guide";
 
 /**
  * Hari terakhir kemarau Agustus di tahun biasa (20 Agustus): babak 02
@@ -240,12 +241,7 @@ export type GuideState = {
   inspected: boolean;
 };
 
-export type GuideStep = {
-  target: GuideTarget;
-  text: string;
-  /** Syarat selesai; tanpa syarat, arahan menunggu tombol "Oke". */
-  done?: (s: GuideState) => boolean;
-};
+export type GuideStep = SharedGuideStep<GuideState> & { target: GuideTarget };
 
 const AUG_1 = MONTH_START_DAY[7];
 const SEP_1 = MONTH_START_DAY[8];
@@ -285,10 +281,7 @@ export const MUSIM_GUIDE: readonly (readonly GuideStep[])[] = [
  * menggeser mundur tidak menarik arahan kembali.
  */
 export function guideLevel(act: number, s: GuideState, acked: number): number {
-  const steps = MUSIM_GUIDE[act];
-  let level = 0;
-  while (level < steps.length - 1 && (level < acked || steps[level].done?.(s))) level++;
-  return level;
+  return sharedGuideLevel(MUSIM_GUIDE[act], s, acked);
 }
 
 /** Arahan ke berapa tiap lantai kolom kanan mulai tampil, per babak. */

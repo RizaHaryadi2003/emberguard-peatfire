@@ -131,7 +131,7 @@ export default function HutanScene(props: HutanSceneProps) {
       {/* Bingkai tempat diorama dipaskan. Di ponsel panel kendali menindih
           tepi bawah bingkai, jadi bingkainya dipendekkan di sana; di babak 03
           sedikit lebih pendek lagi supaya tombol jenis hutan tetap terlihat. */}
-      <div ref={anchorRef} className={`pointer-events-none absolute inset-0 ${props.openedZones ? "bottom-16 sm:bottom-0" : "bottom-12 sm:bottom-0"}`} />
+      <div ref={anchorRef} data-guide="figure" className={`pointer-events-none absolute inset-0 ${props.openedZones ? "bottom-16 sm:bottom-0" : "bottom-12 sm:bottom-0"}`} />
       <div className="fixed inset-0">
         <Canvas
           orthographic
@@ -784,6 +784,7 @@ function SceneLabels({
             {openedZones ? (
               <button
                 type="button"
+                data-guide={`zone-${z.id}`}
                 onClick={() => onZone?.(z.id)}
                 className={`cursor-pointer rounded-xl border px-2 py-1 text-center transition-colors sm:px-2.5 sm:py-1.5 ${
                   active ? "border-[#f0a35e] bg-[#f0a35e]/25" : opened ? "border-white/30 bg-black/60" : "animate-pulse border-[#6fb6d8] bg-[#6fb6d8]/25"

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
-import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
+import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_GUIDE, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import { peatThicknessM, zoneAt } from "./scene/dome";
 
@@ -46,6 +48,8 @@ export default function HutanModule() {
   const [triedRain, setTriedRain] = useState(false);
   const [opened, setOpened] = useState<Set<string>>(new Set());
   const [activeZone, setActiveZone] = useState<ForestZone["id"] | null>(null);
+  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0]);
   // Mutu grafis: rendah di ponsel sejak awal, dan turun sendiri bila
   // PerformanceGuard mendapati perangkat kewalahan.
   const [quality, setQuality] = useState<Quality>("high");
@@ -64,6 +68,17 @@ export default function HutanModule() {
   ][act];
   const guide = (forAct: number) => (act === forAct && !actDone[act] ? "guide-ring" : "");
 
+  // Tuntunan: arahan aktif dibaca dari keadaan terjauh yang pernah dicapai.
+  const guideState = {
+    maxKm,
+    triedFlood,
+    triedRain,
+    opened: FOREST_ZONES.filter((z) => opened.has(z.id)).map((z) => z.id),
+  };
+  const guideSteps = HUTAN_GUIDE[act];
+  const level = guideLevel(guideSteps, guideState, acked[act]);
+  const step = guideSteps[level];
+
   const reset = () => {
     setAct(0);
     setWalkKm(0);
@@ -75,6 +90,7 @@ export default function HutanModule() {
     setTriedRain(false);
     setOpened(new Set());
     setActiveZone(null);
+    setAcked([0, 0, 0]);
   };
 
   const openZone = (id: ForestZone["id"]) => {
@@ -101,6 +117,19 @@ export default function HutanModule() {
       progress={progress}
       onReset={reset}
       background="#0d1712"
+      guide={
+        <GuideLayer
+          key={`${act}-${level}`}
+          target={guideTarget(step, guideState)}
+          text={step.text}
+          index={level + 1}
+          total={guideSteps.length}
+          onAck={level < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, level + 1) : v))) : undefined}
+          okLabel="Oke"
+          // Arahan pertama tiap babak menunggu penjelasan babaknya tampil dulu.
+          delayMs={level === 0 ? 1500 : 350}
+        />
+      }
       figure={
         <>
           <HutanScene
@@ -139,7 +168,7 @@ export default function HutanModule() {
               </div>
               {/* Trek penggeser dibagi tiga menurut batas jenis hutan (Husson
                   dkk., 2018), jadi pembaca melihat di mana hutan berganti. */}
-              <div className="relative mt-2.5">
+              <div data-guide="walk" className="relative mt-2.5">
                 <div className="pointer-events-none absolute inset-x-0 top-1/2 flex h-2 -translate-y-1/2 gap-[3px]">
                   {FOREST_ZONES.map((z) => {
                     const fill = Math.min(1, Math.max(0, (walkKm - z.fromKm) / (z.toKm - z.fromKm)));
@@ -180,7 +209,7 @@ export default function HutanModule() {
 
               {/* Di ponsel batang pembanding dan keterangan rentang disembunyikan
                   supaya panel tidak menutupi penampang; angkanya tetap ada. */}
-              <div className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3">
+              <div data-guide="peatHere" className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3">
                 <p className="font-playfair text-xl italic leading-none text-white">{here.name}</p>
                 <div className="mt-2 grid sm:mt-2.5 grid-cols-[1fr_auto] items-end gap-x-4">
                   <div>
@@ -208,6 +237,7 @@ export default function HutanModule() {
               <div className={`flex flex-wrap gap-2 rounded-2xl ${guide(1)}`}>
                 <button
                   type="button"
+                  data-guide="flood"
                   aria-pressed={flood}
                   onClick={() => {
                     setFlood((v) => !v);
@@ -222,6 +252,7 @@ export default function HutanModule() {
                 </button>
                 <button
                   type="button"
+                  data-guide="rain"
                   aria-pressed={rain}
                   onClick={() => {
                     setRain((v) => !v);
@@ -251,7 +282,7 @@ export default function HutanModule() {
 
           {act === 2 &&
             (zone ? (
-              <div>
+              <div data-guide="zoneInfo">
                 <p className="font-playfair text-xl italic leading-none text-white">{zone.name}</p>
                 {/* Di ponsel label dan nilainya sebaris, supaya panel tidak
                     menindih tombol jenis hutan di bawah penampang. */}

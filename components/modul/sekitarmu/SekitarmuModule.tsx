@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import GuideLayer from "@/components/modul/shared/GuideLayer";
+import { guideLevel, guideTarget } from "@/lib/guide";
 import {
   BORE_SITES,
   DISTRICT_PEAT,
@@ -10,6 +12,7 @@ import {
   SEKITARMU_HOOK,
   SEKITARMU_TEXT,
   ZOOM_LEVELS,
+  SEKITARMU_GUIDE,
 } from "@/config/modul/sekitarmu";
 import mapData from "@/data/sekitarmu-map.json";
 import SekitarmuMap from "./SekitarmuMap";
@@ -121,6 +124,8 @@ export default function SekitarmuModule() {
   const [firesOpened, setFiresOpened] = useState<Set<string>>(new Set());
   const [activeFire, setActiveFire] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // Arahan yang sudah di-"Oke" per babak (tuntunan langkah demi langkah).
+  const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -163,6 +168,20 @@ export default function SekitarmuModule() {
     `${firesOpened.size} dari ${FIRE_SITES.length} titik api dibuka`,
   ][act];
 
+  // Tuntunan: arahan aktif dibaca dari keadaan modul.
+  const guideState = {
+    zoom,
+    zoomMax: ZOOM_MAX,
+    selected: selected.size,
+    revealed,
+    revealDone,
+    bores: BORE_SITES.filter((b) => boresOpened.has(b.id)).map((b) => b.id),
+    fires: FIRE_SITES.filter((f) => firesOpened.has(f.id)).map((f) => f.id),
+  };
+  const guideSteps = SEKITARMU_GUIDE[act];
+  const guideAt = guideLevel(guideSteps, guideState, acked[act]);
+  const guideStep = guideSteps[guideAt];
+
   /** Cincin sorotan pada alat yang diminta tugas babak ini. */
   const guide = (forAct: number) => (act === forAct && !actDone[act] ? "guide-ring" : "");
 
@@ -176,6 +195,7 @@ export default function SekitarmuModule() {
     setActiveBore(null);
     setFiresOpened(new Set());
     setActiveFire(null);
+    setAcked([0, 0, 0, 0]);
   };
 
   const toggleDistrict = (name: string) =>
@@ -212,6 +232,18 @@ export default function SekitarmuModule() {
       actDone={actDone}
       progress={progress}
       onReset={reset}
+      guide={
+        <GuideLayer
+          key={`${act}-${guideAt}`}
+          target={guideTarget(guideStep, guideState)}
+          text={guideStep.text}
+          index={guideAt + 1}
+          total={guideSteps.length}
+          onAck={guideAt < guideSteps.length - 1 ? () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, guideAt + 1) : v))) : undefined}
+          okLabel="Oke"
+          delayMs={guideAt === 0 ? 1500 : 350}
+        />
+      }
       taskExtra={
         act === 1 &&
         revealDone && (
@@ -248,13 +280,13 @@ export default function SekitarmuModule() {
             </label>
             <span className="text-right">
               <span className="block text-[11px] text-white/60">{level.label}</span>
-              <span className="font-playfair text-xl italic text-white">{level.value}</span>
+              <span data-guide="zoomValue" className="font-playfair text-xl italic text-white">{level.value}</span>
             </span>
           </div>
           {/* Trek penggeser. `.water-slider` menyembunyikan trek bawaan
               peramban, jadi jalurnya digambar sendiri, sama dengan
               penggeser kedalaman di Modul Kanal. */}
-          <div className="relative mt-2">
+          <div data-guide="zoom" className="relative mt-2">
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-gradient-to-r from-[#6fb6d8] to-[#f0a35e]" style={{ width: `${(zoom / ZOOM_MAX) * 100}%` }} />
             </div>
@@ -287,6 +319,7 @@ export default function SekitarmuModule() {
           {!revealed && (
             <button
               type="button"
+              data-guide="check"
               onClick={() => setRevealed(true)}
               disabled={selected.size === 0}
               className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-medium text-black transition-colors hover:bg-[#6fb6d8] disabled:cursor-not-allowed disabled:opacity-40 ${guide(1)}`}
@@ -299,14 +332,16 @@ export default function SekitarmuModule() {
 
       {act === 2 &&
         (bore ? (
-          <BoreCore key={bore.id} bore={bore} reducedMotion={reducedMotion} />
+          <div data-guide="siteInfo">
+            <BoreCore key={bore.id} bore={bore} reducedMotion={reducedMotion} />
+          </div>
         ) : (
           <p className="text-[12px] leading-snug text-white/75">Tekan salah satu titik bor di peta.</p>
         ))}
 
       {act === 3 &&
         (fire ? (
-          <div>
+          <div data-guide="siteInfo">
             <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">{fireTitle}</p>
             {fireBore && <p className="mt-1 text-[12px] font-medium text-[#f0a35e]">{SEKITARMU_TEXT.firePeat(fireBore.display)}</p>}
             {/* Kejadian muncul berurutan menurut waktu: terbakar, lalu terbakar lagi. */}

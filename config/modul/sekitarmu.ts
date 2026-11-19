@@ -16,6 +16,8 @@
  * ============================================================================
  */
 
+import type { GuideStep } from "@/lib/guide";
+
 export const SEKITARMU_HOOK = {
   setup: "Kebakaran gambut sering terdengar jauh, di pedalaman Kalimantan.",
   question: "Seberapa jauh, sebenarnya?",
@@ -212,3 +214,47 @@ export const SEKITARMU_TEXT = {
   attributionShort: "Citra © EOX, Copernicus · Peta © OpenStreetMap",
   reset: "Mulai dari awal",
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+export type SekitarmuGuideState = {
+  zoom: number;
+  zoomMax: number;
+  selected: number;
+  revealed: boolean;
+  revealDone: boolean;
+  bores: readonly string[];
+  fires: readonly string[];
+};
+
+const firstClosed = (sites: readonly { id: string }[], opened: readonly string[]) =>
+  `site-${sites.find((x) => !opened.includes(x.id))?.id ?? sites[0].id}`;
+
+export const SEKITARMU_GUIDE: readonly (readonly GuideStep<SekitarmuGuideState>[])[] = [
+  [
+    { target: "zoom", text: "Geser Perbesar untuk mendekat, dari Indonesia ke Kalimantan Barat.", done: (s) => s.zoom >= 0.9 },
+    { target: "zoomValue", text: "Angka ini luas gambut di wilayah yang terlihat. Teruskan sampai Kota Pontianak.", done: (s) => s.zoom >= s.zoomMax - 0.02 },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "figure", text: "Tekan kecamatan yang menurutmu berdiri di atas gambut. Boleh lebih dari satu.", done: (s) => s.selected >= 1 },
+    { target: "check", text: "Sudah yakin? Tekan Periksa.", done: (s) => s.revealed },
+    { target: "figure", text: "Kecamatan terbuka satu per satu. Cocokkan dengan tebakanmu.", done: (s) => s.revealDone },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: (s) => firstClosed(BORE_SITES, s.bores), text: "Tekan titik bor ini.", done: (s) => s.bores.length >= 1 },
+    { target: "siteInfo", text: "Kolom bor turun ke dalam gambut. Bandingkan tebalnya dengan tinggi orang." },
+    { target: (s) => firstClosed(BORE_SITES, s.bores), text: "Buka titik bor lainnya dan bandingkan dalamnya.", done: (s) => s.bores.length >= BORE_SITES.length },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: (s) => firstClosed(FIRE_SITES, s.fires), text: "Tekan titik api ini.", done: (s) => s.fires.length >= 1 },
+    { target: "siteInfo", text: "Kejadiannya muncul berurutan menurut waktu. Tempat yang sama terbakar lagi." },
+    { target: (s) => firstClosed(FIRE_SITES, s.fires), text: "Buka titik api lainnya.", done: (s) => s.fires.length >= FIRE_SITES.length },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];

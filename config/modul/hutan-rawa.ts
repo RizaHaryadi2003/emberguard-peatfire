@@ -13,6 +13,7 @@
  */
 
 import type { ShellAct, ShellHook } from "@/components/modul/shared/ActModuleShell";
+import type { GuideStep } from "@/lib/guide";
 
 export const HUTAN_HOOK: ShellHook = {
   setup: "Dari luar, hutan rawa gambut tampak seperti hutan yang sama di mana-mana.",
@@ -197,3 +198,42 @@ export const HUTAN_TEXT = {
   residents: "Penghuni tajuknya",
   source: "Husson dkk., 2018; Page dkk., 1999",
 };
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
+ *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
+ * ========================================================================== */
+
+/** Keadaan yang dibaca tuntunan Hutan Rawa. */
+export type HutanGuideState = {
+  maxKm: number;
+  triedFlood: boolean;
+  triedRain: boolean;
+  /** Jenis hutan yang sudah dibuka, menurut urutan FOREST_ZONES. */
+  opened: readonly string[];
+};
+
+/** Jenis hutan pertama yang belum dibuka (untuk ditunjuk arahan). */
+const firstClosedZone = (s: HutanGuideState) => `zone-${FOREST_ZONES.find((z) => !s.opened.includes(z.id))?.id ?? FOREST_ZONES[0].id}`;
+
+export const HUTAN_GUIDE: readonly (readonly GuideStep<HutanGuideState>[])[] = [
+  [
+    { target: "walk", text: "Mulai di tepi sungai. Geser Langkah untuk berjalan masuk ke hutan.", done: (s) => s.maxKm >= 1.5 },
+    { target: "peatHere", text: "Ini tebal gambut di bawah kakimu. Perhatikan angkanya bertambah saat kamu berjalan.", done: (s) => s.maxKm >= 6 },
+    { target: "figure", text: "Lihat hutannya: di sini pohonnya kecil-kecil. Terus berjalan sampai puncak kubah.", done: (s) => s.maxKm >= 12 },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "flood", text: "Tekan Banjir sungai, lalu lihat sampai mana air sungai masuk.", done: (s) => s.triedFlood },
+    { target: "figure", text: "Air sungai berhenti di tepi hutan. Kubah di belakangnya lebih tinggi daripada jangkauannya." },
+    { target: "rain", text: "Sekarang tekan Hujan.", done: (s) => s.triedRain },
+    { target: "figure", text: "Hujan turun di seluruh kubah. Bagi hutan di tengah, hanya hujan yang membawa air dan hara." },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: firstClosedZone, text: "Tekan satu jenis hutan di bawah penampang.", done: (s) => s.opened.length >= 1 },
+    { target: "zoneInfo", text: "Di sini penghuninya: seberapa kaya jenisnya, dan seberapa banyak orangutan dan owa.", done: (s) => s.opened.length >= 2 },
+    { target: firstClosedZone, text: "Buka jenis hutan lainnya dan bandingkan penghuninya.", done: (s) => s.opened.length >= FOREST_ZONES.length },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];

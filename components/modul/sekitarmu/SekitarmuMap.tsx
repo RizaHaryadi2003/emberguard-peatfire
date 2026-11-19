@@ -402,6 +402,7 @@ export default function SekitarmuMap({
             <button
               key={s.id}
               type="button"
+              data-guide={`site-${s.id}`}
               onClick={() => (act === 2 ? onBore(s.id) : onFire(s.id))}
               className="group absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
               style={toScreen(s.x, s.y)}
