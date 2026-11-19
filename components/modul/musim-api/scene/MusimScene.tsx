@@ -41,14 +41,18 @@ const POSE = DIORAMA_CAMERA_POSES[3];
 const FOV = 34;
 
 /**
- * Jari-jari bola yang memuat seluruh isi diorama (m): bongkahan 4,4 m × 3,4 m
- * ditambah pohon dan awan di atasnya. Dipakai untuk memaskan diorama ke
- * bingkai gambar.
+ * Setengah lebar dan setengah tinggi isi diorama di layar (m), dipakai untuk
+ * memaskannya ke bingkai gambar. Lebarnya bongkahan 4,4 m dilihat miring
+ * ditambah ruang untuk label ambang; tingginya dari dasar tanah mineral
+ * sampai pucuk pohon. Awan boleh terpotong tepi atas: ia hanya latar hujan.
+ * Lebar dan tinggi dipisah (bukan satu bola) supaya diorama tampil sebesar
+ * mungkin di bingkai yang tidak persegi.
  */
-const CONTENT_RADIUS = 3.3;
+const HALF_WIDTH_M = 2.6;
+const HALF_HEIGHT_M = 3.2;
 
 /** Titik tengah isi diorama yang dipaskan ke tengah bingkai (m). */
-const CONTENT_CENTER = new THREE.Vector3(0, -0.2, 0);
+const CONTENT_CENTER = new THREE.Vector3(0, -0.3, 0);
 
 /** Jumlah tetes hujan menurut mutu grafis. */
 const DROPS = { high: 900, low: 380 } as const;
@@ -88,6 +92,13 @@ const PART_COLOR: Record<InspectPart, string> = {
   ambang60: STAGE_COLOR.terbakar,
   mineral: "#d8cfc2",
 };
+
+/** Gelombang cincin di titik klik: letak, warna bagian, dan saat dimulai (ms). */
+type Ripple = { point: THREE.Vector3; color: string; start: number };
+
+/** Lama gelombang klik (detik) dan jari-jari akhirnya (m). */
+const RIPPLE_SEC = 0.9;
+const RIPPLE_RADIUS = 0.6;
 
 /** Yang dibutuhkan untuk menebak bagian yang diklik dari luar kanvas. */
 type Picker = { camera: THREE.Camera; block: THREE.Object3D; root: THREE.Object3D };
@@ -147,10 +158,11 @@ export default function MusimScene(props: MusimSceneProps) {
   const pickRef = useRef<Picker | null>(null);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
-  // Titik bongkahan di bawah penunjuk, dalam cm dari permukaan; null bila
-  // penunjuk tidak mengenai bongkahan. Kanvas memenuhi seluruh jendela, jadi
-  // koordinat layar langsung menjadi koordinat kanvas.
-  const depthUnder = (clientX: number, clientY: number): number | null => {
+  // Titik bongkahan di bawah penunjuk: kedalamannya (cm dari permukaan) dan
+  // letaknya di dunia; null bila penunjuk tidak mengenai bongkahan. Kanvas
+  // memenuhi seluruh jendela, jadi koordinat layar langsung menjadi
+  // koordinat kanvas.
+  const pickAt = (clientX: number, clientY: number): { cm: number; point: THREE.Vector3 } | null => {
     const p = pickRef.current;
     if (!p) return null;
     const ndc = new THREE.Vector2((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
@@ -158,8 +170,12 @@ export default function MusimScene(props: MusimSceneProps) {
     const hit = raycaster.intersectObject(p.block, true)[0];
     if (!hit) return null;
     const local = p.root.worldToLocal(hit.point.clone());
-    return Math.min(PROFILE_DEPTH * 100, Math.max(0, -local.y * 100));
+    return { cm: Math.min(PROFILE_DEPTH * 100, Math.max(0, -local.y * 100)), point: hit.point.clone() };
   };
+
+  // Bagian di bawah kursor (pratinjau sebelum diklik) dan gelombang klik terakhir.
+  const [hover, setHover] = useState<InspectPart | null>(null);
+  const rippleRef = useRef<Ripple | null>(null);
   const [rotation, setRotation] = useState(0);
   const [turned, setTurned] = useState(false);
   const [clicked, setClicked] = useState(false);
@@ -195,7 +211,11 @@ export default function MusimScene(props: MusimSceneProps) {
         onPointerMove={(e) => {
           if (dragFrom.current === null) {
             // Tanpa tombol ditekan: kursor menjadi tangan di atas bongkahan.
-            if (e.pointerType === "mouse") setOverBlock(depthUnder(e.clientX, e.clientY) !== null);
+            if (e.pointerType === "mouse") {
+              const hit = pickAt(e.clientX, e.clientY);
+              setOverBlock(hit !== null);
+              setHover(hit ? classifyDepth(hit.cm, props.depthCm) : null);
+            }
             return;
           }
           const start = downAt.current;
@@ -208,15 +228,21 @@ export default function MusimScene(props: MusimSceneProps) {
         onPointerUp={(e) => {
           // Tekan tanpa geser = klik: jelaskan bagian yang dikenai.
           if (!dragging) {
-            const cm = depthUnder(e.clientX, e.clientY);
-            if (cm !== null) {
-              props.onInspect(classifyDepth(cm, props.depthCm));
+            const hit = pickAt(e.clientX, e.clientY);
+            if (hit) {
+              const part = classifyDepth(hit.cm, props.depthCm);
+              props.onInspect(part);
+              rippleRef.current = { point: hit.point, color: PART_COLOR[part], start: performance.now() };
               setClicked(true);
             }
           }
           dragFrom.current = null;
           downAt.current = null;
           setDragging(false);
+        }}
+        onPointerLeave={() => {
+          setHover(null);
+          setOverBlock(false);
         }}
         onPointerCancel={() => {
           dragFrom.current = null;
@@ -242,6 +268,10 @@ export default function MusimScene(props: MusimSceneProps) {
           Modul Anatomi. */}
       <div className="pointer-events-none fixed inset-0">
         <Canvas
+          // R3F memaksa `pointer-events: auto` pada pembungkus kanvasnya;
+          // tanpa penimpaan ini kanvas selayar penuh menelan semua seretan
+          // dan klik sebelum sampai ke bidang seret di bawahnya.
+          style={{ pointerEvents: "none" }}
           dpr={[1, profile.maxDpr]}
           frameloop="demand"
           shadows={profile.softShadow ? "percentage" : "basic"}
@@ -262,8 +292,9 @@ export default function MusimScene(props: MusimSceneProps) {
             <Backdrop />
           </Suspense>
           <Suspense fallback={null}>
-            <Diorama stateRef={stateRef} pickRef={pickRef} reducedMotion={reducedMotion} {...props} />
+            <Diorama stateRef={stateRef} pickRef={pickRef} reducedMotion={reducedMotion} hover={hover} {...props} />
           </Suspense>
+          <ClickRipple rippleRef={rippleRef} />
         </Canvas>
       </div>
     </>
@@ -315,8 +346,8 @@ function CameraRig({ anchorRef }: { anchorRef: RefObject<HTMLDivElement | null> 
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     // Jarak agar bola isi memenuhi tinggi bingkai, atau lebarnya bila
     // bingkainya lebih sempit daripada tinggi.
-    const byHeight = (CONTENT_RADIUS * H) / (rect.height * tanHalf);
-    const byWidth = (CONTENT_RADIUS * H) / (rect.width * tanHalf);
+    const byHeight = (HALF_HEIGHT_M * H) / (rect.height * tanHalf);
+    const byWidth = (HALF_WIDTH_M * H) / (rect.width * tanHalf);
     const distance = Math.max(byHeight, byWidth) * 1.02;
 
     const dir = new THREE.Vector3(...POSE.pos).sub(new THREE.Vector3(...POSE.target)).normalize();
@@ -345,7 +376,8 @@ function Diorama({
   fire,
   quality,
   inspect,
-}: MusimSceneProps & { stateRef: RefObject<SceneState>; pickRef: RefObject<Picker | null>; reducedMotion: boolean }) {
+  hover,
+}: MusimSceneProps & { stateRef: RefObject<SceneState>; pickRef: RefObject<Picker | null>; reducedMotion: boolean; hover: InspectPart | null }) {
   const ref = useRef<THREE.Group>(null);
   const blockRef = useRef<THREE.Group>(null);
   const camera = useThree((s) => s.camera);
@@ -385,10 +417,12 @@ function Diorama({
       <group ref={blockRef}>
         <PeatBlock stateRef={stateRef} onHoverLayer={noop} onSelectLayer={noop} />
       </group>
-      <ZoneGlow part={inspect} depthCm={depthCm} reducedMotion={reducedMotion} />
+      {/* Bagian yang diklik disorot penuh; bila belum ada, bagian di bawah
+          kursor disorot samar sebagai pratinjau. */}
+      <ZoneGlow part={inspect ?? hover} strength={inspect ? 1 : 0.45} depthCm={depthCm} reducedMotion={reducedMotion} />
       <Vegetation stateRef={stateRef} />
       <Embers stateRef={stateRef} />
-      <ThresholdRibbons active={inspect} reducedMotion={reducedMotion} />
+      <ThresholdRibbons active={inspect ?? hover} strength={inspect ? 1 : 0.45} reducedMotion={reducedMotion} />
       <Rain intensityRef={rainRef} count={DROPS[quality]} reducedMotion={reducedMotion} />
       <Clouds intensityRef={rainRef} />
       <Labels />
@@ -404,7 +438,7 @@ function noop() {}
  * Garis yang diklik mendapat pita cahaya lebar yang berdenyut, sehingga
  * pembaca melihat garis mana yang sedang dijelaskan.
  */
-function ThresholdRibbons({ active, reducedMotion }: { active: InspectPart | null; reducedMotion: boolean }) {
+function ThresholdRibbons({ active, strength, reducedMotion }: { active: InspectPart | null; strength: number; reducedMotion: boolean }) {
   const res = useMemo(() => {
     const make = (part: "ambang40" | "ambang60", cm: number) => {
       const geom = createRibbon();
@@ -441,7 +475,7 @@ function ThresholdRibbons({ active, reducedMotion }: { active: InspectPart | nul
     const pulse = reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(state.clock.elapsedTime * 5);
     for (const r of res) {
       const on = active === r.part;
-      r.glowMat.opacity = THREE.MathUtils.damp(r.glowMat.opacity, on ? 0.55 * pulse : 0, 8, Math.min(delta, 0.05));
+      r.glowMat.opacity = THREE.MathUtils.damp(r.glowMat.opacity, on ? 0.6 * pulse * strength : 0, 8, Math.min(delta, 0.05));
       r.mat.opacity = on ? 1 : 0.85;
     }
   });
@@ -471,7 +505,7 @@ const ZONE_STRIPS = 10;
  * menyempit ke bawah, jadi sorotannya dibangun dari pita-pita pendek yang
  * masing-masing mengikuti dindingnya, bukan satu pita tinggi.
  */
-function ZoneGlow({ part, depthCm, reducedMotion }: { part: InspectPart | null; depthCm: number; reducedMotion: boolean }) {
+function ZoneGlow({ part, strength, depthCm, reducedMotion }: { part: InspectPart | null; strength: number; depthCm: number; reducedMotion: boolean }) {
   const res = useMemo(() => {
     const mat = new THREE.MeshBasicMaterial({
       transparent: true,
@@ -511,7 +545,7 @@ function ZoneGlow({ part, depthCm, reducedMotion }: { part: InspectPart | null; 
 
   useFrame((state, delta) => {
     const pulse = reducedMotion ? 1 : 0.65 + 0.35 * Math.sin(state.clock.elapsedTime * 4);
-    res.mat.opacity = THREE.MathUtils.damp(res.mat.opacity, span ? 0.32 * pulse : 0, 8, Math.min(delta, 0.05));
+    res.mat.opacity = THREE.MathUtils.damp(res.mat.opacity, span ? 0.36 * pulse * strength : 0, 8, Math.min(delta, 0.05));
   });
 
   return (
@@ -561,14 +595,14 @@ function Labels() {
       {dangerAt && (
         <Html position={dangerAt} center zIndexRange={[10, 0]}>
           <span className={style} style={{ color: STAGE_COLOR.bahaya }}>
-            {MUSIM_TEXT.danger}
+            {MUSIM_TEXT.dangerShort}
           </span>
         </Html>
       )}
       {burnAt && (
         <Html position={burnAt} center zIndexRange={[10, 0]}>
           <span className={style} style={{ color: STAGE_COLOR.terbakar }}>
-            {MUSIM_TEXT.burn}
+            {MUSIM_TEXT.burnShort}
           </span>
         </Html>
       )}
@@ -681,6 +715,61 @@ function Clouds({ intensityRef }: { intensityRef: RefObject<number> }) {
       ))}
     </>
   );
+}
+
+/**
+ * Gelombang cincin yang mengembang dari titik klik lalu memudar: jawaban
+ * seketika bahwa klik pembaca diterima, sebelum sorotan bagiannya menyala.
+ * Cincinnya selalu menghadap kamera.
+ */
+function ClickRipple({ rippleRef }: { rippleRef: RefObject<Ripple | null> }) {
+  const camera = useThree((s) => s.camera);
+  const res = useMemo(() => {
+    const geom = new THREE.RingGeometry(0.82, 1, 48);
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+    });
+    return { geom, mat };
+  }, []);
+  useEffect(
+    () => () => {
+      res.geom.dispose();
+      res.mat.dispose();
+    },
+    [res],
+  );
+  const meshRef = useRef<THREE.Mesh>(null);
+  const shownStart = useRef(-1);
+
+  useFrame(() => {
+    const m = meshRef.current;
+    const r = rippleRef.current;
+    if (!m) return;
+    if (!r) {
+      m.visible = false;
+      return;
+    }
+    if (r.start !== shownStart.current) {
+      shownStart.current = r.start;
+      m.position.copy(r.point);
+      res.mat.color.set(r.color);
+    }
+    const k = (performance.now() - r.start) / 1000 / RIPPLE_SEC;
+    m.visible = k < 1;
+    if (!m.visible) return;
+    const ease = 1 - (1 - k) * (1 - k);
+    m.scale.setScalar(0.05 + RIPPLE_RADIUS * ease);
+    m.quaternion.copy(camera.quaternion);
+    res.mat.opacity = 0.9 * (1 - k);
+  });
+
+  return <mesh ref={meshRef} geometry={res.geom} material={res.mat} renderOrder={10} visible={false} />;
 }
 
 /** Bilangan semu 0–1 yang tetap untuk masukan yang sama. */

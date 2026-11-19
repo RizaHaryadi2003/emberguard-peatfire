@@ -119,6 +119,8 @@ export const MUSIM_TEXT = {
   date: (date: number, month: string) => `${date} ${month}`,
   danger: `${HIGH_DANGER_CM} cm · bahaya tinggi`,
   burn: `${BURN_CM} cm · terbakar`,
+  dangerShort: `${HIGH_DANGER_CM} cm`,
+  burnShort: `${BURN_CM} cm`,
   waterLabel: (cm: number) => `muka air ${Math.round(cm)} cm`,
   legendRain: "hujan",
   legendDry: "masa kering",

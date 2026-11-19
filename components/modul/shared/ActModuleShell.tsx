@@ -43,6 +43,12 @@ type Props = {
   onReset: () => void;
   /** Latar halaman di belakang gambar. */
   background?: string;
+  /**
+   * Letak panel kendali di layar laptop lebar (≥ 1280 px). "right" memindahkan
+   * panel ke kolom kanan, sehingga kolom kiri seluruhnya untuk cerita dan
+   * gambar berada di tengah. Di layar yang lebih sempit panel tetap di kiri.
+   */
+  controlsSide?: "left" | "right";
 };
 
 /**
@@ -68,7 +74,9 @@ export default function ActModuleShell({
   figure,
   onReset,
   background = "#0b1a24",
+  controlsSide = "left",
 }: Props) {
+  const right = controlsSide === "right";
   const meta = moduleAt(href);
   const next = nextAvailableModule(href);
   const [hookOpen, setHookOpen] = useState(true);
@@ -119,7 +127,13 @@ export default function ActModuleShell({
           seluruh tampilan bergeser. `clip` memotong tanpa membuka gulir. */}
       {/* Gambar: di layar lebar mengisi ruang di kanan panel cerita, di layar
           sempit pita di antara panel cerita dan panel kendali. */}
-      <div className="absolute bottom-[34%] left-4 right-4 top-[44%] md:bottom-[8%] md:left-[36%] md:right-[4%] md:top-[12%]">{figure}</div>
+      <div
+        className={`absolute bottom-[34%] left-4 right-4 top-[44%] md:bottom-[8%] md:left-[36%] md:right-[4%] md:top-[12%] ${
+          right ? "xl:left-[488px] xl:right-[448px]" : ""
+        }`}
+      >
+        {figure}
+      </div>
 
       <ModuleHook
         open={hookOpen}
@@ -140,7 +154,10 @@ export default function ActModuleShell({
           mungkin saling tindih, berapa pun tinggi isinya. Di layar sempit
           kolom ini lenyap (`contents`) dan kedua panel kembali ke tempatnya
           di atas dan di bawah pita gambar. */}
-      <div className="contents md:absolute md:inset-y-0 md:left-14 md:z-20 md:flex md:w-[404px] md:flex-col md:gap-3 md:pb-6 md:pt-16 [@media(min-height:901px)]:md:pt-24">
+      {/* Kolom ini tembus klik (`pointer-events-none`); hanya kartunya yang
+          menangkap klik. Tanpa itu kolom kosongnya menutupi tombol layar
+          pembuka di belakangnya. */}
+      <div className="contents md:pointer-events-none md:absolute md:inset-y-0 md:left-14 md:z-20 md:flex md:w-[404px] md:flex-col md:gap-3 md:pb-6 md:pt-16 [@media(min-height:901px)]:md:pt-24">
         {/* Panel cerita. */}
         <div
           inert={hookOpen}
@@ -217,7 +234,9 @@ export default function ActModuleShell({
         {/* Panel kendali. */}
         <div
           inert={hookOpen}
-          className={`absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${panelFade}`}
+          className={`pointer-events-auto absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${
+            right ? "xl:fixed xl:bottom-24 xl:left-auto xl:right-14 xl:z-20 xl:mt-0 xl:w-[376px]" : ""
+          } ${panelFade}`}
         >
           <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/85 p-3.5 shadow-2xl shadow-black/60 md:p-4">
             {controls}

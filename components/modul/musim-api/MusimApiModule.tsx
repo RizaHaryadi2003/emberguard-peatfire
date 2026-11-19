@@ -133,6 +133,7 @@ export default function MusimApiModule() {
       progress={progress}
       onReset={reset}
       background="#10120f"
+      controlsSide="right"
       figure={
         <>
           <MusimScene
@@ -151,7 +152,9 @@ export default function MusimApiModule() {
               key={inspect}
               role="dialog"
               aria-label={inspectText(inspect, depthCm).title}
-              className="sekitarmu-rise absolute left-0 right-0 top-0 z-10 rounded-2xl border border-white/10 bg-[#0a0d0f]/90 p-3 shadow-2xl shadow-black/60 md:right-auto md:top-6 md:w-[300px]"
+              // Di laptop lebar kartu duduk di kolom kanan, di atas panel
+              // kendali; di layar lebih sempit di pojok kiri atas gambar.
+              className="sekitarmu-rise absolute left-0 right-0 top-0 z-20 rounded-2xl border border-white/10 bg-[#0a0d0f]/90 p-3.5 shadow-2xl shadow-black/60 md:right-auto md:top-6 md:w-[300px] xl:fixed xl:left-auto xl:right-14 xl:top-20 xl:w-[376px]"
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="font-playfair text-lg italic leading-tight text-white">{inspectText(inspect, depthCm).title}</p>
