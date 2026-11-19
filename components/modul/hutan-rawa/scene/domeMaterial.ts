@@ -41,10 +41,11 @@ ${NOISE_GLSL}
 
 /** Bobot tiga rupa gambut menurut kedalaman, batasnya digoyang derau. */
 vec3 kWeights(float depth) {
-  float wobble = (kNoise(vFaceWorld.xy * vec2(0.35, 1.1) + 4.0) - 0.5) * 0.9;
+  // Batas lapisan tegas seperti bongkahan Modul Kanal: goyangan kecil saja.
+  float wobble = (kNoise(vFaceWorld.xy * vec2(0.35, 1.1) + 4.0) - 0.5) * 0.25;
   float d = depth + wobble;
-  float fib = 1.0 - smoothstep(0.3, 1.1, d);
-  float sap = smoothstep(2.6, 6.5, d);
+  float fib = 1.0 - smoothstep(0.55, 0.75, d);
+  float sap = smoothstep(1.9, 2.3, d);
   float hem = max(0.0, 1.0 - fib - sap);
   return vec3(fib, hem, sap);
 }

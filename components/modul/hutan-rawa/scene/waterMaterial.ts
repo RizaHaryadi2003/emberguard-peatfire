@@ -24,7 +24,7 @@ import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 export type WaterKind = "river" | "flood";
 
 const LOOK = {
-  river: { surface: [0.24, 0.15, 0.08], deep: [0.07, 0.04, 0.02], murk: 0.15, flow: [0, -0.35], foam: 0, env: 0.45 },
+  river: { surface: [0.17, 0.13, 0.09], deep: [0.05, 0.04, 0.03], murk: 0.15, flow: [0, -0.35], foam: 0, env: 0.3 },
   flood: { surface: [0.4, 0.33, 0.22], deep: [0.2, 0.16, 0.1], murk: 0.5, flow: [0.25, -0.12], foam: 1, env: 0.25 },
 } as const;
 

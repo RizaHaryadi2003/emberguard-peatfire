@@ -8,6 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import FpsMeter, { wantsFpsMeter } from "@/components/modul/shared/scene/FpsMeter";
+import { createHutanGrass } from "./grass";
 import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { QUALITY_PROFILE, type AtmosphereState, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
@@ -25,13 +26,11 @@ import {
   PERSON_M,
   plantFerns,
   plantTrees,
-  seeded,
   xOfKm,
   zoneAt,
   type TreeSpot,
 } from "./dome";
 import {
-  frontZ,
   hummock,
   mineralFrontGrid,
   mineralSideGrid,
@@ -289,56 +288,6 @@ function shadeMineral(geo: THREE.BufferGeometry) {
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 }
 
-/**
- * Akar dan ranting yang mencuat dari dua meter teratas muka gambut. Separuh
- * tiap model tertanam di dalam gambut, separuhnya keluar dan merunduk.
- */
-function buildRoots(scene: THREE.Object3D, quality: Quality): THREE.Group {
-  const rand = seeded(88);
-  scene.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const longest = Math.max(size.x, size.y, size.z);
-  // Sumbu terpanjang model diarahkan ke +z (keluar dari muka depan).
-  const align = new THREE.Matrix4();
-  if (longest === size.x) align.makeRotationY(-Math.PI / 2);
-  else if (longest === size.y) align.makeRotationX(Math.PI / 2);
-  const base = align
-    .multiply(new THREE.Matrix4().makeScale(1 / longest, 1 / longest, 1 / longest))
-    .multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
-
-  const count = quality === "high" ? 38 : 16;
-  const spots = Array.from({ length: count }, () => {
-    const x = X_LEFT + 1.5 + rand() * (LENGTH - 3);
-    const depth = 0.12 + Math.pow(rand(), 1.6) * 1.6;
-    const y = surfaceY(x, Z_FRONT) - depth;
-    const m = new THREE.Matrix4().compose(
-      new THREE.Vector3(x, y, frontZ(x, y)),
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(0.25 + rand() * 0.55, (rand() - 0.5) * 1.1, rand() * Math.PI * 2)),
-      new THREE.Vector3().setScalar(1.6 + rand() * 2.2),
-    );
-    return m.multiply(base);
-  });
-
-  const group = new THREE.Group();
-  scene.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    // Ranting kering dijadikan akar: lebih gelap dan lembap.
-    const material = (mesh.material as THREE.MeshStandardMaterial).clone();
-    material.color.set("#6a5646");
-    const inst = new THREE.InstancedMesh(mesh.geometry, material, count);
-    const m = new THREE.Matrix4();
-    spots.forEach((s, i) => inst.setMatrixAt(i, m.copy(s).multiply(mesh.matrixWorld)));
-    inst.instanceMatrix.needsUpdate = true;
-    inst.castShadow = true;
-    inst.receiveShadow = true;
-    inst.frustumCulled = false;
-    group.add(inst);
-  });
-  return group;
-}
 
 /** Air banjir: ruang antara muka banjir dan tanah, dari sungai sampai lereng. */
 function floodShape(): THREE.Shape {
@@ -369,7 +318,7 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     "/textures/gambut/mineral_color.webp",
     "/textures/gambut/mineral_normal.webp",
   ]);
-  const [treeGltf, fernGltf, branchGltf] = useLoader(GLTFLoader, ["/models/gambut/pohon_pachira.glb", "/models/gambut/pakis.glb", "/models/gambut/ranting.glb"]);
+  const [treeGltf, fernGltf] = useLoader(GLTFLoader, ["/models/gambut/pohon_pachira.glb", "/models/gambut/pakis.glb"]);
 
   const res = useMemo(() => {
     const an = profile.anisotropy;
@@ -494,9 +443,12 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
         }
       });
     }
-    group.add(buildRoots(branchGltf.scene, quality));
+    // Ranting akar di bibir potongan dibuang: dari jarak pandang ini ia
+    // terbaca sebagai bintik hitam kotor. Gantinya rumput lantai hutan
+    // seperti Modul Kanal.
+    group.add(createHutanGrass(quality === "high" ? 2600 : 1100));
     return group;
-  }, [treeGltf, fernGltf, branchGltf, trees, quality]);
+  }, [treeGltf, fernGltf, trees, quality]);
 
   // Keadaan yang dianimasikan: air banjir, lumpur yang ditinggalkannya, dan
   // basahnya gambut.
