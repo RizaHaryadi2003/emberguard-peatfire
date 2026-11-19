@@ -23,6 +23,7 @@ import {
   dryDaysToReach,
   simulateYear,
   type FireStage,
+  type YearKind,
 } from "@/lib/model/fireSeason";
 import { PEAT_THICKNESS } from "@/lib/model/peat";
 
@@ -128,6 +129,8 @@ export const MUSIM_TEXT = {
   dragHint: "Seret untuk memutar · klik bagian gambut untuk penjelasannya",
   inspectToday: (cm: number) => `Hari ini muka air ${Math.round(cm)} cm`,
   close: "Tutup",
+  guideOk: "Oke",
+  guideCount: (i: number, n: number) => `${i} / ${n}`,
   today: (date: number, month: string) => `Hari ini · ${date} ${month}`,
   depthBelow: "muka air di bawah permukaan",
   yearChart: "Setahun: hujan dan muka air",
@@ -213,3 +216,84 @@ export function inspectText(part: InspectPart, depthCm: number): { title: string
       };
   }
 }
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH
+ * ============================================================================
+ *  Tiap babak punya urutan arahan. Satu arahan menunjuk satu bagian layar
+ *  (target) dan menunggu sampai pembaca melakukan sesuatu (`done`), atau
+ *  sampai ia menekan "Oke". Begitu satu arahan selesai, bagian layar
+ *  berikutnya muncul dan arahan pindah menunjuknya. Dengan begitu tiap kotak
+ *  muncul sebagai akibat dari aksi pembaca, bukan karena waktu.
+ * ========================================================================== */
+
+/** Bagian layar yang bisa ditunjuk arahan (atribut `data-guide`). */
+export type GuideTarget = "calendar" | "dryDays" | "yearToggle" | "today" | "chart" | "why" | "block" | "next";
+
+/** Keadaan yang dibaca untuk memutuskan apakah satu arahan sudah dikerjakan. */
+export type GuideState = {
+  maxDay: number;
+  maxDryDays: number;
+  maxDepthCm: number;
+  kind: YearKind;
+  elninoMaxDay: number;
+  inspected: boolean;
+};
+
+export type GuideStep = {
+  target: GuideTarget;
+  text: string;
+  /** Syarat selesai; tanpa syarat, arahan menunggu tombol "Oke". */
+  done?: (s: GuideState) => boolean;
+};
+
+const AUG_1 = MONTH_START_DAY[7];
+const SEP_1 = MONTH_START_DAY[8];
+const NOV_1 = MONTH_START_DAY[10];
+const DEC_1 = MONTH_START_DAY[11];
+
+export const MUSIM_GUIDE: readonly (readonly GuideStep[])[] = [
+  [
+    { target: "calendar", text: "Mulai dari sini. Geser kalender ke kanan, lalu lihat garis biru di dinding bongkahan.", done: (s) => s.maxDay >= 20 },
+    { target: "today", text: "Ini muka air hari itu. Makin besar angkanya, makin dalam air turun dan makin kering gambut di atasnya.", done: (s) => s.maxDay >= 60 },
+    { target: "chart", text: "Grafik setahun. Batang jingga adalah masa kering; garis biru turun setiap kali masa kering datang. Teruskan sampai Agustus.", done: (s) => s.maxDay >= AUG_1 + 15 },
+    { target: "why", text: "Di sini alasannya: apa yang sedang terjadi di dalam gambut. Teruskan kalender sampai Desember.", done: (s) => s.maxDay >= DEC_1 },
+    { target: "block", text: "Sekarang klik gambut di atas garis biru, atau garis 40 cm, untuk melihat penjelasannya.", done: (s) => s.inspected },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "dryDays", text: "Geser Hari tanpa hujan. Setiap hari tanpa hujan, air gambut turun ±1,3 cm.", done: (s) => s.maxDryDays >= 3 },
+    { target: "today", text: `Perhatikan angka dan statusnya. Teruskan sampai air lewat ${HIGH_DANGER_CM} cm.`, done: (s) => s.maxDepthCm >= HIGH_DANGER_CM },
+    { target: "block", text: `Air lewat garis ${HIGH_DANGER_CM} cm: gambut di atasnya sudah kering. Teruskan sampai ${BURN_CM} cm dan lihat apinya.`, done: (s) => s.maxDepthCm >= BURN_CM },
+    { target: "chart", text: "Garis jingga di grafik adalah kemarau yang diperpanjang. Sesudah 60 cm, api tidak naik pelan: ia melonjak." },
+    { target: "why", text: "Baca alasannya di sini, lalu coba klik garis 60 cm di bongkahan.", done: (s) => s.inspected },
+    { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "yearToggle", text: "Pilih Tahun El Niño.", done: (s) => s.kind === "elnino" },
+    { target: "chart", text: "Batang Agustus–Oktober menyusut: hujan berkurang. Garis jingga adalah muka air tahun El Niño." },
+    { target: "calendar", text: "Geser kalender sampai September.", done: (s) => s.elninoMaxDay >= SEP_1 },
+    { target: "today", text: `Air jauh di bawah ${BURN_CM} cm, dan bongkahan terbakar. Teruskan sampai November.`, done: (s) => s.elninoMaxDay >= NOV_1 },
+    { target: "why", text: "Hujan November kembali. Teruskan sampai Desember dan lihat apinya reda.", done: (s) => s.elninoMaxDay >= DEC_1 },
+    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+  ],
+];
+
+/**
+ * Arahan yang sedang aktif: yang pertama belum selesai dan belum di-"Oke".
+ * Syarat selesai dibaca dari nilai terjauh yang pernah dicapai, jadi
+ * menggeser mundur tidak menarik arahan kembali.
+ */
+export function guideLevel(act: number, s: GuideState, acked: number): number {
+  const steps = MUSIM_GUIDE[act];
+  let level = 0;
+  while (level < steps.length - 1 && (level < acked || steps[level].done?.(s))) level++;
+  return level;
+}
+
+/** Arahan ke berapa tiap lantai kolom kanan mulai tampil, per babak. */
+export const FLOOR_FROM: readonly Record<"today" | "chart" | "why" | "invite", number>[] = [
+  { today: 1, chart: 2, why: 3, invite: 4 },
+  { today: 1, chart: 3, why: 4, invite: 4 },
+  { today: 3, chart: 1, why: 4, invite: 5 },
+];

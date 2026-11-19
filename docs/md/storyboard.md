@@ -163,6 +163,15 @@ klik, mati bila pembaca memilih "kurangi gerak". Ini **menuntun urutan
 membaca**, bukan interaktivitas: interaktivitas tetap datang dari aksi
 pembaca (2.3).
 
+**Tuntunan langkah demi langkah** (19 November 2026, `GuideLayer` bersama;
+dipakai Musim Api, naskahnya `MUSIM_GUIDE` di config): tiap babak punya
+urutan arahan. Satu gelembung berpanah menunjuk satu bagian layar (cincin
+berdenyut; tangan berdenyut untuk diorama) dan menunggu aksi pembaca
+(mis. "geser kalender sampai Agustus") atau tombol "Oke". Begitu selesai,
+kotak berikutnya (keadaan hari ini → grafik → "mengapa begitu" → ajakan
+klik) baru muncul dengan animasi, dan arahan pindah menunjuknya. Jadi tiap
+kotak muncul **sebagai akibat aksi pembaca**, bukan karena waktu.
+
 Aturan tampilan: panel dan kotak **tidak boleh bergulir**, isi diringkas bila
 ruang kurang. Laptop adalah tampilan utama; ponsel mendapat versi sederhana
 yang alurnya tetap utuh.

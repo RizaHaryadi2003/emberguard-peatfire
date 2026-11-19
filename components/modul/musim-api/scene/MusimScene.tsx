@@ -198,6 +198,7 @@ export default function MusimScene(props: MusimSceneProps) {
           jadi bingkainya dipendekkan di sana. */}
       <div
         ref={anchorRef}
+        data-guide="block"
         role="slider"
         tabIndex={0}
         aria-label="Putar bongkahan gambut"

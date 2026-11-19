@@ -50,6 +50,11 @@ type Props = {
    * di panel kendali untuk layar yang lebih sempit.
    */
   aside?: ReactNode;
+  /**
+   * Lapisan arahan (`GuideLayer`). Hanya dipasang setelah layar pembuka
+   * ditutup, supaya arahan pertama muncul saat pembaca mulai membaca.
+   */
+  guide?: ReactNode;
 };
 
 /**
@@ -76,6 +81,7 @@ export default function ActModuleShell({
   onReset,
   background = "#0b1a24",
   aside,
+  guide,
 }: Props) {
   const meta = moduleAt(href);
   const next = nextAvailableModule(href);
@@ -302,6 +308,7 @@ export default function ActModuleShell({
             next?.href && (
               <Link
                 href={next.href}
+                data-guide="next"
                 className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
               >
                 Modul berikutnya
@@ -311,7 +318,8 @@ export default function ActModuleShell({
             <button
               type="button"
               onClick={() => goToAct(act + 1)}
-              className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
+              data-guide="next"
+                className="mb-1 inline-flex cursor-pointer items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
             >
               Babak berikutnya
             </button>
@@ -325,23 +333,24 @@ export default function ActModuleShell({
           inert={hookOpen}
           className={`absolute bottom-6 right-5 top-14 z-20 hidden w-[272px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
         >
-          {/* Tiap lantai kolom kanan muncul bergiliran sesudah panel kendali. */}
-          <div
-            key={stageKey}
-            className={`flex min-h-0 flex-1 flex-col gap-3 ${hookOpen ? "" : "stage-kids"}`}
-            style={hookOpen ? undefined : ({ "--stage-base": "1.35s" } as CSSProperties)}
-          >
+          {/* Lantai kolom kanan diatur modulnya sendiri: modul dengan
+              tuntunan memunculkannya satu per satu mengikuti aksi pembaca. */}
+          <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3">
             {aside}
           </div>
-          <div className="max-w-full shrink-0 self-end">{advance}</div>
+          <div data-guide="next" className="max-w-full shrink-0 self-end">
+            {advance}
+          </div>
         </div>
       )}
 
       {/* Panah lanjut (kanan bawah), hanya di layar lebar; bila ada kolom
           kanan, panah ini pindah ke dasarnya. */}
-      <div inert={hookOpen} className={`absolute bottom-6 right-5 z-20 hidden sm:right-10 md:block ${aside ? "lg:hidden" : ""} ${panelFade}`}>
+      <div data-guide="next" inert={hookOpen} className={`absolute bottom-6 right-5 z-20 hidden sm:right-10 md:block ${aside ? "lg:hidden" : ""} ${panelFade}`}>
         {advance}
       </div>
+
+      {!hookOpen && guide}
     </div>
   );
 }
