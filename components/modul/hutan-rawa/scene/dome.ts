@@ -16,7 +16,7 @@ import { FOREST_ZONES, type ForestZone } from "@/config/modul/hutan-rawa";
 /** Panjang penampang (km), dari tepi hutan di sungai ke puncak kubah. */
 export const SPAN_KM = 14;
 /** Panjang diorama (satuan adegan) yang mewakili SPAN_KM. */
-export const LENGTH = 120;
+export const LENGTH = 84;
 /** Tebal diorama ke belakang (satuan adegan). */
 export const DEPTH = 18;
 /** Tebal tanah mineral yang ikut terlihat di bawah gambut (m). */
@@ -154,39 +154,6 @@ export function plantFerns(quality: "high" | "low"): FernSpot[] {
   for (let i = 0; i < FERN_COUNT[quality]; i++) {
     const km = 0.3 + Math.pow(rand(), 1.3) * (SPAN_KM - 0.5);
     out.push({ km, x: xOfKm(km), z: (rand() - 0.3) * DEPTH * 0.85, scale: 1.4 + rand() * 1.4, yaw: rand() * Math.PI * 2, variant: i });
-  }
-  return out;
-}
-
-/** Banyaknya siluet satwa menurut tingkat relatif di config (bukan hitungan). */
-export const APE_COUNT: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 4 };
-
-export type ApeSpot = { x: number; y: number; z: number; kind: "orangutan" | "owa"; zone: ForestZone["id"] };
-
-/**
- * Tempat siluet satwa: zona dibagi n ruas, dan satwa bergantung di bawah tajuk
- * pohon tertinggi pada tiap ruas — diutamakan pohon baris depan, supaya tidak
- * tertutup tajuk lain.
- */
-export function apeSpots(trees: TreeSpot[]): ApeSpot[] {
-  const out: ApeSpot[] = [];
-  for (const z of FOREST_ZONES) {
-    const n = APE_COUNT[z.apes] ?? 1;
-    const span = (z.toKm - z.fromKm) / n;
-    for (let i = 0; i < n; i++) {
-      const from = z.fromKm + span * i;
-      const inBin = trees.filter((t) => t.zone === z.id && t.km >= from && t.km < from + span);
-      if (inBin.length === 0) continue;
-      const score = (t: TreeSpot) => t.heightM + (t.z > 0 ? 20 : 0);
-      const t = inBin.reduce((a, b) => (score(b) > score(a) ? b : a), inBin[0]);
-      out.push({
-        x: t.x,
-        y: peatThicknessM(t.km) + t.heightM * 0.62,
-        z: t.z + 1.5,
-        kind: out.length % 2 === 0 ? "orangutan" : "owa",
-        zone: z.id,
-      });
-    }
   }
   return out;
 }

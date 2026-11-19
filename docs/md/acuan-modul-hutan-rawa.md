@@ -41,6 +41,31 @@ Kanal penebangan liar di Sebangau: lebar 1–2 m, dalam 0,3–1,3 m, panjang
 berkilo-kilometer, masih mengeringkan gambut, menyebabkan lesak dan menaikkan
 risiko kebakaran — jembatan ke Modul 04 (Kanal).
 
+### Satwa endemik dan tumbuhan terancam (sumber B, Lampiran Tabel A1 dan A10)
+
+Dibaca langsung dari teks lengkap Husson dkk. (2018) pada 19 November 2026.
+Daftar ini berlaku untuk **hutan penelitian Sebangau (NLPSF) secara
+keseluruhan**; sumbernya tidak memisahkan spesies per jenis hutan, jadi di
+layar ditulis "di hutan rawa gambut ini", bukan per zona.
+
+| Kelompok | Nama di layar | Nama ilmiah | IUCN | Endemik Borneo |
+|---|---|---|---|---|
+| Satwa | Orangutan Kalimantan | *Pongo pygmaeus wurmbii* | CR | ya |
+| Satwa | Owa janggut-putih | *Hylobates albibarbis* | EN | ya |
+| Satwa | Bekantan | *Nasalis larvatus* | EN | ya |
+| Tumbuhan | Balangeran (kahui) | *Shorea balangeran* | CR | — |
+| Tumbuhan | Meranti semut | *Shorea teysmanniana* | EN | — |
+| Tumbuhan | Ramin | *Gonystylus bancanus* | VU | — |
+
+CR = kritis, EN = genting, VU = rentan. Ramin dan *Shorea* juga disebut
+sebagai kayu yang dulu ditebang (bagian Pembahasan). Jelutung (*Dyera
+polyphylla*) tercatat dan dipakai warga untuk getah, tetapi tidak diberi
+status IUCN di tabel itu, jadi tidak disebut terancam.
+
+Sejak 19 November 2026 sosok orangutan dan owa **tidak lagi digambar** di
+diorama (permintaan pengguna: tidak memaksakan desain); penghuni ditampilkan
+sebagai kartu.
+
 ## 3. Keterbatasan
 
 - Data utamanya dari **Kalimantan Tengah (Sebangau)**, bukan Kalimantan Barat.

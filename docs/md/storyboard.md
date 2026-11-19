@@ -262,7 +262,7 @@ Kolom tabel: **Tugas** = A1 + A2 (kalimat tugas di layar), **Yang terlihat**
 |---|---|---|---|
 | 01 Berjalan ke tengah kubah | Geser *Langkah* dari tepi sungai ke puncak kubah | Gambut menebal, hutan berganti jenis, zona disorot | 45 m pohon tertinggi di atas gambut 10–13 m (Husson dkk., 2018) |
 | 02 Hidup dari hujan | Coba *Banjir sungai*, lalu *Hujan* | Banjir berhenti di lereng; hujan meresap sampai puncak | 15–25 m tinggi kanopi (Page dkk., 1999) |
-| 03 Rumah bagi siapa | Tekan ketiga jenis hutan | Satwa per zona (orangutan, owa) | 46 jenis terancam punah global (Husson dkk., 2018) |
+| 03 Rumah bagi siapa | Tekan ketiga jenis hutan (chip di bawah bongkahan) | Kekayaan jenis per zona; kartu satwa endemik (orangutan, owa, bekantan) dan pohon terancam (balangeran, meranti semut, ramin). Satwa tidak digambar di diorama | 46 jenis terancam punah global (Husson dkk., 2018) |
 
 **Penutup:** hutan dan gambut saling bergantung pada air. Tindakan
 pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.

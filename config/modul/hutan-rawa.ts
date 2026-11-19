@@ -196,7 +196,10 @@ export const HUTAN_TEXT = {
   floodCarry: "air sungai: lumpur dan hara",
   floodLimit: "batas banjir sungai",
   rainSoak: "hujan meresap ke seluruh kubah",
-  apesNote: "Jumlah sosok satwa menunjukkan tingkat relatif, bukan hitungan. Sosoknya diperbesar dari ukuran asli ±1,2 m.",
+  apesNote: "Penghuni di bawah ini tercatat di hutan rawa gambut Sebangau secara keseluruhan, bukan per jenis hutan.",
+  threatened: "Penghuni yang terancam punah",
+  animals: "Satwa endemik Kalimantan",
+  plants: "Pohon yang terancam",
   residents: "Penghuni tajuknya",
   source: "Husson dkk., 2018; Page dkk., 1999",
 };
@@ -239,3 +242,24 @@ export const HUTAN_GUIDE: readonly (readonly GuideStep<HutanGuideState>[])[] = [
     { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
   ],
 ];
+
+/** Arti singkat status IUCN untuk pembaca. */
+export const IUCN_LABEL = { CR: "kritis", EN: "genting", VU: "rentan" } as const;
+
+/**
+ * Satwa endemik Borneo dan pohon terancam yang tercatat di Sebangau (Husson
+ * dkk., 2018, Tabel A1 dan A10; dicatat di docs/md/acuan-modul-hutan-rawa.md).
+ * Berlaku untuk hutan penelitian secara keseluruhan, bukan per jenis hutan.
+ */
+export const SEBANGAU_THREATENED = {
+  animals: [
+    { name: "Orangutan Kalimantan", latin: "Pongo pygmaeus wurmbii", iucn: "CR" },
+    { name: "Owa janggut-putih", latin: "Hylobates albibarbis", iucn: "EN" },
+    { name: "Bekantan", latin: "Nasalis larvatus", iucn: "EN" },
+  ],
+  plants: [
+    { name: "Balangeran", latin: "Shorea balangeran", iucn: "CR" },
+    { name: "Meranti semut", latin: "Shorea teysmanniana", iucn: "EN" },
+    { name: "Ramin", latin: "Gonystylus bancanus", iucn: "VU" },
+  ],
+} as const;

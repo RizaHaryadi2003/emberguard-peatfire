@@ -6,7 +6,7 @@ import { CloudRain, Waves } from "lucide-react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
-import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_GUIDE, HUTAN_HOOK, HUTAN_TEXT, SEBANGAU_SPECIES, type ForestZone } from "@/config/modul/hutan-rawa";
+import { APE_PHOTOS, FOREST_ZONES, HUTAN_ACTS, HUTAN_GUIDE, HUTAN_HOOK, HUTAN_TEXT, IUCN_LABEL, SEBANGAU_SPECIES, SEBANGAU_THREATENED, type ForestZone } from "@/config/modul/hutan-rawa";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import { peatThicknessM, zoneAt } from "./scene/dome";
 
@@ -217,14 +217,6 @@ export default function HutanModule() {
           <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block lg:hidden">
             {act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}
           </p>
-          {/* Foto satwa di ruang kosong di atas diorama (laptop). Di layar
-              sempit fotonya pindah ke panel kendali. */}
-          {act === 2 && opened.size > 0 && (
-            <figure className="sekitarmu-rise absolute left-0 top-8 hidden w-[min(460px,50%)] rounded-2xl border border-white/10 bg-black/70 p-2.5 md:block">
-              <figcaption className="px-0.5 pb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">{HUTAN_TEXT.residents}</figcaption>
-              <ApePhotos size="large" />
-            </figure>
-          )}
         </>
       }
       aside={
@@ -242,6 +234,12 @@ export default function HutanModule() {
             </section>
           )}
           {act === 2 && <section className={`${CARD} stage-in`}>{zonePanel}</section>}
+          {/* Penghuni yang terancam: muncul setelah satu jenis hutan dibuka. */}
+          {act === 2 && opened.size > 0 && (
+            <section className={`${CARD} stage-in`}>
+              <ThreatenedList />
+            </section>
+          )}
           <p className={`${CARD} stage-in text-[11px] leading-snug text-white/60`}>{act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}</p>
         </>
       }
@@ -384,3 +382,36 @@ function ApePhotos({ size }: { size: "large" | "small" }) {
 
 /** Gaya kartu kolom kanan, sama dengan Modul Musim Api. */
 const CARD = "rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] [@media(max-height:820px)]:p-3";
+
+/** Warna penanda status IUCN: kritis paling mencolok. */
+const IUCN_COLOR = { CR: "#ff6a3d", EN: "#f0a35e", VU: "#e8d27a" } as const;
+
+/**
+ * Satwa endemik dan pohon terancam di hutan rawa gambut Sebangau, dengan
+ * status IUCN dalam bahasa sehari-hari. Foto asli kedua kera tetap
+ * ditampilkan kecil beserta pemotretnya (wajib menurut lisensinya).
+ */
+function ThreatenedList() {
+  const row = (item: { name: string; latin: string; iucn: keyof typeof IUCN_LABEL }) => (
+    <li key={item.latin} className="flex items-baseline justify-between gap-2">
+      <span className="min-w-0 truncate text-[12px] text-white/90">
+        {item.name} <span className="text-[10px] italic text-white/45">{item.latin}</span>
+      </span>
+      <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium" style={{ color: IUCN_COLOR[item.iucn], background: `${IUCN_COLOR[item.iucn]}22` }}>
+        {IUCN_LABEL[item.iucn]}
+      </span>
+    </li>
+  );
+  return (
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{HUTAN_TEXT.threatened}</p>
+      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#9fd3a0]">{HUTAN_TEXT.animals}</p>
+      <ul className="mt-1 space-y-1">{SEBANGAU_THREATENED.animals.map(row)}</ul>
+      <div className="mt-2">
+        <ApePhotos size="small" />
+      </div>
+      <p className="mt-2.5 text-[10px] uppercase tracking-[0.12em] text-[#9fd3a0]">{HUTAN_TEXT.plants}</p>
+      <ul className="mt-1 space-y-1">{SEBANGAU_THREATENED.plants.map(row)}</ul>
+    </div>
+  );
+}

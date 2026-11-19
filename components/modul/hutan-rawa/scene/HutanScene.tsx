@@ -15,7 +15,6 @@ import { collectVariants } from "@/components/modul/shared/scene/plantVariants";
 import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { FOREST_ZONES, HUTAN_TEXT, type ForestZone } from "@/config/modul/hutan-rawa";
 import {
-  apeSpots,
   DEPTH,
   FLOOD_KM,
   FLOOD_LEVEL_M,
@@ -29,7 +28,6 @@ import {
   seeded,
   xOfKm,
   zoneAt,
-  type ApeSpot,
   type TreeSpot,
 } from "./dome";
 import {
@@ -55,7 +53,6 @@ import {
 } from "./domeShape";
 import { createFloorMaterial, createPeatFaceMaterial, ownTexture } from "./domeMaterial";
 import { createGroundTexture, createWaterMaterial } from "./waterMaterial";
-import { buildApe, disposeApe, type ApePose } from "./apeFigure";
 
 // Diorama 3D kubah gambut Modul Hutan Rawa Gambut.
 //
@@ -91,7 +88,8 @@ const MODULE_MAX_DPR = { high: 1.25, low: 1 } as const;
 
 /** Kotak isi yang harus muat di bingkai gambar. */
 const CONTENT_BOX = new THREE.Box3(
-  new THREE.Vector3(-LENGTH / 2 - RIVER_WIDTH, -MINERAL_M, -DEPTH / 2),
+  // Ke bawah diberi ruang untuk pita jenis hutan dan chip namanya.
+  new THREE.Vector3(-LENGTH / 2 - RIVER_WIDTH, -MINERAL_M - 5, -DEPTH / 2),
   new THREE.Vector3(LENGTH / 2, 13 + 45, DEPTH / 2),
 );
 
@@ -215,7 +213,7 @@ function CameraRig({ anchorRef }: { anchorRef: RefObject<HTMLDivElement | null> 
     }
     const w = max.x - min.x;
     const h = max.y - min.y;
-    const zoom = Math.min(rect.width / w, rect.height / h) * 0.97;
+    const zoom = Math.min(rect.width / w, rect.height / h) * 1.0;
 
     // Geser kamera supaya titik tengah isi jatuh di tengah bingkai gambar,
     // bukan di tengah layar.
@@ -303,7 +301,8 @@ function buildRoots(scene: THREE.Object3D, quality: Quality): THREE.Group {
     .multiply(new THREE.Matrix4().makeScale(1 / longest, 1 / longest, 1 / longest))
     .multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
 
-  const count = quality === "high" ? 38 : 16;
+  // Dijarangkan (dulu 38/16) supaya gayanya lembut seperti bongkahan modul lain.
+  const count = quality === "high" ? 20 : 10;
   const spots = Array.from({ length: count }, () => {
     const x = X_LEFT + 1.5 + rand() * (LENGTH - 3);
     const depth = 0.12 + Math.pow(rand(), 1.6) * 1.6;
@@ -541,8 +540,6 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     } else if (Math.abs(a.flood + a.soak + a.silt - before) > 1e-4) invalidate();
   });
 
-  const apes = useMemo(() => apeSpots(trees), [trees]);
-
   return (
     <group>
       {/* Gambut: muka potong berlapis, lantai hutan bergundukan. */}
@@ -553,10 +550,19 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
       <mesh ref={floodRef} geometry={res.floodGeo} material={res.floodMat} visible={false} />
       <primitive object={forest} />
 
+      {/* Pita rentang tiap jenis hutan di tepi depan bawah bongkahan. */}
+      {FOREST_ZONES.map((z) => (
+        <mesh key={z.id} position={[(xOfKm(z.fromKm) + xOfKm(z.toKm)) / 2, -MINERAL_M - 0.55, DEPTH / 2 + 0.2]}>
+          <boxGeometry args={[xOfKm(z.toKm) - xOfKm(z.fromKm) - 0.6, 0.5, 0.3]} />
+          <meshBasicMaterial color={ZONE_COLOR[z.id]} toneMapped={false} />
+        </mesh>
+      ))}
+
       {rain && <Rain quality={quality} />}
 
-      {/* Satwa di tajuk jenis hutan yang sudah dibuka (babak 03). */}
-      {openedZones && apes.map((a, i) => openedZones.has(a.zone) && <ApeMarker key={i} spot={a} pose={a.kind === "owa" ? "hang1" : i % 4 === 0 ? "sit" : "hang2"} />)}
+      {/* Satwa tidak digambar di diorama (sejak 19 November 2026): sosok
+          berukuran asli terlalu kecil untuk terlihat, dan yang diperbesar
+          memaksakan desain. Penghuninya ditampilkan sebagai kartu. */}
 
       {/* Pejalan dan pengukur tebal gambut (babak 01). */}
       {walkerKm !== null && <Walker km={walkerKm} />}
@@ -606,7 +612,7 @@ function Walker({ km }: { km: number }) {
 
 /** Hujan: satu LineSegments yang jatuh di peneduh titik. */
 function Rain({ quality }: { quality: Quality }) {
-  const count = quality === "high" ? 1800 : 700;
+  const count = quality === "high" ? 900 : 400;
   const top = 70;
   const res = useMemo(() => {
     const pos = new Float32Array(count * 6);
@@ -668,45 +674,6 @@ function Rain({ quality }: { quality: Quality }) {
   return <lineSegments geometry={res.geo} material={res.mat} frustumCulled={false} />;
 }
 
-/** Arah dari adegan ke kamera; sosok satwa digeser di sepanjang arah ini. */
-const TOWARD_CAMERA = new THREE.Vector3(
-  Math.sin(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
-  Math.sin(CAMERA_ELEVATION),
-  Math.cos(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
-);
-
-/**
- * Pembesaran sosok satwa. Ukuran aslinya ±1,2 m; diperbesar supaya terbaca
- * di samping pohon 45 m, dan keterangan di atas gambar menyatakannya.
- */
-const APE_SCALE = 3.2;
-
-/**
- * Sosok satwa yang muncul membesar di tajuk.
- *
- * Kamera ortografik: benda yang digeser di sepanjang garis pandang tetap
- * jatuh di titik layar yang sama. Sosoknya karena itu dimajukan ke arah
- * kamera, sehingga tetap terlihat di tajuknya tanpa tertelan ribuan helai
- * daun di depannya, tetapi tetap diterangi matahari seperti benda lain.
- */
-function ApeMarker({ spot, pose }: { spot: ApeSpot; pose: ApePose }) {
-  const ref = useRef<THREE.Group>(null);
-  const grow = useRef(0);
-  const figure = useMemo(() => buildApe(spot.kind, pose), [spot.kind, pose]);
-  useEffect(() => () => disposeApe(figure), [figure]);
-  const position = useMemo(() => new THREE.Vector3(spot.x, spot.y, spot.z).addScaledVector(TOWARD_CAMERA, 16), [spot]);
-  useFrame(({ invalidate }, delta) => {
-    if (grow.current >= 1 || !ref.current) return;
-    grow.current = Math.min(1, grow.current + delta * 2.2);
-    ref.current.scale.setScalar(APE_SCALE * (1 - Math.pow(1 - grow.current, 3)));
-    invalidate();
-  });
-  return (
-    <group ref={ref} position={position} rotation={[0, CAMERA_AZIMUTH, 0]} scale={0.01}>
-      <primitive object={figure} />
-    </group>
-  );
-}
 
 /**
  * Keterangan di dalam adegan, sebagai HTML yang ditempel pada titik 3D.
@@ -768,32 +735,30 @@ function SceneLabels({
       {FOREST_ZONES.map((z) => {
         const opened = openedZones?.has(z.id);
         const active = activeZone === z.id;
+        // Chip ringkas: titik warna zona dan nama pendek. Rincian tebal
+        // gambut dan kanopi ada di kolom kanan, supaya ketiga chip tidak
+        // saling menindih di bawah bongkahan.
         const body = (
-          <>
-            <span className="block whitespace-nowrap text-[11px] font-medium leading-tight text-white sm:text-xs">
-              <span className="sm:hidden">{z.short}</span>
-              <span className="hidden sm:inline">{z.name}</span>
-            </span>
-            <span className="hidden whitespace-nowrap text-[10px] text-white/60 sm:block">
-              gambut {z.peat} · kanopi {z.canopy}
-            </span>
-          </>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium leading-none text-white">
+            {opened ? <span className="text-[10px] text-[#9fd3a0]">✓</span> : <span className="h-2 w-2 rounded-full" style={{ background: ZONE_COLOR[z.id] }} />}
+            {z.short}
+          </span>
         );
         return (
-          <Html key={z.id} position={[xOfKm((z.fromKm + z.toKm) / 2), -MINERAL_M - 1.5, DEPTH / 2]} zIndexRange={[20, 10]} style={{ transform: "translateX(-50%)" }}>
+          <Html key={z.id} position={[xOfKm((z.fromKm + z.toKm) / 2), -MINERAL_M - 1.6, DEPTH / 2]} zIndexRange={[20, 10]} style={{ transform: "translateX(-50%)" }}>
             {openedZones ? (
               <button
                 type="button"
                 data-guide={`zone-${z.id}`}
                 onClick={() => onZone?.(z.id)}
-                className={`cursor-pointer rounded-xl border px-2 py-1 text-center transition-colors sm:px-2.5 sm:py-1.5 ${
-                  active ? "border-[#f0a35e] bg-[#f0a35e]/25" : opened ? "border-white/30 bg-black/60" : "animate-pulse border-[#6fb6d8] bg-[#6fb6d8]/25"
+                className={`cursor-pointer rounded-full border px-2.5 py-1.5 transition-colors ${
+                  active ? "border-[#f0a35e] bg-[#f0a35e]/30" : opened ? "border-white/25 bg-black/55 hover:bg-black/70" : "animate-pulse border-[#6fb6d8] bg-[#6fb6d8]/25"
                 }`}
               >
                 {body}
               </button>
             ) : (
-              <div className="hidden rounded-lg bg-black/45 px-2 py-1 text-center sm:block">{body}</div>
+              <div className="hidden rounded-full bg-black/45 px-2.5 py-1.5 sm:block">{body}</div>
             )}
           </Html>
         );
@@ -801,3 +766,10 @@ function SceneLabels({
     </>
   );
 }
+
+/** Warna tiap jenis hutan: pita di bawah bongkahan dan titik pada chipnya. */
+const ZONE_COLOR: Record<ForestZone["id"], string> = {
+  campuran: "#7cc4a0",
+  tiang: "#c9c77c",
+  tinggi: "#5fa864",
+};

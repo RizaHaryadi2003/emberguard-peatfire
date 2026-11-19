@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FOREST_ZONES } from "@/config/modul/hutan-rawa";
-import { APE_COUNT, apeSpots, FLOOD_KM, FLOOD_LEVEL_M, kmOfX, LENGTH, peatThicknessM, plantTrees, TREE_COUNT, xOfKm } from "./dome";
+import { FLOOD_KM, FLOOD_LEVEL_M, kmOfX, LENGTH, peatThicknessM, plantTrees, TREE_COUNT, xOfKm } from "./dome";
 
 describe("kubah gambut Modul Hutan Rawa", () => {
   it("gambut menebal dari tepi ke puncak sesuai Husson dkk. (2018)", () => {
@@ -36,11 +36,5 @@ describe("kubah gambut Modul Hutan Rawa", () => {
         }
       }
     }
-  });
-
-  it("satwa terbanyak di hutan tinggi, sesuai tingkat relatif", () => {
-    const apes = apeSpots(plantTrees("high"));
-    for (const z of FOREST_ZONES) expect(apes.filter((a) => a.zone === z.id)).toHaveLength(APE_COUNT[z.apes]);
-    expect(apes.filter((a) => a.zone === "tinggi").length).toBeGreaterThan(apes.filter((a) => a.zone === "tiang").length);
   });
 });
