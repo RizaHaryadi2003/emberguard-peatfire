@@ -175,7 +175,7 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
     // Dipasang hanya supaya jalur map dan normalMap three.js menyala.
     map: colors[0],
     normalMap: normals[0],
-    normalScale: new THREE.Vector2(0.6, 0.6),
+    normalScale: new THREE.Vector2(0.3, 0.3),
     roughness: 1,
     metalness: 0,
     // Dua sisi: muka samping kiri dan kanan dibentuk dengan arah yang

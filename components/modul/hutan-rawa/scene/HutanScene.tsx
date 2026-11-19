@@ -4,14 +4,12 @@ import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import FpsMeter, { wantsFpsMeter } from "@/components/modul/shared/scene/FpsMeter";
 import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { QUALITY_PROFILE, type AtmosphereState, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
-import { collectVariants } from "@/components/modul/shared/scene/plantVariants";
 import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { FOREST_ZONES, HUTAN_TEXT, type ForestZone } from "@/config/modul/hutan-rawa";
 import {
@@ -23,15 +21,12 @@ import {
   MINERAL_M,
   peatThicknessM,
   PERSON_M,
-  plantFerns,
   plantTrees,
-  seeded,
   xOfKm,
   zoneAt,
   type TreeSpot,
 } from "./dome";
 import {
-  frontZ,
   hummock,
   mineralFrontGrid,
   mineralSideGrid,
@@ -285,57 +280,6 @@ function shadeMineral(geo: THREE.BufferGeometry) {
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 }
 
-/**
- * Akar dan ranting yang mencuat dari dua meter teratas muka gambut. Separuh
- * tiap model tertanam di dalam gambut, separuhnya keluar dan merunduk.
- */
-function buildRoots(scene: THREE.Object3D, quality: Quality): THREE.Group {
-  const rand = seeded(88);
-  scene.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const longest = Math.max(size.x, size.y, size.z);
-  // Sumbu terpanjang model diarahkan ke +z (keluar dari muka depan).
-  const align = new THREE.Matrix4();
-  if (longest === size.x) align.makeRotationY(-Math.PI / 2);
-  else if (longest === size.y) align.makeRotationX(Math.PI / 2);
-  const base = align
-    .multiply(new THREE.Matrix4().makeScale(1 / longest, 1 / longest, 1 / longest))
-    .multiply(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
-
-  // Dijarangkan (dulu 38/16) supaya gayanya lembut seperti bongkahan modul lain.
-  const count = quality === "high" ? 20 : 10;
-  const spots = Array.from({ length: count }, () => {
-    const x = X_LEFT + 1.5 + rand() * (LENGTH - 3);
-    const depth = 0.12 + Math.pow(rand(), 1.6) * 1.6;
-    const y = surfaceY(x, Z_FRONT) - depth;
-    const m = new THREE.Matrix4().compose(
-      new THREE.Vector3(x, y, frontZ(x, y)),
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(0.25 + rand() * 0.55, (rand() - 0.5) * 1.1, rand() * Math.PI * 2)),
-      new THREE.Vector3().setScalar(1.6 + rand() * 2.2),
-    );
-    return m.multiply(base);
-  });
-
-  const group = new THREE.Group();
-  scene.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    // Ranting kering dijadikan akar: lebih gelap dan lembap.
-    const material = (mesh.material as THREE.MeshStandardMaterial).clone();
-    material.color.set("#6a5646");
-    const inst = new THREE.InstancedMesh(mesh.geometry, material, count);
-    const m = new THREE.Matrix4();
-    spots.forEach((s, i) => inst.setMatrixAt(i, m.copy(s).multiply(mesh.matrixWorld)));
-    inst.instanceMatrix.needsUpdate = true;
-    inst.castShadow = true;
-    inst.receiveShadow = true;
-    inst.frustumCulled = false;
-    group.add(inst);
-  });
-  return group;
-}
 
 /** Air banjir: ruang antara muka banjir dan tanah, dari sungai sampai lereng. */
 function floodShape(): THREE.Shape {
@@ -366,7 +310,6 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     "/textures/gambut/mineral_color.webp",
     "/textures/gambut/mineral_normal.webp",
   ]);
-  const [treeGltf, fernGltf, branchGltf] = useLoader(GLTFLoader, ["/models/gambut/pohon_pachira.glb", "/models/gambut/pakis.glb", "/models/gambut/ranting.glb"]);
 
   const res = useMemo(() => {
     const an = profile.anisotropy;
@@ -426,67 +369,8 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
 
   // Pohon pachira, di-instance. Hutan tiang memakai tajuk yang dijarangkan.
   const trees = useMemo(() => plantTrees(quality), [quality]);
-  const forest = useMemo(() => {
-    // Daun dijarangkan: dari jarak pandang ini tiap pohon hanya selebar
-    // seratusan piksel, sehingga 60% helai sudah terbaca sebagai tajuk penuh,
-    // dan beban segitiga hutan turun dari ±920 ribu menjadi ±690 ribu.
-    const full = collectVariants(treeGltf.scene, 0.6);
-    const thin = collectVariants(treeGltf.scene, 0.3);
-    const group = new THREE.Group();
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    const up = new THREE.Vector3(0, 1, 0);
-    const plant = (variants: ReturnType<typeof collectVariants>, spots: TreeSpot[], widthOf: (t: TreeSpot) => number) => {
-      variants.forEach((parts, v) => {
-        const mine = spots.filter((t) => t.variant % variants.length === v);
-        if (mine.length === 0) return;
-        for (const part of parts) {
-          const inst = new THREE.InstancedMesh(part.geometry, part.material, mine.length);
-          mine.forEach((t, i) => {
-            q.setFromAxisAngle(up, t.yaw);
-            const w = widthOf(t);
-            // Pohon berdiri di atas gundukan, seperti di hutan rawa sungguhan.
-            m.compose(new THREE.Vector3(t.x, surfaceY(t.x, t.z) - 0.15, t.z), q, new THREE.Vector3(w, t.heightM, w));
-            inst.setMatrixAt(i, m);
-          });
-          inst.instanceMatrix.needsUpdate = true;
-          // Hanya batang yang ikut langkah bayangan (lihat catatan anggaran).
-          inst.castShadow = !part.leaf;
-          inst.receiveShadow = true;
-          inst.frustumCulled = false;
-          group.add(inst);
-        }
-      });
-    };
-    // Tajuk dibuat lebih ramping daripada tingginya, karena jarak mendatar
-    // dimampatkan; tanpa itu tajuk hutan tinggi selebar seperlima kubah.
-    plant(full, trees.filter((t) => t.zone !== "tiang"), (t) => t.heightM * (t.zone === "tinggi" ? 0.6 : 0.75));
-    plant(thin, trees.filter((t) => t.zone === "tiang"), (t) => t.heightM * 0.45);
-
-    // Pakis lantai hutan (mutu tinggi saja): tanpa bayangan, murah, tetapi
-    // membuat lantai hutan tidak lagi tampak seperti lapangan kosong.
-    const ferns = plantFerns(quality);
-    if (ferns.length) {
-      const fernVariants = collectVariants(fernGltf.scene, 1);
-      fernVariants.forEach((parts, v) => {
-        const mine = ferns.filter((f) => f.variant % fernVariants.length === v);
-        for (const part of parts) {
-          const inst = new THREE.InstancedMesh(part.geometry, part.material, mine.length);
-          mine.forEach((f, i) => {
-            q.setFromAxisAngle(up, f.yaw);
-            m.compose(new THREE.Vector3(f.x, surfaceY(f.x, f.z) - 0.05, f.z), q, new THREE.Vector3(f.scale * 0.6, f.scale, f.scale * 0.6));
-            inst.setMatrixAt(i, m);
-          });
-          inst.instanceMatrix.needsUpdate = true;
-          inst.receiveShadow = true;
-          inst.frustumCulled = false;
-          group.add(inst);
-        }
-      });
-    }
-    group.add(buildRoots(branchGltf.scene, quality));
-    return group;
-  }, [treeGltf, fernGltf, branchGltf, trees, quality]);
+  const forest = useMemo(() => buildForest(trees), [trees]);
+  useEffect(() => () => disposeForest(forest), [forest]);
 
   // Keadaan yang dianimasikan: air banjir, lumpur yang ditinggalkannya, dan
   // basahnya gambut.
@@ -769,3 +653,85 @@ const ZONE_COLOR: Record<ForestZone["id"], string> = {
   tiang: "#c9c77c",
   tinggi: "#5fa864",
 };
+
+/* ---------------------------------------------------------------------------
+ * Hutan bergaya bersih (sejak 19 November 2026).
+ *
+ * Dulu pohon pindaian pachira dengan daun dijarangkan: dari jarak pandang
+ * penampang 14 km, helai-helainya terbaca seperti rumput dan muka diorama
+ * tampak berkerut. Sekarang tiap pohon satu batang dan dua gumpal tajuk
+ * halus, dengan bentuk dan warna khas jenis hutannya, sama bersihnya dengan
+ * bongkahan modul lain. Tinggi pohon tetap dari sumber (FOREST_ZONES);
+ * lebar tajuk digayakan karena jarak mendatar dimampatkan.
+ * ------------------------------------------------------------------------ */
+
+/** Gaya tajuk tiap jenis hutan: jari-jari terhadap tinggi, pipih/lonjong, letak, warna. */
+const CROWN: Record<ForestZone["id"], { r: number; sy: number; at: number; color: string }> = {
+  // Hutan rawa campuran: tajuk bulat sedang.
+  campuran: { r: 0.2, sy: 0.85, at: 0.74, color: "#4f8a52" },
+  // Hutan tiang rendah: batang kurus rapat, tajuk kecil lonjong, hijau pucat.
+  tiang: { r: 0.15, sy: 1.35, at: 0.76, color: "#86a05a" },
+  // Hutan tinggi pedalaman: pohon menjulang dengan tajuk lebar memayung.
+  tinggi: { r: 0.21, sy: 0.62, at: 0.84, color: "#2f6e40" },
+};
+
+const TRUNK_COLOR = "#5b4633";
+
+function buildForest(trees: TreeSpot[]): THREE.Group {
+  const group = new THREE.Group();
+  const trunkGeo = new THREE.CylinderGeometry(0.55, 1, 1, 10).translate(0, 0.5, 0);
+  const crownGeo = new THREE.SphereGeometry(1, 20, 14);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: TRUNK_COLOR, roughness: 0.9 });
+  const crownMat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
+
+  const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+  // Dua gumpal per pohon: tajuk utama dan gumpal kecil yang sedikit bergeser,
+  // supaya bentuknya membulat alami tanpa helai daun.
+  const crowns = new THREE.InstancedMesh(crownGeo, crownMat, trees.length * 2);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const up = new THREE.Vector3(0, 1, 0);
+  const color = new THREE.Color();
+
+  trees.forEach((t, i) => {
+    const c = CROWN[t.zone];
+    const base = surfaceY(t.x, t.z) - 0.1;
+    const h = t.heightM;
+    const r = h * c.r;
+    const cy = base + h * c.at;
+    const trunkR = 0.25 + h * 0.012;
+    q.setFromAxisAngle(up, t.yaw);
+    m.compose(new THREE.Vector3(t.x, base, t.z), q, new THREE.Vector3(trunkR, cy - base, trunkR));
+    trunks.setMatrixAt(i, m);
+
+    // Ragam warna kecil per pohon, tetap dalam nada jenis hutannya.
+    const shade = 0.88 + ((t.variant * 37) % 25) / 100;
+    color.set(c.color).multiplyScalar(shade);
+    m.compose(new THREE.Vector3(t.x, cy, t.z), q, new THREE.Vector3(r, r * c.sy, r));
+    crowns.setMatrixAt(i * 2, m);
+    crowns.setColorAt(i * 2, color);
+    const side = t.variant % 2 === 0 ? 1 : -1;
+    m.compose(new THREE.Vector3(t.x + side * r * 0.5, cy - r * c.sy * 0.35, t.z + r * 0.2), q, new THREE.Vector3(r * 0.7, r * c.sy * 0.7, r * 0.7));
+    crowns.setMatrixAt(i * 2 + 1, m);
+    crowns.setColorAt(i * 2 + 1, color.multiplyScalar(0.92));
+  });
+  for (const inst of [trunks, crowns]) {
+    inst.instanceMatrix.needsUpdate = true;
+    inst.castShadow = true;
+    inst.receiveShadow = true;
+    inst.frustumCulled = false;
+    group.add(inst);
+  }
+  if (crowns.instanceColor) crowns.instanceColor.needsUpdate = true;
+  return group;
+}
+
+function disposeForest(group: THREE.Group) {
+  group.traverse((o) => {
+    if (o instanceof THREE.InstancedMesh) {
+      o.geometry.dispose();
+      (o.material as THREE.Material).dispose();
+      o.dispose();
+    }
+  });
+}

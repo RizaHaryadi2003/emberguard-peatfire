@@ -141,19 +141,3 @@ export function plantTrees(quality: "high" | "low"): TreeSpot[] {
   }
   return out;
 }
-
-/** Jumlah pakis lantai hutan (±0,8–2,4 ribu segitiga tiap rumpun). */
-export const FERN_COUNT = { high: 60, low: 0 } as const;
-
-export type FernSpot = { km: number; x: number; z: number; scale: number; yaw: number; variant: number };
-
-/** Pakis disebar di lantai hutan, lebih rapat di hutan campuran yang lembap. */
-export function plantFerns(quality: "high" | "low"): FernSpot[] {
-  const rand = seeded(7_2026);
-  const out: FernSpot[] = [];
-  for (let i = 0; i < FERN_COUNT[quality]; i++) {
-    const km = 0.3 + Math.pow(rand(), 1.3) * (SPAN_KM - 0.5);
-    out.push({ km, x: xOfKm(km), z: (rand() - 0.3) * DEPTH * 0.85, scale: 1.4 + rand() * 1.4, yaw: rand() * Math.PI * 2, variant: i });
-  }
-  return out;
-}
