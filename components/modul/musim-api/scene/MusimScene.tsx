@@ -149,8 +149,11 @@ export default function MusimScene(props: MusimSceneProps) {
     stateRef.current.reducedMotion = reducedMotion;
   }, [props.depthCm, reducedMotion]);
 
-  // Putaran hasil seretan. Disimpan di keadaan bersama (dibaca tiap
-  // bingkai) dan di state React hanya untuk keterangan aksesibilitas.
+  // Putaran hasil seretan. Ditulis langsung ke keadaan bersama yang dibaca
+  // tiap bingkai, TIDAK ke state React: setState di tiap gerak penunjuk
+  // membuat seluruh adegan dirender ulang sampai ±120 kali per detik, dan
+  // itulah yang membuat seretan tersendat. State `rotation` hanya diperbarui
+  // saat seretan selesai, untuk keterangan aksesibilitas.
   const dragFrom = useRef<number | null>(null);
   const downAt = useRef<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -175,15 +178,17 @@ export default function MusimScene(props: MusimSceneProps) {
 
   // Bagian di bawah kursor (pratinjau sebelum diklik) dan gelombang klik terakhir.
   const [hover, setHover] = useState<InspectPart | null>(null);
+  const hoverAt = useRef<{ x: number; y: number } | null>(null);
+  const hoverFrame = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(hoverFrame.current), []);
   const rippleRef = useRef<Ripple | null>(null);
   const [rotation, setRotation] = useState(0);
   const [turned, setTurned] = useState(false);
   const [clicked, setClicked] = useState(false);
   const degrees = (((Math.round((rotation * 180) / Math.PI) % 360) + 360) % 360);
-  const rotate = (delta: number) => {
+  const rotate = (delta: number, commit = false) => {
     stateRef.current.rotation += delta;
-    setRotation(stateRef.current.rotation);
-    setTurned(true);
+    if (commit) setRotation(stateRef.current.rotation);
   };
 
   return (
@@ -211,16 +216,31 @@ export default function MusimScene(props: MusimSceneProps) {
         onPointerMove={(e) => {
           if (dragFrom.current === null) {
             // Tanpa tombol ditekan: kursor menjadi tangan di atas bongkahan.
+            // Pratinjau di bawah kursor: paling banyak satu kali per
+            // bingkai layar, karena menembakkan sinar ke bongkahan berisi
+            // ribuan segitiga tiap gerak tetikus (bisa 120–240 kali per detik
+            // pada trackpad) ikut membebani.
             if (e.pointerType === "mouse") {
-              const hit = pickAt(e.clientX, e.clientY);
-              setOverBlock(hit !== null);
-              setHover(hit ? classifyDepth(hit.cm, props.depthCm) : null);
+              hoverAt.current = { x: e.clientX, y: e.clientY };
+              if (hoverFrame.current === 0) {
+                hoverFrame.current = requestAnimationFrame(() => {
+                  hoverFrame.current = 0;
+                  const at = hoverAt.current;
+                  if (!at) return;
+                  const hit = pickAt(at.x, at.y);
+                  setOverBlock(hit !== null);
+                  setHover(hit ? classifyDepth(hit.cm, props.depthCm) : null);
+                });
+              }
             }
             return;
           }
           const start = downAt.current;
           if (start && !dragging && Math.hypot(e.clientX - start.x, e.clientY - start.y) <= CLICK_SLOP) return;
-          setDragging(true);
+          if (!dragging) {
+            setDragging(true);
+            setTurned(true);
+          }
           const dx = e.clientX - dragFrom.current;
           dragFrom.current = e.clientX;
           rotate(dx * DRAG_SPEED);
@@ -236,11 +256,13 @@ export default function MusimScene(props: MusimSceneProps) {
               setClicked(true);
             }
           }
+          if (dragging) setRotation(stateRef.current.rotation);
           dragFrom.current = null;
           downAt.current = null;
           setDragging(false);
         }}
         onPointerLeave={() => {
+          hoverAt.current = null;
           setHover(null);
           setOverBlock(false);
         }}
@@ -250,8 +272,8 @@ export default function MusimScene(props: MusimSceneProps) {
           setDragging(false);
         }}
         onKeyDown={(e) => {
-          if (e.key === "ArrowLeft") rotate(-KEY_STEP);
-          else if (e.key === "ArrowRight") rotate(KEY_STEP);
+          if (e.key === "ArrowLeft") rotate(-KEY_STEP, true);
+          else if (e.key === "ArrowRight") rotate(KEY_STEP, true);
           else return;
           e.preventDefault();
         }}
@@ -568,44 +590,47 @@ function ZoneGlow({ part, strength, depthCm, reducedMotion }: { part: InspectPar
  */
 function Labels() {
   const camera = useThree((s) => s.camera);
-  const anchorRef = useRef<THREE.Group>(null);
-  const [theta, setTheta] = useState<number | null>(null);
+  const rootRef = useRef<THREE.Group>(null);
+  const dangerRef = useRef<THREE.Group>(null);
+  const burnRef = useRef<THREE.Group>(null);
   const local = useMemo(() => new THREE.Vector3(), []);
+  const last = useRef(Number.NaN);
 
-  // Arah kamera dalam koordinat diorama (yang ikut berputar). State hanya
-  // diperbarui bila arahnya bergeser cukup jauh, supaya label tidak
-  // dirender ulang tiap bingkai.
+  // Arah kamera dalam koordinat diorama (yang ikut berputar) menentukan
+  // titik tempel label. Letaknya diubah langsung pada grup pembungkus label
+  // tiap bingkai, tanpa state React, supaya memutar bongkahan tidak memicu
+  // render ulang; `Html` dari drei mengikuti letak grup induknya sendiri.
   useFrame(() => {
-    const g = anchorRef.current;
+    const g = rootRef.current;
     if (!g) return;
     local.copy(camera.position);
     g.worldToLocal(local);
-    const camTheta = Math.atan2(local.z, local.x);
-    if (theta === null || Math.abs(Math.atan2(Math.sin(camTheta - theta), Math.cos(camTheta - theta))) > 0.03) setTheta(camTheta);
+    const theta = Math.atan2(local.z, local.x) - LABEL_SIDE;
+    if (Math.abs(theta - last.current) < 1e-3) return;
+    last.current = theta;
+    dangerRef.current?.position.copy(wallPoint(theta, -HIGH_DANGER_CM / 100, -0.04));
+    burnRef.current?.position.copy(wallPoint(theta, -BURN_CM / 100, -0.04));
   });
 
-  const at = (cm: number) => (theta === null ? null : wallPoint(theta - LABEL_SIDE, -cm / 100, -0.04));
-  const dangerAt = at(HIGH_DANGER_CM);
-  const burnAt = at(BURN_CM);
   // Label menjulur ke kanan dari titik tempelnya, ke ruang kosong di luar bongkahan.
   const style =
     "pointer-events-none ml-2 inline-block translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-medium sm:text-[10px] [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]";
   return (
-    <group ref={anchorRef}>
-      {dangerAt && (
-        <Html position={dangerAt} center zIndexRange={[10, 0]}>
+    <group ref={rootRef}>
+      <group ref={dangerRef}>
+        <Html center zIndexRange={[10, 0]}>
           <span className={style} style={{ color: STAGE_COLOR.bahaya }}>
             {MUSIM_TEXT.dangerShort}
           </span>
         </Html>
-      )}
-      {burnAt && (
-        <Html position={burnAt} center zIndexRange={[10, 0]}>
+      </group>
+      <group ref={burnRef}>
+        <Html center zIndexRange={[10, 0]}>
           <span className={style} style={{ color: STAGE_COLOR.terbakar }}>
             {MUSIM_TEXT.burnShort}
           </span>
         </Html>
-      )}
+      </group>
     </group>
   );
 }
