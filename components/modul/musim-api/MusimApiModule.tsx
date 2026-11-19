@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
@@ -14,6 +15,8 @@ import {
   STAGE_COLOR,
   STAGE_LABEL,
   explainDay,
+  inspectText,
+  type InspectPart,
 } from "@/config/modul/musim-api";
 import {
   BURN_CM,
@@ -57,6 +60,8 @@ export default function MusimApiModule() {
   const [kind, setKind] = useState<YearKind>("normal");
   // Hari terjauh yang sudah dilihat pada tahun El Niño (babak 03).
   const [elninoMaxDay, setElninoMaxDay] = useState(-1);
+  // Bagian bongkahan yang sedang dijelaskan setelah diklik.
+  const [inspect, setInspect] = useState<InspectPart | null>(null);
   // Mutu grafis: rendah di ponsel sejak awal, dan turun sendiri bila
   // PerformanceGuard mendapati perangkat kewalahan.
   const [quality, setQuality] = useState<Quality>("high");
@@ -96,6 +101,7 @@ export default function MusimApiModule() {
     setDryDays(0);
     setKind("normal");
     setElninoMaxDay(-1);
+    setInspect(null);
   };
 
   const moveDay = (v: number) => {
@@ -121,6 +127,7 @@ export default function MusimApiModule() {
         // berangkat dari akhir kemarau Agustus.
         setDay(START_DAY);
         if (i !== 2) setKind("normal");
+        setInspect(null);
       }}
       actDone={actDone}
       progress={progress}
@@ -128,7 +135,39 @@ export default function MusimApiModule() {
       background="#10120f"
       figure={
         <>
-          <MusimScene depthCm={depthCm} rainMmDay={rainMmDay} fire={fire} quality={quality} onOverload={handleOverload} />
+          <MusimScene
+            depthCm={depthCm}
+            rainMmDay={rainMmDay}
+            fire={fire}
+            quality={quality}
+            onOverload={handleOverload}
+            inspect={inspect}
+            onInspect={setInspect}
+          />
+          {/* Kartu penjelasan bagian yang diklik. Teksnya mengikuti hari
+              yang sedang dilihat, jadi tetap benar saat kalender digeser. */}
+          {inspect && (
+            <div
+              key={inspect}
+              role="dialog"
+              aria-label={inspectText(inspect, depthCm).title}
+              className="sekitarmu-rise absolute left-0 right-0 top-0 z-10 rounded-2xl border border-white/10 bg-[#0a0d0f]/90 p-3 shadow-2xl shadow-black/60 md:right-auto md:top-6 md:w-[300px]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-playfair text-lg italic leading-tight text-white">{inspectText(inspect, depthCm).title}</p>
+                <button
+                  type="button"
+                  onClick={() => setInspect(null)}
+                  aria-label={MUSIM_TEXT.close}
+                  className="-mr-1 -mt-1 cursor-pointer rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <p className="mt-1.5 text-[12px] leading-snug text-white/80">{inspectText(inspect, depthCm).body}</p>
+              <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">{MUSIM_TEXT.inspectToday(depthCm)}</p>
+            </div>
+          )}
           <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
             {act === 2 ? MUSIM_TEXT.elninoNote : MUSIM_TEXT.scaleNote}
           </p>

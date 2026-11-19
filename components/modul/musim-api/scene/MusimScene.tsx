@@ -4,9 +4,9 @@ import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { PEAT_MAX_YEARS, PEAT_THICKNESS } from "@/lib/model/peat";
+import { PEAT_MAX_YEARS, PEAT_THICKNESS, PROFILE_DEPTH } from "@/lib/model/peat";
 import { BURN_CM, HIGH_DANGER_CM } from "@/lib/model/fireSeason";
-import { MUSIM_TEXT, STAGE_COLOR } from "@/config/modul/musim-api";
+import { MUSIM_TEXT, STAGE_COLOR, classifyDepth, type InspectPart } from "@/config/modul/musim-api";
 import PeatBlock from "@/components/modul/anatomi/scene/PeatBlock";
 import Vegetation from "@/components/modul/anatomi/scene/Vegetation";
 import Embers from "@/components/modul/anatomi/scene/Embers";
@@ -77,6 +77,22 @@ const DRAG_SPEED = 0.008;
 /** Radian putaran per tekan tombol panah. */
 const KEY_STEP = 0.2;
 
+/** Geseran penunjuk (px) yang masih dihitung klik, bukan seretan. */
+const CLICK_SLOP = 6;
+
+/** Warna sorotan bagian yang diklik. */
+const PART_COLOR: Record<InspectPart, string> = {
+  kering: "#ffb36b",
+  basah: "#6fc3ff",
+  ambang40: STAGE_COLOR.bahaya,
+  ambang60: STAGE_COLOR.terbakar,
+  mineral: "#d8cfc2",
+};
+
+/** Yang dibutuhkan untuk menebak bagian yang diklik dari luar kanvas. */
+type Picker = { camera: THREE.Camera; block: THREE.Object3D; root: THREE.Object3D };
+
+
 export type MusimSceneProps = {
   /** Kedalaman muka air tanah hari ini (cm di bawah permukaan). */
   depthCm: number;
@@ -86,6 +102,10 @@ export type MusimSceneProps = {
   fire: number;
   quality: Quality;
   onOverload: () => void;
+  /** Bagian yang sedang dijelaskan (disorot), atau null. */
+  inspect: InspectPart | null;
+  /** Pembaca mengeklik satu bagian bongkahan. */
+  onInspect: (part: InspectPart) => void;
 };
 
 /**
@@ -121,9 +141,28 @@ export default function MusimScene(props: MusimSceneProps) {
   // Putaran hasil seretan. Disimpan di keadaan bersama (dibaca tiap
   // bingkai) dan di state React hanya untuk keterangan aksesibilitas.
   const dragFrom = useRef<number | null>(null);
+  const downAt = useRef<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [overBlock, setOverBlock] = useState(false);
+  const pickRef = useRef<Picker | null>(null);
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+
+  // Titik bongkahan di bawah penunjuk, dalam cm dari permukaan; null bila
+  // penunjuk tidak mengenai bongkahan. Kanvas memenuhi seluruh jendela, jadi
+  // koordinat layar langsung menjadi koordinat kanvas.
+  const depthUnder = (clientX: number, clientY: number): number | null => {
+    const p = pickRef.current;
+    if (!p) return null;
+    const ndc = new THREE.Vector2((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
+    raycaster.setFromCamera(ndc, p.camera);
+    const hit = raycaster.intersectObject(p.block, true)[0];
+    if (!hit) return null;
+    const local = p.root.worldToLocal(hit.point.clone());
+    return Math.min(PROFILE_DEPTH * 100, Math.max(0, -local.y * 100));
+  };
   const [rotation, setRotation] = useState(0);
   const [turned, setTurned] = useState(false);
+  const [clicked, setClicked] = useState(false);
   const degrees = (((Math.round((rotation * 180) / Math.PI) % 360) + 360) % 360);
   const rotate = (delta: number) => {
     stateRef.current.rotation += delta;
@@ -145,24 +184,43 @@ export default function MusimScene(props: MusimSceneProps) {
         aria-valuemax={359}
         aria-valuenow={degrees}
         aria-valuetext={`diputar ${degrees} derajat`}
-        className={`absolute inset-0 bottom-10 touch-none select-none rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:bottom-0 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`absolute inset-0 bottom-10 touch-none select-none rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:bottom-0 ${
+          dragging ? "cursor-grabbing" : overBlock ? "cursor-pointer" : "cursor-grab"
+        }`}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           dragFrom.current = e.clientX;
-          setDragging(true);
+          downAt.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerMove={(e) => {
-          if (dragFrom.current === null) return;
+          if (dragFrom.current === null) {
+            // Tanpa tombol ditekan: kursor menjadi tangan di atas bongkahan.
+            if (e.pointerType === "mouse") setOverBlock(depthUnder(e.clientX, e.clientY) !== null);
+            return;
+          }
+          const start = downAt.current;
+          if (start && !dragging && Math.hypot(e.clientX - start.x, e.clientY - start.y) <= CLICK_SLOP) return;
+          setDragging(true);
           const dx = e.clientX - dragFrom.current;
           dragFrom.current = e.clientX;
           rotate(dx * DRAG_SPEED);
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
+          // Tekan tanpa geser = klik: jelaskan bagian yang dikenai.
+          if (!dragging) {
+            const cm = depthUnder(e.clientX, e.clientY);
+            if (cm !== null) {
+              props.onInspect(classifyDepth(cm, props.depthCm));
+              setClicked(true);
+            }
+          }
           dragFrom.current = null;
+          downAt.current = null;
           setDragging(false);
         }}
         onPointerCancel={() => {
           dragFrom.current = null;
+          downAt.current = null;
           setDragging(false);
         }}
         onKeyDown={(e) => {
@@ -172,7 +230,8 @@ export default function MusimScene(props: MusimSceneProps) {
           e.preventDefault();
         }}
       >
-        {!turned && (
+        {/* Petunjuk bertahan sampai pembaca sudah memutar dan mengeklik. */}
+        {!(turned && clicked) && (
           <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[11px] text-white/55 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             ↔ {MUSIM_TEXT.dragHint}
           </p>
@@ -203,7 +262,7 @@ export default function MusimScene(props: MusimSceneProps) {
             <Backdrop />
           </Suspense>
           <Suspense fallback={null}>
-            <Diorama stateRef={stateRef} reducedMotion={reducedMotion} {...props} />
+            <Diorama stateRef={stateRef} pickRef={pickRef} reducedMotion={reducedMotion} {...props} />
           </Suspense>
         </Canvas>
       </div>
@@ -279,12 +338,24 @@ function CameraRig({ anchorRef }: { anchorRef: RefObject<HTMLDivElement | null> 
 /** Diorama: bongkahan Modul Anatomi + hujan, awan, garis ambang, dan label. */
 function Diorama({
   stateRef,
+  pickRef,
   reducedMotion,
+  depthCm,
   rainMmDay,
   fire,
   quality,
-}: MusimSceneProps & { stateRef: RefObject<SceneState>; reducedMotion: boolean }) {
+  inspect,
+}: MusimSceneProps & { stateRef: RefObject<SceneState>; pickRef: RefObject<Picker | null>; reducedMotion: boolean }) {
   const ref = useRef<THREE.Group>(null);
+  const blockRef = useRef<THREE.Group>(null);
+  const camera = useThree((s) => s.camera);
+  // Serahkan kamera dan bongkahan ke bingkai seret, yang menebak bagian yang diklik.
+  useEffect(() => {
+    if (ref.current && blockRef.current) pickRef.current = { camera, block: blockRef.current, root: ref.current };
+    return () => {
+      pickRef.current = null;
+    };
+  }, [camera, pickRef]);
   // Nilai hari ini dibaca tiap bingkai oleh hujan, awan, dan bara.
   const rainRef = useRef(0);
   const fireRef = useRef(0);
@@ -308,10 +379,13 @@ function Diorama({
 
   return (
     <group ref={ref} position={[0, DIORAMA_Y, 0]}>
-      <PeatBlock stateRef={stateRef} onHoverLayer={noop} onSelectLayer={noop} />
+      <group ref={blockRef}>
+        <PeatBlock stateRef={stateRef} onHoverLayer={noop} onSelectLayer={noop} />
+      </group>
+      <ZoneGlow part={inspect} depthCm={depthCm} reducedMotion={reducedMotion} />
       <Vegetation stateRef={stateRef} />
       <Embers stateRef={stateRef} />
-      <ThresholdRibbons />
+      <ThresholdRibbons active={inspect} reducedMotion={reducedMotion} />
       <Rain intensityRef={rainRef} count={DROPS[quality]} reducedMotion={reducedMotion} />
       <Clouds intensityRef={rainRef} />
       <Labels />
@@ -321,32 +395,128 @@ function Diorama({
 
 function noop() {}
 
-/** Dua garis ambang yang mengelilingi dinding bongkahan: 40 cm dan 60 cm. */
-function ThresholdRibbons() {
+/**
+ * Dua garis ambang yang mengelilingi dinding bongkahan: 40 cm dan 60 cm.
+ *
+ * Garis yang diklik mendapat pita cahaya lebar yang berdenyut, sehingga
+ * pembaca melihat garis mana yang sedang dijelaskan.
+ */
+function ThresholdRibbons({ active, reducedMotion }: { active: InspectPart | null; reducedMotion: boolean }) {
   const res = useMemo(() => {
-    const make = (cm: number, color: string) => {
+    const make = (part: "ambang40" | "ambang60", cm: number) => {
       const geom = createRibbon();
       updateRibbon(geom, -cm / 100, 0.006);
-      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, toneMapped: false, side: THREE.DoubleSide });
-      return { geom, mat };
+      const mat = new THREE.MeshBasicMaterial({ color: PART_COLOR[part], transparent: true, opacity: 0.85, toneMapped: false, side: THREE.DoubleSide });
+      const glowGeom = createRibbon();
+      updateRibbon(glowGeom, -cm / 100, 0.035);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: PART_COLOR[part],
+        transparent: true,
+        opacity: 0,
+        toneMapped: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      return { part, geom, mat, glowGeom, glowMat };
     };
-    return [make(HIGH_DANGER_CM, STAGE_COLOR.bahaya), make(BURN_CM, STAGE_COLOR.terbakar)];
+    return [make("ambang40", HIGH_DANGER_CM), make("ambang60", BURN_CM)];
   }, []);
   useEffect(
     () => () => {
       for (const r of res) {
         r.geom.dispose();
         r.mat.dispose();
+        r.glowGeom.dispose();
+        r.glowMat.dispose();
       }
     },
     [res],
   );
+
+  useFrame((state, delta) => {
+    const pulse = reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(state.clock.elapsedTime * 5);
+    for (const r of res) {
+      const on = active === r.part;
+      r.glowMat.opacity = THREE.MathUtils.damp(r.glowMat.opacity, on ? 0.55 * pulse : 0, 8, Math.min(delta, 0.05));
+      r.mat.opacity = on ? 1 : 0.85;
+    }
+  });
+
   return (
     <>
-      {res.map((r, i) => (
-        <mesh key={i} geometry={r.geom} material={r.mat} />
+      {res.map((r) => (
+        <group key={r.part}>
+          <mesh geometry={r.geom} material={r.mat} />
+          <mesh geometry={r.glowGeom} material={r.glowMat} />
+        </group>
       ))}
     </>
+  );
+}
+
+/** Jumlah pita bertumpuk yang membentuk satu sorotan lapisan. */
+const ZONE_STRIPS = 10;
+
+/**
+ * Sorotan lapisan yang diklik: kulit cahaya berdenyut di dinding bongkahan,
+ * dari batas atas sampai batas bawah bagian itu.
+ *
+ * Untuk gambut kering batasnya permukaan sampai muka air hari ini, jadi
+ * sorotannya ikut menebal saat kalender digeser ke masa kering — pembaca
+ * melihat sendiri berapa tebal "bahan bakar" hari itu. Dinding sedikit
+ * menyempit ke bawah, jadi sorotannya dibangun dari pita-pita pendek yang
+ * masing-masing mengikuti dindingnya, bukan satu pita tinggi.
+ */
+function ZoneGlow({ part, depthCm, reducedMotion }: { part: InspectPart | null; depthCm: number; reducedMotion: boolean }) {
+  const res = useMemo(() => {
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const strips = Array.from({ length: ZONE_STRIPS }, () => createRibbon());
+    return { mat, strips };
+  }, []);
+  useEffect(
+    () => () => {
+      res.mat.dispose();
+      res.strips.forEach((g) => g.dispose());
+    },
+    [res],
+  );
+
+  // Batas atas dan bawah bagian yang disorot (m di bawah permukaan).
+  const span = useMemo((): [number, number] | null => {
+    const water = Math.min(depthCm, PEAT_THICKNESS * 100) / 100;
+    if (part === "kering") return water > 0.02 ? [0, water] : null;
+    if (part === "basah") return [water, PEAT_THICKNESS];
+    if (part === "mineral") return [PEAT_THICKNESS, PROFILE_DEPTH];
+    return null;
+  }, [part, depthCm]);
+
+  useEffect(() => {
+    if (!span) return;
+    const [top, bottom] = span;
+    const h = (bottom - top) / ZONE_STRIPS;
+    res.strips.forEach((g, i) => updateRibbon(g, -(top + h * (i + 0.5)), h / 2 + 0.002));
+    if (part) res.mat.color.set(PART_COLOR[part]);
+  }, [span, part, res]);
+
+  useFrame((state, delta) => {
+    const pulse = reducedMotion ? 1 : 0.65 + 0.35 * Math.sin(state.clock.elapsedTime * 4);
+    res.mat.opacity = THREE.MathUtils.damp(res.mat.opacity, span ? 0.32 * pulse : 0, 8, Math.min(delta, 0.05));
+  });
+
+  return (
+    <group visible={span !== null}>
+      {res.strips.map((g, i) => (
+        <mesh key={i} geometry={g} material={res.mat} />
+      ))}
+    </group>
   );
 }
 

@@ -300,6 +300,21 @@ pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.
 | 02 Ambang | Geser *Hari tanpa hujan* sesudah 20 Agustus sampai lahan terbakar | 2 | Muka air turun; di atas 40 cm hampir tanpa api; lewat 40 cm api mulai; di bawah 60 cm lahan terbakar dan api melonjak | < 40 cm bahaya tinggi, < 60 cm terbakar, Kubu Raya (Taufik dkk., 2022) |
 | 03 Tahun El Niño | Pilih *Tahun El Niño*, geser kalender sampai Desember | 1 + 2 | Hujan Agustus–Oktober berkurang dan terlambat; muka air bertahan di bawah 60 cm lebih lama; api bertahan sampai hujan kembali | Area terbakar maksimum ± 10× pada tahun kekeringan air tanah (Taufik dkk., 2017) |
 
+**Komponen yang bisa diklik** (19 November 2026, menjawab permintaan pembimbing
+"setiap komponen diklik ada animasinya"; tingkat 3). Di semua babak pembaca
+bisa menyeret bongkahan untuk memutarnya dan mengeklik bagiannya:
+
+| Diklik | Animasi | Sesudahnya pembaca tahu |
+|---|---|---|
+| Gambut di atas garis biru | Kulit cahaya jingga berdenyut dari permukaan sampai muka air; menebal saat kalender digeser ke masa kering | Bagian ini kering, porinya berisi udara, dan tebalnya hari ini = bahan bakar |
+| Gambut di bawah garis biru | Kulit cahaya biru dari muka air sampai dasar gambut | Gambut yang porinya penuh air tidak bisa terbakar |
+| Garis 40 cm / 60 cm | Pita cahaya berdenyut di garis itu | Arti tiap ambang bagi api |
+| Tanah mineral | Kulit cahaya pucat di lapisan dasar | Lapisan di bawah gambut tidak terbakar |
+
+Klik dibedakan dari seretan (geser ≤ 6 px). Letak klik digolongkan menurut
+kedalamannya terhadap muka air hari itu (`classifyDepth` di
+`config/modul/musim-api.ts`).
+
 Catatan tingkat: Babak 01 dan 02 sama-sama pengatur geser, tetapi besarannya
 berbeda (waktu vs lama kemarau) dan masing-masing membawa pengetahuan
 sendiri (2.2).

@@ -24,6 +24,7 @@ import {
   simulateYear,
   type FireStage,
 } from "@/lib/model/fireSeason";
+import { PEAT_THICKNESS } from "@/lib/model/peat";
 
 /**
  * Hari terakhir kemarau Agustus di tahun biasa (20 Agustus): babak 02
@@ -122,7 +123,9 @@ export const MUSIM_TEXT = {
   legendRain: "hujan",
   legendDry: "masa kering",
   legendDepth: "muka air",
-  dragHint: "Seret untuk memutar gambut",
+  dragHint: "Seret untuk memutar · klik bagian gambut untuk penjelasannya",
+  inspectToday: (cm: number) => `Hari ini muka air ${Math.round(cm)} cm`,
+  close: "Tutup",
   scaleNote: "Muka air dihitung dari hujan dan penguapan setiap hari.",
   elninoNote: "Januari–Juli sama dengan tahun biasa. El Niño mengurangi hujan Agustus–Oktober.",
 };
@@ -144,4 +147,62 @@ export function explainDay(opts: { depthCm: number; rainMmDay: number; dryRun: b
   if (rainMmDay < 5) return "Masa kering: hujan terlalu sedikit untuk mengganti air yang menguap, jadi muka air turun ±1,3 cm sehari.";
   if (depthCm > 0.5) return "Hujan lebih banyak daripada yang menguap. Pori gambut terisi lagi dan muka air naik.";
   return "Hujan cukup. Gambut penuh air sampai ke permukaan, seperti spons yang basah.";
+}
+
+/** Bagian diorama yang bisa diklik pembaca. */
+export type InspectPart = "kering" | "basah" | "ambang40" | "ambang60" | "mineral";
+
+/** Jarak (cm) dari garis ambang yang masih dihitung mengeklik garis itu. */
+export const LINE_PICK_CM = 5;
+
+/**
+ * Golongkan titik yang diklik menurut kedalamannya dari permukaan gambut.
+ *
+ * Tidak perlu mengenali tiap jala: yang penting bagi pembaca adalah letak
+ * titik itu terhadap muka air hari ini dan terhadap kedua garis ambang.
+ * Garis didahulukan karena tipis dan sulit dikenai.
+ */
+export function classifyDepth(pointCm: number, waterCm: number): InspectPart {
+  if (Math.abs(pointCm - HIGH_DANGER_CM) <= LINE_PICK_CM) return "ambang40";
+  if (Math.abs(pointCm - BURN_CM) <= LINE_PICK_CM) return "ambang60";
+  if (pointCm >= PEAT_THICKNESS * 100) return "mineral";
+  return pointCm < waterCm ? "kering" : "basah";
+}
+
+/**
+ * Penjelasan tiap bagian diorama saat diklik. Teksnya bergantung pada muka
+ * air hari itu, karena tebal gambut kering berubah mengikuti kalender.
+ */
+export function inspectText(part: InspectPart, depthCm: number): { title: string; body: string } {
+  const cm = Math.round(depthCm);
+  switch (part) {
+    case "kering":
+      return {
+        title: "Gambut kering",
+        body:
+          cm < 2
+            ? "Hari ini hampir tidak ada gambut kering: air sampai ke permukaan. Coba lagi di masa kering."
+            : `Bagian di atas garis biru sudah kehilangan airnya. Pori-porinya kini berisi udara, jadi gambut ini bisa menjadi bahan bakar. Hari ini tebalnya ${cm} cm.`,
+      };
+    case "basah":
+      return {
+        title: "Gambut basah",
+        body: "Di bawah garis biru, pori gambut penuh air seperti spons yang direndam. Gambut sebasah ini tidak bisa terbakar. Selama airnya terjaga, gambut aman.",
+      };
+    case "ambang40":
+      return {
+        title: `Garis ${HIGH_DANGER_CM} cm · bahaya tinggi`,
+        body: `Bila air turun melewati garis ini, gambut setebal ${HIGH_DANGER_CM} cm di atasnya sudah kering. Percikan api kecil saja sudah cukup untuk menyulutnya.`,
+      };
+    case "ambang60":
+      return {
+        title: `Garis ${BURN_CM} cm · terbakar`,
+        body: `Lahan gambut di Kubu Raya hanya terbakar setelah air turun melewati garis ini. Gambut keringnya sudah lebih dari setengah meter, jadi api bisa menjalar dan masuk ke dalam tanah.`,
+      };
+    case "mineral":
+      return {
+        title: "Tanah mineral",
+        body: "Lapisan pasir dan lempung di bawah gambut. Isinya bukan sisa tumbuhan, jadi tidak bisa terbakar.",
+      };
+  }
 }
