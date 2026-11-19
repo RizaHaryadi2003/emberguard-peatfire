@@ -101,6 +101,78 @@ export default function HutanModule() {
   const here = zoneAt(walkKm);
   const zone = FOREST_ZONES.find((z) => z.id === activeZone);
 
+  // Pembacaan tiap babak. Di layar >= 1024 px dipindah ke kolom kanan
+  // (`aside`) supaya kolom kiri tidak sesak dan panel cerita tidak
+  // terpotong; di layar lebih sempit tetap di panel kendali.
+  const peatReadout = (
+    <>
+                <p className="font-playfair text-xl italic leading-none text-white">{here.name}</p>
+                <div className="mt-2 grid sm:mt-2.5 grid-cols-[1fr_auto] items-end gap-x-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.peatHere}</p>
+                    <p className="mt-0.5 font-playfair text-2xl italic leading-none tabular-nums text-[#f0a35e] sm:text-3xl">
+                      ± {Math.max(1, Math.round(peatThicknessM(walkKm)))} m
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.canopy}</p>
+                    <p className="mt-0.5 text-sm tabular-nums text-[#9fd3a0]">{here.canopy}</p>
+                  </div>
+                </div>
+                {/* Batang tebal gambut terhadap tebal terbesar di puncak kubah. */}
+                <div className="mt-2 hidden h-1 overflow-hidden rounded-full bg-white/10 sm:block" aria-hidden>
+                  <div className="h-full rounded-full bg-[#f0a35e] transition-[width] duration-150" style={{ width: `${(peatThicknessM(walkKm) / peatThicknessM(SPAN_KM)) * 100}%` }} />
+                </div>
+                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.peatRange(here.peat)}</p>
+                  </>
+  );
+  const waterNote = lastSource === "rain" && rain
+                  ? HUTAN_TEXT.rainNote
+                  : lastSource === "flood" && flood
+                    ? HUTAN_TEXT.floodNote
+                    : rain
+                      ? HUTAN_TEXT.rainNote
+                      : flood
+                        ? HUTAN_TEXT.floodNote
+                        : "Tekan salah satu sumber air.";
+  const zonePanel = (zone ? (
+              <div data-guide="zoneInfo">
+                <p className="font-playfair text-xl italic leading-none text-white">{zone.name}</p>
+                {/* Di ponsel label dan nilainya sebaris, supaya panel tidak
+                    menindih tombol jenis hutan di bawah penampang. */}
+                <dl className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="flex items-baseline gap-1.5 sm:block">
+                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.richness}</dt>
+                    <dd className="text-sm capitalize text-[#9fd3a0]">{zone.richness}</dd>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 sm:block">
+                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      <span className="sm:hidden">{HUTAN_TEXT.apesShort}</span>
+                      <span className="hidden sm:inline">{HUTAN_TEXT.apes}</span>
+                    </dt>
+                    <dd className="text-sm capitalize text-[#f0a35e]">{zone.apes}</dd>
+                  </div>
+                </dl>
+                <p className="mt-2 text-[12px] leading-snug text-white/75">{zone.note}</p>
+                <div className="mt-2 md:hidden">
+                  <ApePhotos size="small" />
+                </div>
+                {/* Di ponsel daftar jenis disembunyikan supaya panel tidak
+                    menutupi penampang; versi laptop memuatnya lengkap. */}
+                <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block">{HUTAN_TEXT.totals}</p>
+                <ul className="mt-1 hidden grid-cols-3 gap-x-2 gap-y-1 sm:grid">
+                  {SEBANGAU_SPECIES.map((s) => (
+                    <li key={s.label} className="text-[11px] text-white/70">
+                      <span className="font-medium tabular-nums text-white">{s.value}</span> {s.label}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.source}</p>
+              </div>
+            ) : (
+              <p className="text-[12px] leading-snug text-white/75">Tekan salah satu jenis hutan di bawah penampang.</p>
+            ));
+
   return (
     <ActModuleShell
       href="/modul/hutan-rawa"
@@ -142,7 +214,7 @@ export default function HutanModule() {
             quality={quality}
             onOverload={handleOverload}
           />
-          <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
+          <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block lg:hidden">
             {act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}
           </p>
           {/* Foto satwa di ruang kosong di atas diorama (laptop). Di layar
@@ -153,6 +225,24 @@ export default function HutanModule() {
               <ApePhotos size="large" />
             </figure>
           )}
+        </>
+      }
+      aside={
+        <>
+          {act === 0 && (
+            <section data-guide="peatHere" className={`${CARD} stage-in`}>
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{HUTAN_TEXT.underFoot}</p>
+              {peatReadout}
+            </section>
+          )}
+          {act === 1 && (
+            <section className={`${CARD} stage-in`}>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{HUTAN_TEXT.waterSource}</p>
+              <p className="mt-1.5 text-[12px] leading-snug text-white/85">{waterNote}</p>
+            </section>
+          )}
+          {act === 2 && <section className={`${CARD} stage-in`}>{zonePanel}</section>}
+          <p className={`${CARD} stage-in text-[11px] leading-snug text-white/60`}>{act === 2 ? HUTAN_TEXT.apesNote : HUTAN_TEXT.scaleNote}</p>
         </>
       }
       controls={
@@ -208,26 +298,7 @@ export default function HutanModule() {
 
               {/* Di ponsel batang pembanding dan keterangan rentang disembunyikan
                   supaya panel tidak menutupi penampang; angkanya tetap ada. */}
-              <div data-guide="peatHere" className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3">
-                <p className="font-playfair text-xl italic leading-none text-white">{here.name}</p>
-                <div className="mt-2 grid sm:mt-2.5 grid-cols-[1fr_auto] items-end gap-x-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.peatHere}</p>
-                    <p className="mt-0.5 font-playfair text-2xl italic leading-none tabular-nums text-[#f0a35e] sm:text-3xl">
-                      ± {Math.max(1, Math.round(peatThicknessM(walkKm)))} m
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.canopy}</p>
-                    <p className="mt-0.5 text-sm tabular-nums text-[#9fd3a0]">{here.canopy}</p>
-                  </div>
-                </div>
-                {/* Batang tebal gambut terhadap tebal terbesar di puncak kubah. */}
-                <div className="mt-2 hidden h-1 overflow-hidden rounded-full bg-white/10 sm:block" aria-hidden>
-                  <div className="h-full rounded-full bg-[#f0a35e] transition-[width] duration-150" style={{ width: `${(peatThicknessM(walkKm) / peatThicknessM(SPAN_KM)) * 100}%` }} />
-                </div>
-                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.peatRange(here.peat)}</p>
-              </div>
+              <div data-guide="peatHere" className="mt-2 border-t border-white/10 pt-2 sm:mt-3 sm:pt-3 lg:hidden">{peatReadout}</div>
             </div>
           )}
 
@@ -265,58 +336,11 @@ export default function HutanModule() {
                   <CloudRain size={14} /> {HUTAN_TEXT.rain}
                 </button>
               </div>
-              <p className="mt-2 text-[12px] leading-snug text-white/75">
-                {lastSource === "rain" && rain
-                  ? HUTAN_TEXT.rainNote
-                  : lastSource === "flood" && flood
-                    ? HUTAN_TEXT.floodNote
-                    : rain
-                      ? HUTAN_TEXT.rainNote
-                      : flood
-                        ? HUTAN_TEXT.floodNote
-                        : "Tekan salah satu sumber air."}
-              </p>
+              <p className="mt-2 text-[12px] leading-snug text-white/75 lg:hidden">{waterNote}</p>
             </div>
           )}
 
-          {act === 2 &&
-            (zone ? (
-              <div data-guide="zoneInfo">
-                <p className="font-playfair text-xl italic leading-none text-white">{zone.name}</p>
-                {/* Di ponsel label dan nilainya sebaris, supaya panel tidak
-                    menindih tombol jenis hutan di bawah penampang. */}
-                <dl className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="flex items-baseline gap-1.5 sm:block">
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">{HUTAN_TEXT.richness}</dt>
-                    <dd className="text-sm capitalize text-[#9fd3a0]">{zone.richness}</dd>
-                  </div>
-                  <div className="flex items-baseline gap-1.5 sm:block">
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-white/40">
-                      <span className="sm:hidden">{HUTAN_TEXT.apesShort}</span>
-                      <span className="hidden sm:inline">{HUTAN_TEXT.apes}</span>
-                    </dt>
-                    <dd className="text-sm capitalize text-[#f0a35e]">{zone.apes}</dd>
-                  </div>
-                </dl>
-                <p className="mt-2 text-[12px] leading-snug text-white/75">{zone.note}</p>
-                <div className="mt-2 md:hidden">
-                  <ApePhotos size="small" />
-                </div>
-                {/* Di ponsel daftar jenis disembunyikan supaya panel tidak
-                    menutupi penampang; versi laptop memuatnya lengkap. */}
-                <p className="mt-3 hidden border-t border-white/10 pt-2 text-[10px] uppercase tracking-[0.12em] text-white/40 sm:block">{HUTAN_TEXT.totals}</p>
-                <ul className="mt-1 hidden grid-cols-3 gap-x-2 gap-y-1 sm:grid">
-                  {SEBANGAU_SPECIES.map((s) => (
-                    <li key={s.label} className="text-[11px] text-white/70">
-                      <span className="font-medium tabular-nums text-white">{s.value}</span> {s.label}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-1 hidden text-[10px] text-white/40 sm:block">{HUTAN_TEXT.source}</p>
-              </div>
-            ) : (
-              <p className="text-[12px] leading-snug text-white/75">Tekan salah satu jenis hutan di bawah penampang.</p>
-            ))}
+          {act === 2 && <div className="lg:hidden">{zonePanel}</div>}
         </>
       }
     />
@@ -357,3 +381,6 @@ function ApePhotos({ size }: { size: "large" | "small" }) {
     </ul>
   );
 }
+
+/** Gaya kartu kolom kanan, sama dengan Modul Musim Api. */
+const CARD = "rounded-2xl border border-white/10 bg-[#0a0d0f]/50 p-3.5 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] [@media(max-height:820px)]:p-3";

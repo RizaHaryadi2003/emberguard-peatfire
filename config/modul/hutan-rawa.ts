@@ -177,6 +177,8 @@ export const HUTAN_TEXT = {
   fromRiver: (km: number) => `${km.toFixed(1).replace(".", ",")} km dari tepi hutan`,
   peat: "Tebal gambut",
   peatHere: "Gambut di bawah kakimu",
+  underFoot: "Di bawah kakimu",
+  waterSource: "Sumber air",
   peatRange: (zone: string) => `Di jenis hutan ini: ${zone} · puncak kubah ± 13 m`,
   canopy: "Tinggi kanopi",
   flood: "Banjir sungai",
