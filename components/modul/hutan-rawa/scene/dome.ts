@@ -16,7 +16,7 @@ import { FOREST_ZONES, type ForestZone } from "@/config/modul/hutan-rawa";
 /** Panjang penampang (km), dari tepi hutan di sungai ke puncak kubah. */
 export const SPAN_KM = 14;
 /** Panjang diorama (satuan adegan) yang mewakili SPAN_KM. */
-export const LENGTH = 84;
+export const LENGTH = 104;
 /** Tebal diorama ke belakang (satuan adegan). */
 export const DEPTH = 18;
 /** Tebal tanah mineral yang ikut terlihat di bawah gambut (m). */
@@ -114,8 +114,8 @@ export type TreeSpot = {
  * memang kurus), jadi ia boleh lebih rapat dengan biaya yang sama.
  */
 export const TREE_COUNT = {
-  high: { campuran: 13, tiang: 22, tinggi: 11 },
-  low: { campuran: 7, tiang: 11, tinggi: 6 },
+  high: { campuran: 10, tiang: 16, tinggi: 9 },
+  low: { campuran: 5, tiang: 8, tinggi: 5 },
 } as const;
 
 /**

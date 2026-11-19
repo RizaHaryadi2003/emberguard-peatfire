@@ -88,8 +88,8 @@ const MODULE_MAX_DPR = { high: 1.25, low: 1 } as const;
 
 /** Kotak isi yang harus muat di bingkai gambar. */
 const CONTENT_BOX = new THREE.Box3(
-  // Ke bawah diberi ruang untuk pita jenis hutan dan chip namanya.
-  new THREE.Vector3(-LENGTH / 2 - RIVER_WIDTH, -MINERAL_M - 5, -DEPTH / 2),
+  // Ke bawah diberi ruang untuk nama jenis hutan di bawah bongkahan.
+  new THREE.Vector3(-LENGTH / 2 - RIVER_WIDTH, -MINERAL_M - 4, -DEPTH / 2),
   new THREE.Vector3(LENGTH / 2, 13 + 45, DEPTH / 2),
 );
 
@@ -139,7 +139,7 @@ export default function HutanScene(props: HutanSceneProps) {
           shadows={profile.softShadow ? "percentage" : "basic"}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 0.95;
+            gl.toneMappingExposure = 1.05;
           }}
           fallback={<p className="p-6 text-sm text-white/70">Peramban Anda tidak mendukung WebGL, jadi diorama hutan tidak dapat ditampilkan.</p>}
         >
@@ -147,6 +147,9 @@ export default function HutanScene(props: HutanSceneProps) {
           <PerformanceGuard maxDpr={maxDpr} onOverload={props.onOverload} />
           {showFps && <FpsMeter />}
           <SkyLighting stateRef={stateRef} quality={props.quality} worldScale={WORLD_SCALE} backgroundDim={0.3} />
+          {/* Cahaya pantul lembut dari langit dan tanah, seperti bongkahan
+              Modul Anatomi, supaya sisi teduh kubah yang lebar tidak tenggelam. */}
+          <hemisphereLight args={["#e6eef5", "#3a2f1f", 0.35]} />
           <Suspense fallback={null}>
             <Backdrop />
           </Suspense>
@@ -490,7 +493,7 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
   const anim = useRef({ flood: 0, soak: 0, silt: 0, siltLevel: RIVER_LEVEL });
   const floodRef = useRef<THREE.Mesh>(null);
   const topDry = useMemo(() => new THREE.Color("#7d7a5c"), []);
-  const topWet = useMemo(() => new THREE.Color("#4f6670"), []);
+  const topWet = useMemo(() => new THREE.Color("#5f6a4c"), []);
   const walkerZone = walkerKm === null ? null : zoneAt(walkerKm);
   const lit = FOREST_ZONES.find((z) => z.id === (activeZone ?? walkerZone?.id));
 
@@ -550,13 +553,6 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
       <mesh ref={floodRef} geometry={res.floodGeo} material={res.floodMat} visible={false} />
       <primitive object={forest} />
 
-      {/* Pita rentang tiap jenis hutan di tepi depan bawah bongkahan. */}
-      {FOREST_ZONES.map((z) => (
-        <mesh key={z.id} position={[(xOfKm(z.fromKm) + xOfKm(z.toKm)) / 2, -MINERAL_M - 0.55, DEPTH / 2 + 0.2]}>
-          <boxGeometry args={[xOfKm(z.toKm) - xOfKm(z.fromKm) - 0.6, 0.5, 0.3]} />
-          <meshBasicMaterial color={ZONE_COLOR[z.id]} toneMapped={false} />
-        </mesh>
-      ))}
 
       {rain && <Rain quality={quality} />}
 
@@ -758,7 +754,7 @@ function SceneLabels({
                 {body}
               </button>
             ) : (
-              <div className="hidden rounded-full bg-black/45 px-2.5 py-1.5 sm:block">{body}</div>
+              <div className="hidden px-1 sm:block [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]">{body}</div>
             )}
           </Html>
         );
@@ -767,7 +763,7 @@ function SceneLabels({
   );
 }
 
-/** Warna tiap jenis hutan: pita di bawah bongkahan dan titik pada chipnya. */
+/** Warna titik tiap jenis hutan pada namanya di bawah bongkahan. */
 const ZONE_COLOR: Record<ForestZone["id"], string> = {
   campuran: "#7cc4a0",
   tiang: "#c9c77c",
