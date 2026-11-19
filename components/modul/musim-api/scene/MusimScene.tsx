@@ -351,7 +351,10 @@ function Diorama({
   const camera = useThree((s) => s.camera);
   // Serahkan kamera dan bongkahan ke bingkai seret, yang menebak bagian yang diklik.
   useEffect(() => {
-    if (ref.current && blockRef.current) pickRef.current = { camera, block: blockRef.current, root: ref.current };
+    // `pickRef` diperiksa juga: saat muat ulang panas (HMR) adegan sempat
+    // dirender oleh versi induk lama yang belum mengirimkannya.
+    if (!pickRef || !ref.current || !blockRef.current) return;
+    pickRef.current = { camera, block: blockRef.current, root: ref.current };
     return () => {
       pickRef.current = null;
     };
