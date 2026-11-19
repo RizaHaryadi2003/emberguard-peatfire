@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { Check, Lock, MousePointerClick, RotateCcw } from "lucide-react";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
@@ -104,6 +104,13 @@ export default function ActModuleShell({
   const isLast = act === acts.length - 1;
   const done = actDone[act];
   const panelFade = `transition-opacity duration-700 ${hookOpen ? "opacity-0" : "opacity-100"}`;
+  // Kemunculan bertahap (lihat .stage-in di globals.css). Kuncinya berganti
+  // saat layar pembuka ditutup dan saat babak berganti, sehingga urutannya
+  // diputar ulang tepat ketika pembaca mulai membaca, bukan diam-diam di
+  // belakang layar pembuka.
+  const stageKey = `${act}-${hookOpen ? "pembuka" : "buka"}`;
+  const stage = (delaySec: number) => (hookOpen ? undefined : ({ "--stage-delay": `${delaySec}s` } as CSSProperties));
+  const stageClass = hookOpen ? "" : "stage-in";
   const goToAct = (i: number) => {
     if (i > act && !done) return;
     onAct(i);
@@ -199,19 +206,25 @@ export default function ActModuleShell({
             </ol>
           </div>
 
-          <div key={act} aria-live="polite">
-            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8]">
+          <div key={stageKey} aria-live="polite">
+            <p className={`mt-3 text-[11px] uppercase tracking-[0.2em] text-[#6fb6d8] ${stageClass}`} style={stage(0.05)}>
               Babak {current.number} <span className="text-white/30">/ {acts[acts.length - 1].number}</span>
             </p>
-            <h1 className="mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl" style={{ letterSpacing: "-0.03em" }}>
+            <h1
+              className={`mt-1 font-playfair text-3xl italic leading-[1.02] text-white [@media(min-height:651px)]:text-4xl ${stageClass}`}
+              style={{ letterSpacing: "-0.03em", ...stage(0.15) }}
+            >
               {current.title}
             </h1>
-            <p className="mt-2 hidden text-sm leading-relaxed text-white/80 sm:block">{current.body}</p>
-            <p className="mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.06] md:px-3 md:py-2">
+            <p className={`mt-2 hidden text-sm leading-relaxed text-white/80 sm:block ${stageClass}`} style={stage(0.35)}>
+              {current.body}
+            </p>
+            <p className={`mt-2.5 text-[11px] leading-snug text-white/60 md:rounded-xl md:bg-white/[0.06] md:px-3 md:py-2 ${stageClass}`} style={stage(0.6)}>
               <span className="font-medium text-[#8fcce8]">{current.term.word}:</span> {current.term.meaning}
             </p>
             <div
-              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 ${
+              style={stage(0.85)}
+              className={`pointer-events-auto mt-3 rounded-2xl border border-l-[3px] p-3 transition-colors duration-500 ${stageClass} ${
                 done ? "border-emerald-300/25 border-l-emerald-300 bg-[#06231a]/55" : "border-[#6fb6d8]/25 border-l-[#6fb6d8] bg-black/35"
               }`}
             >
@@ -224,7 +237,7 @@ export default function ActModuleShell({
               {taskExtra}
             </div>
             {/* Angka kunci babak. Sumbernya dicatat di dokumen acuan modul. */}
-            <div className="mt-3 hidden items-baseline gap-3 border-t border-white/10 pt-3 [@media(min-height:760px)]:sm:flex">
+            <div className={`mt-3 hidden items-baseline gap-3 border-t border-white/10 pt-3 [@media(min-height:760px)]:sm:flex ${stageClass}`} style={stage(1.05)}>
               <span className="shrink-0 font-playfair text-2xl italic text-[#f0a35e]">{current.fact.value}</span>
               <span className="text-[11px] leading-snug text-white/60">{current.fact.caption}</span>
             </div>
@@ -236,7 +249,11 @@ export default function ActModuleShell({
           inert={hookOpen}
           className={`pointer-events-auto absolute bottom-14 left-5 right-5 z-20 sm:left-10 md:static md:mt-auto md:shrink-0 [@media(min-height:651px)]:bottom-20 ${panelFade}`}
         >
-          <div className="rounded-3xl border border-white/10 bg-[#0a0d0f]/55 p-3.5 shadow-xl shadow-black/25 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] md:p-4">
+          <div
+            key={stageKey}
+            style={stage(1.2)}
+            className={`${stageClass} rounded-3xl border border-white/10 bg-[#0a0d0f]/55 p-3.5 shadow-xl shadow-black/25 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] md:p-4`}
+          >
             {controls}
             <div className="mt-3 flex justify-end border-t border-white/10 pt-2.5">
               <button
@@ -308,7 +325,14 @@ export default function ActModuleShell({
           inert={hookOpen}
           className={`absolute bottom-6 right-5 top-14 z-20 hidden w-[272px] flex-col gap-3 lg:flex xl:right-10 [@media(min-height:801px)]:top-24 ${panelFade}`}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-3">{aside}</div>
+          {/* Tiap lantai kolom kanan muncul bergiliran sesudah panel kendali. */}
+          <div
+            key={stageKey}
+            className={`flex min-h-0 flex-1 flex-col gap-3 ${hookOpen ? "" : "stage-kids"}`}
+            style={hookOpen ? undefined : ({ "--stage-base": "1.35s" } as CSSProperties)}
+          >
+            {aside}
+          </div>
           <div className="max-w-full shrink-0 self-end">{advance}</div>
         </div>
       )}

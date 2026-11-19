@@ -237,6 +237,7 @@ export default function MusimApiModule() {
             </div>
             <div className="mt-2 hidden sm:block">
               <SeasonChart
+                revealDelay={1.5}
                 kind={act === 2 ? kind : "normal"}
                 normal={normal}
                 elnino={act === 2 && kind === "elnino" ? elnino : undefined}
@@ -269,6 +270,7 @@ export default function MusimApiModule() {
           <section className={CARD}>
             <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45">{MUSIM_TEXT.yearChart}</p>
             <SeasonChart
+              revealDelay={1.9}
               kind={act === 2 ? kind : "normal"}
               normal={normal}
               elnino={act === 2 && kind === "elnino" ? elnino : undefined}

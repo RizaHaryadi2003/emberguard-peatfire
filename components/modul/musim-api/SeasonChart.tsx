@@ -46,7 +46,15 @@ type Props = {
   day: number;
   /** Babak 02: kemarau diperpanjang mulai `from` selama `days` hari sampai `toCm`. */
   extension?: { from: number; days: number; fromCm: number; toCm: number };
+  /**
+   * Jeda (detik) sebelum batang mulai tumbuh dan garis mulai tergambar, agar
+   * grafik baru "menggambar dirinya" setelah kartunya muncul.
+   */
+  revealDelay?: number;
 };
+
+/** Jeda antarbatang saat tumbuh bergiliran (detik): setahun ±0,6 detik. */
+const BAR_STAGGER = 0.018;
 
 /**
  * Kalender setahun dalam satu gambar: hujan per sepuluh hari di atas, muka air
@@ -57,7 +65,7 @@ type Props = {
  * turun dua kali, atau bahwa El Niño menyambung kemarau Agustus sampai
  * Oktober.
  */
-export default function SeasonChart({ kind, normal, elnino, day, extension }: Props) {
+export default function SeasonChart({ kind, normal, elnino, day, extension, revealDelay = 0 }: Props) {
   const bars = useMemo(
     () =>
       Array.from({ length: DASARIAN_PER_YEAR }, (_, i) => {
@@ -76,8 +84,12 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
     <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label="Kalender hujan dan muka air gambut setahun">
       {/* Batang hujan per dasarian; dasarian kering berwarna jingga. */}
       {bars.map((b) => (
+        // Kuncinya memuat jenis tahun: saat El Niño dipilih batangnya tumbuh
+        // ulang, sehingga Agustus–Oktober yang menyusut terlihat sedang terjadi.
         <rect
-          key={b.i}
+          key={`${kind}-${b.i}`}
+          className="chart-bar"
+          style={{ animationDelay: `${revealDelay + b.i * BAR_STAGGER}s` }}
           x={b.i * barW + 0.8}
           y={RAIN_H - b.h}
           width={barW - 1.6}
@@ -101,8 +113,23 @@ export default function SeasonChart({ kind, normal, elnino, day, extension }: Pr
       </text>
 
       {/* Garis muka air. Pada babak 03 tahun biasa jadi pembanding putus-putus. */}
-      <path d={normalPath} fill="none" stroke={elnino ? "#ffffff" : "#8fd8ff"} strokeOpacity={elnino ? 0.4 : 1} strokeWidth={1.6} strokeDasharray={elnino ? "3 2" : undefined} strokeLinejoin="round" />
-      {elnino && <path d={elninoPath} fill="none" stroke="#ff8a4d" strokeWidth={1.8} strokeLinejoin="round" />}
+      {/* Garis tahun biasa menggambar dirinya sesudah batang hujan tumbuh;
+          sebagai pembanding putus-putus ia tidak dianimasikan (pola putus-putus
+          dan animasi gambar memakai sifat garis yang sama). */}
+      <path
+        d={normalPath}
+        pathLength={elnino ? undefined : 1}
+        className={elnino ? undefined : "chart-draw"}
+        style={elnino ? undefined : { animationDelay: `${revealDelay + 0.5}s` }}
+        fill="none"
+        stroke={elnino ? "#ffffff" : "#8fd8ff"}
+        strokeOpacity={elnino ? 0.4 : 1}
+        strokeWidth={1.6}
+        strokeDasharray={elnino ? "3 2" : undefined}
+        strokeLinejoin="round"
+      />
+      {/* Garis El Niño tergambar saat tahun itu dipilih. */}
+      {elnino && <path d={elninoPath} pathLength={1} className="chart-draw" style={{ animationDelay: "0.3s" }} fill="none" stroke="#ff8a4d" strokeWidth={1.8} strokeLinejoin="round" />}
       {extension && (
         <line
           x1={xOfDay(extension.from)}

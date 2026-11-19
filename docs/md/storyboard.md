@@ -154,6 +154,15 @@ Tiga kekuatan yang ditiru dari Modul Bara: **babak terkunci**, **pembaca
 dibuat salah dulu** (menyiram, merasa berhasil, lalu termal membongkarnya),
 dan **akibat tak terbalik** (gambut yang jadi abu tidak kembali).
 
+**Kemunculan bertahap** (19 November 2026, kerangka bersama): sesudah layar
+pembuka ditutup dan tiap kali babak berganti, isi muncul menurut urutan
+membaca: judul → penjelasan → istilah → tugas → angka kunci → panel kendali
+→ lantai kolom kanan; batang hujan tumbuh dan garis muka air menggambar
+dirinya dari Januari ke Desember. Selesai ±2,5 detik, tidak menghalangi
+klik, mati bila pembaca memilih "kurangi gerak". Ini **menuntun urutan
+membaca**, bukan interaktivitas: interaktivitas tetap datang dari aksi
+pembaca (2.3).
+
 Aturan tampilan: panel dan kotak **tidak boleh bergulir**, isi diringkas bila
 ruang kurang. Laptop adalah tampilan utama; ponsel mendapat versi sederhana
 yang alurnya tetap utuh.

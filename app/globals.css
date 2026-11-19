@@ -249,3 +249,72 @@ body {
     box-shadow: 0 0 0 1.5px rgba(111, 182, 216, 0.9);
   }
 }
+
+/*
+ * Kemunculan bertahap isi modul (kerangka bersama ActModuleShell).
+ *
+ * Setelah layar pembuka ditutup, dan tiap kali babak berganti, isi panel
+ * muncul satu per satu menurut urutan membacanya: judul → penjelasan →
+ * istilah → tugas → angka kunci → alat → data di kolom kanan. Tujuannya
+ * menuntun mata, bukan hiasan: pembaca membaca penjelasannya dulu sebelum
+ * alatnya muncul. Seluruh urutan selesai dalam ±2 detik dan tidak pernah
+ * menghalangi klik.
+ *
+ * - stage-in   : satu kotak, jedanya dari --stage-delay.
+ * - stage-kids : tiap anak langsung muncul bergiliran mulai --stage-base.
+ * - chart-bar  : batang hujan tumbuh dari dasarnya.
+ * - chart-draw : garis muka air menggambar dirinya dari Januari ke Desember
+ *                (jalur SVG harus diberi pathLength="1").
+ */
+@keyframes stageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.stage-in {
+  animation: stageIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--stage-delay, 0s);
+}
+
+.stage-kids > * {
+  animation: stageIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stage-kids > *:nth-child(1) { animation-delay: calc(var(--stage-base, 0s) + 0s); }
+.stage-kids > *:nth-child(2) { animation-delay: calc(var(--stage-base, 0s) + 0.18s); }
+.stage-kids > *:nth-child(3) { animation-delay: calc(var(--stage-base, 0s) + 0.36s); }
+.stage-kids > *:nth-child(4) { animation-delay: calc(var(--stage-base, 0s) + 0.54s); }
+.stage-kids > *:nth-child(5) { animation-delay: calc(var(--stage-base, 0s) + 0.72s); }
+.stage-kids > *:nth-child(n + 6) { animation-delay: calc(var(--stage-base, 0s) + 0.9s); }
+
+@keyframes chartGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.chart-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: chartGrow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chartDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.chart-draw {
+  stroke-dasharray: 1;
+  animation: chartDraw 1.6s ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-in,
+  .stage-kids > *,
+  .chart-bar,
+  .chart-draw {
+    animation: none;
+  }
+  .chart-draw {
+    stroke-dasharray: none;
+  }
+}
