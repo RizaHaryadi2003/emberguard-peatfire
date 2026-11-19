@@ -53,7 +53,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     lead: "Bagaimana tanah yang basah berubah menjadi bahan bakar.",
     modules: [
       { href: "/modul/kanal", title: "Kanal & Pengeringan", caption: "Saat air dialirkan keluar" },
-      { href: null, title: "Musim Api", caption: "Kemarau panjang dan El Niño" },
+      { href: "/modul/musim-api", title: "Musim Api", caption: "Kemarau panjang dan El Niño" },
     ],
   },
   {

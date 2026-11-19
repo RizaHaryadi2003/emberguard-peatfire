@@ -21,9 +21,10 @@ describe("daftar modul", () => {
   it("menemukan modul tersedia berikutnya, melompati yang belum dibuat", () => {
     expect(moduleAt("/modul/sekitarmu").number).toBe("01");
     expect(nextAvailableModule("/modul/sekitarmu")?.href).toBe("/modul/anatomi");
-    // Sesudah Kanal ada Musim Api dan Siapa yang Menyalakan? yang belum dibuat.
-    expect(nextModule("/modul/kanal")?.available).toBe(false);
-    expect(nextAvailableModule("/modul/kanal")?.href).toBe("/modul/bara");
+    expect(nextAvailableModule("/modul/kanal")?.href).toBe("/modul/musim-api");
+    // Sesudah Musim Api ada Siapa yang Menyalakan? yang belum dibuat.
+    expect(nextModule("/modul/musim-api")?.available).toBe(false);
+    expect(nextAvailableModule("/modul/musim-api")?.href).toBe("/modul/bara");
   });
 
   it("menolak alamat yang tidak terdaftar", () => {

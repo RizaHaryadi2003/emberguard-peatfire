@@ -1,7 +1,8 @@
 # Acuan Modul 05 · Musim Api
 
 Status: **disetujui pengguna** (19 November 2026): pertanyaan modul dan tiga
-babak §5. Belum ada kode.
+babak §5. **Dibangun** 19 November 2026 (`/modul/musim-api`); model di §6.
+Tampilan belum diperiksa di peramban.
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 2 · Kering, modul kedua).
 
 ## 1. Pertanyaan modul
@@ -34,6 +35,14 @@ pertanyaan penghubung.
 | F | Taufik, M., Widyastuti, M. T., Sulaiman, A., Murdiyarso, D., Santikayasa, I. P., & Minasny, B. (2022). An improved drought-fire assessment for managing fire risks in tropical peatlands. *Agricultural and Forest Meteorology*, 312, 108738. doi:10.1016/j.agrformet.2021.108738 | Hujan, muka air tanah, dan lengas tanah harian 2018–2019 di 8 stasiun gambut, **Kubu Raya** (Kalbar) dan Batanghari (Jambi) | **Angka lokal inti**: bahaya api tinggi umumnya muncul saat muka air tanah **di bawah 40 cm**; lahan **hanya terbakar** saat muka air **di bawah 60 cm** | Abstrak (cermin ASEAN Haze Portal, CIFOR) |
 | H | BMKG Stasiun Klimatologi Kalimantan Barat (2026). *Buletin Iklim Kalbar, Edisi Oktober 2026* (Analisis September 2026). kalbar.bmkg.go.id | Pengamatan resmi stasiun BMKG di Kalbar | **Keadaan tahun ini**: ENSO "El Niño Sangat Kuat (+2,70 °C)", diperkirakan bertahan sampai awal 2027; IOD positif (+0,782). Hujan September 2026 di Stasiun Klimatologi Kalbar **117 mm**, padahal normalnya **304 mm**; sifat hujan umumnya Bawah Normal di seluruh Kalbar | **Lengkap** |
 | G | Yulianti, N., & Hayasaka, H. (2013). Recent active fires under El Niño conditions in Kalimantan, Indonesia. *American Journal of Plant Sciences*, 4(3A), 685–696. doi:10.4236/ajps.2013.43A087 | Titik api MODIS 2002–2011 + hujan harian Pontianak 2001–2010 | **Kalender Pontianak**: dua masa kering (awal Februari–akhir Maret, dan Agustus ±⅔ bulan); api Kalbar memuncak **pertengahan–akhir Agustus**; Kalbar selatan punya gelombang kedua pertengahan September–pertengahan Oktober; tahun api parah 2002, 2004, 2006, 2009 | **Lengkap** (HTML) |
+
+### Sumber tambahan untuk model muka air (§6)
+
+| # | Sumber | Dipakai untuk | Teks dibaca |
+|---|---|---|---|
+| I | Putra, S. S., Holden, J., & Baird, A. J. (2021). The effects of ditch dams on water-level dynamics in tropical peatlands. *Hydrological Processes*, 35(5), e14174. doi:10.1002/hyp.14174 | Laju turun muka air saat kemarau, Sebangau: **9,3 mm/hari** hutan, 9,6 bersekat, **12,7 mm/hari** berparit, "semata karena penguapan" (§3.2); saat kemarau muka air di semua lokasi lebih dalam dari 40 cm | **Lengkap** (akses terbuka, White Rose) |
+| J | Hirano, T., Kusin, K., Limin, S., & Osaki, M. (2015). Evapotranspiration of tropical peat swamp forests. *Global Change Biology*, 21(5), 1914–1927. doi:10.1111/gcb.12653 | Penguapan tahunan hutan gambut dikeringkan, Kalteng: **1.553 ± 117 mm/tahun** | Abstrak |
+| K | Ohkubo, S., Hirano, T., & Kusin, K. (2021). Influence of fire and drainage on evapotranspiration in a degraded peat swamp forest in Central Kalimantan. *Journal of Hydrology*, 603, 126906. doi:10.1016/j.jhydrol.2021.126906 | Penguapan berkurang 33–69 % bila muka air turun 0 → 1 m; alasan model dihentikan di 100 cm | **Lengkap** (naskah penulis, HUSCAP) |
 
 ### Kekuatan tiap sumber
 
@@ -126,7 +135,82 @@ kalender 12 bulan menjadi pengendali waktu.
 - Angka jumlah titik api per tahun: berubah menurut satelit dan sulit
   dibandingkan; diganti dengan pola "sedikit → melonjak".
 
-## 6. Keputusan
+## 6. Model muka air (`lib/model/fireSeason.ts`)
+
+Ditulis agar penguji dapat menghitung ulang setiap angka di layar.
+
+### 6.1 Seri hujan Pontianak (mm/hari per dasarian)
+
+Tabel normal resmi tidak tersedia (§2), jadi seri disusun dari patokan
+bersumber. Nilai di antara patokan adalah **isian skematis**.
+
+| Bulan | Dasarian 1 · 2 · 3 | Patokan |
+|---|---|---|
+| Jan | 9 · 8 · 6 | peralihan dari puncak Desember |
+| Feb | **4** · **7** · **4** | G: kering < 5 mm/hari, pertengahan Februari 7 |
+| Mar | **4,5** · **6** · **4,5** | G: kering sampai akhir Maret, pertengahan Maret 6 |
+| Apr–Mei | 8 · 9 · 9,5 · 9,5 · 9 · 8,5 | D: puncak Maret–Mei |
+| Jun–Jul | 7,5 · 7 · 6,5 · 6 · 6 · 5,5 | menurun menuju kemarau |
+| Agu | **2** · **4** · 6 | G: kering tajam ±2 mm/hari awal Agustus, masa kering ±⅔ bulan |
+| Sep | 9 · 10,5 · 10,9 | H: normal 304 mm = 10,1 mm/hari |
+| Okt–Nov | 10,5 · 11 · 11,5 · 12 · 12 · 11 | D: puncak Oktober–November lebih tinggi |
+| Des | 10,5 · 10 · 9,5 | peralihan |
+
+Rata-rata seri 7,94 mm/hari, selisih 1,2 % dari 7,85 mm/hari (G). Diuji di
+`lib/model/fireSeason.test.ts`.
+
+### 6.2 Neraca air harian
+
+| Besaran | Nilai | Sumber |
+|---|---|---|
+| Dasarian kering | hujan < 5 mm/hari | G (definisi masa kering) |
+| Laju turun saat kering | 1,27 cm/hari | I (lahan berparit) |
+| Penguapan | 1.553 / 365 = 4,25 mm/hari | J |
+| Hasil jenis (*specific yield*) | 4,25 / 12,7 = **0,335** | **diturunkan** dari I dan J, karena I menyatakan laju turun itu semata karena penguapan |
+| Batas kedalaman model | 100 cm | K: penguapan melemah di kedalaman ini; model berlaju tetap dihentikan |
+
+Aturan per hari: dasarian kering → muka air turun 1,27 cm; dasarian basah →
+naik (hujan − 4,25) / 0,335 mm; muka air tidak naik di atas permukaan.
+Dijalankan dua tahun dan diambil tahun kedua agar keadaan 1 Januari tidak
+ditebak. **Penyederhanaan:** pada dasarian kering hujan dianggap tidak
+mengimbangi penguapan sama sekali, mengikuti I.
+
+### 6.3 Tahun El Niño
+
+Hujan Agustus–Oktober dikali 117/304 = 0,385 (H). Satu bulan pengamatan
+diterapkan ke tiga bulan karena pengaruh El Niño paling kuat
+September–November (D). **Ilustratif.**
+
+### 6.4 Api
+
+Golongan: < 40 cm aman, 40–60 cm bahaya tinggi, ≥ 60 cm terbakar (F).
+Tingkat api untuk gambar: 0 di atas 40 cm, naik sampai 0,1 di 60 cm, lalu
+melonjak menuju 1 (0,1 + 0,9 · (1 − e^−(d−60)/15)). Ambangnya bersumber; bentuk
+kurvanya **ilustratif**, dengan perbandingan puncak 10 : 1 setara "hampir
+10×" (E) dan sifat melonjak dari B.
+
+### 6.5 Hasil model
+
+| | Tahun biasa | Tahun El Niño |
+|---|---|---|
+| Terdalam Februari–Maret | ±36 cm (akhir Maret) | sama |
+| Terdalam Agustus | ±25 cm | turun terus sampai batas 100 cm (pertengahan Oktober) |
+| Hari di bawah 40 cm | 0 | 87 |
+| Hari di bawah 60 cm | 0 | 62 |
+| Hari terakhir di bawah 60 cm | — | 17 November |
+
+Babak 02 berangkat dari ±25 cm (20 Agustus, tahun biasa): **12 hari** lagi
+tanpa hujan mencapai 40 cm, **28 hari** mencapai 60 cm.
+
+**Catatan jujur untuk naskah.** Menurut model, muka air tahun biasa justru
+sedikit lebih dalam pada akhir Maret daripada Agustus, padahal titik api
+Kalbar memuncak Agustus (G). Modul tidak menyembunyikannya: kebakaran besar
+datang Agustus–Oktober karena **El Niño hanya menyentuh kemarau Agustus**
+(D: pengaruhnya Juni–November), bukan Februari–Maret. Waktu pembakaran oleh
+manusia (pembukaan lahan menjelang musim tanam) kemungkinan ikut menjelaskan
+puncak Agustus; itu bahan Modul "Siapa yang Menyalakan?".
+
+## 7. Keputusan
 
 1. ✅ Pertanyaan modul (§1) dan tiga babak (§5) disetujui (19 November 2026).
 2. ✅ Data BMKG dicari (19 November 2026): buletin resmi Oktober 2026 dipakai

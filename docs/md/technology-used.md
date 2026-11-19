@@ -7,7 +7,8 @@ proyek, bukan dari rencana.
 - Tanggal pemeriksaan: **19 November 2026** (sebelumnya 28 Oktober 2026)
 - Diverifikasi dengan: `npm test` (21 berkas, **244 uji lolos**),
   `npx tsc --noEmit` (tanpa keluhan), `npm run lint` (0 galat), dan
-  `npm run build` (berhasil, 14 rute)
+  `npm run build` (berhasil, 14 rute). Diperbarui sesudah Modul Musim Api:
+  22 berkas, 264 uji lolos
 
 ---
 
@@ -128,6 +129,7 @@ otomatis di Node tanpa peramban, dan bisa dikutip sebagai algoritma di naskah.
 | `drainage.ts` | 546 | Kerucut penurunan muka air, lesak, emisi | Kanal & Pengeringan |
 | `carbon.ts` | 484 | Cadangan karbon, CO₂ lepas, umur menurut kedalaman, pemulihan | Gudang Karbon |
 | `peat.ts` | 243 | Profil lapisan, status muka air, indeks bahaya | Anatomi Gambut |
+| `fireSeason.ts` | 242 | Neraca air harian setahun, ambang api, tahun El Niño | Musim Api |
 | `atmosphere.ts` | 92 | Peralihan langit cerah ke berasap | Adegan bersama |
 
 Model besar memakai pola yang sama: langkah waktu tetap (`STEP_*`) agar hasil
@@ -150,6 +152,7 @@ app/modul/sekitarmu/page.tsx    →  /modul/sekitarmu
 app/modul/anatomi/page.tsx      →  /modul/anatomi
 app/modul/hutan-rawa/page.tsx   →  /modul/hutan-rawa
 app/modul/kanal/page.tsx        →  /modul/kanal
+app/modul/musim-api/page.tsx    →  /modul/musim-api
 app/modul/bara/page.tsx         →  /modul/bara
 app/modul/karbon/page.tsx       →  /modul/karbon
 app/simulasi/page.tsx           →  /simulasi          penanda
@@ -183,6 +186,7 @@ sementara berkas Three.js yang besar diunduh di belakang.
 ○ /                     ○ /modul/hutan-rawa
 ○ /kuis                 ○ /modul/karbon
 ○ /modul                ○ /modul/sekitarmu
+○ /modul/musim-api
 ○ /simulasi             ○ /_not-found
 ƒ /modul/anatomi        ƒ /modul/anatomi/kartu
 ƒ /modul/bara           ƒ /modul/bara/kartu
@@ -327,6 +331,7 @@ Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 | `lib/model/carbon.test.ts` | 32 | Cadangan karbon, CO₂, umur, pemulihan |
 | `lib/model/drainage.test.ts` | 29 | Pengaruh kanal, lesak, emisi |
 | `lib/model/peat.test.ts` | 28 | Klasifikasi lapisan, status air, bahaya |
+| `lib/model/fireSeason.test.ts` | 20 | Seri hujan, neraca air, tahun El Niño, ambang api |
 | `lib/frameBudget.test.ts` | 13 | Batas bingkai dan penurunan mutu |
 | `components/modul/bara/scene/crossSection.test.ts` | 12 | Sel simulasi ke geometri penampang |
 | `lib/kartu/anatomiCard.test.ts` | 9 | Penyandi kartu Anatomi |

@@ -45,7 +45,7 @@ MODUL  13 modul dalam 5 bagian
    │                  Hutan Rawa Gambut      apa yang hidup di atasnya   ✅
    │
    ├─ 2 · Kering      Kanal & Pengeringan    mengapa jadi kering         ✅
-   │                  Musim Api              kapan paling rawan          📝 acuan siap
+   │                  Musim Api              kapan paling rawan          ✅
    │
    ├─ 3 · Api         Siapa yang Menyalakan? dari mana apinya            ⏳
    │                  Bara di Bawah Tanah    bagaimana ia terbakar       ✅
@@ -272,9 +272,10 @@ pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.
 
 **Penutup:** *"Air bisa dikembalikan. Tanahnya tidak."*
 
-#### 3.5 Musim Api 📝
+#### 3.5 Musim Api ✅
 
-Belum dibangun · acuan: `acuan-modul-musim-api.md` (disetujui 19 November 2026)
+`/modul/musim-api` · acuan: `acuan-modul-musim-api.md` · model: `lib/model/fireSeason.ts`
+(dibangun 19 November 2026; tampilan belum diperiksa di peramban)
 
 - **Pertanyaan:** Mengapa asap di Pontianak datang hampir selalu sekitar
   Agustus–September, dan mengapa pada tahun tertentu jauh lebih parah?
@@ -285,18 +286,19 @@ Belum dibangun · acuan: `acuan-modul-musim-api.md` (disetujui 19 November 2026)
 - **Acuan:** Taufik dkk. (2017, 2022); Field dkk. (2009, 2016); Fanin &
   van der Werf (2017); Aldrian & Susanto (2003); Yulianti & Hayasaka (2013);
   Buletin Iklim BMKG Kalbar Oktober 2026.
-- **Panggung:** diorama 3D satu petak gambut di pinggir Pontianak dengan muka
-  potong yang memperlihatkan muka air tanah serta garis **40 cm** dan
-  **60 cm**; langit (hujan, awan, matahari) mengikuti bulan; cincin kalender
-  12 bulan sebagai pengendali waktu.
+- **Panggung:** bongkahan gambut 3D Modul Anatomi (dipakai ulang) dengan muka
+  air tanah serta garis **40 cm** dan **60 cm** di dinding; hujan dan awan
+  mengikuti kalender; bara dan asap mengikuti tingkat api. Di panel: grafik
+  kalender setahun (hujan per 10 hari, muka air, kedua ambang) dan
+  penggeser hari.
 - **Hook:** "Setiap tahun asap datang di bulan yang sama. Kebetulan?" +
   "September 2026, hujan di Kalbar hanya 117 mm dari normal 304 mm."
 
 | Babak | Tugas | Tingkat | Yang terlihat | Angka |
 |---|---|---|---|---|
 | 01 Kalender Pontianak | Putar kalender Januari → Desember | 2 | Hujan menebal dan menipis dua kali setahun; muka air turun sedikit Februari–Maret, lebih dalam Agustus; titik api sedikit di Agustus | Dua masa kering; puncak api pertengahan–akhir Agustus (Aldrian & Susanto, 2003; Yulianti & Hayasaka, 2013) |
-| 02 Ambang | Perpanjang kemarau Agustus dengan penggeser lama kemarau | 2 | Muka air turun; di atas 40 cm hampir tanpa api; lewat 40 cm api mulai; di bawah 60 cm lahan terbakar dan api melonjak | < 40 cm bahaya tinggi, < 60 cm terbakar, Kubu Raya (Taufik dkk., 2022) |
-| 03 Tahun El Niño | Bandingkan *Tahun biasa* dan *Tahun El Niño* | 1 | Hujan Agustus–Oktober berkurang dan terlambat; muka air bertahan di bawah 60 cm lebih lama; api bertahan sampai hujan kembali | Area terbakar maksimum ± 10× pada tahun kekeringan air tanah (Taufik dkk., 2017) |
+| 02 Ambang | Geser *Hari tanpa hujan* sesudah 20 Agustus sampai lahan terbakar | 2 | Muka air turun; di atas 40 cm hampir tanpa api; lewat 40 cm api mulai; di bawah 60 cm lahan terbakar dan api melonjak | < 40 cm bahaya tinggi, < 60 cm terbakar, Kubu Raya (Taufik dkk., 2022) |
+| 03 Tahun El Niño | Pilih *Tahun El Niño*, geser kalender sampai Desember | 1 + 2 | Hujan Agustus–Oktober berkurang dan terlambat; muka air bertahan di bawah 60 cm lebih lama; api bertahan sampai hujan kembali | Area terbakar maksimum ± 10× pada tahun kekeringan air tanah (Taufik dkk., 2017) |
 
 Catatan tingkat: Babak 01 dan 02 sama-sama pengatur geser, tetapi besarannya
 berbeda (waktu vs lama kemarau) dan masing-masing membawa pengetahuan
@@ -536,7 +538,7 @@ dokumen acuan masing-masing modul.
 | Urutan | Pekerjaan | Keadaan |
 |---|---|---|
 | 1 | Bagian Gambut (Sekitarmu, Anatomi, Hutan Rawa), Kanal, Bara, Karbon | ✅ selesai |
-| 2 | **Musim Api** | 📝 acuan disetujui; berikutnya kode |
+| 2 | **Musim Api** | ✅ dibangun 19 November 2026; menunggu pemeriksaan tampilan |
 | 3 | Siapa yang Menyalakan? | ⏳ cari acuan |
 | 4 | Bagian Mencegah (3 modul) | ⏳ cari acuan; menutup alur cerita skripsi berjudul *pencegahan* |
 | 5 | Kabut Asap, Yang Hilang dari Hutan | ⏳ cari acuan |
