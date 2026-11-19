@@ -342,7 +342,9 @@ function Dome({ walkerKm, flood, rain, waterAct, openedZones, activeZone, onZone
     shadeMineral(mineralGeo);
     const minMapC = ownTexture(minC, true, an);
     const minMapN = ownTexture(minN, false, an);
-    const mineral = new THREE.MeshStandardMaterial({ map: minMapC, normalMap: minMapN, roughness: 1, color: "#6c6f72", vertexColors: true, side: THREE.DoubleSide });
+    // Tanah mineral rata seperti pasir di dasar bongkahan Kanal: tanpa foto
+    // tekstur dan peta normal yang terbaca sebagai benjolan kerikil.
+    const mineral = new THREE.MeshStandardMaterial({ roughness: 1, color: "#9a8669", vertexColors: true, side: THREE.DoubleSide });
 
     // Sungai air hitam: air gambut berwarna teh pekat karena asam humat.
     // Muka depannya mundur sedikit dari muka tanah, supaya relief tanah

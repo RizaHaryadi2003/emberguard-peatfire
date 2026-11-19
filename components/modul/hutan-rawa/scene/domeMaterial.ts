@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
 import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 
 // Bahan muka potong kubah gambut Modul Hutan Rawa.
@@ -19,8 +18,6 @@ import { NOISE_GLSL } from "@/components/modul/shared/scene/noiseTexture";
 // Rangkanya tetap MeshStandardMaterial supaya cahaya matahari, langit,
 // bayangan pohon, dan kabut dikerjakan three.js. Warna dan normalnya diganti
 // lewat onBeforeCompile, sama seperti bahan bidang potong Modul Kanal.
-
-const tint = (id: keyof typeof PEAT_LAYER_TINT) => PEAT_LAYER_TINT[id].map((v) => v.toFixed(3)).join(", ");
 
 const FACE_PARS = /* glsl */ `
 uniform sampler2D uColor0;
@@ -54,19 +51,21 @@ vec3 kWeights(float depth) {
 const FACE_DIFFUSE = /* glsl */ `
   vec3 kW = kWeights(vDepth);
   vec2 kUv = vFaceUv;
-  vec3 kAlbedo =
-    texture2D(uColor0, kUv).rgb * kW.x * vec3(${tint("fibrik")}) +
-    texture2D(uColor1, kUv * 0.9 + 0.31).rgb * kW.y * vec3(${tint("hemik")}) +
-    texture2D(uColor2, kUv * 0.8 + 0.57).rgb * kW.z * vec3(${tint("saprik")});
-
-  // Rupa bersih, sama dengan bongkahan Modul Anatomi dan Kanal: hanya foto
-  // tiga lapisan gambut dengan peralihan halus, ditambah ragam skala besar
-  // yang tipis supaya muka selebar ini tidak tampak berulang. Bongkah kayu,
-  // guratan akar, serat pucat, tikar akar gelap, dan rona kemerahan yang
-  // dulu ada dibuang: dari jarak pandang diorama semuanya terbaca sebagai
-  // noda kotor, bukan sebagai gambut.
-  float kMottle = kNoise(vFaceWorld.xy * vec2(0.08, 0.35));
-  kAlbedo *= 0.92 + kMottle * 0.16;
+  // Rupa dinding sama dengan bongkahan Modul Kanal: pita warna rata dengan
+  // guratan mendatar yang tipis, TANPA foto tekstur tanah dan tanpa peta
+  // normal. Foto kerikil-tanah yang dulu dipakai, dilihat dari jarak
+  // diorama, terbaca sebagai bintik dan benjolan.
+  // Warna (sRGB → linear): serasah/gambut muda coklat kemerahan, gambut tua
+  // kelabu-coklat gelap — diambil dari tampilan dinding Kanal.
+  vec3 kFib = vec3(0.155, 0.062, 0.030);
+  vec3 kHem = vec3(0.118, 0.052, 0.030);
+  vec3 kSap = vec3(0.066, 0.052, 0.042);
+  vec3 kAlbedo = kFib * kW.x + kHem * kW.y + kSap * kW.z;
+  // Guratan mendatar halus: bahan tumbuhan mengendap lapis demi lapis.
+  float kStreak = kNoise(vec2(vFaceWorld.x * 0.12, vFaceWorld.y * 5.0));
+  // Butiran mendatar sangat halus, seperti guratan tipis dinding Kanal.
+  float kGrain = kNoise(vec2(vFaceWorld.x * 0.5, vFaceWorld.y * 9.0));
+  kAlbedo *= 0.92 + kStreak * 0.12 + (kGrain - 0.5) * 0.06;
 
   // Makin dalam makin gelap: gambut tua yang sudah lama hancur.
   kAlbedo *= mix(1.0, 0.74, smoothstep(1.5, 8.0, vDepth));
@@ -143,7 +142,7 @@ export function createPeatFaceMaterial(colors: THREE.Texture[], normals: THREE.T
     // Dipasang hanya supaya jalur map dan normalMap three.js menyala.
     map: colors[0],
     normalMap: normals[0],
-    normalScale: new THREE.Vector2(0.8, 0.8),
+    normalScale: new THREE.Vector2(0.0, 0.0),
     roughness: 1,
     metalness: 0,
     // Dua sisi: muka samping kiri dan kanan dibentuk dengan arah yang

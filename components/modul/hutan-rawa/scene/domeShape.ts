@@ -32,7 +32,7 @@ export const RIVER_LEVEL = peatThicknessM(0) - 0.45;
 export const RIVER_BED_M = -2.2;
 
 /** Besar tonjolan muka depan (satuan adegan) dan gundukan permukaan (m). */
-export const FACE_RELIEF = 0.22;
+export const FACE_RELIEF = 0.0;
 export const HUMMOCK_M = 0.16;
 
 // ---------------------------------------------------------------------------
@@ -123,9 +123,11 @@ export function mineralTopY(x: number): number {
  * condong ke belakang di bagian atas supaya bibir permukaan tidak menggantung.
  */
 export function frontZ(x: number, y: number): number {
+  // Dinding dibuat rata seperti bongkahan Modul Kanal. Dulu ada derau
+  // "gumpal" 0,2 m berfrekuensi tinggi di sini: dari jarak diorama ia
+  // terbaca sebagai bentol-bentol di seluruh muka potong.
   const relief = FACE_RELIEF * fbm2(x * 0.32 + 11, y * 0.55);
-  const clump = 0.2 * fbm2(x * 1.3 + 2, y * 1.6 + 9);
-  return Z_FRONT + relief + clump;
+  return Z_FRONT + relief;
 }
 
 /** Muka samping (x) pada titik (z, y) di ujung `side`. */
@@ -134,7 +136,7 @@ export function sideX(side: "left" | "right", z: number, y: number): number {
   const sign = side === "left" ? -1 : 1;
   // Mereda ke tepi depan supaya bertemu muka depan tanpa celah.
   const edge = smooth(Z_FRONT, Z_FRONT - 1.2, z) * smooth(Z_BACK, Z_BACK + 1.2, z);
-  return base + sign * (0.3 * fbm2(z * 0.5 + (side === "left" ? 3 : 8), y * 0.6)) * edge;
+  return base + sign * (0.05 * fbm2(z * 0.5 + (side === "left" ? 3 : 8), y * 0.6)) * edge;
 }
 
 /** Kedalaman di bawah permukaan (m) untuk titik muka depan pada (x, y). */
