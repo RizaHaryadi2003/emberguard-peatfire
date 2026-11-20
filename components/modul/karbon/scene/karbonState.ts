@@ -55,7 +55,20 @@ export type KarbonState = {
   danger: number;
   /** Pengguna meminta gerak dikurangi. */
   reducedMotion: boolean;
+  /** Putaran bongkahan oleh seretan pembaca (radian), sama dengan Modul Anatomi dan Bara. */
+  rotation: number;
+  /** Bongkahan sedang diseret. */
+  dragging: boolean;
 };
+
+/**
+ * Batas putaran bongkahan ke kiri/kanan (radian).
+ *
+ * Lebih sempit daripada Modul Anatomi dan Bara (0,9): bidang potong modul ini
+ * adalah penggaris tahun, dan diputar terlalu jauh ia menjadi garis tipis
+ * yang tidak dapat dibaca lagi.
+ */
+export const KARBON_MAX_ROTATION = 0.6;
 
 /** Keadaan awal modul: gambut utuh yang belum tersentuh api. */
 export function createKarbonState(): KarbonState {
@@ -69,6 +82,8 @@ export function createKarbonState(): KarbonState {
     calendar: 0,
     danger: 0,
     reducedMotion: false,
+    rotation: 0,
+    dragging: false,
   };
 }
 

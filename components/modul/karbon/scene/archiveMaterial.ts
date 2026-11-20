@@ -54,6 +54,13 @@ export type ArchiveUniforms = {
   uProbeDepth: { value: number };
   /** Kekuatan penggaris abad (0-1), dihaluskan oleh adegan. */
   uCalendar: { value: number };
+  /**
+   * Api sedang turun (0-1): bernilai selama kedalaman yang digambar masih
+   * menyusul kedalaman yang diminta. Menyalakan bara di batas bakar.
+   */
+  uBurning: { value: number };
+  /** Waktu adegan (detik), untuk kerlip bara. */
+  uTime: { value: number };
 };
 
 export type ArchiveMaterial = THREE.MeshStandardMaterial & {
@@ -75,6 +82,8 @@ uniform float uBurnDepth;  // kedalaman yang habis terbakar (m)
 uniform float uRegrown;    // tebal timbunan baru (m)
 uniform float uProbeDepth; // kedalaman penanda pembaca (m), negatif = tidak ada
 uniform float uCalendar;   // kekuatan penggaris abad (0-1)
+uniform float uBurning;    // api sedang turun (0-1)
+uniform float uTime;       // waktu adegan (detik)
 
 varying float vDepth;
 varying vec3 vArchiveWorld;
@@ -198,6 +207,16 @@ const FACE_DIFFUSE = /* glsl */ `
   // memantul. Tanda kedua bagi batas bakar, dan satu-satunya yang masih
   // terbaca saat gambarnya dilihat sambil lalu.
   kFaceRoughness = mix(0.9, 0.97, kFresh);
+
+  // --- Bara di batas bakar --------------------------------------------------
+  //
+  // Selama api masih turun, lapisan tipis tepat di bawah permukaan yang sedang
+  // terbakar membara jingga. Inilah yang membedakan kebakaran gambut dari
+  // kebakaran hutan: apinya tidak menyala di atas, melainkan memakan tanahnya
+  // ke bawah. Begitu kedalaman yang diminta tercapai, baranya padam.
+  float kFront = 1.0 - smoothstep(0.0, 0.05, vDepth - uBurnDepth);
+  float kFlick = 0.65 + 0.35 * kNoise(vec2(vArchiveWorld.x * 3.0 + uTime * 0.7, vDepth * 40.0 - uTime * 1.3));
+  kGlowCol = vec3(1.0, 0.36, 0.08) * kFront * kFlick * uBurning * 2.2;
 `;
 
 /** Peta normal empat lapisan, dipadukan dengan bobot yang sama. */
@@ -245,6 +264,8 @@ export function createArchiveFaceMaterial(
     uRegrown: { value: 0 },
     uProbeDepth: { value: -1 },
     uCalendar: { value: 0 },
+    uBurning: { value: 0 },
+    uTime: { value: 0 },
   };
   material.archiveUniforms = uniforms;
 
@@ -280,7 +301,8 @@ export function createArchiveFaceMaterial(
       );
 
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${FACE_PARS}\nfloat kFaceRoughness = 1.0;`)
+      .replace("#include <common>", `#include <common>\n${FACE_PARS}\nfloat kFaceRoughness = 1.0;\nvec3 kGlowCol = vec3(0.0);`)
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += kGlowCol;")
       .replace("#include <map_fragment>", FACE_DIFFUSE)
       .replace("#include <normal_fragment_maps>", FACE_NORMAL)
       .replace(
@@ -304,6 +326,8 @@ uniform float uBurnDepth;
 uniform float uRegrown;
 uniform float uProbeDepth;
 uniform float uCalendar;
+uniform float uBurning;
+uniform float uTime;
 
 varying vec3 vTopWorld;
 
@@ -338,6 +362,10 @@ const TOP_DIFFUSE = /* glsl */ `
 
   // Abu memantul jauh lebih sedikit daripada daun basah.
   kTopRoughness = mix(0.6, 0.95, kBurnt);
+
+  // Selama api masih turun, abu di permukaan berbintik bara yang berkerlip.
+  float kSpeck = smoothstep(0.62, 0.8, kFbm(vTopWorld.xz * 5.0 + vec2(uTime * 0.15, -uTime * 0.1)));
+  kTopGlow = vec3(1.0, 0.32, 0.06) * kSpeck * uBurning * 1.6;
 `;
 
 /** Buat bahan hamparan permukaan. */
@@ -359,6 +387,8 @@ export function createArchiveTopMaterial(
     uRegrown: { value: 0 },
     uProbeDepth: { value: -1 },
     uCalendar: { value: 0 },
+    uBurning: { value: 0 },
+    uTime: { value: 0 },
   };
   material.archiveUniforms = uniforms;
 
@@ -373,7 +403,8 @@ export function createArchiveTopMaterial(
       );
 
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${TOP_PARS}\nfloat kTopRoughness = 1.0;`)
+      .replace("#include <common>", `#include <common>\n${TOP_PARS}\nfloat kTopRoughness = 1.0;\nvec3 kTopGlow = vec3(0.0);`)
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += kTopGlow;")
       .replace("#include <map_fragment>", `#include <map_fragment>\n${TOP_DIFFUSE}`)
       .replace(
         "#include <roughnessmap_fragment>",

@@ -2,7 +2,7 @@
 
 import { Html } from "@react-three/drei";
 import { ageAtDepth, formatYearCount } from "@/lib/model/carbon";
-import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, faceLeftX, originalTopY } from "./archive";
+import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, FLOOR_Y, faceLeftX, originalTopY } from "./archive";
 
 // Penggaris pada bongkahan Modul Karbon.
 //
@@ -54,10 +54,12 @@ export default function SceneLabels() {
 
       {/* Lebar bongkahan: patokan ukuran, dan satu-satunya keterangan yang
           menyatakan bahwa petak ini petak yang sama dengan Modul Anatomi dan Bara. */}
-      <group position={[0, originalTopY(0, FACE_Z) + 0.72, FACE_Z]}>
+      {/* Di bawah bongkahan, bukan di atasnya: di atas berdiri pohon, dan
+          keterangan yang menimpa tajuk terbaca sebagai nama pohonnya. */}
+      <group position={[0, FLOOR_Y - 0.32, FACE_Z]}>
         <Html center zIndexRange={[10, 0]}>
-          <span className="pointer-events-none whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm">
-            Bongkahan · lebar {BLOCK_W} m
+          <span className="pointer-events-none hidden whitespace-nowrap rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] text-white/75 backdrop-blur-sm md:inline">
+            Bongkahan · lebar {BLOCK_W.toLocaleString("id-ID")} m
           </span>
         </Html>
       </group>

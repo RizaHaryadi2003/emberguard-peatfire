@@ -145,3 +145,19 @@ Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tan
 | Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD, tanpa satu pun keterangan sedalam apa | ANTARA, 13 Agustus 2019 |
 | Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³ | Warren dkk., 2012 |
 | Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun | Global Carbon Budget, 2024 |
+
+## Perubahan 20 November 2026
+
+- **Bongkahan** memakai separuh bongkahan Modul Bara dan dapat diseret untuk
+  diputar (±0,6 rad), sama seperti Modul Anatomi dan Bara.
+- **Tumbuhan di atas bongkahan** terbakar bersama permukaan, lalu tumbuh
+  kembali pada babak 03: tumbuhan bawah dalam ±2–15 tahun, pohon dalam
+  ±8–60 tahun. Angka ini **ilustratif**, belum dari sumber. Dasarnya kalimat
+  kartu penutup modul ("hutan di atasnya dapat ditanam ulang dalam beberapa
+  dasawarsa"). Bila pembimbing meminta, ganti dengan sumber suksesi hutan rawa
+  gambut sesudah kebakaran.
+- **Bara di batas bakar** (cahaya jingga selama kedalaman masih turun) hanya
+  penanda arah api ke bawah, tanpa angka suhu.
+- **Babak 02** dimulai dari kebakaran yang diberitakan (10 ha × 33 cm) dan
+  memakai bagan dua kotak (lebar = luas, tinggi = kedalaman). Tugasnya tetap:
+  luas ≤ 5 ha dengan CO₂ yang sama (selisih ≤ 4%).

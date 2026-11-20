@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { Suspense, useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { PEAT_LAYERS } from "@/lib/model/peat";
@@ -10,7 +10,7 @@ import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { QUALITY_PROFILE, type KarbonState, type Quality } from "./karbonState";
-import { PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
+import { DIORAMA_BASE_YAW, PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
 import { interfaceY } from "@/components/modul/shared/scene/terrain";
 import {
   createHalfBody,
@@ -35,6 +35,7 @@ import {
   createLostMaterial,
 } from "./archiveMaterial";
 import SceneLabels from "./SceneLabels";
+import KarbonCover from "./KarbonCover";
 
 // Kanvas 3D Modul Karbon: bongkahan gambut yang sama dengan Modul Anatomi dan Bara,
 // dibaca sebagai arsip dan sebagai gudang karbon.
@@ -78,8 +79,8 @@ const CAMERA_DISTANCE = 14;
 /** Batas jauh keratan kamera: harus memuat kubah asap `SkyLighting`. */
 const CAMERA_FAR = CAMERA_DISTANCE + 400;
 
-/** Ruang di atas bongkahan yang harus ikut muat (m): keterangan lebar. */
-const HEADROOM = 1.2;
+/** Ruang di atas bongkahan yang harus ikut muat (m): tajuk pohon dan keterangan lebar. */
+const HEADROOM = 1.7;
 
 const CONTENT_WIDTH = BLOCK_W * Math.cos(CAMERA_AZIMUTH) + BLOCK_D * Math.sin(CAMERA_AZIMUTH);
 const CONTENT_HEIGHT =
@@ -231,6 +232,31 @@ function Simulation({
 }
 
 /**
+ * Putar bongkahan mengikuti seretan pembaca, sama dengan Modul Anatomi dan Bara:
+ * hanya pada sumbu tegak, bergoyang pelan saat diam, dan melambat halus menuju
+ * sasarannya. Porosnya di tengah tebal bongkahan, supaya ia berputar di
+ * tempat dan tidak berayun keluar dari bingkai.
+ */
+function Turntable({ stateRef, children }: { stateRef: RefObject<KarbonState>; children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((state, delta) => {
+    const s = stateRef.current;
+    const g = ref.current;
+    if (!s || !g) return;
+    const dt = Math.min(delta, 0.05);
+    const idle = s.reducedMotion || s.dragging ? 0 : Math.sin(state.clock.elapsedTime * 0.18) * 0.05;
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, DIORAMA_BASE_YAW * 0.5 + s.rotation + idle, 4, dt);
+  });
+  return (
+    <group position={[0, 0, -BLOCK_D / 2]}>
+      <group ref={ref}>
+        <group position={[0, 0, BLOCK_D / 2]}>{children}</group>
+      </group>
+    </group>
+  );
+}
+
+/**
  * Rona timbunan baru pada badan bongkahan: rona fibrik yang dihangatkan, sama
  * dengan pengali yang dipakai peneduh bidang potong untuk timbunan baru,
  * supaya dinding dan bidang potong menyambung.
@@ -353,10 +379,13 @@ function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: T
   const freshRef = useRef<THREE.Mesh>(null);
   const lostRef = useRef<THREE.Mesh>(null);
 
-  useFrame(() => {
+  useFrame((state) => {
     const s = stateRef.current;
     if (!s) return;
 
+    // Api masih turun selama kedalaman yang digambar tertinggal dari yang
+    // diminta; selisih 8 cm sudah menyalakan bara penuh.
+    const burning = s.reducedMotion ? 0 : Math.min(1, Math.max(0, (s.burnDepthM - s.drawnBurnM) / 0.08));
     const face = res.faceMaterial.archiveUniforms;
     const top = res.topMaterial.archiveUniforms;
     for (const u of [face, top]) {
@@ -367,6 +396,8 @@ function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: T
       // pemanggil lain yang perlu mengingatnya.
       u.uProbeDepth.value = s.probeDepthM ?? -1;
       u.uCalendar.value = s.calendar;
+      u.uBurning.value = burning;
+      u.uTime.value = state.clock.elapsedTime;
     }
 
     // Bentuk hanya dihitung ulang saat salah satu angkanya benar-benar
@@ -491,8 +522,15 @@ export default function KarbonScene({
       </Suspense>
       <Simulation sim={sim} stateRef={stateRef} onStats={onStats} />
       <Suspense fallback={null}>
-        <Block stateRef={stateRef} noise={noise} />
-        {showLabels && <SceneLabels />}
+        <Turntable stateRef={stateRef}>
+          <Block stateRef={stateRef} noise={noise} />
+          {/* Tumbuhan dan akar menunggu di batas Suspense-nya sendiri, seperti
+              Modul Bara: bidang potongnya tampil dulu, hutannya menyusul. */}
+          <Suspense fallback={null}>
+            <KarbonCover sim={sim} stateRef={stateRef} quality={quality} />
+          </Suspense>
+          {showLabels && <SceneLabels />}
+        </Turntable>
         <ReadySignal onReady={onReady} />
       </Suspense>
     </Canvas>

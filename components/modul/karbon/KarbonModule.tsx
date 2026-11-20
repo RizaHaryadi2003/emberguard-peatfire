@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
-import { Check, FastForward, MousePointerClick, Pause, RotateCcw } from "lucide-react";
+import { Check, FastForward, MousePointerClick, Pause, Rotate3d, RotateCcw } from "lucide-react";
 import {
   BURN_REFERENCE_NOTE,
   BURN_REFERENCES,
@@ -36,7 +36,8 @@ import {
   matchSolved,
   type CarbonStats,
 } from "@/lib/model/carbon";
-import { createKarbonState, type KarbonState, type Quality } from "./scene/karbonState";
+import { createKarbonState, KARBON_MAX_ROTATION, type KarbonState, type Quality } from "./scene/karbonState";
+import AreaDepthCompare from "./AreaDepthCompare";
 
 // Kanvas 3D dimuat terpisah (tanpa SSR) agar halaman awal tetap ringan.
 const KarbonScene = dynamic(() => import("./scene/KarbonScene"), { ssr: false });
@@ -170,6 +171,25 @@ export default function KarbonModule() {
   }, []);
 
   const handleStats = useCallback((next: CarbonStats) => setStats(next), []);
+
+  // Seret mendatar untuk memutar bongkahan, sama dengan Modul Anatomi dan Bara.
+  // Sentuhan tidak memutar, supaya menggeser layar di ponsel tetap menggulir.
+  const drag = useRef<{ x: number; start: number } | null>(null);
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    stateRef.current.dragging = true;
+    drag.current = { x: e.clientX, start: stateRef.current.rotation };
+  }, []);
+  const handleDragMove = useCallback((e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const next = d.start + (e.clientX - d.x) * 0.005;
+    stateRef.current.rotation = Math.max(-KARBON_MAX_ROTATION, Math.min(KARBON_MAX_ROTATION, next));
+  }, []);
+  const handleDragEnd = useCallback(() => {
+    drag.current = null;
+    stateRef.current.dragging = false;
+  }, []);
   const handleReady = useCallback(() => setReady(true), []);
 
   /**
@@ -213,7 +233,7 @@ export default function KarbonModule() {
   const actDone = [stats.burnDepthM >= BURN_TARGET_M, matchFound, stats.years >= RECOVERY_TARGET_YEARS];
 
   // Tuntunan: arahan aktif dibaca dari keadaan modul.
-  const guideState = { burnCm, timeOn: speedIndex > 0, done: actDone };
+  const guideState = { burnCm, areaHa, timeOn: speedIndex > 0, done: actDone };
   const guideSteps = KARBON_GUIDE[act];
   const guideAt = guideLevel(guideSteps, guideState, acked[act]);
   const guideStep = guideSteps[guideAt];
@@ -229,8 +249,8 @@ export default function KarbonModule() {
       ? `Terbakar ${formatThickness(stats.burnDepthM)}`
       : `Baru terbakar ${formatThickness(stats.burnDepthM)} dari ${BURN_TARGET_M * 100} cm`,
     matchFound
-      ? "Karbonnya sudah disamakan"
-      : `${formatTonnes(stats.co2T)} dari ${formatTonnes(HEADLINE_CO2_T)}`,
+      ? "CO₂-nya sudah sama besar"
+      : `CO₂ ${formatTonnes(stats.co2T)} dari ${formatTonnes(HEADLINE_CO2_T)}`,
     stats.years >= RECOVERY_TARGET_YEARS
       ? `${formatYearCount(stats.years)} berlalu`
       : `Baru ${formatYearCount(stats.years)} dari ${RECOVERY_TARGET_YEARS} tahun`,
@@ -241,6 +261,14 @@ export default function KarbonModule() {
     if (next > act && !actDone[act]) return;
     setAct(next);
     setSpeedIndex(0);
+    // Babak 02 dimulai dari kebakaran yang diberitakan, supaya pembaca punya
+    // titik berangkat: yang ditukar adalah luas dengan kedalaman, dan itu hanya
+    // terbaca bila keduanya mulai dari angka berita. Sekali saja; sesudah
+    // terjawab, pengaturnya dibiarkan seperti yang disetel pembaca.
+    if (next === TOOL_FROM.area && !matchSolvedOnce) {
+      setAreaHa(HEADLINE_FIRE.areaHa);
+      setBurnCm(Math.round(HEADLINE_FIRE.depthM * 100));
+    }
   };
 
   const current = KARBON_ACTS[act];
@@ -260,7 +288,16 @@ export default function KarbonModule() {
 
   return (
     <div ref={rootRef} id="modul-karbon" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
-      <div data-guide="figure" className="absolute inset-0">
+      {/* Lapisan 3D. Seretan tetikus memutar bongkahan. */}
+      <div
+        data-guide="figure"
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onPointerLeave={handleDragEnd}
+      >
         {mounted && (
           <KarbonScene
             sim={sim}
@@ -387,7 +424,11 @@ export default function KarbonModule() {
                   </span>
                 ))}
               </div>
-              <p className="mt-1 hidden text-[10px] leading-snug text-white/40 sm:block">{BURN_REFERENCE_NOTE}</p>
+              {/* Keterangan tanda jingga milik babak 01; sesudahnya tempatnya
+                  dipakai bagan dua kotak, supaya panel tidak bertambah tinggi. */}
+              {act === TOOL_FROM.burn && (
+                <p className="mt-1 hidden text-[10px] leading-snug text-white/40 sm:block">{BURN_REFERENCE_NOTE}</p>
+              )}
               <p className="mt-1 text-[11px] tabular-nums text-white/45">
                 {burnCm === 0
                   ? "Gambutnya masih utuh."
@@ -422,6 +463,9 @@ export default function KarbonModule() {
                 className="water-slider relative z-10 w-full"
               />
               </SliderTrack>
+              {act === TOOL_FROM.area && (
+                <AreaDepthCompare areaHa={areaHa} burnM={burnM} matched={matchVerdict === "matched"} />
+              )}
               {act === TOOL_FROM.area && (
                 <p
                   className={`mt-1.5 text-[11px] leading-snug ${
@@ -532,7 +576,7 @@ export default function KarbonModule() {
               sekaligus, tugasnya berubah menjadi menebak. */}
           {act === TOOL_FROM.area && (
             <div className="mt-3 border-t border-white/10 pt-2.5">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-white/40">Yang harus disamai</p>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-white/40">CO₂ yang harus disamai</p>
               <p className="mt-1 text-xs tabular-nums text-white">
                 {formatTonnes(HEADLINE_CO2_T)}
                 <span className="ml-1.5 text-[10px] text-white/45">
@@ -560,12 +604,17 @@ export default function KarbonModule() {
             </div>
           )}
 
+          {/* Batas model hanya tampil bila tingginya cukup: kolom ini tidak
+              boleh bergulir, dan pada layar 768 px kelima baris batas itulah
+              yang mendorongnya melewati tepi bawah. */}
           <div className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[10px] leading-snug text-white/45">
             <p>{FIGURE_NOTE.block}</p>
             <p>{FIGURE_NOTE.calendar}</p>
             <p>{FIGURE_NOTE.area}</p>
             {LIMIT_NOTES.map((note) => (
-              <p key={note}>{note}</p>
+              <p key={note} className="hidden [@media(min-height:861px)]:block">
+                {note}
+              </p>
             ))}
           </div>
         </div>
@@ -610,6 +659,15 @@ export default function KarbonModule() {
           </button>
         )}
       </nav>
+
+      {/* Petunjuk seretan, sama dengan Modul Anatomi dan Bara. Hanya pada layar
+          lebar; di bawah itu ia menabrak panel kendali. */}
+      <div
+        inert={hookOpen}
+        className={`pointer-events-none absolute bottom-8 right-10 hidden items-center gap-1.5 text-[11px] text-white/60 xl:inline-flex ${panelFade}`}
+      >
+        <Rotate3d size={14} /> Seret untuk memutar
+      </div>
 
       {/* Tuntunan langkah demi langkah, sesudah layar pembuka dan pemuatan. */}
       {!hookOpen && ready && (

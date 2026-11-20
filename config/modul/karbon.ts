@@ -62,9 +62,9 @@ export const KARBON_ACTS: readonly KarbonAct[] = [
   {
     number: "02",
     title: "Hektare bukan ukurannya",
-    body: "Berita kebakaran selalu menyebut luasnya dalam hektare, dan hampir tidak pernah menyebut sedalam apa gambutnya terbakar. Padahal keduanya masuk dengan bobot yang persis sama: lahan sepersepuluh luas yang terbakar sepuluh kali lebih dalam melepaskan karbon yang sama banyaknya.",
-    task: `Setel luas dan kedalaman sampai karbonnya sama besar, dengan luas di bawah ${NARROW_AREA_HA} ha.`,
-    hint: "Samakan karbonnya dengan kebakaran yang diberitakan, tetapi pada lahan yang jauh lebih sempit.",
+    body: `Berita kebakaran selalu menyebut luasnya dalam hektare, dan hampir tidak pernah menyebut sedalam apa gambutnya terbakar. Padahal keduanya sama penting: gambut yang terbakar adalah luas dikali kedalaman. Pengaturnya sudah disetel seperti kebakaran yang diberitakan, ${HEADLINE_FIRE.areaHa} ha sedalam ${Math.round(HEADLINE_FIRE.depthM * 100)} cm.`,
+    task: `Persempit lahannya sampai ${NARROW_AREA_HA} ha atau kurang, lalu dalamkan kebakarannya sampai CO₂-nya sama besar.`,
+    hint: `Persempit lahannya sampai ${NARROW_AREA_HA} ha, lalu dalamkan kebakarannya sampai CO₂-nya sama.`,
     fact: {
       value: `${HEADLINE_FIRE.areaHa} ha`,
       caption: "Lahan gambut yang terbakar di Pontianak pada kemarau 2019 menurut BPBD, tanpa satu pun keterangan sedalam apa",
@@ -127,10 +127,23 @@ export const KARBON_TEXT = {
 export const MATCH_TEXT = {
   label: "Karbon yang lepas",
   idle: "Belum ada yang terbakar.",
-  tooLittle: "Masih kurang. Perdalam kebakarannya, atau perluas sedikit.",
-  tooMuch: "Sudah lewat. Kurangi kedalamannya, atau persempit luasnya.",
-  tooWide: `Luasnya masih ${HEADLINE_FIRE.areaHa} hektare juga. Persempit sampai di bawah ${NARROW_AREA_HA} ha, lalu ganti dengan kedalaman.`,
-  matched: "Sama besar — pada lahan yang luasnya tinggal sepersekian.",
+  tooLittle: "Kotak jinggamu masih lebih kecil. Dalamkan kebakarannya.",
+  tooMuch: "Kotak jinggamu sudah lebih besar. Kurangi kedalamannya sedikit.",
+  tooWide: `Lahannya masih terlalu luas. Persempit sampai ${NARROW_AREA_HA} ha atau kurang.`,
+  matched: "Sama besar, pada lahan yang luasnya tinggal separuh atau kurang.",
+};
+
+/**
+ * Bagan babak 02: dua kotak yang menggantung dari garis permukaan.
+ *
+ * Lebar kotak = luas, tinggi kotak = kedalaman, jadi besar kotak = gambut
+ * yang terbakar = CO₂ yang lepas. Tugasnya menjadi menyamakan besar dua kotak,
+ * bukan mencocokkan angka ton yang tidak terbayangkan.
+ */
+export const COMPARE_TEXT = {
+  news: `Berita: ${HEADLINE_FIRE.areaHa} ha × ${Math.round(HEADLINE_FIRE.depthM * 100)} cm`,
+  yours: "Kebakaranmu",
+  note: "Lebar = luas, tinggi = kedalaman. Makin besar kotaknya, makin banyak CO₂ yang lepas.",
 };
 
 /**
@@ -179,6 +192,7 @@ export const KARBON_SUMMARY = {
 
 export type KarbonGuideState = {
   burnCm: number;
+  areaHa: number;
   timeOn: boolean;
   /** Tugas tiap babak sudah tuntas (actDone modul). */
   done: readonly boolean[];
@@ -191,8 +205,9 @@ export const KARBON_GUIDE: readonly (readonly GuideStep<KarbonGuideState>[])[] =
     { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
   ],
   [
-    { target: "area", text: "Kecilkan luasnya, lalu dalamkan kedalamannya, sampai karbonnya sama besar.", done: (s) => s.done[1] },
-    { target: "stats", text: "Lahan sempit yang terbakar dalam bisa melepas karbon sebanyak lahan luas yang dangkal." },
+    { target: "area", text: `Geser Luas terbakar ke kiri sampai ${NARROW_AREA_HA} ha atau kurang. Kotak jinggamu menyempit.`, done: (s) => s.areaHa <= NARROW_AREA_HA || s.done[1] },
+    { target: "burn", text: "Sekarang dalamkan kebakarannya sampai kotak jingga sama besar dengan kotak berita.", done: (s) => s.done[1] },
+    { target: "stats", text: "Lahan sempit yang terbakar dalam melepas CO₂ sebanyak lahan luas yang dangkal." },
     { target: "next", text: "Tugas selesai. Lanjut ke babak berikutnya." },
   ],
   [

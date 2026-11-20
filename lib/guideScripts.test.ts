@@ -66,7 +66,7 @@ describe("naskah tuntunan tiap modul", () => {
     KANAL_GUIDE.forEach((steps) => expect(guideLevel(steps, kanal, 0)).toBe(firstWait(steps)));
     const bara = { sourcePicked: true, ignited: true, timeOn: true, doused: true, thermalSeen: true, rewet: true, done: all };
     BARA_GUIDE.forEach((steps) => expect(guideLevel(steps, bara, 0)).toBe(firstWait(steps)));
-    const karbon = { burnCm: 50, timeOn: true, done: all };
+    const karbon = { burnCm: 50, areaHa: 4, timeOn: true, done: all };
     KARBON_GUIDE.forEach((steps) => expect(guideLevel(steps, karbon, 0)).toBe(firstWait(steps)));
   });
 });
