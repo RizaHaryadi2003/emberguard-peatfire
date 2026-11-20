@@ -2,7 +2,7 @@
 
 import { Html } from "@react-three/drei";
 import { ageAtDepth, formatYearCount } from "@/lib/model/carbon";
-import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, originalTopY } from "./archive";
+import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, faceLeftX, originalTopY } from "./archive";
 
 // Penggaris pada bongkahan Modul Karbon.
 //
@@ -21,8 +21,8 @@ import { AGE_RULER_GAP, AGE_TICKS_M, BLOCK_W, FACE_Z, originalTopY } from "./arc
 // Angkanya ditulis sebagai DOM lewat `Html`, bukan sebagai geometri teks,
 // supaya tetap tajam pada resolusi berapa pun dan dapat dibaca pembaca layar.
 
-/** Tepi kiri bongkahan (satuan adegan). */
-const LEFT_X = -BLOCK_W / 2;
+/** Tepi kiri bidang potong di permukaan (satuan adegan). */
+const LEFT_X = faceLeftX(0);
 
 export default function SceneLabels() {
   return (

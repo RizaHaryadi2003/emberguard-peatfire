@@ -10,17 +10,23 @@ import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
 import Backdrop from "@/components/modul/shared/scene/Backdrop";
 import { createNoiseTexture } from "@/components/modul/shared/scene/noiseTexture";
 import { QUALITY_PROFILE, type KarbonState, type Quality } from "./karbonState";
+import { PEAT_LAYER_TINT } from "@/components/modul/shared/scene/dioramaConstants";
+import { interfaceY } from "@/components/modul/shared/scene/terrain";
+import {
+  createHalfBody,
+  createSurfaceGrid,
+  updateHalfBody,
+  updateSurfaceGrid,
+} from "@/components/modul/bara/scene/crossSection";
 import {
   createFaceGrid,
-  createLostGeometry,
-  createTopGrid,
-  currentTopY,
+  createLostOutline,
+  surfaceRelief,
   updateFaceGrid,
-  updateTopGrid,
+  updateLostOutline,
   BLOCK_D,
   BLOCK_W,
   FLOOR_DEPTH_M,
-  FLOOR_Y,
 } from "./archive";
 import {
   createArchiveFaceMaterial,
@@ -89,7 +95,11 @@ const CONTENT_HEIGHT =
  * tempat yang sama supaya berpindah modul tidak terasa seperti berpindah
  * situs.
  */
-const FREE_WIDE = { left: 0.325, right: 0.805, top: 0.12, bottom: 0.95 };
+//
+// Batas atas dan bawahnya dirapatkan (semula 0,12 dan 0,95). Bongkahan yang
+// memenuhi seluruh tinggi layar menabrak kotak tuntunan dan terasa menekan;
+// bongkahan Modul Bara dan Kanal juga menyisakan langit di atas dan di bawahnya.
+const FREE_WIDE = { left: 0.34, right: 0.79, top: 0.17, bottom: 0.88 };
 
 /** Di bawah lebar lg, kolom kanan disembunyikan: yang kosong pita di tengah. */
 const FREE_NARROW = { left: 0.04, right: 0.96, top: 0.22, bottom: 0.62 };
@@ -139,7 +149,9 @@ function CameraRig() {
     const centerY =
       ((free.top + free.bottom) / 2 - 0.5) * (width / aspect) - FLOOR_DEPTH_M / 2 + HEADROOM / 4;
 
-    const target = new THREE.Vector3(centerX, centerY, 0);
+    // Badan bongkahan berada di belakang bidang potong (z ≤ 0), jadi bidikan
+    // diarahkan ke tengah tebalnya.
+    const target = new THREE.Vector3(centerX, centerY, -BLOCK_D / 2);
     const dir = new THREE.Vector3(
       Math.sin(CAMERA_AZIMUTH) * Math.cos(CAMERA_ELEVATION),
       Math.sin(CAMERA_ELEVATION),
@@ -218,7 +230,48 @@ function Simulation({
   return null;
 }
 
-/** Bongkahan: bidang potong, hamparan permukaan, dinding, dan yang hilang. */
+/**
+ * Rona timbunan baru pada badan bongkahan: rona fibrik yang dihangatkan, sama
+ * dengan pengali yang dipakai peneduh bidang potong untuk timbunan baru,
+ * supaya dinding dan bidang potong menyambung.
+ */
+const FRESH_WARM: [number, number, number] = [1.32, 1.18, 0.86];
+
+/** Tebal terkecil sebuah badan lapisan yang masih digambar (m). */
+const MIN_THICKNESS = 0.002;
+
+/**
+ * Balik urutan titik tiap segitiga supaya mukanya menghadap sisi sebaliknya.
+ *
+ * Kisi permukaan Modul Bara tersusun menghadap ke bawah, sehingga dari kamera
+ * yang memandang dari atas ia terbuang sebagai muka belakang dan yang tampak
+ * hanya tutup badan lapisan fibrik. Dibalik di sini, bukan di Modul Bara, supaya
+ * tampilan Modul Bara yang sudah jadi tidak ikut bergeser.
+ */
+function flipWinding(geom: THREE.BufferGeometry): THREE.BufferGeometry {
+  const index = geom.index;
+  if (!index) return geom;
+  const arr = index.array;
+  for (let k = 0; k < arr.length; k += 3) {
+    const b = arr[k + 1];
+    arr[k + 1] = arr[k + 2];
+    arr[k + 2] = b;
+  }
+  index.needsUpdate = true;
+  return geom;
+}
+
+/** Permukaan diangkat sedikit di atas tutup badan lapisan agar tidak berkedip. */
+const SURFACE_LIFT = 0.006;
+
+/**
+ * Bongkahan: separuh bongkahan Modul Bara yang dibaca sebagai arsip.
+ *
+ * Badan tiap lapisan memakai resep Modul Bara (foto lapisan × rona bersama),
+ * dipangkas setinggi kedalaman yang terbakar. Di atas pangkasan itu tumbuh
+ * badan kelima, timbunan baru, yang tebalnya sama dengan yang sudah tertimbun
+ * ulang. Bidang potong di depan tetap memakai peneduh arsip modul ini.
+ */
 function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: THREE.DataTexture }) {
   const colors = useLoader(
     THREE.TextureLoader,
@@ -249,30 +302,31 @@ function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: T
       t.anisotropy = 4;
     }
 
+    const bodyMaterial = (i: number, warm?: [number, number, number]) => {
+      const tint = PEAT_LAYER_TINT[PEAT_LAYERS[i].id];
+      const color = new THREE.Color(tint[0], tint[1], tint[2]);
+      if (warm) color.multiply(new THREE.Color(warm[0], warm[1], warm[2]));
+      return new THREE.MeshStandardMaterial({
+        map: colors[i],
+        normalMap: normals[i],
+        color,
+        roughness: 0.96,
+        normalScale: new THREE.Vector2(1.4, 1.4),
+      });
+    };
+
+    const outline = createLostOutline();
     return {
       faceGeom: createFaceGrid(),
       faceMaterial: createArchiveFaceMaterial(colors, normals, noise),
-      topGeom: createTopGrid(),
+      topGeom: flipWinding(createSurfaceGrid()),
       topMaterial: createArchiveTopMaterial(groundColor, groundNormal, noise),
-      lostGeom: createLostGeometry(),
+      bodies: PEAT_LAYERS.map((layer, i) => ({ layer, geom: createHalfBody(), material: bodyMaterial(i) })),
+      fresh: { geom: createHalfBody(), material: bodyMaterial(0, FRESH_WARM) },
+      lostGeom: createHalfBody(),
       lostMaterial: createLostMaterial(),
-      lostEdges: createLostEdges(),
-      // Dinding samping dan belakang: tanah yang teduh, bukan hitam — ia
-      // bagian dari bongkahan yang sama, hanya tidak kena cahaya.
-      //
-      // `envMapIntensity` ditekan jauh ke bawah, dan itu bukan selera.
-      // Dinding kanan bongkahan ini menghadap persis ke arah datangnya
-      // matahari, sehingga dengan pantulan langit penuh ia memutih menjadi
-      // bidang kelabu — dan bongkahan tanah yang salah satu sisinya kelabu
-      // polos berhenti terbaca sebagai tanah, lalu menjadi kotak. Yang harus
-      // dibaca pembaca bidang potong di muka; sisi-sisinya hanya perlu
-      // menyatakan bahwa bongkahan ini padat.
-      sideMaterial: new THREE.MeshStandardMaterial({
-        color: "#1d150f",
-        roughness: 1,
-        metalness: 0,
-        envMapIntensity: 0.18,
-      }),
+      outline,
+      lostEdges: createLostEdges(outline),
     };
   }, [colors, normals, groundColor, groundNormal, noise]);
 
@@ -282,18 +336,22 @@ function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: T
       res.faceMaterial.dispose();
       res.topGeom.dispose();
       res.topMaterial.dispose();
+      for (const b of [...res.bodies, res.fresh]) {
+        b.geom.dispose();
+        b.material.dispose();
+      }
       res.lostGeom.dispose();
       res.lostMaterial.dispose();
-      res.lostEdges.geometry.dispose();
+      res.outline.dispose();
       (res.lostEdges.material as THREE.Material).dispose();
-      res.sideMaterial.dispose();
     },
     [res],
   );
 
   const built = useRef({ burn: -1, regrown: -1 });
+  const bodyRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const freshRef = useRef<THREE.Mesh>(null);
   const lostRef = useRef<THREE.Mesh>(null);
-  const wallsRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
     const s = stateRef.current;
@@ -315,80 +373,58 @@ function Block({ stateRef, noise }: { stateRef: RefObject<KarbonState>; noise: T
     // berubah. Ambang 2 mm: lebih rapat daripada itu tidak pernah terlihat
     // pada bongkahan setinggi beberapa ratus piksel.
     const b = built.current;
-    if (Math.abs(s.drawnBurnM - b.burn) > 0.002 || Math.abs(s.drawnRegrownM - b.regrown) > 0.002) {
-      b.burn = s.drawnBurnM;
-      b.regrown = s.drawnRegrownM;
-      updateFaceGrid(res.faceGeom, s.drawnBurnM, s.drawnRegrownM);
-      updateTopGrid(res.topGeom, s.drawnBurnM, s.drawnRegrownM);
+    if (Math.abs(s.drawnBurnM - b.burn) <= 0.002 && Math.abs(s.drawnRegrownM - b.regrown) <= 0.002) return;
+    b.burn = s.drawnBurnM;
+    b.regrown = s.drawnRegrownM;
+    const burn = s.drawnBurnM;
+    const gap = Math.max(0, burn - s.drawnRegrownM);
 
-      // Kotak "yang hilang" menempati ruang antara permukaan sekarang dan
-      // permukaan asal. Tingginya karena itu bukan kedalaman bakar melainkan
-      // sisa takik yang belum tertimbun — yang sudah tertimbun ulang bukan
-      // lagi sesuatu yang hilang.
-      const gap = Math.max(0, s.drawnBurnM - s.drawnRegrownM);
-      const lostY = currentTopY(0, 0, s.drawnBurnM, s.drawnRegrownM);
-      const lost = lostRef.current;
-      if (lost) {
-        lost.visible = gap > 0.01;
-        lost.position.set(0, lostY, 0);
-        lost.scale.set(BLOCK_W, gap, BLOCK_D);
-      }
-      // Rusuknya digambar terpisah dan jauh lebih terang daripada isinya.
-      // Tanpa rusuk, kotak setipis itu terbaca sebagai tudung kelabu yang
-      // menutupi bongkahan — bukan sebagai ruang kosong berbentuk tanah yang
-      // dahulu mengisinya. Rusuklah yang mengubahnya menjadi bayangan benda.
-      res.lostEdges.visible = gap > 0.01;
-      res.lostEdges.position.set(0, lostY, 0);
-      res.lostEdges.scale.set(BLOCK_W, gap, BLOCK_D);
+    updateFaceGrid(res.faceGeom, burn, s.drawnRegrownM);
+    updateSurfaceGrid(res.topGeom, () => gap);
 
-      // Dinding samping dan belakang tumbuh dari dasar sampai permukaan yang
-      // sedang berlaku, jadi tingginya ikut berubah saat gambutnya terbakar.
-      const walls = wallsRef.current;
-      if (walls) {
-        const height = currentTopY(0, 0, s.drawnBurnM, s.drawnRegrownM) - FLOOR_Y;
-        walls.scale.set(1, Math.max(0.01, height), 1);
-      }
+    // Timbunan lama dipangkas setinggi kedalaman yang terbakar. Yang sudah
+    // tertimbun ulang tidak memulihkan lapisan lama: di atas pangkasan itu
+    // yang tumbuh timbunan baru.
+    const cut = (x: number, z: number) => surfaceRelief(x, z) - burn;
+    res.bodies.forEach(({ layer, geom }, i) => {
+      const layerTop = (x: number, z: number) =>
+        Math.min(i === 0 ? surfaceRelief(x, z) : interfaceY(layer.top, x, z), cut(x, z));
+      const layerBottom = (x: number, z: number) => Math.min(interfaceY(layer.bottom, x, z), cut(x, z));
+      const thick = updateHalfBody(geom, layerBottom, layerTop);
+      const mesh = bodyRefs.current[i];
+      if (mesh) mesh.visible = thick > MIN_THICKNESS;
+    });
+
+    const nowTop = (x: number, z: number) => surfaceRelief(x, z) - gap;
+    const freshThick = updateHalfBody(res.fresh.geom, cut, nowTop);
+    if (freshRef.current) freshRef.current.visible = freshThick > MIN_THICKNESS;
+
+    // Ruang "yang hilang" menempati antara permukaan sekarang dan permukaan
+    // asal. Yang sudah tertimbun ulang bukan lagi sesuatu yang hilang.
+    const showLost = gap > 0.01;
+    if (showLost) {
+      updateHalfBody(res.lostGeom, nowTop, surfaceRelief);
+      updateLostOutline(res.outline, burn, s.drawnRegrownM);
     }
+    if (lostRef.current) lostRef.current.visible = showLost;
+    res.lostEdges.visible = showLost;
   });
-
-  // Tinggi dinding dinyatakan sebagai skala pada grup, jadi geometrinya
-  // setinggi satu satuan dengan titik tumpu di alas.
-  const wallY = FLOOR_Y;
 
   return (
     <group>
-      <mesh
-        geometry={res.faceGeom}
-        material={res.faceMaterial}
-        receiveShadow
-      />
-      <mesh geometry={res.topGeom} material={res.topMaterial} receiveShadow castShadow />
-
-      <group ref={wallsRef} position={[0, wallY, 0]}>
-        {/* Dinding kiri dan kanan. Geometrinya setinggi satu satuan dengan
-            titik tumpu di alas, sehingga skala tegak grup di atas menjadi
-            tingginya dalam meter. */}
-        {[-1, 1].map((side) => (
-          <mesh
-            key={side}
-            position={[(side * BLOCK_W) / 2, 0.5, 0]}
-            rotation={[0, Math.PI / 2, 0]}
-            material={res.sideMaterial}
-          >
-            <planeGeometry args={[BLOCK_D, 1]} />
-          </mesh>
-        ))}
-        <mesh position={[0, 0.5, -BLOCK_D / 2]} rotation={[0, Math.PI, 0]} material={res.sideMaterial}>
-          <planeGeometry args={[BLOCK_W, 1]} />
-        </mesh>
-      </group>
-
-      {/* Dasar bongkahan. Rata dan gelap: ia hanya alas, bukan bagian dari
-          cerita, tetapi tanpanya bongkahan ini berlubang dari bawah. */}
-      <mesh position={[0, FLOOR_Y, 0]} rotation={[Math.PI / 2, 0, 0]} material={res.sideMaterial}>
-        <planeGeometry args={[BLOCK_W, BLOCK_D]} />
-      </mesh>
-
+      {res.bodies.map(({ layer, geom, material }, i) => (
+        <mesh
+          key={layer.id}
+          ref={(el) => void (bodyRefs.current[i] = el)}
+          geometry={geom}
+          material={material}
+          castShadow
+          receiveShadow
+        />
+      ))}
+      <mesh ref={freshRef} geometry={res.fresh.geom} material={res.fresh.material} castShadow receiveShadow visible={false} />
+      <mesh geometry={res.faceGeom} material={res.faceMaterial} receiveShadow />
+      <mesh geometry={res.topGeom} material={res.topMaterial} position-y={SURFACE_LIFT} receiveShadow />
       <mesh ref={lostRef} geometry={res.lostGeom} material={res.lostMaterial} visible={false} />
       <primitive object={res.lostEdges} />
     </group>

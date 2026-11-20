@@ -408,22 +408,17 @@ export function createLostMaterial(): THREE.MeshBasicMaterial {
 }
 
 /**
- * Rusuk kotak "yang hilang".
+ * Garis bentuk "yang hilang".
  *
- * Isinya saja tidak cukup. Kotak tembus pandang setipis setengah meter di
+ * Isinya saja tidak cukup. Badan tembus pandang setipis setengah meter di
  * atas bongkahan setinggi tiga meter terbaca sebagai tudung kelabu yang
  * menutupi tanahnya — pembaca melihat sesuatu yang ditambahkan, bukan sesuatu
- * yang hilang. Rusuk yang terang mengubahnya menjadi garis bentuk: ruang
+ * yang hilang. Garis yang terang mengubahnya menjadi garis bentuk: ruang
  * kosong yang persis seukuran tanah yang dahulu mengisinya.
  *
- * Titik tumpunya ikut dipindah ke alas, sama seperti isinya, supaya keduanya
- * dapat diberi kedudukan dan skala yang persis sama.
+ * Geometrinya dibentuk `createLostOutline` pada `archive.ts`.
  */
-export function createLostEdges(): THREE.LineSegments {
-  const box = new THREE.BoxGeometry(1, 1, 1);
-  box.translate(0, 0.5, 0);
-  const edges = new THREE.EdgesGeometry(box);
-  box.dispose();
+export function createLostEdges(edges: THREE.BufferGeometry): THREE.LineSegments {
   const material = new THREE.LineBasicMaterial({
     color: new THREE.Color("#ffd9b0"),
     transparent: true,

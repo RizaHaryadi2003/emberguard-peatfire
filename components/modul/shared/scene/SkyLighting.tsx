@@ -103,7 +103,17 @@ export default function SkyLighting({
     // kebakaran yang menaikkan bahaya perlahan memicu belasan pembuatan ulang
     // per detik — penyebab utama bingkai tersendat di perangkat lemah.
     envCooldown.current -= delta;
-    const bucket = Math.round(s.danger * 8) / 8;
+    // Langit untuk peta lingkungan berhenti menguning pada bahaya 0,5.
+    //
+    // Mulai 0,625, hamburan Mie yang menebal membuat cakram matahari pada
+    // langit fisik terlampau terang bagi penyangga PMREM. Peta lingkungannya
+    // menjadi tidak sah dan semua bahan PBR tergambar hitam pekat: bongkahan
+    // Modul Karbon menghitam begitu kebakaran lebih dalam dari ±75 cm
+    // (diperiksa 20 November 2026). Suasana asap tidak hilang karenanya, sebab
+    // kekuatan cahaya lingkungan, kabut, kubah asap, dan warna matahari di
+    // bawah tetap mengikuti bahaya penuh. Yang ditahan hanya rona langit yang
+    // dipantulkan.
+    const bucket = Math.min(0.5, Math.round(s.danger * 8) / 8);
     if (bucket !== lastBucket.current && envCooldown.current <= 0) {
       lastBucket.current = bucket;
       envCooldown.current = 1 / profile.envHz;

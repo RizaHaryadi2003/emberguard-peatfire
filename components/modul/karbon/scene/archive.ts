@@ -1,51 +1,45 @@
 import * as THREE from "three";
 import { PROFILE_DEPTH } from "@/lib/model/peat";
 import { BLOCK_DEPTH, BLOCK_WIDTH } from "@/components/modul/shared/scene/dioramaConstants";
-import { surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/crossSection";
+import { interfaceY, radiusAt } from "@/components/modul/shared/scene/terrain";
+import { faceBounds, surfaceRelief, UV_PER_METER } from "@/components/modul/bara/scene/crossSection";
 
-// Bentuk bongkahan Modul Karbon: petak gambut yang sama dengan Modul Anatomi dan Bara,
+// Bentuk bongkahan Modul Karbon: separuh bongkahan yang sama dengan Modul Bara,
 // dibaca sebagai arsip.
 //
 // --- Mengapa bongkahan yang sama, bukan gambar baru -------------------------
 //
-// Modul Kanal menarik kamera mundur karena pengeringan memang tidak terjadi pada
-// skala beberapa meter. Modul ini justru harus kembali ke bongkahan 4,4 m,
-// dan itu keputusan, bukan kemalasan.
-//
 // Yang diajarkan modul ini bukan peristiwa melainkan pembacaan: bidang potong
 // yang sejak Modul Anatomi dibaca pembaca sebagai "lapisan tanah" sebenarnya juga
-// sebuah kalender — satu milimeter satu tahun — dan juga sebuah gudang —
-// lima puluh lima kilogram karbon tiap meter kubik. Pembacaan baru atas
-// gambar yang sudah dikenal hanya mungkin bila gambarnya memang yang sudah
-// dikenal. Digambar ulang dengan bentuk lain, yang didapat pembaca adalah
-// benda keempat yang tidak ada hubungannya dengan tiga sebelumnya.
+// sebuah kalender (satu milimeter satu tahun) dan juga sebuah gudang (lima
+// puluh lima kilogram karbon tiap meter kubik). Pembacaan baru atas gambar yang
+// sudah dikenal hanya mungkin bila gambarnya memang yang sudah dikenal.
 //
-// Karena itu `surfaceRelief` dan `UV_PER_METER` diambil langsung dari Modul
-// Kanal, bukan disalin: permukaan bergelombang yang sama, tekstur seukuran yang
-// sama. Bila suatu saat Modul Bara mengubahnya, bongkahan ini ikut berubah —
-// dan memang harus, sebab keduanya petak tanah yang sama.
+// Karena itu bentuknya diambil langsung dari Modul Bara, bukan disalin: tapak
+// membulat, dinding berelief, tepi bidang potong yang ikut berkelok
+// (`faceBounds`), dan relief permukaan yang sama (`surfaceRelief`). Semula
+// bongkahan ini sebuah kotak bersudut tajam dengan dinding kelabu polos, dan
+// kotak seperti itu terbaca sebagai benda lain, bukan petak tanah yang sama.
 //
 // --- Satuan ------------------------------------------------------------------
 //
 // Satu satuan adegan = satu meter, mendatar maupun tegak. Tidak ada pembesaran
-// tegak sama sekali, tidak seperti Modul Kanal. Pada bongkahan selebar 4,4 m dan
-// sedalam 3,4 m perbandingannya sudah terbaca apa adanya, dan modul yang
-// seluruhnya tentang membandingkan besar tidak boleh mengawalinya dengan
-// penggaris yang sudah dibengkokkan.
+// tegak, sebab modul yang seluruhnya tentang membandingkan besar tidak boleh
+// mengawalinya dengan penggaris yang sudah dibengkokkan.
 //
-// y = 0 adalah permukaan gambut asal, sebelum apa pun terbakar. Seluruh
-// kedalaman di berkas ini dan di peneduhnya diukur dari sana — bukan dari
-// permukaan yang sedang berlaku — sebab garis-garis abad pada bidang potong
+// y = 0 kira-kira permukaan gambut asal, sebelum apa pun terbakar. Kedalaman
+// di berkas ini dan di peneduhnya diukur dari permukaan asal itu, bukan dari
+// permukaan yang sedang berlaku, sebab garis-garis abad pada bidang potong
 // menandai timbunan yang sudah ada sejak dahulu, dan timbunan itu tidak
 // berpindah hanya karena bagian atasnya habis terbakar.
 
 export { surfaceRelief, UV_PER_METER };
 
-/** Lebar bongkahan (m) — sama dengan Modul Anatomi dan Bara. */
+/** Lebar bongkahan (m), sama dengan Modul Anatomi dan Bara. */
 export const BLOCK_W = BLOCK_WIDTH;
 
-/** Tebal bongkahan ke arah belakang (m). */
-export const BLOCK_D = BLOCK_DEPTH;
+/** Tebal separuh bongkahan ke arah belakang (m), dari bidang potong ke tepi tapak. */
+export const BLOCK_D = BLOCK_DEPTH / 2;
 
 /** Kedalaman dasar bongkahan di bawah permukaan asal (m). */
 export const FLOOR_DEPTH_M = PROFILE_DEPTH;
@@ -53,25 +47,21 @@ export const FLOOR_DEPTH_M = PROFILE_DEPTH;
 /** Ketinggian dasar bongkahan (satuan adegan). */
 export const FLOOR_Y = -FLOOR_DEPTH_M;
 
-/** Kedudukan bidang potong pada sumbu z (satuan adegan). */
-export const FACE_Z = BLOCK_D / 2;
+/**
+ * Kedudukan bidang potong pada sumbu z. Digeser sedikit ke depan, sama seperti
+ * Modul Bara, supaya tidak bersaing dengan tepi badan bongkahan.
+ */
+export const FACE_Z = 0.004;
 
 /**
  * Kerapatan kisi bidang potong.
  *
- * Barisnya banyak, kolomnya sedikit, dan ketimpangan itu disengaja. Bidang
- * potong ini nyaris tidak berubah ke arah mendatar — seluruh isinya fungsi
- * kedalaman — sedangkan ke arah tegak ia harus mengikuti permukaan yang turun
- * saat terbakar dan naik kembali saat menimbun. Kolom hanya diperlukan untuk
- * mengikuti gelombang permukaan dan untuk memberi rangka singgung yang masuk
- * akal bagi peta normal.
+ * Barisnya lebih banyak daripada kolomnya: isi bidang potong seluruhnya fungsi
+ * kedalaman, sedangkan kolom hanya perlu mengikuti relief permukaan dan
+ * kelokan tepi kiri-kanan.
  */
-export const FACE_COLS = 12;
-export const FACE_ROWS = 56;
-
-/** Kerapatan kisi hamparan permukaan. */
-export const TOP_COLS = 16;
-export const TOP_ROWS = 12;
+export const FACE_COLS = 48;
+export const FACE_ROWS = 64;
 
 /**
  * Ketinggian permukaan asal (satuan adegan) pada titik (x, z).
@@ -87,9 +77,9 @@ export function originalTopY(x: number, z: number): number {
  * Ketinggian permukaan yang sedang berlaku (satuan adegan).
  *
  * Turun sebanyak yang terbakar, lalu naik kembali sebanyak yang sudah
- * tertimbun ulang. Keduanya dipisah — bukan disimpan sebagai satu angka
- * bersih — karena babak 03 justru membandingkan keduanya: yang hilang dalam
- * beberapa minggu melawan yang kembali dalam beberapa abad.
+ * tertimbun ulang. Keduanya dipisah karena babak 03 justru membandingkan
+ * keduanya: yang hilang dalam beberapa minggu melawan yang kembali dalam
+ * beberapa abad.
  */
 export function currentTopY(x: number, z: number, burnM: number, regrownM: number): number {
   return originalTopY(x, z) - Math.max(0, burnM - regrownM);
@@ -98,6 +88,16 @@ export function currentTopY(x: number, z: number, burnM: number, regrownM: numbe
 /** Kedalaman di bawah permukaan asal (m) untuk titik (x, z, y). */
 export function depthAt(x: number, z: number, y: number): number {
   return originalTopY(x, z) - y;
+}
+
+/** Ketinggian dasar bongkahan pada titik (x, z): gelombang batas tanah mineral. */
+function floorY(x: number, z: number): number {
+  return interfaceY(PROFILE_DEPTH, x, z);
+}
+
+/** Tepi kiri bidang potong pada kedalaman d di bawah permukaan asal (m). */
+export function faceLeftX(d: number): number {
+  return faceBounds(-d).left;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,9 +115,7 @@ export function depthAt(x: number, z: number, y: number): number {
  *
  * `aDepth` tidak dapat diturunkan dari ketinggian di dalam peneduh, sebab
  * permukaan asalnya bergelombang: satu ketinggian yang sama berada pada
- * kedalaman yang berbeda-beda tergantung di mana ia diukur. Dan kedalaman
- * itulah yang menentukan segalanya di sini — lapisan, umur, garis abad, dan
- * batas bakar.
+ * kedalaman yang berbeda-beda tergantung di mana ia diukur.
  */
 export function createFaceGrid(): THREE.BufferGeometry {
   const cols = FACE_COLS + 1;
@@ -146,27 +144,47 @@ export function createFaceGrid(): THREE.BufferGeometry {
   return geom;
 }
 
-/** Perbarui bidang potong untuk keadaan bakar dan timbunan ulang tertentu. */
-export function updateFaceGrid(
-  geom: THREE.BufferGeometry,
-  burnM: number,
-  regrownM: number,
-): void {
+/**
+ * Perbarui bidang potong untuk keadaan bakar dan timbunan ulang tertentu.
+ *
+ * Tiap baris membentang dari permukaan yang sedang berlaku sampai dasar
+ * bongkahan. Tepi kiri-kanannya diambil dari `faceBounds` pada ketinggian
+ * titiknya sendiri, sehingga bidang potong selalu menempel pada dinding
+ * berelief dan tidak pernah menyembul keluar darinya. Ketinggian titik
+ * bergantung pada x dan x bergantung pada tepi, jadi tepinya ditaksir sekali
+ * dari ketinggian rata-rata baris lalu dihitung ulang sekali, seperti Modul Bara.
+ */
+export function updateFaceGrid(geom: THREE.BufferGeometry, burnM: number, regrownM: number): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const uv = geom.attributes.uv as THREE.BufferAttribute;
   const depth = geom.attributes.aDepth as THREE.BufferAttribute;
+  const posArr = pos.array as Float32Array;
+  const uvArr = uv.array as Float32Array;
+  const depthArr = depth.array as Float32Array;
   const cols = FACE_COLS + 1;
+  const gap = Math.max(0, burnM - regrownM);
 
-  for (let i = 0; i < cols; i++) {
-    const x = -BLOCK_W / 2 + (i / FACE_COLS) * BLOCK_W;
-    const top = currentTopY(x, FACE_Z, burnM, regrownM);
-    const origin = originalTopY(x, FACE_Z);
-    for (let j = 0; j <= FACE_ROWS; j++) {
-      const y = top + (FLOOR_Y - top) * (j / FACE_ROWS);
+  for (let j = 0; j <= FACE_ROWS; j++) {
+    const t = j / FACE_ROWS;
+    const guess = faceBounds(-gap + (gap - PROFILE_DEPTH) * t);
+    for (let i = 0; i < cols; i++) {
+      const f = i / FACE_COLS;
+      let x = guess.left + (guess.right - guess.left) * f;
+      const top = originalTopY(x, 0) - gap;
+      const y0 = top + (floorY(x, 0) - top) * t;
+      const b = faceBounds(y0);
+      x = b.left + (b.right - b.left) * f;
+      const origin = originalTopY(x, 0);
+      const yTop = origin - gap;
+      const y = yTop + (floorY(x, 0) - yTop) * t;
+
       const k = j * cols + i;
-      pos.setXYZ(k, x, y, FACE_Z);
-      uv.setXY(k, x * UV_PER_METER, y * UV_PER_METER);
-      depth.setX(k, origin - y);
+      posArr[k * 3] = x;
+      posArr[k * 3 + 1] = y;
+      posArr[k * 3 + 2] = FACE_Z;
+      uvArr[k * 2] = x * UV_PER_METER;
+      uvArr[k * 2 + 1] = y * UV_PER_METER;
+      depthArr[k] = origin - y;
     }
   }
 
@@ -177,83 +195,77 @@ export function updateFaceGrid(
 }
 
 // ---------------------------------------------------------------------------
-//  HAMPARAN PERMUKAAN
+//  GARIS BENTUK YANG HILANG
 // ---------------------------------------------------------------------------
 
-/**
- * Kisi permukaan atas bongkahan.
- *
- * Yang dilihat pembaca di sini bukan tanahnya melainkan nasibnya: hijau
- * selama belum tersentuh, hitam berabu begitu terbakar, lalu berangsur
- * bernyawa lagi — sangat pelan — ketika timbunan baru mulai menutupnya.
- */
-export function createTopGrid(): THREE.BufferGeometry {
-  const cols = TOP_COLS + 1;
-  const rows = TOP_ROWS + 1;
-  const total = cols * rows;
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
-  geom.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(total * 2), 2));
-  geom.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(total * 3), 3));
+/** Jumlah titik garis lengkung tepi atas tapak (separuh belakang). */
+const OUTLINE_SEGMENTS = 64;
 
-  const idx: number[] = [];
-  for (let j = 0; j < TOP_ROWS; j++) {
-    for (let i = 0; i < TOP_COLS; i++) {
-      const a = j * cols + i;
-      idx.push(a, a + 1, a + cols, a + 1, a + cols + 1, a + cols);
-    }
-  }
-  geom.setIndex(idx);
-  updateTopGrid(geom, 0, 0);
+/**
+ * Garis bentuk ruang bekas gambut yang terbakar: tepi permukaan asal pada
+ * dinding belakang, garis permukaan asal pada bidang potong, dan dua garis
+ * tegak di kedua ujung bidang potong.
+ *
+ * Isinya saja tidak cukup. Badan tembus pandang setipis setengah meter di atas
+ * bongkahan setinggi tiga meter terbaca sebagai tudung kelabu; garis bentuk
+ * yang terang mengubahnya menjadi ruang kosong seukuran tanah yang dahulu
+ * mengisinya.
+ */
+export function createLostOutline(): THREE.BufferGeometry {
+  // Segmen garis: lengkung belakang + garis muka + dua garis tegak.
+  const segments = OUTLINE_SEGMENTS + FACE_COLS + 2;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(segments * 2 * 3), 3));
   return geom;
 }
 
-/** Perbarui hamparan permukaan. */
-export function updateTopGrid(
-  geom: THREE.BufferGeometry,
-  burnM: number,
-  regrownM: number,
-): void {
+/** Perbarui garis bentuk yang hilang untuk keadaan bakar dan timbunan tertentu. */
+export function updateLostOutline(geom: THREE.BufferGeometry, burnM: number, regrownM: number): void {
   const pos = geom.attributes.position as THREE.BufferAttribute;
-  const uv = geom.attributes.uv as THREE.BufferAttribute;
-  const cols = TOP_COLS + 1;
+  const arr = pos.array as Float32Array;
+  const gap = Math.max(0, burnM - regrownM);
+  let v = 0;
+  const put = (x: number, y: number, z: number) => {
+    arr[v * 3] = x;
+    arr[v * 3 + 1] = y;
+    arr[v * 3 + 2] = z;
+    v++;
+  };
 
-  for (let i = 0; i < cols; i++) {
-    const x = -BLOCK_W / 2 + (i / TOP_COLS) * BLOCK_W;
-    for (let j = 0; j <= TOP_ROWS; j++) {
-      const z = FACE_Z - (j / TOP_ROWS) * BLOCK_D;
-      const k = j * cols + i;
-      pos.setXYZ(k, x, currentTopY(x, z, burnM, regrownM), z);
-      uv.setXY(k, x * UV_PER_METER, z * UV_PER_METER);
-    }
+  // Lengkung tepi permukaan asal, sedikit di luar dinding supaya tidak
+  // tenggelam ke dalamnya.
+  const arcPoint = (i: number) => {
+    const theta = Math.PI + (i / OUTLINE_SEGMENTS) * Math.PI;
+    const r = radiusAt(theta, 0) + 0.01;
+    const x = Math.cos(theta) * r;
+    const z = Math.sin(theta) * r;
+    return [x, originalTopY(x, z), z] as const;
+  };
+  for (let i = 0; i < OUTLINE_SEGMENTS; i++) {
+    put(...arcPoint(i));
+    put(...arcPoint(i + 1));
+  }
+
+  // Garis permukaan asal pada bidang potong.
+  const line = faceBounds(0);
+  const facePoint = (i: number) => {
+    const x = line.left + ((line.right - line.left) * i) / FACE_COLS;
+    return [x, originalTopY(x, 0), FACE_Z + 0.002] as const;
+  };
+  for (let i = 0; i < FACE_COLS; i++) {
+    put(...facePoint(i));
+    put(...facePoint(i + 1));
+  }
+
+  // Dua garis tegak di ujung bidang potong: dari permukaan sekarang ke asal.
+  for (const x of [line.left, line.right]) {
+    const top = originalTopY(x, 0);
+    put(x, top - gap, FACE_Z + 0.002);
+    put(x, top, FACE_Z + 0.002);
   }
 
   pos.needsUpdate = true;
-  uv.needsUpdate = true;
-  geom.computeVertexNormals();
   geom.computeBoundingSphere();
-}
-
-// ---------------------------------------------------------------------------
-//  YANG HILANG
-// ---------------------------------------------------------------------------
-
-/**
- * Kotak tipis yang menempati ruang bekas gambut yang terbakar.
- *
- * Inilah satu-satunya cara memperlihatkan yang hilang, sebab yang hilang
- * tidak punya geometri — persis persoalan yang sama dengan garis permukaan
- * asal pada Modul Kanal, hanya di sini jawabannya tiga dimensi. Tanpa kotak ini
- * pembaca melihat permukaan turun tetapi tidak punya pembanding, dan
- * penurunan tanpa pembanding tidak terbaca sebagai kehilangan.
- *
- * Titik tumpunya dipindah ke alas supaya menaikkan `scale.y` menumbuhkan
- * kotaknya ke atas dari permukaan yang sedang berlaku.
- */
-export function createLostGeometry(): THREE.BufferGeometry {
-  const geom = new THREE.BoxGeometry(1, 1, 1);
-  geom.translate(0, 0.5, 0);
-  return geom;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,13 +275,11 @@ export function createLostGeometry(): THREE.BufferGeometry {
 /**
  * Kedalaman yang diberi angka pada penggaris umur (m).
  *
- * Tiap seribu tahun, bukan tiap seratus. Garis seratus tahunan tetap ada —
- * digambar peneduh sebagai rambut halus pada bidang potongnya, dan di sana
- * biayanya nol — tetapi angkanya tidak. Dua puluh delapan angka pada tepi
- * gambar setinggi tiga ratus piksel akan saling bertindihan menjadi gumpalan,
- * dan pelajaran yang sama sudah mahal sekali dibayar pada Modul Kanal.
+ * Tiap seribu tahun, bukan tiap seratus. Garis seratus tahunan tetap ada,
+ * digambar peneduh sebagai rambut halus pada bidang potongnya, tetapi angkanya
+ * tidak: dua puluh delapan angka pada tepi gambar akan saling bertindihan.
  */
 export const AGE_TICKS_M = [1, 2, 2.8];
 
-/** Jarak penggaris umur dari tepi kiri bongkahan (satuan adegan). */
+/** Jarak penggaris umur dari tepi kiri bidang potong (satuan adegan). */
 export const AGE_RULER_GAP = 0.45;
