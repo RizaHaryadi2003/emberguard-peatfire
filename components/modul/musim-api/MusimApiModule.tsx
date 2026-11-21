@@ -60,7 +60,7 @@ const START_DAY = 0;
  * memutar kalender dan melihat muka air turun dua kali setahun, memperpanjang
  * kemarau Agustus sampai air melewati ambang 40 dan 60 cm yang diukur di Kubu
  * Raya, lalu membandingkan tahun biasa dengan tahun El Niño. Sumbernya ada di
- * docs/md/acuan-modul-musim-api.md; angkanya dihitung lib/model/fireSeason.ts.
+ * docs/md/acuan-modul/acuan-modul-musim-api.md; angkanya dihitung lib/model/fireSeason.ts.
  */
 export default function MusimApiModule() {
   const [act, setAct] = useState(0);

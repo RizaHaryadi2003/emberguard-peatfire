@@ -28,7 +28,7 @@ const SUMMIT_KM = 12;
  * ke puncak kubah dan melihat hutan berganti mengikuti tebal gambut, melihat
  * bahwa sungai hanya membasahi tepinya sementara tengah kubah hidup dari
  * hujan, lalu membuka siapa yang tinggal di tiap jenis hutan. Sumbernya ada
- * di docs/md/acuan-modul-hutan-rawa.md.
+ * di docs/md/acuan-modul/acuan-modul-hutan-rawa.md.
  */
 export default function HutanModule() {
   const [act, setAct] = useState(0);

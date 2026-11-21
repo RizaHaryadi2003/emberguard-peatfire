@@ -2,7 +2,7 @@
  * ============================================================================
  *  TEKS MODUL 05 — MUSIM API — GANTI DI SINI
  * ============================================================================
- *  Setiap angka berasal dari docs/md/acuan-modul-musim-api.md:
+ *  Setiap angka berasal dari docs/md/acuan-modul/acuan-modul-musim-api.md:
  *    Aldrian & Susanto (2003)  — Kalimantan barat laut: dua puncak hujan,
  *                                pengaruh El Niño Juni–November
  *    Yulianti & Hayasaka (2013) — kalender hujan dan api Pontianak

@@ -9,7 +9,7 @@
  *
  *  Babak "Arsip di bawah kaki" (mencari gambut seumur Borobudur) dicabut pada
  *  11 November 2026 karena mengulang pelajaran Modul Anatomi Tahap 1. Acuan tiap
- *  angka ada di docs/md/acuan-modul-karbon.md.
+ *  angka ada di docs/md/acuan-modul/acuan-modul-karbon.md.
  * ============================================================================
  */
 
@@ -144,7 +144,7 @@ export const COMPARE_TEXT = {
 /**
  * Keterangan skala di panel kanan, sengaja hanya tiga baris. Batas pengatur
  * (100 cm, 30 ha, 500 tahun) dan sumber angkanya dicatat di
- * docs/md/acuan-modul-karbon.md, bukan di layar.
+ * docs/md/acuan-modul/acuan-modul-karbon.md, bukan di layar.
  */
 export const SCALE_NOTES: readonly string[] = [
   "Angka karbon dihitung untuk seluruh luas yang disetel, bukan untuk bongkahan ini",

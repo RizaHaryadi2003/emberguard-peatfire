@@ -87,7 +87,8 @@ data/                   Data peta beserta SUMBER.md (atribusi dan cara olah).
 scripts/                Skrip pengolah data peta.
 hooks/                  Hook React yang dipakai ulang.
 public/                 Model .glb dan tekstur .webp beserta berkas sumbernya.
-docs/md/                Dokumentasi teknis: storyboard dan acuan riset tiap modul.
+docs/md/                Dokumentasi teknis: storyboard, teknologi; acuan-modul/ = acuan riset
+                          tiap modul; simulasi/ = acuan Simulasi.
 docs/screenshots/       Tangkapan layar hasil pengujian.
 ```
 

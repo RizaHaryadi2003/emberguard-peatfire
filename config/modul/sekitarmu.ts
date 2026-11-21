@@ -6,7 +6,7 @@
  *  hutan yang jauh; modul ini membawanya dari peta Indonesia ke jalan-jalan
  *  di kotanya sendiri.
  *
- *  Setiap angka berasal dari docs/md/acuan-modul-sekitarmu.md:
+ *  Setiap angka berasal dari docs/md/acuan-modul/acuan-modul-sekitarmu.md:
  *    Anda dkk. (2021)      — luas gambut Indonesia
  *    TRGD Kalbar dalam Mongabay (2017) — luas gambut Kalimantan Barat
  *    Parabi dkk. (2026)    — gambut Kota Pontianak, verifikasi lapangan

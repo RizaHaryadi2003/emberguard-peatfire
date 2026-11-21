@@ -4,7 +4,7 @@
  * ============================================================================
  *  Logika murni Modul Musim Api, tanpa React/Three.js, sehingga dapat diuji
  *  dan dikutip di naskah. Seluruh sumber dirinci di
- *  docs/md/acuan-modul-musim-api.md (§2 dan §6).
+ *  docs/md/acuan-modul/acuan-modul-musim-api.md (§2 dan §6).
  *
  *  Gagasannya satu neraca air harian yang sangat sederhana:
  *    - pada dasarian kering (hujan < 5 mm/hari), hujan dianggap tidak

@@ -2,7 +2,7 @@
  * ============================================================================
  *  TEKS MODUL 03 — HUTAN RAWA GAMBUT — GANTI DI SINI
  * ============================================================================
- *  Setiap angka berasal dari docs/md/acuan-modul-hutan-rawa.md:
+ *  Setiap angka berasal dari docs/md/acuan-modul/acuan-modul-hutan-rawa.md:
  *    Page dkk. (1999)   — saling bergantungnya gambut dan hutan; gambut
  *                         ombrogen (hara dari hujan dan debu)
  *    Husson dkk. (2018) — jenis hutan menurut tebal gambut, tinggi kanopi,
@@ -248,7 +248,7 @@ export const IUCN_LABEL = { CR: "kritis", EN: "genting", VU: "rentan" } as const
 
 /**
  * Satwa endemik Borneo dan pohon terancam yang tercatat di Sebangau (Husson
- * dkk., 2018, Tabel A1 dan A10; dicatat di docs/md/acuan-modul-hutan-rawa.md).
+ * dkk., 2018, Tabel A1 dan A10; dicatat di docs/md/acuan-modul/acuan-modul-hutan-rawa.md).
  * Berlaku untuk hutan penelitian secara keseluruhan, bukan per jenis hutan.
  */
 export const SEBANGAU_THREATENED = {

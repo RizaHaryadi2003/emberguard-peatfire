@@ -112,7 +112,7 @@ function BoreCore({ bore, reducedMotion }: { bore: Bore; reducedMotion: boolean 
  * seluas apa gambut, di kecamatan mana, sedalam apa, dan bahwa tanah itu
  * pernah terbakar. Peta 2D, bukan adegan 3D: yang diajarkan di sini letak dan
  * ukuran, dan untuk itu peta adalah bentuk yang paling jujur. Sumber setiap
- * angka ada di docs/md/acuan-modul-sekitarmu.md.
+ * angka ada di docs/md/acuan-modul/acuan-modul-sekitarmu.md.
  */
 export default function SekitarmuModule() {
   const [act, setAct] = useState(0);

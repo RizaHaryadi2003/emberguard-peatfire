@@ -137,7 +137,7 @@ otomatis di Node tanpa peramban, dan bisa dikutip sebagai algoritma di naskah.
 Model besar memakai pola yang sama: langkah waktu tetap (`STEP_*`) agar hasil
 tidak bergantung kecepatan perangkat, satu kelas `*Sim` penyimpan keadaan, dan
 satu tipe `*Stats` yang dibaca React. Setiap tetapan menyebut sumbernya di
-komentar; sumbernya dirinci di `docs/md/acuan-modul-<nama>.md`.
+komentar; sumbernya dirinci di `docs/md/acuan-modul/acuan-modul-<nama>.md`.
 
 ---
 

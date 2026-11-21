@@ -1,7 +1,7 @@
 # Papan Cerita (Storyboard) Emberguard
 
 Dokumen ini menetapkan **alur cerita seluruh situs** dan **isi tiap babak**.
-Dokumen acuan (`docs/md/acuan-modul-<nama>.md`) mengatur **isi ilmiahnya**;
+Dokumen acuan (`docs/md/acuan-modul/acuan-modul-<nama>.md`) mengatur **isi ilmiahnya**;
 dokumen ini mengatur **bentuk interaksinya**.
 
 - Disusun 30 September 2026; direvisi 8, 13, dan 19 November 2026
@@ -201,7 +201,7 @@ Kolom tabel: **Tugas** = A1 + A2 (kalimat tugas di layar), **Yang terlihat**
 
 #### 3.1 Gambut di Sekitarmu ✅
 
-`/modul/sekitarmu` · acuan: `acuan-modul-sekitarmu.md`
+`/modul/sekitarmu` · acuan: `acuan-modul/acuan-modul-sekitarmu.md`
 
 - **Hook:** "Kebakaran gambut sering terdengar jauh, di pedalaman Kalimantan." → "Seberapa jauh, sebenarnya?"
 - **Pertanyaan:** Apakah gambut itu jauh di pedalaman, atau di bawah kota
@@ -225,7 +225,7 @@ Kolom tabel: **Tugas** = A1 + A2 (kalimat tugas di layar), **Yang terlihat**
 
 #### 3.2 Anatomi Gambut ✅
 
-`/modul/anatomi` · acuan: `acuan-modul-anatomi.md` (bagian 0)
+`/modul/anatomi` · acuan: `acuan-modul/acuan-modul-anatomi.md` (bagian 0)
 
 - **Hook:** "Tanah ini sebagian besar isinya air." → "Kok bisa terbakar?"
 - **Pertanyaan:** Gambut itu sebenarnya apa, dan mengapa ia bisa terbakar?
@@ -248,7 +248,7 @@ Kolom tabel: **Tugas** = A1 + A2 (kalimat tugas di layar), **Yang terlihat**
 
 #### 3.3 Hutan Rawa Gambut ✅
 
-`/modul/hutan-rawa` · acuan: `acuan-modul-hutan-rawa.md`
+`/modul/hutan-rawa` · acuan: `acuan-modul/acuan-modul-hutan-rawa.md`
 
 - **Hook:** "Dari luar, hutan rawa gambut tampak seperti hutan yang sama di mana-mana." → "Benarkah begitu?"
 - **Pertanyaan:** Apa yang tumbuh di atas gambut, dan mengapa hutan dan
@@ -275,7 +275,7 @@ pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.
 
 #### 3.4 Kanal & Pengeringan ✅
 
-`/modul/kanal` · acuan: `acuan-modul-kanal.md`
+`/modul/kanal` · acuan: `acuan-modul/acuan-modul-kanal.md`
 
 - **Hook:** "Parit di sekitar rumahmu terus mengalirkan air, bahkan di musim kemarau." → "Dari mana air itu datang?"
 - **Pertanyaan:** Bagaimana parit membuat lahan basah menjadi kering dan
@@ -298,7 +298,7 @@ pencegahan bagi warga menyusul saat Bagian Mencegah dikerjakan.
 
 #### 3.5 Musim Api ✅
 
-`/modul/musim-api` · acuan: `acuan-modul-musim-api.md` · model: `lib/model/fireSeason.ts`
+`/modul/musim-api` · acuan: `acuan-modul/acuan-modul-musim-api.md` · model: `lib/model/fireSeason.ts`
 (dibangun 19 November 2026; tampilan belum diperiksa di peramban)
 
 - **Pertanyaan:** Mengapa asap di Pontianak datang hampir selalu sekitar
@@ -360,7 +360,7 @@ lahan") masih sementara sampai acuannya ditetapkan.
 
 #### 3.7 Bara di Bawah Tanah ✅ (patokan)
 
-`/modul/bara` · acuan: `acuan-modul-bara.md`
+`/modul/bara` · acuan: `acuan-modul/acuan-modul-bara.md`
 
 - **Hook:** "Tidak ada api yang terlihat." → "Asapnya dari mana?"
 - **Pertanyaan:** Mengapa api gambut sulit dipadamkan?
@@ -384,7 +384,7 @@ lahan") masih sementara sampai acuannya ditetapkan.
 
 #### 3.8 Gudang Karbon ✅
 
-`/modul/karbon` · acuan: `acuan-modul-karbon.md`
+`/modul/karbon` · acuan: `acuan-modul/acuan-modul-karbon.md`
 
 - **Hook:** "Asap kebakaran gambut bisa bertahan berminggu-minggu." → "Apa sebenarnya yang terbakar?"
 - **Pertanyaan:** Apa yang lepas saat gambut terbakar, dan berapa lama
@@ -423,7 +423,7 @@ bahan, **belum boleh dikodekan**:
 
 Belum ada acuan. Calon sumber lokal: Faradiba dkk. (2022), Rasau Jaya,
 Kubu Raya (36 jenis di hutan utuh vs 8 jenis di bekas terbakar); lihat
-catatan sumber C di `acuan-modul-hutan-rawa.md`.
+catatan sumber C di `acuan-modul/acuan-modul-hutan-rawa.md`.
 
 ---
 
