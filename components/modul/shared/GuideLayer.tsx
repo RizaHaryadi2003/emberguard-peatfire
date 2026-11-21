@@ -97,6 +97,18 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
     return () => window.clearTimeout(t);
   }, [shown, hasAuto, autoMs]);
 
+  // Di layar sempit gelembung arahan terakhir duduk di atas panel kendali, dan
+  // karena arahan terakhir tidak pernah pindah, ia akan menutupi panel itu
+  // selamanya. Jadi di sana gelembungnya memudar setelah waktu bacanya habis;
+  // sorotan pada tombol lanjut tetap tampil.
+  const isLast = index === total;
+  const [faded, setFaded] = useState(false);
+  useEffect(() => {
+    if (!shown || !isLast || !window.matchMedia("(max-width: 767px)").matches) return;
+    const t = window.setTimeout(() => setFaded(true), readMs(text) + 1500);
+    return () => window.clearTimeout(t);
+  }, [shown, isLast, text]);
+
   // Ukur letak target tiap bingkai; state hanya diperbarui bila berubah.
   useEffect(() => {
     let frame = 0;
@@ -184,7 +196,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
           ? { bottom: -5, left: arrowX }
           : { top: -5, left: arrowX };
 
-  const kind: "do" | "look" | "next" = index === total ? "next" : onAuto ? "look" : "do";
+  const kind: "do" | "look" | "next" = isLast ? "next" : onAuto ? "look" : "do";
   const Icon = kind === "next" ? ArrowRight : kind === "look" ? Eye : large ? Hand : MousePointerClick;
   const label = kind === "next" ? "Lanjut" : kind === "look" ? "Perhatikan" : "Lakukan";
 
@@ -203,7 +215,16 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
           style={{ left: box.left - 6, top: box.top - 6, width: box.width + 12, height: box.height + 12 }}
         />
       )}
-      <div ref={bubbleRef} key={`${target}-${text}`} role="status" className="stage-in absolute" style={{ width: BUBBLE_W, ...bubbleStyle }}>
+      <div
+        ref={bubbleRef}
+        key={`${target}-${text}`}
+        role="status"
+        // Animasi stage-in menahan opacity akhirnya (fill both), jadi pudarnya
+        // dipasang pada pembungkus ini, bukan pada elemen beranimasi di dalam.
+        className={`absolute transition-opacity duration-700 ${faded ? "opacity-0" : ""}`}
+        style={{ width: BUBBLE_W, ...bubbleStyle }}
+      >
+        <div className="stage-in relative">
         {/* Panah ke target. */}
         <span className="absolute h-3 w-3 rotate-45 border border-white/15 bg-[#111416]" style={arrowStyle} />
         <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111416]/95 p-3 text-white shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
@@ -234,6 +255,7 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
               style={{ animationDuration: `${autoMs}ms` }}
             />
           )}
+        </div>
         </div>
       </div>
     </div>

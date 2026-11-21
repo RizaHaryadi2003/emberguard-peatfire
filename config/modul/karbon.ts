@@ -14,14 +14,7 @@
  */
 
 import type { GuideStep } from "@/lib/guide";
-import {
-  AREA_MAX_HA,
-  BURN_DEPTH_MAX_M,
-  HEADLINE_FIRE,
-  NARROW_AREA_HA,
-  PERSON_T_CO2_PER_YEAR,
-  RECOVERY_MAX_YEARS,
-} from "@/lib/model/carbon";
+import { HEADLINE_FIRE, NARROW_AREA_HA, PERSON_T_CO2_PER_YEAR } from "@/lib/model/carbon";
 
 export type KarbonAct = {
   number: string;
@@ -76,9 +69,11 @@ export const KARBON_ACTS: readonly KarbonAct[] = [
     body: "Gambut yang terbakar tidak kembali dalam satu musim tanam. Ia menumpuk dengan laju yang sama seperti dahulu, rata-rata satu milimeter setahun, sehingga takik yang ditinggalkan api dalam beberapa minggu baru tertutup setelah berabad-abad. Jalankan waktunya dan lihat sendiri seberapa jauh ia sampai.",
     task: "Jalankan waktu sampai sedikitnya satu abad berlalu.",
     hint: "Jalankan waktu pemulihannya sampai satu abad.",
+    // Nilainya dihitung dari kedalaman terbakar (lihat KarbonModule); ini
+    // hanya tampil selama belum ada yang terbakar.
     fact: {
-      value: "5 abad",
-      caption: "Lama menimbun kembali setengah meter gambut yang hilang terbakar",
+      value: "Berabad-abad",
+      caption: "Lama menimbun kembali gambut yang hilang terbakar",
     },
   },
 ];
@@ -147,35 +142,14 @@ export const COMPARE_TEXT = {
 };
 
 /**
- * Keterangan yang menjelaskan apa yang sedang dilihat pembaca.
- *
- * Modul ini memperlihatkan satu bongkahan tetapi menghitung satu hektare, dan
- * dua hal itu harus dikatakan, bukan dibiarkan ditebak. Modul Kanal belajar
- * mahal soal ini: dua gambar berbeda skala tanpa keterangan membuat keduanya
- * tidak dapat dibaca sama sekali.
+ * Keterangan skala di panel kanan, sengaja hanya tiga baris. Batas pengatur
+ * (100 cm, 30 ha, 500 tahun) dan sumber angkanya dicatat di
+ * docs/md/acuan-modul-karbon.md, bukan di layar.
  */
-export const FIGURE_NOTE = {
-  block: "Gambar: bongkahan 4,4 m — petak yang sama dengan Modul Anatomi dan Bara",
-  area: "Angka karbon dihitung untuk seluruh luas yang disetel, bukan untuk bongkahan ini",
-  calendar: "Alur pada bidang potong: tiap garis 100 tahun, garis tebal 500 tahun",
-};
-
-/** Keterangan skala yang wajib tampil pada gambar. */
-export const SCALE_NOTE = {
-  density: "Kerapatan gambut kering 100 kg/m³, kadar karbon 55%: ± 55 kg karbon tiap m³",
-  person: `Pembanding: emisi CO₂ rata-rata satu orang Indonesia, ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t/tahun`,
-  burn: (maxM: number) => `Kedalaman terbakar dibatasi ${maxM * 100} cm`,
-  area: (maxHa: number) => `Luas dibatasi ${maxHa} ha`,
-  time: (maxYears: number) => `Waktu pemulihan dibatasi ${maxYears} tahun`,
-};
-
-/** Keterangan batas yang dipakai panel kanan, sudah terisi angkanya. */
-export const LIMIT_NOTES: readonly string[] = [
-  SCALE_NOTE.density,
-  SCALE_NOTE.person,
-  SCALE_NOTE.burn(BURN_DEPTH_MAX_M),
-  SCALE_NOTE.area(AREA_MAX_HA),
-  SCALE_NOTE.time(RECOVERY_MAX_YEARS),
+export const SCALE_NOTES: readonly string[] = [
+  "Angka karbon dihitung untuk seluruh luas yang disetel, bukan untuk bongkahan ini",
+  "Tiap m³ gambut kering menyimpan ± 55 kg karbon",
+  `Pembanding: satu orang Indonesia melepas ± ${PERSON_T_CO2_PER_YEAR.toLocaleString("id-ID")} t CO₂ setahun`,
 ];
 
 /* ============================================================================
@@ -207,6 +181,6 @@ export const KARBON_GUIDE: readonly (readonly GuideStep<KarbonGuideState>[])[] =
     { target: "time", text: "Jalankan waktu: pilih salah satu kecepatan.", done: (s) => s.timeOn },
     { target: "stats", text: "Gambut tumbuh lagi, tetapi sangat lambat. Tunggu sampai satu abad berlalu.", done: (s) => s.done[2] },
     // Kalimat penutup modul.
-    { target: "next", text: "Hutan di atasnya dapat ditanam ulang dalam beberapa dasawarsa. Gambut di bawahnya tidak. Lanjut ke modul berikutnya." },
+    { target: "next", text: "Hutan di atasnya dapat ditanam ulang dalam beberapa dasawarsa. Gambut di bawahnya tidak. Modul selesai." },
   ],
 ];

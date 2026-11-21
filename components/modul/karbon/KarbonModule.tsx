@@ -6,19 +6,19 @@ import { Check, FastForward, MousePointerClick, Pause, Rotate3d, RotateCcw } fro
 import {
   BURN_REFERENCE_NOTE,
   BURN_REFERENCES,
-  FIGURE_NOTE,
   KARBON_ACTS,
   KARBON_GUIDE,
   KARBON_HOOK,
   KARBON_TEXT,
-  LIMIT_NOTES,
   MATCH_TEXT,
+  SCALE_NOTES,
   TIME_SPEEDS,
 } from "@/config/modul/karbon";
 import { moduleAt } from "@/config/modules-content";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
+import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
   AREA_MAX_HA,
@@ -26,6 +26,7 @@ import {
   BURN_DEPTH_MAX_M,
   CarbonSim,
   formatArea,
+  formatCenturies,
   formatPeople,
   formatThickness,
   formatTonnes,
@@ -272,6 +273,16 @@ export default function KarbonModule() {
   };
 
   const current = KARBON_ACTS[act];
+  /**
+   * Angka kunci babak 03 dihitung dari kedalaman yang benar-benar terbakar,
+   * bukan angka tetap: dulu tertulis "5 abad" walau yang terbakar 66 cm.
+   */
+  const factValue =
+    act === TOOL_FROM.time && stats.lostYears > 0
+      ? stats.lostYears >= 100
+        ? `± ${formatCenturies(stats.lostYears)}`
+        : formatYearCount(stats.lostYears)
+      : current.fact.value;
   const dense = act >= 1;
 
   /** Semua panel disembunyikan selama layar pembuka tampil, sama dengan Modul Anatomi, Kanal, dan Bara. */
@@ -329,7 +340,9 @@ export default function KarbonModule() {
         }`}
         aria-hidden={ready}
       >
-        <p className="animate-pulse text-xs uppercase tracking-[0.25em] text-white/40">Membuka arsip gambut…</p>
+        {/* Selama layar pembuka masih tampil, tulisan pemuatan disembunyikan
+            agar tidak bertumpuk dengan pertanyaannya (sama dengan Modul Bara). */}
+        {!hookOpen && <p className="animate-pulse text-xs uppercase tracking-[0.25em] text-white/40">Membuka arsip gambut…</p>}
       </div>
 
       {/* Gradasi agar teks tetap terbaca di atas gambar */}
@@ -433,13 +446,18 @@ export default function KarbonModule() {
                 {burnCm === 0
                   ? "Gambutnya masih utuh."
                   : `Setara ${formatYearCount(stats.lostYears)} penimbunan.`}
+                {/* Kolom angka kanan hanya ada mulai lg; di bawahnya angka
+                    inti babak 01 ditulis di sini. */}
+                {act === TOOL_FROM.burn && burnCm > 0 && (
+                  <span className="lg:hidden"> CO₂ lepas {formatTonnes(stats.co2T)} dari {formatArea(stats.areaHa)}.</span>
+                )}
               </p>
             </div>
           )}
 
           {/* Luas terbakar — babak 02. */}
           {act >= TOOL_FROM.area && (
-            <div data-guide="area" className="mt-3 border-t border-white/10 pt-3">
+            <div data-guide="area" className={`mt-3 border-t border-white/10 pt-3 ${act > TOOL_FROM.area ? "max-md:hidden" : ""}`}>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="karbon-area" className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
                   {KARBON_TEXT.areaLabel}
@@ -480,7 +498,10 @@ export default function KarbonModule() {
 
           {/* Waktu pemulihan — babak 03. */}
           {act >= TOOL_FROM.time && (
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+            <div className="mt-3 border-t border-white/10 pt-3">
+            {/* flex-wrap: di layar sempit tombol kecepatan turun ke baris
+                kedua, tidak lagi menindih label dan angka tahunnya. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
                   {KARBON_TEXT.timeLabel}
@@ -512,6 +533,18 @@ export default function KarbonModule() {
                 ))}
               </div>
             </div>
+            {/* Angka inti babak 03 untuk layar tanpa kolom kanan. */}
+            {burnCm > 0 && (
+              <p className="mt-2 text-[11px] tabular-nums text-white/60 lg:hidden">
+                Sudah tertimbun {formatThickness(stats.regrownM)}
+                {stats.remainingM > 0 && (
+                  <>
+                    {" · "}masih kurang <span className="text-[#e0a265]">{formatYearCount(stats.yearsLeft)}</span>
+                  </>
+                )}
+              </p>
+            )}
+            </div>
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -542,7 +575,7 @@ export default function KarbonModule() {
       <div key={stageKey} style={stageBase(1.15)} inert={hookOpen} className={`${stageKids} absolute bottom-24 right-5 top-32 hidden w-[236px] flex-col gap-3 overflow-y-auto lg:flex xl:right-10 [&>*]:shrink-0 ${panelFade}`}>
         {/* Angka kunci babak */}
         <div className="rounded-3xl border border-white/10 bg-black/45 p-3.5 backdrop-blur-xl [@media(min-height:769px)]:p-4">
-          <p className="font-playfair text-2xl italic leading-none text-[#e0a265]">{current.fact.value}</p>
+          <p className="font-playfair text-2xl italic leading-none text-[#e0a265]">{factValue}</p>
           <p
             className="mt-1.5 hidden text-[10px] leading-snug text-white/55 [@media(min-height:701px)]:block"
             title={current.fact.caption}
@@ -604,17 +637,10 @@ export default function KarbonModule() {
             </div>
           )}
 
-          {/* Batas model hanya tampil bila tingginya cukup: kolom ini tidak
-              boleh bergulir, dan pada layar 768 px kelima baris batas itulah
-              yang mendorongnya melewati tepi bawah. */}
+          {/* Hanya tiga keterangan; sisanya ada di dokumen acuan. */}
           <div className="mt-3 space-y-1 border-t border-white/10 pt-2.5 text-[10px] leading-snug text-white/45">
-            <p>{FIGURE_NOTE.block}</p>
-            <p>{FIGURE_NOTE.calendar}</p>
-            <p>{FIGURE_NOTE.area}</p>
-            {LIMIT_NOTES.map((note) => (
-              <p key={note} className="hidden [@media(min-height:861px)]:block">
-                {note}
-              </p>
+            {SCALE_NOTES.map((note) => (
+              <p key={note}>{note}</p>
             ))}
           </div>
         </div>
@@ -648,6 +674,11 @@ export default function KarbonModule() {
           })}
         </div>
 
+        {act === KARBON_ACTS.length - 1 && actDone[act] && (
+          <div data-guide="next" className="mb-1">
+            <NextModuleAdvance href="/modul/karbon" />
+          </div>
+        )}
         {canAdvance && (
           <button
             type="button"

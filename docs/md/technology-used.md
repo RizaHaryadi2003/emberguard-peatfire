@@ -4,11 +4,13 @@ Dokumen ini merangkum teknologi yang dipakai proyek **Emberguard-peatfire**
 beserta alasan tiap pilihan. Isinya disusun dari pemeriksaan langsung berkas
 proyek, bukan dari rencana.
 
-- Tanggal pemeriksaan: **19 November 2026** (sebelumnya 28 Oktober 2026)
+- Tanggal pemeriksaan: **21 November 2026** (sebelumnya 19 November 2026)
 - Diverifikasi dengan: `npm test` (21 berkas, **244 uji lolos**),
   `npx tsc --noEmit` (tanpa keluhan), `npm run lint` (0 galat), dan
   `npm run build` (berhasil, 14 rute). Diperbarui sesudah Modul Musim Api:
-  22 berkas, 264 uji lolos
+  22 berkas, 264 uji lolos. Diperbarui sesudah kartu hasil dihapus
+  (21 November 2026): 24 berkas, 262 uji lolos; build berhasil, 20 rute,
+  semuanya statis
 
 ---
 

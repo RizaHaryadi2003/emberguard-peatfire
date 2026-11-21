@@ -16,7 +16,7 @@ tanda kedalaman terukur 2006 dan 1997 dipasang pada pengatur bakar, dan
 kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 
 - Tanggal: 11 November 2026
-- Berlaku untuk: Modul 04 (`/gambut/karbon`), model di `lib/model/carbon.ts`
+- Berlaku untuk: Modul 08 Gudang Karbon (`/modul/karbon`), model di `lib/model/carbon.ts`, teks di `config/modul/karbon.ts`
 - Prinsip: setiap aksi harus membawa satu pengetahuan inti modul, dengan
   perbedaan sebelum–sesudah yang jelas (memori `aksi-harus-membawa-ilmu`)
 
@@ -57,7 +57,7 @@ kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 | **Kedalaman terbakar, LiDAR (Borneo)** | Ballhorn, U., Siegert, F., Mason, M., & Limin, S. (2009). Derivation of burn scar depths and estimation of carbon emissions with LIDAR in Indonesian peatlands. *PNAS*, 106, 21213–21218. | Abstrak dan ringkasan |
 | **Karbon per volume gambut** | Warren, M. W., Kauffman, J. B., Murdiyarso, D., dkk. (2012). A cost-efficient method to assess carbon stocks in tropical peat soil. *Biogeosciences*, 9, 4477–4485. <https://doi.org/10.5194/bg-9-4477-2012> | Abstrak; teks lengkap terbuka |
 | **Laju menabung karbon (Kalimantan Barat)** | Anshari dkk. (2026), *Scientific Reports*, 16, 5496 (acuan Modul 01) | Terbaca |
-| Pembanding emisi per orang | Data emisi nasional (mis. Global Carbon Budget lewat Our World in Data) | **Belum ditetapkan**; nilai 2023 berkisar 2,6–2,8 t CO₂ per orang menurut beberapa kompilasi |
+| Pembanding emisi per orang | Global Carbon Budget lewat Our World in Data (2024) | Ditetapkan 2,8 t CO₂ per orang per tahun |
 
 ### Batas acuan (perlu ditulis jujur di naskah)
 
@@ -84,8 +84,8 @@ kalimat "tidak pernah lebih cepat" dihapus. Modul tetap di Bagian 01.
 |---|---|---|---|
 | `PEAT_BULK_DENSITY_KG_M3` × `CARBON_FRACTION` | 100 × 0,55 = 55 kg C/m³ | Warren: BD 0,10 → 54,9 kg C/m³ | **Cocok.** Ganti dasar perhitungannya ke persamaan Warren |
 | CO₂ per ha per 1 m terbakar | ± 2.000 t | 55 kg C/m³ × 10.000 m³ × 44/12 = 2.017 t | **Cocok**, kini bersumber |
-| `HEADLINE_FIRE` (kebakaran "dari berita") | 120 ha, terbakar **0,08 m** | Rata-rata terukur 0,33 m (Ballhorn) sampai > 0,5 m (Page) | **Bertentangan.** 8 cm jauh di bawah rata-rata terukur; dan "berita" itu sendiri tidak bersumber. Keputusan B |
-| `PERSON_T_CO2_PER_YEAR` | 2,3 t | 2,6–2,8 t (2023, beberapa kompilasi) | Perbarui dengan satu sumber resmi |
+| `HEADLINE_FIRE` (kebakaran "dari berita") | ~~120 ha, 0,08 m~~ → **10 ha, 0,33 m** | Luas: BPBD Pontianak (ANTARA, 13 Agustus 2019); kedalaman: Ballhorn (2009) | **Sudah diperbaiki** 11 November 2026 |
+| `PERSON_T_CO2_PER_YEAR` | ~~2,3 t~~ → **2,8 t** | Global Carbon Budget lewat Our World in Data (2024) | **Sudah diperbaiki** 11 November 2026 |
 | Laju menabung kembali | 1 mm/tahun | Anshari dkk. (2026) | Tetap |
 
 ## 6. Kalibrasi ke animasi, per babak
@@ -161,3 +161,31 @@ Permintaan pengguna: kutipan tidak ikut tampil di desain. Teks di layar kini tan
 - **Babak 02** dimulai dari kebakaran yang diberitakan (10 ha × 33 cm) dan
   memakai bagan dua kotak (lebar = luas, tinggi = kedalaman). Tugasnya tetap:
   luas ≤ 5 ha dengan CO₂ yang sama (selisih ≤ 4%).
+
+## Perubahan 21 November 2026
+
+- **Kartu penutup dihapus** dari semua modul. Kalimat penutup Karbon
+  ("Hutan di atasnya dapat ditanam ulang dalam beberapa dasawarsa. Gambut di
+  bawahnya tidak.") kini tampil pada arahan terakhir, di samping panah
+  kembali ke daftar modul. Panah itu sebelumnya tidak ada di babak 03.
+- **Angka kunci babak 03** dihitung dari kedalaman terbakar: 1 mm per tahun
+  (Anshari dkk., 2026), sehingga 66 cm tertulis "± 7 abad". Sebelumnya
+  tertulis tetap "5 abad", yang hanya benar untuk 50 cm.
+- **Panel kanan dipangkas menjadi tiga keterangan**: angka dihitung untuk
+  seluruh luas, ± 55 kg karbon per m³ (Warren dkk., 2012), dan pembanding
+  2,8 t CO₂ per orang. Keterangan yang dipindah dari layar ke sini:
+
+  | Keterangan | Nilai | Alasan dipindah |
+  |---|---|---|
+  | Lebar bongkahan | 4,4 m, petak yang sama dengan Modul Anatomi dan Bara | Sudah ada label "Bongkahan · lebar 4,4 m" pada gambar |
+  | Alur pada bidang potong | Tiap garis 100 tahun, garis tebal 500 tahun | Label umur (1.000, 2.000, 2.800 tahun) sudah ada pada bidang potong |
+  | Batas kedalaman terbakar | 100 cm | Terlihat dari ujung pengatur |
+  | Batas luas | 1–30 ha | Terlihat dari ujung pengatur |
+  | Batas waktu pemulihan | 500 tahun | Ditandai "batas model" saat tercapai |
+
+- **Ponsel**: babak 01 menulis CO₂ yang lepas di bawah pengatur; babak 03
+  menulis "sudah tertimbun … · masih kurang … tahun", karena kolom angka
+  kanan hanya ada di laptop. Pengatur luas disembunyikan di babak 03 pada
+  layar sempit agar bongkahan tidak tertutup.
+- **Masih terbuka**: lama tumbuh kembali tumbuhan (±2–15 tahun tumbuhan
+  bawah, ±8–60 tahun pohon) masih ilustratif dan belum bersumber.
