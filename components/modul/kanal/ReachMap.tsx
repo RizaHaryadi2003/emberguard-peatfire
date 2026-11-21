@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { TRANSECT_LENGTH_M, type DrainageStats } from "@/lib/model/drainage";
 import { CHART_TEXT, FIGURE_NOTE, GUESS_TEXT } from "@/config/modul/kanal";
-import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsText as fieldsTextOf, reachesBeyond } from "@/lib/kartu/kanalCard";
+import { FIELD_LENGTH_M, FIELD_WIDTH_M, fieldsText as fieldsTextOf, reachesBeyond } from "@/lib/model/reach";
 
 // Peta lahan: kanal dan daerah rawan terbakar, dilihat dari atas.
 //

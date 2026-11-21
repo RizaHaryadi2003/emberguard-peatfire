@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   title: "Emberguard — Media Edukasi Pencegahan Karhutla",
   description:
     "Media edukasi interaktif tentang pencegahan kebakaran hutan dan lahan di Kalimantan Barat, Indonesia.",
+  // Gambar pratinjau besar saat tautan dibagikan (app/opengraph-image.tsx).
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

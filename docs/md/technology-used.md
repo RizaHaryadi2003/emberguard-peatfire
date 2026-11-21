@@ -37,7 +37,7 @@ proyek, bukan dari rencana.
 | Bahasa pemrograman | **TypeScript** (mode `strict`) untuk seluruh kode; **GLSL** untuk peneduh (*shader*); JavaScript ESM hanya untuk berkas konfigurasi |
 | Kerangka kerja | **Next.js 16.4.5** (App Router) di atas **React 19.2.8** |
 | Sisi depan (*frontend*) | TSX + Tailwind CSS v4; grafis 3D dengan Three.js lewat React Three Fiber; animasi antarmuka dengan GSAP |
-| Sisi belakang (*backend*) | **Tidak ada basis data, akun, atau API data.** Satu-satunya kode sisi server adalah pembuat gambar kartu hasil (bagian 4.4) |
+| Sisi belakang (*backend*) | **Tidak ada basis data, akun, atau API data.** Tidak ada kode sisi server; gambar pratinjau tautan dibuat saat build (bagian 4.4) |
 | Tempat berjalan | Vercel: cabang `dev` = pratinjau, `main` = produksi |
 
 Seluruh simulasi ilmiah berjalan **di peramban pengguna**. Alasannya ada di
@@ -91,20 +91,20 @@ Versi di bawah adalah versi yang benar-benar terpasang (`package-lock.json`).
 
 | Folder | Isi |
 |---|---|
-| `app/` | Rute halaman (`page.tsx`), tata letak, kartu hasil (`kartu/route.tsx`) |
+| `app/` | Rute halaman (`page.tsx`), tata letak, gambar pratinjau tautan (`opengraph-image.tsx`) |
 | `components/layout/` | Navbar dan halaman penanda |
 | `components/hero/` | Beranda |
-| `components/modul/shared/` | Kerangka bersama semua modul: hook, babak, penutup, dialog bagikan, ajakan buka di laptop |
+| `components/modul/shared/` | Kerangka bersama semua modul: hook, babak, panah ke modul berikutnya, tuntunan, ajakan buka di laptop |
 | `components/modul/shared/scene/` | Fondasi adegan 3D bersama: langit dan cahaya, tanah, tumbuhan, profil mutu, penjaga performa |
 | `components/modul/<nama>/` | Komponen dan adegan per modul |
 | `config/` | Seluruh teks Bahasa Indonesia; `config/modul/<nama>.ts` per modul, `config/modules-content.ts` daftar modul |
 | `lib/model/` | Model ilmiah murni |
-| `lib/kartu/` | Penyandi nilai kartu hasil dan fon kartu |
+| `lib/preview/` | Gambar pratinjau tautan dan fonnya |
 | `lib/` (akar) | Pembantu umum: suara, batas bingkai, kursor, acak ber-*seed* |
 | `hooks/` | Hook React bersama (`useSmoothCursor`) |
 | `data/` | Data peta Modul Gambut di Sekitarmu + sumbernya |
 | `public/` | Model 3D, tekstur, foto, citra satelit |
-| `assets/fonts/` | Fon untuk gambar kartu hasil |
+| `assets/fonts/` | Fon untuk gambar pratinjau tautan |
 | `docs/md/` | Dokumen acuan, storyboard, dan dokumen ini |
 
 ### 3.2 Empat lapis dengan arah ketergantungan satu arah
@@ -188,29 +188,32 @@ sementara berkas Three.js yang besar diunduh di belakang.
 ○ /modul                ○ /modul/sekitarmu
 ○ /modul/musim-api
 ○ /simulasi             ○ /_not-found
-ƒ /modul/anatomi        ƒ /modul/anatomi/kartu
-ƒ /modul/bara           ƒ /modul/bara/kartu
-ƒ /modul/kanal          ƒ /modul/kanal/kartu
+○ /modul/anatomi        ○ /modul/bara
+○ /modul/kanal          ○ …/opengraph-image (8 gambar)
 
-○ statis   ƒ dirender saat diminta
+○ statis
 ```
 
-Halaman Anatomi, Bara, dan Kanal dirender saat diminta karena membaca
-parameter alamat untuk metadata kartu yang dibagikan (4.4). Halaman lainnya
-statis.
+Sejak kartu hasil dihapus (4.4), semua halaman statis.
 
-### 4.4 Kartu hasil untuk media sosial
+### 4.4 Gambar pratinjau tautan
 
-Modul Anatomi, Bara, dan Kanal punya rute `kartu/route.tsx` (*Route Handler*)
-yang membuat gambar PNG memakai `ImageResponse` dari `next/og`:
+Kartu hasil yang bisa dibagikan dihapus pada 21 November 2026. Hanya ada di
+3 dari 7 modul, tidak menambah pengetahuan, dan merupakan satu-satunya kode
+sisi server. Kalimat penutup yang membawa ilmu dipindah ke arahan terakhir
+tiap modul.
 
-- Nilai hasil pembaca (mis. kedalaman kanal dan tebakannya) dibawa di
-  parameter alamat, lalu dibaca oleh penyandi di `lib/kartu/`.
-- `generateMetadata` di `page.tsx` memasang gambar itu sebagai `og:image`,
-  sehingga tautan yang dibagikan menampilkan kartu pembaca.
-- Fon kartu dibaca dari `assets/fonts/` (Inter dan Playfair Display, lisensi
-  OFL disertakan), tidak diunduh dari internet.
-- Gambar disimpan di tembolok 24 jam (`Cache-Control: max-age=86400`).
+Agar tautan yang dibagikan di media sosial tetap tampil menarik, tiap modul
+punya `opengraph-image.tsx` (konvensi berkas Next.js) yang menggambar satu
+gambar tetap 1200 × 630 berisi pertanyaan pembuka modul, ditambah satu
+gambar untuk seluruh situs di `app/opengraph-image.tsx`:
+
+- Gambarnya dibuat **sekali saat build** dengan `ImageResponse` dari
+  `next/og`, lewat pembantu bersama `lib/preview/previewImage.tsx`.
+- Teksnya diambil dari `<NAMA>_HOOK` di `config/modul/<nama>.ts`, jadi tidak
+  ada teks yang ditulis dua kali.
+- Fon dibaca dari `assets/fonts/` (Inter dan Playfair Display, lisensi OFL
+  disertakan), tidak diunduh dari internet.
 
 ### 4.5 Font halaman
 
@@ -231,7 +234,7 @@ halaman menjadi 500. Penyelesaiannya: hentikan server lalu jalankan ulang
 | Pengaturan | Gunanya |
 |---|---|
 | `allowedDevOrigins: ["192.168.*.*", "172.*.*.*", "10.*.*.*"]` | Pengujian dari ponsel di jaringan yang sama. Tanpa ini ponsel memuat HTML tetapi JavaScript ditolak, sehingga tombol tidak merespons |
-| `redirects()` | Alamat lama tetap hidup: `/gambut/*` → `/modul/*`, `/dampak` → `/modul#dampak`, `/pencegahan` → `/modul#mencegah` (permanen, termasuk tautan kartu yang sudah dibagikan) |
+| `redirects()` | Alamat lama tetap hidup: `/gambut/*` → `/modul/*`, `/dampak` → `/modul#dampak`, `/pencegahan` → `/modul#mencegah` (permanen) |
 
 ---
 
@@ -334,11 +337,9 @@ Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 | `lib/model/fireSeason.test.ts` | 20 | Seri hujan, neraca air, tahun El Niño, ambang api |
 | `lib/frameBudget.test.ts` | 13 | Batas bingkai dan penurunan mutu |
 | `components/modul/bara/scene/crossSection.test.ts` | 12 | Sel simulasi ke geometri penampang |
-| `lib/kartu/anatomiCard.test.ts` | 9 | Penyandi kartu Anatomi |
-| `lib/kartu/kanalCard.test.ts` | 9 | Penyandi kartu Kanal |
 | `components/modul/bara/scene/layerHint.test.ts` | 8 | Petunjuk lapisan Bara |
 | `lib/spotlight.test.ts` | 7 | Penghalusan kursor beranda |
-| `lib/kartu/baraCard.test.ts` | 7 | Penyandi kartu Bara |
+| `lib/model/reach.test.ts` | 3 | Jangkauan kanal dalam lapangan bola |
 | `components/modul/bara/scene/layerContents.test.ts` | 7 | Isi lapisan Bara |
 | `components/modul/hutan-rawa/scene/domeShape.test.ts` | 6 | Bentuk kubah gambut |
 | `components/modul/kanal/scene/transect.test.ts` | 6 | Penampang kanal |
@@ -368,8 +369,8 @@ Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 
 Pemeriksaan berkas menunjukkan tidak ada: basis data atau ORM, paket
 autentikasi, Server Action (`"use server"`), pemanggilan `fetch` ke layanan
-luar, maupun variabel lingkungan yang dibaca kode. Kode sisi server hanya
-pembuat gambar kartu (4.4), yang tidak menyimpan apa pun.
+luar, maupun variabel lingkungan yang dibaca kode. Tidak ada kode sisi server:
+gambar pratinjau tautan (4.4) dibuat sekali saat build.
 
 Alasannya:
 
@@ -377,8 +378,7 @@ Alasannya:
    puluhan langkah tiap bingkai; menunggu server 50–200 ms per langkah
    membuatnya mustahil.
 2. **Tidak ada data yang perlu disimpan.** Tidak ada akun, kemajuan belajar,
-   atau masukan pengguna. Hasil pembaca dibawa di alamat kartu, bukan
-   disimpan.
+   atau masukan pengguna.
 3. **Murah dan tahan lama.** Penguji bisa membukanya kapan saja tanpa server
    yang harus dirawat.
 
@@ -411,7 +411,7 @@ berganti teknologi.
 | Foto satwa | `public/images/hutan-rawa/` | 2 | Orangutan Sebangau dan owa · `SUMBER.md` |
 | Citra satelit | `public/images/sekitarmu/` | 3 | EOX Sentinel-2 cloudless 2024 (CC BY-NC-SA) · `data/SUMBER.md` |
 | Data peta | `data/sekitarmu-map.json` | 1 | Natural Earth (domain publik) + OpenStreetMap (ODbL) · `data/SUMBER.md` |
-| Fon kartu | `assets/fonts/` | 3 | Inter, Playfair Display (OFL; lisensi disertakan) |
+| Fon pratinjau tautan | `assets/fonts/` | 3 | Inter, Playfair Display (OFL; lisensi disertakan) |
 | Tekstur prosedural | dibuat saat berjalan | — | Bara, percikan, asap, derau digambar lewat kode |
 
 ---

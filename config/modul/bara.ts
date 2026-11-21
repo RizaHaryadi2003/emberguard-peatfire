@@ -38,43 +38,7 @@ export const BARA_HOOK = {
   question: "Asapnya dari mana?",
   cta: "Cari tahu",
   scrollHint: "atau gulir ke bawah",
-  /** Pengantar untuk pembaca yang datang dari tautan kartu hasil temannya. */
-  sharedLead: (cm: number) => `Bara temanmu sampai ${cm} cm di dalam gambut. Sekarang giliranmu.`,
 };
-
-export type BaraCardZone = "permukaan" | "dalam" | "lebih";
-
-/**
- * Isi kartu hasil, menurut kedalaman bara yang dicapai pembaca. Pembagian
- * kedalamannya dari Usup dkk. (2004), hlm. 10–12. Kedalamannya sendiri hasil
- * simulasi, dan itu ditulis pada baris sumber.
- */
-export const BARA_CARD_TEXT: Record<BaraCardZone, { zoneLabel: string; headline: string; note: string; challenge: string; source: string }> = {
-  permukaan: {
-    zoneLabel: "Bara permukaan",
-    headline: "Baraku hanya sampai lapisan atas.",
-    note: "Di Kalimantan Tengah, bara permukaan membakar 0–20 cm teratas.",
-    challenge: "Asapnya dari mana? Coba sendiri.",
-    source: "Simulasi Emberguard",
-  },
-  dalam: {
-    zoneLabel: "Bara dalam",
-    headline: "Baraku menembus lapisan dalam.",
-    note: "Bara dalam teramati pada 20–50 cm, dan sulit padam walau hujan lebat.",
-    challenge: "Asapnya dari mana? Coba sendiri.",
-    source: "Simulasi Emberguard",
-  },
-  lebih: {
-    zoneLabel: "Lebih dalam dari pengamatan",
-    headline: "Baraku turun lebih dalam lagi.",
-    note: "Melewati 20–50 cm yang teramati di Kalimantan Tengah, karena gambutnya makin kering.",
-    challenge: "Bisa kamu jaga lebih basah? Coba sendiri.",
-    source: "Simulasi Emberguard",
-  },
-};
-
-/** Tambahan judul kartu bila bara muncul lagi di tempat lain. */
-export const BARA_CARD_RESURFACED = "Lalu muncul lagi di tempat lain.";
 
 export const BARA_ACTS: readonly BaraAct[] = [
   {
@@ -206,17 +170,6 @@ export const SUPPRESSION_TEXT = {
     "Bara muncul lagi di tempat lain. Ia menyeberang di bawah tanah yang tidak terbakar, lalu naik dan memulai api baru di permukaan.",
 } as const;
 
-/** Kartu ringkasan yang muncul setelah bara berhasil dipadamkan. */
-export const BARA_SUMMARY = {
-  title: BARA_HOOK.question,
-  /** Menjawab pertanyaan pembuka dengan kejadian yang baru saja dilihat pembaca. */
-  answer: (depthCm: number, rekindled: boolean, resurfaced: boolean) =>
-    `Dari bara tanpa api, sedalam ${depthCm} cm di dalam gambut.${
-      rekindled ? " Siraman hanya memadamkan permukaannya, dan bara itu naik lagi setelah tanahnya kering." : ""
-    } Ia baru berhenti di gambut yang masih basah${resurfaced ? ", setelah sempat muncul di tempat lain" : ""}.`,
-  closing: "Makin kering gambutnya, makin dalam bara bisa hidup. Karena itu muka air tanah harus dijaga.",
-} as const;
-
 /** Nama keadaan sel untuk kartu pemeriksaan. */
 export const CELL_STATE_TEXT: Record<number, { label: string; note: string }> = {
   0: { label: "Gambut utuh", note: "Belum tersentuh bara." },
@@ -262,6 +215,7 @@ export const BARA_GUIDE: readonly (readonly GuideStep<BaraGuideState>[])[] = [
   [
     { target: "rewet", text: "Tekan Pembasahan untuk menaikkan muka air tanah.", done: (s) => s.rewet },
     { target: "figure", text: "Air naik sampai ke bara. Tunggu sampai seluruh bara padam.", done: (s) => s.done[3] },
-    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+    // Kalimat penutup modul, menggantikan kartu ringkasan.
+    { target: "next", text: "Makin kering gambutnya, makin dalam bara bisa hidup. Karena itu muka air tanah harus dijaga. Lanjut ke modul berikutnya." },
   ],
 ];

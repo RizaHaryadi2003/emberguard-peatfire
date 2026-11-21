@@ -10,8 +10,6 @@ type Props = {
   question: string;
   cta: string;
   scrollHint: string;
-  /** Pengantar tambahan, mis. untuk pembaca yang datang dari kartu hasil temannya. */
-  lead?: string | null;
   onStart: () => void;
 };
 
@@ -20,7 +18,7 @@ type Props = {
  * Tampil seketika tanpa menunggu kanvas 3D, karena pendatang dari media sosial
  * memutuskan untuk tinggal atau pergi dalam beberapa detik pertama.
  */
-export default function ModuleHook({ open, kicker, setup, question, cta, scrollHint, lead, onStart }: Props) {
+export default function ModuleHook({ open, kicker, setup, question, cta, scrollHint, onStart }: Props) {
   return (
     <div
       inert={!open}
@@ -39,11 +37,6 @@ export default function ModuleHook({ open, kicker, setup, question, cta, scrollH
             {question}
           </span>
         </h2>
-        {lead && (
-          <p className="hero-anim hero-fade mt-6 max-w-md text-sm leading-relaxed text-white/75 sm:text-base" style={{ animationDelay: "1.4s" }}>
-            {lead}
-          </p>
-        )}
         <div className="hero-anim hero-fade mt-9 flex items-center gap-5" style={{ animationDelay: "1.5s" }}>
           <button
             type="button"

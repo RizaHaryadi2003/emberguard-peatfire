@@ -178,13 +178,6 @@ export const LIMIT_NOTES: readonly string[] = [
   SCALE_NOTE.time(RECOVERY_MAX_YEARS),
 ];
 
-export const KARBON_SUMMARY = {
-  title: "Yang tidak bisa ditanam kembali",
-  lead: "Hutan di atasnya dapat ditanam ulang dalam beberapa dasawarsa. Gambut di bawahnya tidak.",
-  closing:
-    "Inilah sebabnya menjaga gambut tetap basah jauh lebih murah daripada memulihkannya: yang dijaga adalah timbunan ribuan tahun yang tidak dapat dipercepat oleh siapa pun.",
-};
-
 /* ============================================================================
  *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
  *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
@@ -213,6 +206,7 @@ export const KARBON_GUIDE: readonly (readonly GuideStep<KarbonGuideState>[])[] =
   [
     { target: "time", text: "Jalankan waktu: pilih salah satu kecepatan.", done: (s) => s.timeOn },
     { target: "stats", text: "Gambut tumbuh lagi, tetapi sangat lambat. Tunggu sampai satu abad berlalu.", done: (s) => s.done[2] },
-    { target: "next", text: "Modul selesai." },
+    // Kalimat penutup modul.
+    { target: "next", text: "Hutan di atasnya dapat ditanam ulang dalam beberapa dasawarsa. Gambut di bawahnya tidak. Lanjut ke modul berikutnya." },
   ],
 ];

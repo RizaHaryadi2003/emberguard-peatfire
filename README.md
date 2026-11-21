@@ -68,7 +68,7 @@ halaman termuat tetapi tombolnya tidak merespons.
 
 ```
 app/                    Rute (App Router). Tiap page.tsx = satu URL.
-  modul/<nama>/           Satu halaman per modul; kartu/ = gambar kartu hasil.
+  modul/<nama>/           Satu halaman per modul + gambar pratinjau tautan.
   simulasi/, kuis/        Menu lain (masih halaman penanda).
 components/
   modul/shared/           Kerangka dan komponen yang dipakai semua modul.
@@ -82,7 +82,7 @@ config/
   modul/<nama>.ts         Seluruh teks tiap modul, terpisah dari kode.
 lib/                    Logika murni: tanpa React, tanpa Three.js, tanpa DOM.
   model/                  Model ilmiah tiap modul.
-  kartu/                  Isi dan alamat kartu hasil yang dibagikan.
+  preview/                Gambar pratinjau tautan (Open Graph) dan fonnya.
 data/                   Data peta beserta SUMBER.md (atribusi dan cara olah).
 scripts/                Skrip pengolah data peta.
 hooks/                  Hook React yang dipakai ulang.

@@ -1,33 +1,18 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import AnatomiModule from "@/components/modul/anatomi/AnatomiModule";
 import ModuleFooter from "@/components/modul/shared/ModuleFooter";
 import { ANATOMI_HOOK } from "@/config/modul/anatomi";
-import { CARD_SIZE, cardImagePath, parseSharedWaterCm } from "@/lib/kartu/anatomiCard";
 
-type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
-
-// Pratinjau tautan memakai gambar kartu; media sosial mewajibkan alamat utuh.
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const waterCm = parseSharedWaterCm((await searchParams).muka);
-  const requestHeaders = await headers();
-  const protocol = requestHeaders.get("x-forwarded-proto")?.split(",")[0] ?? "http";
-  const image = `${protocol}://${requestHeaders.get("host")}${cardImagePath(waterCm, "og")}`;
-  const description = `${ANATOMI_HOOK.setup} ${ANATOMI_HOOK.question}`;
-  return {
-    title: "Anatomi Gambut — Emberguard",
-    description,
-    openGraph: { title: "Anatomi Gambut — Emberguard", description, images: [{ url: image, ...CARD_SIZE.og }] },
-    twitter: { card: "summary_large_image" },
-  };
-}
+export const metadata: Metadata = {
+  title: "Anatomi Gambut — Emberguard",
+  description: `${ANATOMI_HOOK.setup} ${ANATOMI_HOOK.question}`,
+};
 
 // Halaman Modul Anatomi: diorama interaktif, lalu navigasi antarmodul.
-export default async function AnatomiPage({ searchParams }: Props) {
-  const sharedWaterCm = parseSharedWaterCm((await searchParams).muka);
+export default function AnatomiPage() {
   return (
     <main className="bg-black">
-      <AnatomiModule sharedWaterCm={sharedWaterCm} />
+      <AnatomiModule />
       <ModuleFooter href="/modul/anatomi" />
     </main>
   );

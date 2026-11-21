@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { MousePointer2, MousePointerClick, Rotate3d, Volume2, VolumeX } from "lucide-react";
+import { MousePointer2, MousePointerClick, Rotate3d, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { BARA_ACTS, BARA_GUIDE, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
 import { moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
@@ -13,14 +13,12 @@ import IgnitionPicker from "./IgnitionPicker";
 import ControlDock, { WATER_MAX_CM } from "./ControlDock";
 import StatsPanel from "./StatsPanel";
 import ProbeCard, { type ProbeResult } from "./ProbeCard";
-import SummaryCard from "./SummaryCard";
 import LayerHint from "./LayerHint";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
 import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
-import type { SharedBurn } from "@/lib/kartu/baraCard";
 import { createBaraState, MAX_ROTATION, type BaraState, type Quality } from "./scene/baraState";
 import type { LayerHintHandle } from "./scene/layerHint";
 
@@ -51,15 +49,6 @@ const ACT_SPEED = [0, 1, 1, 1];
 const FIRST_PAUSE_HOURS = 48;
 
 /**
- * Jeda sebelum kartu hasil muncul di layar sempit (milidetik): cukup untuk
- * melihat bara terakhir mendingin dan membaca satu baris pesan hasilnya.
- */
-const SUMMARY_DELAY_MS = 4000;
-
-/** Lebar layar (piksel) mulai dari mana kartu hasil tidak lagi menutupi bongkahan. */
-const NARROW_MAX = 768;
-
-/**
  * Lama waktu berhenti sesudah penyiraman (milidetik). Pada kecepatan "Lambat"
  * air siraman menguap dalam ± 25 detik nyata, dan bara langsung merambat naik
  * lagi. Tanpa jeda, saat permukaan padam terlewat begitu saja, padahal itulah
@@ -87,7 +76,7 @@ const ACT_HINT = [
  * memadamkan, dan akhirnya membasahi gambutnya kembali. Tiap tindakan langsung
  * mengubah simulasi bara (`lib/model/smolder.ts`) yang digambar pada penampang.
  */
-export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
+export default function BaraModule() {
   const rootRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
@@ -116,7 +105,6 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const [thermalSeen, setThermalSeen] = useState(false);
   const [rewetOnce, setRewetOnce] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [summaryReady, setSummaryReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -385,7 +373,6 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     setRewetOnce(false);
     setAcked([0, 0, 0, 0]);
     setCollapsed(false);
-    setSummaryReady(false);
     Object.assign(stateRef.current, createBaraState(START_WATER_CM / 100));
   }, [sim]);
 
@@ -426,7 +413,6 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
     dousedOnce && thermalSeen && resurfacingSettled(stats),
     stats.extinguished && rewetOnce,
   ];
-  const finished = act === BARA_ACTS.length - 1 && stats.extinguished;
 
   // Tuntunan: arahan aktif dibaca dari keadaan modul.
   const guideState = {
@@ -442,26 +428,12 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
   const guideAt = guideLevel(guideSteps, guideState, acked[act]);
   const guideStep = guideSteps[guideAt];
 
-  // Kartu hasil menunggu sebentar di layar sempit. Di sana kartu itu
-  // menggantikan panel kendali dan cukup tinggi untuk menutupi bagian bawah
-  // bongkahan. Uji di ponsel sungguhan menunjukkan kartu yang langsung muncul
-  // merebut saat bara padam, padahal itulah jawaban modul ini. Selama jeda,
-  // pesan hasil pembasahan tetap tampil di panel cerita. Di layar lebar kartu
-  // duduk di kolom kiri dan tidak menutupi bongkahan, jadi tampil langsung.
-  useEffect(() => {
-    if (!finished) return;
-    const narrow = window.matchMedia(`(max-width: ${NARROW_MAX - 1}px)`).matches;
-    const timer = window.setTimeout(() => setSummaryReady(true), narrow ? SUMMARY_DELAY_MS : 0);
-    return () => window.clearTimeout(timer);
-  }, [finished]);
-  const showSummary = finished && summaryReady;
-
   /**
    * Pesan kejadian yang ditampilkan di panel cerita pada ponsel. Pada babak 01
    * hasil penyulutan sudah tertulis di kartu "Cara api membakar", jadi pesan
    * yang sama tidak diulang di atas.
    */
-  const phoneMessage = message !== null && !showSummary && !(act === 0 && (ignited || fizzled));
+  const phoneMessage = message !== null && !(act === 0 && (ignited || fizzled));
 
   const goToAct = (next: number) => {
     if (next > act && !actDone[act]) return;
@@ -483,7 +455,22 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
         onAdvance={() => goToAct(act + 1)}
       />
     ) : (
-      <NextModuleAdvance href="/modul/bara" />
+      // Kartu ringkasan yang dulu memuat tombol ulang sudah dihapus, jadi
+      // tombol "Coba lagi dari awal" kini duduk di samping panah terakhir,
+      // sama seperti Modul Anatomi.
+      <div className="flex items-end gap-2">
+        {actDone[act] && (
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:text-white"
+          >
+            <RotateCcw size={14} />
+            Coba lagi dari awal
+          </button>
+        )}
+        <NextModuleAdvance href="/modul/bara" />
+      </div>
     );
 
   // Seret mendatar untuk memutar diorama, sama dengan Modul Anatomi. Jarak tempuhnya
@@ -570,7 +557,6 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
         question={BARA_HOOK.question}
         cta={BARA_HOOK.cta}
         scrollHint={BARA_HOOK.scrollHint}
-        lead={shared ? BARA_HOOK.sharedLead(shared.cm) : null}
         onStart={() => setHookOpen(false)}
       />
 
@@ -640,7 +626,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
               dengan arahan di atas panah lanjut, sehingga tingginya tidak
               bertambah dan tidak menyentuh panel kendali. */}
           <p
-            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${showSummary || phoneMessage ? "" : "max-sm:block"} ${
+            className={`act-anim mt-2 hidden text-sm leading-snug text-white/80 ${phoneMessage ? "" : "max-sm:block"} ${
               dense ? "[@media(max-height:860px)]:sm:block" : "[@media(max-height:700px)]:sm:block"
             }`}
           >
@@ -658,7 +644,7 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
           <p
             className={`act-anim mt-2 inline-flex items-start gap-2 text-xs leading-relaxed text-white/90 [@media(min-height:901px)]:mt-3 ${
               dense ? "[@media(max-height:860px)]:sm:hidden" : ""
-            } ${showSummary || phoneMessage ? "max-sm:!hidden" : ""}`}
+            } ${phoneMessage ? "max-sm:!hidden" : ""}`}
           >
             <MousePointerClick size={14} className="mt-0.5 shrink-0 text-[#f0a060]" />
             {current.task}
@@ -699,14 +685,12 @@ export default function BaraModule({ shared }: { shared: SharedBurn | null }) {
         <div ref={dockStackRef} className="pointer-events-none absolute bottom-full left-0 right-0 mb-3 flex flex-col items-end gap-2">
           {/* Kolom kanan tidak ada di bawah lg, jadi pesannya tampil di sini.
               Di ponsel pesannya sudah pindah ke panel cerita di atas. */}
-          {message && !showSummary && (
+          {message && (
             <p className="hidden w-full rounded-2xl border border-[#e8702a]/30 bg-black/80 p-3 text-xs leading-relaxed text-white/85 sm:block lg:hidden">{message}</p>
           )}
           <div className="pointer-events-auto md:hidden">{advance}</div>
         </div>
-        {showSummary ? (
-          <SummaryCard stats={stats} onReset={handleReset} />
-        ) : probe ? (
+        {probe ? (
           <ProbeCard probe={probe} onClose={() => setProbe(null)} />
         ) : act === 0 ? (
           <IgnitionPicker selected={source?.id ?? null} onSelect={handleSelectSource} ignited={ignited} fizzled={fizzled} />

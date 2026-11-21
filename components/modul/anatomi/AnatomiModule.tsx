@@ -17,7 +17,6 @@ import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
 import LaptopNudge from "@/components/modul/shared/LaptopNudge";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
-import ResultCardDialog from "./ResultCardDialog";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
 import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import WaterControl from "./WaterControl";
@@ -77,7 +76,7 @@ const STEP_FREE = [false, false, true, true];
  * gulir memindahkan cerita ke tahap berikutnya, sementara model 3D di
  * belakangnya berubah (kamera, lapisan terurai, muka air, bara).
  */
-export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number | null }) {
+export default function AnatomiModule() {
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -92,8 +91,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
   }, [hookOpen]);
   /** Pembaca sudah memegang pengatur muka air, jadi nilainya adalah pilihannya sendiri. */
   const [waterTouched, setWaterTouched] = useState(false);
-  /** Muka air yang dibekukan pada kartu; `null` berarti dialog tertutup. */
-  const [cardWaterCm, setCardWaterCm] = useState<number | null>(null);
   /** Tahap terjauh yang sudah terbuka; bertambah setelah syarat tahap ini tuntas. */
   const [unlocked, setUnlocked] = useState(0);
   /** Pembaca mencoba melanjutkan padahal syaratnya belum tuntas (arahan disorot sebentar). */
@@ -345,7 +342,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
     demoTween.current = null;
     setWaterTouched(true);
   }, []);
-  const closeCard = useCallback(() => setCardWaterCm(null), []);
 
   // Seret horizontal untuk memutar diorama.
   const drag = useRef<{ x: number; start: number } | null>(null);
@@ -479,7 +475,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           question={ANATOMI_HOOK.question}
           cta={ANATOMI_HOOK.cta}
           scrollHint={ANATOMI_HOOK.scrollHint}
-          lead={sharedWaterCm === null ? null : ANATOMI_HOOK.sharedLead(sharedWaterCm)}
           onStart={() => setHookOpen(false)}
         />
 
@@ -640,8 +635,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
             waterCm={userWaterCm}
             onChange={setUserWaterCm}
             onInteract={stopDemo}
-            canCreateCard={waterTouched}
-            onCreateCard={() => setCardWaterCm(userWaterCm)}
           />
           </div>
         </div>
@@ -717,8 +710,6 @@ export default function AnatomiModule({ sharedWaterCm }: { sharedWaterCm: number
           delayMs={guideAt === 0 ? 1200 : 350}
         />
       )}
-
-      {cardWaterCm !== null && <ResultCardDialog waterCm={cardWaterCm} onClose={closeCard} />}
     </div>
   );
 }

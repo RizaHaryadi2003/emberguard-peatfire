@@ -147,8 +147,10 @@ Semua modul memakai kerangka yang sama (`components/modul/shared/`):
 1. **Hook:** satu layar pembuka, kalimat pemancing + pertanyaan modul.
 2. **3–4 babak**, jumlahnya mengikuti isi riset. Babak berikutnya terbuka
    **hanya setelah tugasnya selesai**, dibaca dari keadaan simulasi.
-3. **Kartu penutup:** ringkasan satu kalimat + kartu hasil yang bisa
-   dibagikan ke media sosial.
+3. **Penutup:** satu kalimat yang membawa pulang ilmu modul, tampil pada
+   arahan terakhir di samping panah ke modul berikutnya. Kartu hasil yang
+   bisa dibagikan dihapus pada 21 November 2026; tautan modul tetap punya
+   gambar pratinjau berisi pertanyaan pembukanya.
 
 Tiga kekuatan yang ditiru dari Modul Bara: **babak terkunci**, **pembaca
 dibuat salah dulu** (menyiram, merasa berhasil, lalu termal membongkarnya),
@@ -242,7 +244,7 @@ Kolom tabel: **Tugas** = A1 + A2 (kalimat tugas di layar), **Yang terlihat**
 | 3 Menyimpan air | *(penjelasan, tanpa aksi, lihat 2.2)* | Pori terisi air | ± 90 % volume fibrik berupa pori (Boelter 1974, dlm. Andriesse 1988) |
 | 4 Saat air surut | Geser muka air turun | Gambut di atas air mengering, status berubah aman → rawan | 0,4 m, batas muka air (PP 57/2016) |
 
-**Penutup:** kartu hasil menurut muka air yang dipilih pembaca.
+**Penutup:** *"30 cm gambut butuh 400 tahun untuk terbentuk, dan bisa hilang dalam kurang dari 10 tahun."*
 
 #### 3.3 Hutan Rawa Gambut ✅
 
@@ -374,7 +376,7 @@ lahan") masih sementara sampai acuannya ditetapkan.
 | 03 Tak terlihat dari atas | Siram, buka termal, tunggu permukaan menyala lagi | Asap hilang; termal membongkar bara di bawah; menyala lagi | Siraman hanya memadamkan permukaan |
 | 04 Airnya harus sampai ke bara | Naikkan muka air tanah sampai seluruh bara padam | Bara padam lapis demi lapis dari bawah | Rambatan berhenti saat muka air sampai ke bara |
 
-**Penutup:** kartu hasil menurut kedalaman bara.
+**Penutup:** *"Makin kering gambutnya, makin dalam bara bisa hidup. Karena itu muka air tanah harus dijaga."*
 
 ---
 
@@ -517,7 +519,7 @@ export type Act = {
 |---|---|
 | Teks layar dan angka | `config/modul/<nama>.ts` |
 | Logika ilmiah (murni, bisa diuji, tanpa React/Three.js) | `lib/model/` |
-| Kartu hasil | `lib/kartu/` |
+| Gambar pratinjau tautan | `lib/preview/`, `app/**/opengraph-image.tsx` |
 | Kerangka bersama (hook, babak, penutup) | `components/modul/shared/` |
 | Komponen dan adegan per modul | `components/modul/<nama>/` |
 

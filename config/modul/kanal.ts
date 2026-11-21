@@ -164,7 +164,6 @@ export const CANAL_TEXT = {
   blockLabel: "Pasang sekat kanal",
   blockedLabel: "Sekat terpasang",
   resetLabel: "Mulai dari awal",
-  summaryLabel: "Lihat ringkasan",
 };
 
 export const CHART_TEXT = {
@@ -207,43 +206,6 @@ export const SCALE_NOTE = {
   near: (lengthM: number) => `Petak dekat kanal, ${lengthM} m tiap sisi`,
 };
 
-/**
- * Kartu penutup yang muncul setelah sekat dipasang di babak 04.
- *
- * Menjawab pertanyaan pembuka ("Dari mana air itu datang?") dengan angka yang
- * baru saja dilihat pembaca sendiri, lalu meninggalkan satu kesimpulan yang
- * dapat ia bawa pulang: air dapat dikembalikan, tanah tidak.
- */
-export const KANAL_SUMMARY = {
-  title: KANAL_HOOK.question,
-  answer: (depthCm: number, reach: string, fields: string) =>
-    `Dari dalam gambut di sekitarnya. Kanal sedalam ${depthCm} cm menguras air sampai ${reach} ke kiri dan kanannya: ± ${fields} lapangan bola lahan menjadi rawan terbakar di sepanjang tiap 1 km kanal.`,
-  closing:
-    "Sekat mengembalikan airnya, tetapi tidak tanahnya. Karena itu menjaga gambut tetap basah sejak awal jauh lebih murah daripada memperbaikinya.",
-  next: "Gambut yang kering inilah yang menjadi bahan bakar di modul berikutnya.",
-  rows: {
-    reach: "Lahan rawan dari kanal",
-    fields: "Setara, tiap 1 km kanal",
-    drop: "Permukaan turun",
-    carbon: "Karbon terlepas",
-  },
-  share: "Buat kartu hasilmu",
-  reset: "Coba lagi dari awal",
-  close: "Lihat lahannya lagi",
-};
-
-/** Teks kartu hasil yang dibagikan ke media sosial. */
-export const KANAL_CARD_TEXT = {
-  brand: "EMBERGUARD · KANAL & PENGERINGAN",
-  fieldsUnit: "lapangan bola",
-  fieldsLead: "lahan gambut jadi rawan terbakar oleh tiap 1 km kanal",
-  headline: (depthCm: number) => `Kanal sedalam ${depthCm} cm mengeringkan lahan jauh melewati tepinya.`,
-  guessLine: (guess: string, reach: string) => `Tebakanku ${guess}. Ternyata ${reach} ke tiap sisi.`,
-  note: "Airnya bisa dikembalikan dengan sekat. Tanah yang sudah melesak tidak.",
-  challenge: "Menurutmu sejauh apa? Tebak sendiri.",
-  source: "Simulasi Emberguard",
-};
-
 /* ============================================================================
  *  TUNTUNAN LANGKAH DEMI LANGKAH (lihat lib/guide.ts)
  *  Teksnya hanya mengulang isi babak di atas; tidak ada angka baru.
@@ -278,6 +240,7 @@ export const KANAL_GUIDE: readonly (readonly GuideStep<KanalGuideState>[])[] = [
   [
     { target: "weir", text: "Tekan Pasang sekat kanal.", done: (s) => s.blocked },
     { target: "figure", text: "Air naik lagi. Bandingkan permukaan tanah dengan garis putus-putus.", done: (s) => s.done[3] },
-    { target: "next", text: "Modul selesai. Lanjut ke modul berikutnya." },
+    // Kalimat penutup modul, menggantikan kartu penutup.
+    { target: "next", text: "Sekat mengembalikan airnya, tetapi tidak tanahnya. Karena itu gambut harus dijaga tetap basah sejak awal. Lanjut ke modul berikutnya." },
   ],
 ];
