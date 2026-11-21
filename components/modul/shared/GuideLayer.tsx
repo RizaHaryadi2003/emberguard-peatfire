@@ -97,14 +97,14 @@ export default function GuideLayer({ target, text, index, total, onAuto, delayMs
     return () => window.clearTimeout(t);
   }, [shown, hasAuto, autoMs]);
 
-  // Di layar sempit gelembung arahan terakhir duduk di atas panel kendali, dan
-  // karena arahan terakhir tidak pernah pindah, ia akan menutupi panel itu
-  // selamanya. Jadi di sana gelembungnya memudar setelah waktu bacanya habis;
-  // sorotan pada tombol lanjut tetap tampil.
+  // Arahan terakhir tidak pernah pindah, jadi gelembungnya akan menutupi
+  // bagian di dekat tombol lanjut selamanya: di ponsel panel kendali, di
+  // laptop tombol di kolom kanan. Karena itu gelembungnya memudar setelah
+  // waktu bacanya habis; sorotan pada tombol lanjut tetap tampil.
   const isLast = index === total;
   const [faded, setFaded] = useState(false);
   useEffect(() => {
-    if (!shown || !isLast || !window.matchMedia("(max-width: 767px)").matches) return;
+    if (!shown || !isLast) return;
     const t = window.setTimeout(() => setFaded(true), readMs(text) + 1500);
     return () => window.clearTimeout(t);
   }, [shown, isLast, text]);
