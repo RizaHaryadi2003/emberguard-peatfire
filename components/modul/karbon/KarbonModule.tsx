@@ -19,7 +19,7 @@ import ModuleHook from "@/components/modul/shared/ModuleHook";
 import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
-import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import ModuleAudio from "@/components/modul/shared/ModuleAudio";
 import { karbonMix } from "@/lib/sound/soundscapes";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
@@ -304,7 +304,7 @@ export default function KarbonModule() {
       {/* Suara alam: hutan utuh, derak api selama gambut habis terbakar, sunyi
           sesudahnya, lalu makhluknya kembali bersama tumbuhan (±2–60 tahun,
           sama dengan KarbonCover). */}
-      <AmbientSoundToggle
+      <ModuleAudio
         getMix={() => {
           const s = stateRef.current;
           return karbonMix({

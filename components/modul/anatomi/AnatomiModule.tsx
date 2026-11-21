@@ -11,8 +11,10 @@ import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import { moduleAt } from "@/config/modules-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/model/peat";
-import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import ModuleAudio from "@/components/modul/shared/ModuleAudio";
 import { peatForestMix } from "@/lib/sound/soundscapes";
+import { narrationClip } from "@/lib/narration";
+import { ANATOMI_NARRATION_READY } from "@/config/narasi/anatomi";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
@@ -427,8 +429,13 @@ export default function AnatomiModule() {
       className="relative"
       style={{ height: `${STEP_COUNT * 100}vh` }}
     >
-      {/* Suara alam: hutan hidup saat gambut basah, sunyi dan berderak saat kering. */}
-      <AmbientSoundToggle getMix={() => peatForestMix(getFireDanger(waterCm))} />
+      {/* Suara: narator membacakan pertanyaan pembuka, penjelasan tiap tahap,
+          lalu arahannya; suara alam hidup saat gambut basah, sunyi dan
+          berderak saat kering. */}
+      <ModuleAudio
+        getMix={() => peatForestMix(getFireDanger(waterCm))}
+        narration={ANATOMI_NARRATION_READY ? { modul: "anatomi", ...narrationClip(hookOpen, step, guideAt) } : undefined}
+      />
       <div ref={stageRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-[#050505]">
         {/* Lapisan 3D */}
         <div

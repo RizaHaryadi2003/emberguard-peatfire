@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
-import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import ModuleAudio from "@/components/modul/shared/ModuleAudio";
 import { sekitarmuMix } from "@/lib/sound/soundscapes";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
@@ -252,7 +252,7 @@ export default function SekitarmuModule() {
   return (
     <>
       {/* Suara alam: tepi Sungai Kapuas; berbau asap di babak titik api. */}
-      <AmbientSoundToggle getMix={() => sekitarmuMix(act)} />
+      <ModuleAudio getMix={() => sekitarmuMix(act)} />
     <ActModuleShell
       href="/modul/sekitarmu"
       hook={SEKITARMU_HOOK}

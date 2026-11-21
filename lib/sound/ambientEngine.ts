@@ -33,6 +33,9 @@ const PEAK = {
   fire: 0.9,
 } as const;
 
+/** Kekerasan keseluruhan: biasa, dan saat narator sedang bicara. */
+const LEVEL = { normal: 0.9, ducked: 0.3 } as const;
+
 /** Waktu penghalusan perubahan takaran (detik, konstanta waktu). */
 const SMOOTH_S = 0.8;
 
@@ -53,6 +56,10 @@ export class AmbientEngine {
   private mix: AmbientMix = { ...SILENT_MIX };
   /** Sudah dibuang: konteksnya tertutup dan tidak boleh disentuh lagi. */
   private disposed = false;
+  /** Sedang berbunyi (sudah start, belum stop). */
+  private playing = false;
+  /** Diredam karena narator sedang bicara. */
+  private ducked = false;
   /** Pendengar "sentuhan pertama" yang masih terpasang di dokumen. */
   private gestureResume: (() => void) | null = null;
 
@@ -266,8 +273,9 @@ export class AmbientEngine {
     // Bisa saja dibuang selagi menunggu resume (pembaca pindah modul).
     if (this.disposed) return;
     const now = this.ctx.currentTime;
+    this.playing = true;
     this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(0.9, now, 0.6);
+    this.master.gain.setTargetAtTime(this.ducked ? LEVEL.ducked : LEVEL.normal, now, 0.6);
     if (this.timer === null) this.timer = window.setInterval(this.tick, TICK_MS);
   }
 
@@ -277,8 +285,16 @@ export class AmbientEngine {
       window.clearInterval(this.timer);
       this.timer = null;
     }
+    this.playing = false;
     if (this.disposed) return;
     this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.3);
+  }
+
+  /** Redam suara alam selama narator bicara, lalu kembalikan perlahan. */
+  setDucked(ducked: boolean) {
+    this.ducked = ducked;
+    if (this.disposed || !this.playing) return;
+    this.master.gain.setTargetAtTime(ducked ? LEVEL.ducked : LEVEL.normal, this.ctx.currentTime, ducked ? 0.25 : 1.2);
   }
 
   /** Setel takaran tiap lapisan (0–1); perubahannya dihaluskan. */

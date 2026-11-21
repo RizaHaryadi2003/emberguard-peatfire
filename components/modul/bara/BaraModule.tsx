@@ -8,7 +8,7 @@ import { MousePointer2, MousePointerClick, Rotate3d, RotateCcw } from "lucide-re
 import { BARA_ACTS, BARA_GUIDE, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
 import { moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
-import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import ModuleAudio from "@/components/modul/shared/ModuleAudio";
 import { peatForestMix } from "@/lib/sound/soundscapes";
 import IgnitionPicker from "./IgnitionPicker";
 import ControlDock, { WATER_MAX_CM } from "./ControlDock";
@@ -507,7 +507,7 @@ export default function BaraModule() {
   return (
     <div ref={rootRef} id="modul-bara" className="relative h-[100dvh] w-full overflow-hidden bg-[#050505]">
       {/* Suara alam: derak bara menguat seiring bara yang aktif dan gambut yang habis. */}
-      <AmbientSoundToggle getMix={() => peatForestMix(Math.min(1, stats.active / 90 + stats.consumed * 0.5))} />
+      <ModuleAudio getMix={() => peatForestMix(Math.min(1, stats.active / 90 + stats.consumed * 0.5))} />
       {/* Lapisan 3D. Seretan tetikus memutar diorama; sentuhan tidak memutar,
           sama dengan Modul Anatomi. */}
       <div

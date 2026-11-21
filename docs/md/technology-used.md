@@ -303,9 +303,32 @@ berkas suara, dan tersedia di ketujuh modul (21 November 2026):
   mewajibkan sentuhan pembaca); sekali dinyalakan, pilihannya diingat selama
   sesi dan berhenti saat tab disembunyikan.
 
-`howler` adalah pemutar **berkas** suara. Proyek belum punya berkas suara,
-jadi paketnya belum dipakai; dipertahankan untuk narasi atau efek rekaman
-kelak.
+**Narator** (dimatikan sementara, 21 November 2026; klip audio dihapus, kode dan naskah disimpan):
+
+- Naskah di `config/narasi/<modul>.ts` ditulis seperti orang bercerita
+  (reaksi, pertanyaan, jeda), dengan angka dan satuan dieja. Penanda emosi
+  dalam kurung siku ("[curious]", "[whispers]") mengarahkan nada model
+  ElevenLabs v3 dan tidak diucapkan.
+- `scripts/build-narration.mts` membangkitkan klipnya lewat ElevenLabs
+  (suara "Lily", model `eleven_v3`, Bahasa Indonesia, MP3 64 kb/s) ke
+  `public/audio/narasi/<modul>/`. Kunci API dibaca dari `.env.local` (tidak
+  di-commit). `manifest.json` mencatat sidik tiap klip sehingga hanya klip
+  yang naskahnya berubah yang dibangkitkan ulang. Klip ikut di-commit, jadi
+  situs tidak memanggil ElevenLabs saat berjalan.
+- Paket gratis ElevenLabs: hanya suara bawaan (bukan pustaka) yang boleh
+  dipakai lewat API, 10.000 huruf per bulan, penggunaan non-komersial, dan
+  wajib mencantumkan ElevenLabs sebagai sumber suara (tertera pada tombol
+  Narator).
+- `lib/narration.ts` memilih klip: layar pembuka ("hook"), penjelasan saat
+  tahap dibuka (memotong klip sebelumnya), lalu arahan berikutnya yang
+  menunggu penjelasan selesai.
+- `components/modul/shared/ModuleAudio.tsx`: tombol "Narator" (menyala
+  bawaan) di samping "Suara alam"; suara alam diredam selama narator bicara;
+  klip yang tertahan peramban diputar pada sentuhan pertama.
+- Suara Damayanti bawaan macOS sempat dicoba lalu dibuang karena terdengar
+  kaku.
+
+`howler` tidak dipakai; elemen `<audio>` bawaan peramban sudah cukup.
 
 ---
 
@@ -363,6 +386,7 @@ Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 | `lib/model/atmosphere.test.ts` | 4 | Peralihan langit |
 | `components/modul/bara/scene/burnMaterial.test.ts` | 4 | Bahan hangus |
 | `lib/sound/soundscapes.test.ts` | 8 | Racikan suara alam tiap modul |
+| `lib/narration.test.ts` | 4 | Pemilihan klip narator; naskah Anatomi lengkap (berkas audio diperiksa setelah tersedia) |
 | `components/modul/bara/baraContent.test.ts` | 2 | Isi teks Bara |
 
 ---

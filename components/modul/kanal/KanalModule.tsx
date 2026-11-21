@@ -19,7 +19,7 @@ import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
 import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
-import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import ModuleAudio from "@/components/modul/shared/ModuleAudio";
 import { kanalMix } from "@/lib/sound/soundscapes";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
@@ -345,7 +345,7 @@ export default function KanalModule() {
     <div ref={rootRef} id="modul-kanal" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
       {/* Suara alam: parit mengalir deras selama kanal terbuka; lahan yang
           ikut kering (jangkauan rawan) kehilangan katak dan burungnya. */}
-      <AmbientSoundToggle
+      <ModuleAudio
         getMix={() =>
           kanalMix({
             canalDepthCm,
