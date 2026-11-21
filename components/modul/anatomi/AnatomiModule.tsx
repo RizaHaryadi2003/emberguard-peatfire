@@ -5,13 +5,14 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { MousePointer2, RotateCcw, Rotate3d, Volume2, VolumeX } from "lucide-react";
+import { MousePointer2, RotateCcw, Rotate3d } from "lucide-react";
 import { ANATOMI_GUIDE, ANATOMI_HOOK, ANATOMI_STEPS } from "@/config/modul/anatomi";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import { moduleAt } from "@/config/modules-content";
 import { formatYears, getFireDanger, PEAT_LAYERS, PEAT_MAX_YEARS, type PeatLayerId } from "@/lib/model/peat";
-import { AmbientSound } from "@/lib/ambientSound";
+import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import { peatForestMix } from "@/lib/sound/soundscapes";
 import DepthLegend from "./DepthLegend";
 import GrowthControl from "./GrowthControl";
 import LayerDetail from "./LayerDetail";
@@ -110,7 +111,6 @@ export default function AnatomiModule() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
-  const [soundOn, setSoundOn] = useState(false);
   // Arahan "Perhatikan" yang waktu bacanya sudah habis, per tahap (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
@@ -173,24 +173,6 @@ export default function AnatomiModule() {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-
-  // Suara suasana: dibuat saat pertama dinyalakan (peramban mewajibkan klik
-  // pengguna), dijeda saat modul tidak terlihat, dan dibebaskan saat keluar.
-  const soundRef = useRef<AmbientSound | null>(null);
-  const toggleSound = () => {
-    if (!soundRef.current) soundRef.current = new AmbientSound();
-    setSoundOn((on) => !on);
-  };
-  useEffect(() => {
-    const sound = soundRef.current;
-    if (!sound) return;
-    if (soundOn && visible) void sound.start();
-    else sound.stop();
-  }, [soundOn, visible]);
-  useEffect(() => {
-    soundRef.current?.setDanger(getFireDanger(waterCm));
-  }, [waterCm, soundOn]);
-  useEffect(() => () => soundRef.current?.dispose(), []);
 
   // Muat kanvas saat modul mendekati layar; jeda render saat tidak terlihat.
   useEffect(() => {
@@ -445,6 +427,8 @@ export default function AnatomiModule() {
       className="relative"
       style={{ height: `${STEP_COUNT * 100}vh` }}
     >
+      {/* Suara alam: hutan hidup saat gambut basah, sunyi dan berderak saat kering. */}
+      <AmbientSoundToggle getMix={() => peatForestMix(getFireDanger(waterCm))} />
       <div ref={stageRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-[#050505]">
         {/* Lapisan 3D */}
         <div
@@ -659,22 +643,6 @@ export default function AnatomiModule() {
               <MousePointer2 size={14} /> Arahkan ke lapisan
             </span>
           </div>
-          <button
-            type="button"
-            onClick={toggleSound}
-            aria-pressed={soundOn}
-            className={`cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors ${
-              soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
-            } hidden md:inline-flex`}
-            // Di layar sempit tombol ini selalu disembunyikan, sama dengan
-            // Modul Bara. Dahulu ia hanya disembunyikan saat panel pengatur
-            // tampil; pada tahap tanpa panel ia berbagi baris dengan panah
-            // lanjut dan arahannya, dan di layar 390 px baris itu selebar
-            // 385 px sehingga tombolnya terdorong keluar tepi kiri layar.
-          >
-            {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            Suara alam
-          </button>
 
           {/* Panah lanjut: ke tahap berikutnya, lalu kembali ke daftar modul pada
               tahap terakhir. Di layar sempit panah ini pindah ke atas panel

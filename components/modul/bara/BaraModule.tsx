@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { MousePointer2, MousePointerClick, Rotate3d, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { MousePointer2, MousePointerClick, Rotate3d, RotateCcw } from "lucide-react";
 import { BARA_ACTS, BARA_GUIDE, BARA_HOOK, IGNITION_SOURCES, SUPPRESSION_TEXT, TIME_SPEEDS, type IgnitionSource, type ViewMode } from "@/config/modul/bara";
 import { moduleAt } from "@/config/modules-content";
 import { resurfacingSettled, SmolderSim, type SmolderStats } from "@/lib/model/smolder";
-import { AmbientSound } from "@/lib/ambientSound";
+import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import { peatForestMix } from "@/lib/sound/soundscapes";
 import IgnitionPicker from "./IgnitionPicker";
 import ControlDock, { WATER_MAX_CM } from "./ControlDock";
 import StatsPanel from "./StatsPanel";
@@ -111,7 +112,6 @@ export default function BaraModule() {
   const [ready, setReady] = useState(false);
   const [quality, setQuality] = useState<Quality>("high");
   const handleOverload = useCallback(() => setQuality("low"), []);
-  const [soundOn, setSoundOn] = useState(false);
   // Arahan "Perhatikan" yang waktu bacanya sudah habis, per babak (tuntunan).
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0, 0]);
 
@@ -185,23 +185,6 @@ export default function BaraModule() {
       onScreen.disconnect();
     };
   }, []);
-
-  // Suara suasana: derak bara menguat seiring luas gambut yang terbakar.
-  const soundRef = useRef<AmbientSound | null>(null);
-  const toggleSound = () => {
-    if (!soundRef.current) soundRef.current = new AmbientSound();
-    setSoundOn((on) => !on);
-  };
-  useEffect(() => {
-    const sound = soundRef.current;
-    if (!sound) return;
-    if (soundOn && visible) void sound.start();
-    else sound.stop();
-  }, [soundOn, visible]);
-  useEffect(() => {
-    soundRef.current?.setDanger(Math.min(1, stats.active / 90 + stats.consumed * 0.5));
-  }, [stats.active, stats.consumed]);
-  useEffect(() => () => soundRef.current?.dispose(), []);
 
   // Teks babak masuk dengan gerak naik-dan-menjernih setiap kali babak berganti.
   useGSAP(
@@ -523,6 +506,8 @@ export default function BaraModule() {
 
   return (
     <div ref={rootRef} id="modul-bara" className="relative h-[100dvh] w-full overflow-hidden bg-[#050505]">
+      {/* Suara alam: derak bara menguat seiring bara yang aktif dan gambut yang habis. */}
+      <AmbientSoundToggle getMix={() => peatForestMix(Math.min(1, stats.active / 90 + stats.consumed * 0.5))} />
       {/* Lapisan 3D. Seretan tetikus memutar diorama; sentuhan tidak memutar,
           sama dengan Modul Anatomi. */}
       <div
@@ -776,17 +761,6 @@ export default function BaraModule() {
             <MousePointer2 size={14} /> Arahkan ke tanah
           </span>
         </div>
-        <button
-          type="button"
-          onClick={toggleSound}
-          aria-pressed={soundOn}
-          className={`hidden cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 backdrop-blur-md transition-colors md:inline-flex ${
-            soundOn ? "border-white/40 bg-white/15 text-white" : "border-white/20 bg-black/30 text-white/70 hover:text-white"
-          }`}
-        >
-          {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          Suara alam
-        </button>
         <div className="hidden md:block">{advance}</div>
       </div>
 

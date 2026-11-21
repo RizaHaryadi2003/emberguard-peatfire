@@ -19,6 +19,8 @@ import ModuleHook from "@/components/modul/shared/ModuleHook";
 import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import NextModuleAdvance from "@/components/modul/shared/NextModuleAdvance";
+import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import { karbonMix } from "@/lib/sound/soundscapes";
 import { guideLevel, guideTarget } from "@/lib/guide";
 import {
   AREA_MAX_HA,
@@ -299,6 +301,19 @@ export default function KarbonModule() {
 
   return (
     <div ref={rootRef} id="modul-karbon" className="relative h-[100dvh] w-full overflow-hidden bg-[#070708]">
+      {/* Suara alam: hutan utuh, derak api selama gambut habis terbakar, sunyi
+          sesudahnya, lalu makhluknya kembali bersama tumbuhan (±2–60 tahun,
+          sama dengan KarbonCover). */}
+      <AmbientSoundToggle
+        getMix={() => {
+          const s = stateRef.current;
+          return karbonMix({
+            burning: (s.burnDepthM - s.drawnBurnM) / 0.08,
+            burnt: s.burnDepthM > 0.005,
+            recovery: (stats.years - 2) / 58,
+          });
+        }}
+      />
       {/* Lapisan 3D. Seretan tetikus memutar bongkahan. */}
       <div
         data-guide="figure"

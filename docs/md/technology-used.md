@@ -286,10 +286,22 @@ bekas terbakar punya kedalaman nyata.
 
 ### 6.2 Suara
 
-`lib/ambientSound.ts` membuat suara suasana **langsung di peramban** dengan
-Web Audio API, tanpa berkas suara: derau tersaring untuk angin, riak air,
-derak bara, dan kicau burung yang berhenti saat asap menebal. Suara mati
-secara bawaan.
+Suara alam dibuat **langsung di peramban** dengan Web Audio API, tanpa
+berkas suara, dan tersedia di ketujuh modul (21 November 2026):
+
+- `lib/sound/ambientEngine.ts`: mesin bersama. Lapisan menerus (angin, air
+  mengalir, hujan, tonggeret, gemuruh api) dan peristiwa acak (kicau burung,
+  katak, tetes hujan, guntur, derak bara), semuanya dari derau dan osilator.
+- `lib/sound/soundscapes.ts`: racikan tiap modul, fungsi murni yang
+  menerjemahkan keadaan simulasi menjadi takaran lapisan. Contoh: parit Kanal
+  makin deras makin dalam kanalnya dan tenang saat disekat; hujan Musim Api
+  mengikuti curah hujan hari itu; burung dan katak diam saat asap menebal;
+  di Karbon makhluknya kembali bersama tumbuhnya tumbuhan. Takarannya
+  ilustratif, bukan hasil pengukuran bunyi.
+- `components/modul/shared/AmbientSoundToggle.tsx`: satu tombol "Suara alam"
+  di pojok kanan atas semua modul. Suara mati secara bawaan (peramban
+  mewajibkan sentuhan pembaca); sekali dinyalakan, pilihannya diingat selama
+  sesi dan berhenti saat tab disembunyikan.
 
 `howler` adalah pemutar **berkas** suara. Proyek belum punya berkas suara,
 jadi paketnya belum dipakai; dipertahankan untuk narasi atau efek rekaman
@@ -350,7 +362,7 @@ Keadaan 19 November 2026: **21 berkas, 244 uji, semua lolos**.
 | `components/modul/bara/scene/viewFit.test.ts` | 5 | Pembingkaian kamera |
 | `lib/model/atmosphere.test.ts` | 4 | Peralihan langit |
 | `components/modul/bara/scene/burnMaterial.test.ts` | 4 | Bahan hangus |
-| `lib/ambientSound.test.ts` | 2 | Laju derak dan kicau |
+| `lib/sound/soundscapes.test.ts` | 8 | Racikan suara alam tiap modul |
 | `components/modul/bara/baraContent.test.ts` | 2 | Isi teks Bara |
 
 ---

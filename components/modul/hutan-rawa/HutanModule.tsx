@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import { hutanRawaMix } from "@/lib/sound/soundscapes";
 import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import { guideLevel, guideTarget } from "@/lib/guide";
@@ -166,6 +168,9 @@ export default function HutanModule() {
             ));
 
   return (
+    <>
+      {/* Suara alam: hutan rawa yang basah; banjir dan hujan terdengar. */}
+      <AmbientSoundToggle getMix={() => hutanRawaMix({ flood, rain })} />
     <ActModuleShell
       href="/modul/hutan-rawa"
       hook={HUTAN_HOOK}
@@ -326,6 +331,7 @@ export default function HutanModule() {
         </>
       }
     />
+    </>
   );
 }
 

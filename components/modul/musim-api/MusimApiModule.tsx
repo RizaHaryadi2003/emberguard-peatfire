@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 import ActModuleShell from "@/components/modul/shared/ActModuleShell";
+import AmbientSoundToggle from "@/components/modul/shared/AmbientSoundToggle";
+import { musimApiMix } from "@/lib/sound/soundscapes";
 import SliderTrack from "@/components/modul/shared/SliderTrack";
 import GuideLayer from "@/components/modul/shared/GuideLayer";
 import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
@@ -174,6 +176,10 @@ export default function MusimApiModule() {
   };
 
   return (
+    <>
+      {/* Suara alam: hujan hari itu terdengar; kemarau membawa angin kering
+          dan tonggeret; api menyusul saat air gambut melewati ambang. */}
+      <AmbientSoundToggle getMix={() => musimApiMix({ rainMmDay, dryness: depthCm / BURN_CM, fire })} />
     <ActModuleShell
       href="/modul/musim-api"
       hook={MUSIM_HOOK}
@@ -449,6 +455,7 @@ export default function MusimApiModule() {
         />
       }
     />
+    </>
   );
 }
 
