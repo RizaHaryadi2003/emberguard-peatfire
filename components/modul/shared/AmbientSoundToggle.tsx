@@ -91,7 +91,16 @@ export default function AmbientSoundToggle({ getMix }: Props) {
     };
   }, [on]);
 
-  useEffect(() => () => engineRef.current?.dispose(), []);
+  // Dibuang saat modul ditutup, dan rujukannya dikosongkan: mesin yang sudah
+  // dibuang tidak boleh dipakai ulang (mode ketat React memasang komponen dua
+  // kali di pengembangan, dan pemasangan kedua harus membuat mesin baru).
+  useEffect(
+    () => () => {
+      engineRef.current?.dispose();
+      engineRef.current = null;
+    },
+    [],
+  );
 
   const toggle = () => writePreference(!on);
 

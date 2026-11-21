@@ -51,6 +51,10 @@ export class AmbientEngine {
   private waterFilters: BiquadFilterNode[] = [];
   private timer: number | null = null;
   private mix: AmbientMix = { ...SILENT_MIX };
+  /** Sudah dibuang: konteksnya tertutup dan tidak boleh disentuh lagi. */
+  private disposed = false;
+  /** Pendengar "sentuhan pertama" yang masih terpasang di dokumen. */
+  private gestureResume: (() => void) | null = null;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -197,6 +201,7 @@ export class AmbientEngine {
 
   /** Penjadwal: tiap selang memutuskan peristiwa acak dan menggoyang air. */
   private tick = () => {
+    if (this.disposed) return;
     const now = this.ctx.currentTime;
     const m = this.mix;
     const soon = () => now + Math.random() * (TICK_MS / 1000);
@@ -228,20 +233,38 @@ export class AmbientEngine {
    * ulang penuh, konteksnya masih tertahan: lanjutkan pada sentuhan pertama.
    */
   private resumeOnGesture() {
-    if (this.ctx.state === "running") return;
-    const resume = () => {
-      void this.ctx.resume();
-      document.removeEventListener("pointerdown", resume);
-      document.removeEventListener("keydown", resume);
+    if (this.ctx.state === "running" || this.gestureResume) return;
+    this.gestureResume = () => {
+      this.removeGestureResume();
+      if (!this.disposed) this.ctx.resume().catch(() => {});
     };
-    document.addEventListener("pointerdown", resume);
-    document.addEventListener("keydown", resume);
+    document.addEventListener("pointerdown", this.gestureResume);
+    document.addEventListener("keydown", this.gestureResume);
+  }
+
+  /**
+   * Lepas pendengar sentuhan pertama. Wajib saat dibuang: tanpa ini,
+   * sentuhan di modul berikutnya mencoba melanjutkan konteks yang sudah
+   * ditutup ("Cannot resume a closed AudioContext").
+   */
+  private removeGestureResume() {
+    if (!this.gestureResume) return;
+    document.removeEventListener("pointerdown", this.gestureResume);
+    document.removeEventListener("keydown", this.gestureResume);
+    this.gestureResume = null;
   }
 
   /** Mulai (atau lanjutkan) suara dengan memudar masuk. */
   async start() {
+    if (this.disposed) return;
     this.resumeOnGesture();
-    await this.ctx.resume();
+    try {
+      await this.ctx.resume();
+    } catch {
+      return;
+    }
+    // Bisa saja dibuang selagi menunggu resume (pembaca pindah modul).
+    if (this.disposed) return;
     const now = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setTargetAtTime(0.9, now, 0.6);
@@ -250,15 +273,17 @@ export class AmbientEngine {
 
   /** Hentikan suara dengan memudar keluar. */
   stop() {
-    this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.3);
     if (this.timer !== null) {
       window.clearInterval(this.timer);
       this.timer = null;
     }
+    if (this.disposed) return;
+    this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.3);
   }
 
   /** Setel takaran tiap lapisan (0–1); perubahannya dihaluskan. */
   setMix(mix: AmbientMix) {
+    if (this.disposed) return;
     this.mix = mix;
     const now = this.ctx.currentTime;
     for (const key of Object.keys(PEAK) as (keyof typeof PEAK)[]) {
@@ -266,8 +291,12 @@ export class AmbientEngine {
     }
   }
 
+  /** Buang mesin; aman dipanggil lebih dari sekali. */
   dispose() {
+    if (this.disposed) return;
     this.stop();
-    void this.ctx.close();
+    this.removeGestureResume();
+    this.disposed = true;
+    this.ctx.close().catch(() => {});
   }
 }
