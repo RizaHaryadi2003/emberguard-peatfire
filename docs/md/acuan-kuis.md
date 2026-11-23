@@ -1,7 +1,8 @@
 # Acuan Kuis
 
 Status: **pedoman disetujui** (23 November 2026). **Draf 1 soal** di §8: 10
-soal utama dan 6 soal cek singkat (Gambut, Kering), belum divalidasi ahli.
+soal utama dan 6 soal cek singkat (Gambut, Kering). Validasi ahli ditiadakan
+(24 November 2026, lihat §6).
 Dokumen ini mengatur *cara* soal dirumuskan, sama seperti acuan modul mengatur
 isi modul.
 
@@ -158,27 +159,13 @@ mendapat penjelasannya.
 Batas panjang: ± 90 kata untuk langkah 1–5, supaya tetap terkelola (D) dan
 tidak bergulir.
 
-## 6. Validasi isi oleh ahli (acuan F)
+## 6. Validasi isi oleh ahli (ditiadakan)
 
-Penulis soal bukan pakar gambut, jadi kebenaran soal tidak diklaim sendiri.
-Setiap soal dinilai ahli.
-
-- **Penilai:** sedikitnya 3 orang, misalnya dosen gambut atau kehutanan,
-  dosen evaluasi pendidikan, dan satu praktisi (BPBD atau Manggala Agni).
-  Komposisinya diputuskan bersama dosen pembimbing.
-- **Yang dinilai per soal**, skala 1–5:
-  1. Kesesuaian dengan materi modul
-  2. Kebenaran kunci jawaban
-  3. Kejelasan bahasa bagi usia 17 tahun
-  4. Pengecoh masuk akal dan pasti salah
-  5. Kebenaran pembahasan
-- **Indeks Aiken:** V = Σs / [n(c − 1)], dengan s = r − lo, r skor penilai,
-  lo skor terendah (1), n jumlah penilai, c jumlah kategori (5). Rentang 0–1.
-  Batas layak diambil dari tabel peluang pada naskah Aiken (1985) sesuai
-  jumlah penilai. Soal di bawah batas direvisi atau diganti.
-- Hasilnya masuk Bab III atau IV sebagai tahap validasi isi. Ini berbeda dari
-  pengujian black box: black box menguji fungsi website, validasi menguji
-  kebenaran soal.
+Diputuskan pengguna pada 24 November 2026: soal tidak divalidasi ahli karena
+sisa waktu penelitian sekitar satu bulan. Mutu soal disandarkan pada pedoman
+perumusan di dokumen ini (acuan A–E) dan pada kesesuaian isi dengan acuan tiap
+modul. Bab III cukup menyebut bahwa soal disusun mengikuti pedoman tersebut,
+tanpa menyebut tahap validasi ahli. Acuan F (Aiken 1985) tidak dipakai lagi.
 
 ## 7. Kisi-kisi
 
@@ -213,8 +200,8 @@ modul yang belum ada **ditukar** setelah modul dan acuannya jadi.
 
 ## 8. Lembar soal
 
-Draf 1, 23 November 2026: 10 soal utama dan 6 soal cek singkat. **Belum
-divalidasi ahli.**
+Draf 1, 23 November 2026: 10 soal utama dan 6 soal cek singkat. Tanpa
+validasi ahli (§6).
 
 Cara membaca:
 
@@ -853,5 +840,5 @@ Diperiksa penulis, belum oleh ahli.
 1. ~~Pengguna menyetujui pedoman ini.~~ Selesai 23 November 2026.
 2. ~~Menyusun 10 soal utama dan 6 soal cek singkat (Gambut, Kering) di §8.~~ Draf 1 selesai.
 3. Pengguna memeriksa; uji coba pertanyaan terbuka bila memungkinkan.
-4. Validasi ahli, lalu revisi.
+4. ~~Validasi ahli, lalu revisi.~~ Ditiadakan 24 November 2026 (§6).
 5. Membangun halaman: `config/kuis.ts`, `lib/quiz.ts` beserta uji, dan `app/kuis/page.tsx`.
