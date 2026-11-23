@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MAIN_QUIZ, PART_CHECKS, type QuizItem } from "@/config/kuis";
 import { MODULE_PARTS, MODULES } from "@/config/modules-content";
-import { categoryOf, isCorrect, missedItems, modulesToRevisit, partSummary, scoreOf } from "@/lib/quiz";
+import { categoryOf, isCorrect, missedItems, modulesToRevisit, partCheckFor, partSummary, scoreOf } from "@/lib/quiz";
 
 const allRight = MAIN_QUIZ.map((q) => q.answer);
 const allWrong = MAIN_QUIZ.map((q) => (q.answer + 1) % 4);
@@ -79,5 +79,18 @@ describe("data soal", () => {
         expect(mainIds.has(q.id)).toBe(false);
       });
     }
+  });
+});
+
+describe("letak cek singkat", () => {
+  it("hanya di modul terakhir bagian yang semua modulnya sudah ada", () => {
+    expect(partCheckFor("/modul/hutan-rawa")?.part).toBe("gambut");
+    expect(partCheckFor("/modul/musim-api")?.part).toBe("kering");
+    // Bukan modul terakhir bagiannya.
+    expect(partCheckFor("/modul/sekitarmu")).toBeNull();
+    expect(partCheckFor("/modul/kanal")).toBeNull();
+    // Bara modul terakhir bagian Api, tetapi Siapa yang Menyalakan? belum ada.
+    expect(partCheckFor("/modul/bara")).toBeNull();
+    expect(partCheckFor("/modul/karbon")).toBeNull();
   });
 });

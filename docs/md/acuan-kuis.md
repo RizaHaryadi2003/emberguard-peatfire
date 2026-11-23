@@ -204,6 +204,11 @@ modul yang belum ada **ditukar** setelah modul dan acuannya jadi.
 - Soalnya berbeda dari kuis utama, supaya kuis utama tetap menguji.
 - Ditulis hanya untuk bagian yang semua modulnya sudah ada. Saat ini baru
   **Gambut** dan **Kering**.
+- **Terpasang** (23 November 2026) di akhir Hutan Rawa (Gambut) dan Musim Api
+  (Kering): tombol "Cek pemahaman" muncul di babak terakhir setelah tugasnya
+  selesai, membuka lapisan berisi tiga soal. Tidak wajib. Letaknya dihitung
+  `partCheckFor()` di `lib/quiz.ts`, jadi berpindah sendiri saat bagian lain
+  lengkap dan soalnya ditulis.
 - Bab III belum memuatnya, jadi naskah perlu satu paragraf tambahan.
 
 ## 8. Lembar soal

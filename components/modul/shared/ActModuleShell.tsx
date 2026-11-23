@@ -2,10 +2,13 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, Lock, MousePointerClick, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Lock, MousePointerClick, RotateCcw } from "lucide-react";
 import ModuleHook from "@/components/modul/shared/ModuleHook";
 import StepAdvance from "@/components/modul/shared/StepAdvance";
+import PartCheck from "@/components/kuis/PartCheck";
 import { BACK_TO_MODULE_LIST, moduleAt, nextAvailableModule } from "@/config/modules-content";
+import { CHECK_TEXT } from "@/config/kuis";
+import { partCheckFor } from "@/lib/quiz";
 
 /** Jarak usapan ke atas yang menutup layar pembuka di layar sentuh (piksel). */
 const HOOK_SWIPE = 30;
@@ -86,6 +89,9 @@ export default function ActModuleShell({
   const meta = moduleAt(href);
   const next = nextAvailableModule(href);
   const [hookOpen, setHookOpen] = useState(true);
+  const [checkOpen, setCheckOpen] = useState(false);
+  // Cek singkat bagian, bila modul ini modul terakhir bagian yang sudah lengkap.
+  const check = partCheckFor(href);
 
   // Layar pembuka tertutup oleh tombolnya, oleh gulir, atau oleh usapan ke atas.
   useEffect(() => {
@@ -121,6 +127,15 @@ export default function ActModuleShell({
     if (i > act && !done) return;
     onAct(i);
   };
+
+  // Ajakan cek singkat: muncul di babak terakhir setelah tugasnya selesai,
+  // di atas panah ke modul berikutnya. Tidak wajib; panahnya tetap terbuka.
+  const checkButton =
+    isLast && done && check ? (
+      <button type="button" onClick={() => setCheckOpen(true)} className="btn-mono is-on stage-in">
+        {CHECK_TEXT.open} <span className="font-normal opacity-60">· {CHECK_TEXT.openNote(check.items.length)}</span>
+      </button>
+    ) : null;
 
   const advance = isLast ? (
     next?.href ? (
@@ -306,15 +321,31 @@ export default function ActModuleShell({
             arahannya, dan arahannya sudah ada di kartu tugas. */}
         {done &&
           (isLast ? (
-            next?.href && (
-              <Link
-                href={next.href}
-                data-guide="next"
-                className="mb-1 inline-flex items-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 px-4 py-2 text-xs font-medium text-white"
-              >
-                Modul berikutnya
-              </Link>
-            )
+            <span className="mb-1 flex items-center gap-2">
+              {check && (
+                <button
+                  type="button"
+                  onClick={() => setCheckOpen(true)}
+                  className="inline-flex items-center whitespace-nowrap rounded-full bg-white px-4 py-2 text-xs font-medium text-black"
+                >
+                  {CHECK_TEXT.open}
+                </button>
+              )}
+              {/* Bila ada ajakan cek, tautan lanjut menyusut jadi panah supaya
+                  keduanya muat di samping penanda babak. */}
+              {next?.href && (
+                <Link
+                  href={next.href}
+                  data-guide="next"
+                  aria-label="Modul berikutnya"
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border border-white/25 bg-black/60 text-xs font-medium text-white ${
+                    check ? "h-8 w-8" : "px-4 py-2"
+                  }`}
+                >
+                  {check ? <ArrowRight size={14} /> : "Modul berikutnya"}
+                </Link>
+              )}
+            </span>
           ) : (
             <button
               type="button"
@@ -339,7 +370,8 @@ export default function ActModuleShell({
           <div key={stageKey} className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden [@media(max-height:820px)]:gap-2">
             {aside}
           </div>
-          <div data-guide="next" className="max-w-full shrink-0 self-end">
+          <div data-guide="next" className="flex max-w-full shrink-0 flex-col items-end gap-2 self-end">
+            {checkButton}
             {advance}
           </div>
         </div>
@@ -347,11 +379,18 @@ export default function ActModuleShell({
 
       {/* Panah lanjut (kanan bawah), hanya di layar lebar; bila ada kolom
           kanan, panah ini pindah ke dasarnya. */}
-      <div data-guide="next" inert={hookOpen} className={`absolute bottom-6 right-5 z-20 hidden sm:right-10 md:block ${aside ? "lg:hidden" : ""} ${panelFade}`}>
+      <div
+        data-guide="next"
+        inert={hookOpen}
+        className={`absolute bottom-6 right-5 z-20 hidden flex-col items-end gap-2 sm:right-10 md:flex ${aside ? "lg:hidden" : ""} ${panelFade}`}
+      >
+        {checkButton}
         {advance}
       </div>
 
       {!hookOpen && guide}
+
+      {checkOpen && check && <PartCheck href={href} partTitle={check.title} items={check.items} onClose={() => setCheckOpen(false)} />}
     </div>
   );
 }

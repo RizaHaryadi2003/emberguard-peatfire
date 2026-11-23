@@ -703,7 +703,8 @@ function SceneLabels({
         // Nama ringkas dengan titik warna; rincian tebal gambut dan kanopi
         // ada di kolom kanan, supaya ketiga nama tidak saling menindih.
         const body = (
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium leading-none text-white">
+          // Chip terpilih berlatar putih (`is-on`), jadi tulisannya ikut gelap.
+          <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium leading-none ${active && openedZones ? "text-[#0a0a0a]" : "text-white"}`}>
             {opened && <span className="text-[10px]">✓</span>}
             {z.short}
           </span>

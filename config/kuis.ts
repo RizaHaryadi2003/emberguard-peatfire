@@ -74,6 +74,21 @@ export const QUIZ_TEXT = {
   modules: "Daftar modul",
 } as const;
 
+/** Teks cek singkat di akhir bagian (tanpa skor). */
+export const CHECK_TEXT = {
+  open: "Cek pemahaman",
+  openNote: (n: number) => `${n} soal`,
+  eyebrow: (part: string) => `Cek singkat · Bagian ${part}`,
+  close: "Tutup",
+  finish: "Selesai",
+  doneTitle: (right: number, total: number) => `${right} dari ${total} tepat`,
+  doneAll: "Semua konsep bagian ini sudah kamu pegang.",
+  doneSome: "Konsep yang masih keliru, beserta modulnya:",
+  again: "Ulangi cek",
+  back: "Kembali ke modul",
+  next: "Modul berikutnya",
+} as const;
+
 /** Huruf pilihan A–D. */
 export const OPTION_LETTERS = ["A", "B", "C", "D"] as const;
 

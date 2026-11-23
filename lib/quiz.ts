@@ -5,7 +5,8 @@
  * bersama oleh kuis utama dan cek singkat per bagian. Aturannya mengikuti
  * Bab III naskah: benar = 10 poin, skor 0–100, "Paham" bila skor ≥ 70.
  */
-import { PASS_SCORE, POINTS_PER_ITEM, type QuizItem, type QuizPart } from "@/config/kuis";
+import { PART_CHECKS, PASS_SCORE, POINTS_PER_ITEM, type QuizItem, type QuizPart } from "@/config/kuis";
+import { MODULE_PARTS } from "@/config/modules-content";
 
 /** Jawaban pembaca per soal: indeks pilihan, atau `null` bila belum dijawab. */
 export type Picks = readonly (number | null)[];
@@ -50,4 +51,21 @@ export function missedItems(items: readonly QuizItem[], picks: Picks): QuizItem[
 /** Modul yang disarankan dibuka lagi: satu kali per modul, menurut urutan soal. */
 export function modulesToRevisit(items: readonly QuizItem[], picks: Picks): string[] {
   return [...new Set(missedItems(items, picks).map((item) => item.module.href))];
+}
+
+/**
+ * Cek singkat yang dipasang di akhir modul `href`, atau `null`.
+ *
+ * Cek sebuah bagian hanya tampil di modul terakhirnya, dan hanya bila semua
+ * modul bagian itu sudah dibuat serta soalnya sudah ditulis
+ * (acuan-kuis §7). Dengan begitu cek berpindah sendiri saat modul baru
+ * ditambahkan ke bagian itu.
+ */
+export function partCheckFor(href: string): { part: QuizPart; title: string; items: readonly QuizItem[] } | null {
+  const part = MODULE_PARTS.find((p) => p.modules.some((m) => m.href === href));
+  if (!part) return null;
+  const complete = part.modules.every((m) => m.href !== null);
+  const isLast = part.modules[part.modules.length - 1].href === href;
+  const items = PART_CHECKS[part.id as QuizPart];
+  return complete && isLast && items?.length ? { part: part.id as QuizPart, title: part.title, items } : null;
 }
