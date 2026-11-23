@@ -227,7 +227,7 @@ Kalbar memuncak Agustus (G). Modul tidak menyembunyikannya: kebakaran besar
 datang Agustus–Oktober karena **El Niño hanya menyentuh kemarau Agustus**
 (D: pengaruhnya Juni–November), bukan Februari–Maret. Waktu pembakaran oleh
 manusia (pembukaan lahan menjelang musim tanam) kemungkinan ikut menjelaskan
-puncak Agustus; itu bahan Modul "Siapa yang Menyalakan?".
+puncak Agustus; itu bahan Modul Forensik Api.
 
 ## 7. Keputusan
 

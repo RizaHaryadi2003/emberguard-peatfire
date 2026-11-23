@@ -47,7 +47,7 @@ MODUL  13 modul dalam 5 bagian
    ├─ 2 · Kering      Kanal & Pengeringan    mengapa jadi kering         ✅
    │                  Musim Api              kapan paling rawan          ✅
    │
-   ├─ 3 · Api         Siapa yang Menyalakan? dari mana apinya            ⏳
+   ├─ 3 · Api         Forensik Api           di mana apinya lahir        ⏳
    │                  Bara di Bawah Tanah    bagaimana ia terbakar       ✅
    │
    ├─ 4 · Dampak      Gudang Karbon          apa yang lepas ke udara     ✅
@@ -353,10 +353,24 @@ dan Modul Kanal.
 
 ### Bagian 3 · Api
 
-#### 3.6 Siapa yang Menyalakan? ⏳
+#### 3.6 Forensik Api ⏳
 
-Belum ada acuan. Judul dan keterangan ("sampah, puntung, dan api pembuka
-lahan") masih sementara sampai acuannya ditetapkan.
+`/modul/forensik-api` (belum dibangun) · acuan: `acuan-modul/acuan-modul-forensik-api.md`
+
+- **Hook:** "Agustus 2026. Enam bidang lahan gambut terbakar di Pontianak Utara
+  dan Pontianak Tenggara." → "Gambut tidak bisa menyala sendiri. Lalu dari mana apinya?"
+- **Pertanyaan:** Kalau gambut sudah kering, dari mana apinya datang?
+- **Sebelum → sesudah:** *gambut terbakar sendiri dan api bermula di hutan* →
+  *percikan datang dari manusia, cukup sekecil puntung bila gambut kering; api
+  lahir di lahan terbuka, dan satu api yang lolos menjadi kebakaran hutan.*
+- **Acuan:** Cattau dkk. (2016), Kalimantan Tengah; Lin dkk. (2024).
+- **Pola cerita:** pembaca menjadi penyelidik yang menelusuri api mundur.
+
+| Babak | Tugas | Yang terlihat | Angka |
+|---|---|---|---|
+| 01 Percikan | Jatuhkan bara ke gambut basah/lembap/kering, dengan dan tanpa angin | Bara padam, hidup bila berangin, atau membara | Kering selalu tersulut |
+| 02 Titik Sulut | Tebak asal api, putar waktu mundur di peta satelit | Kotak panas menyusut ke satu titik di lahan terbuka | 71 % lahan terbuka, ±10× hutan |
+| 03 Api yang Lolos | Nyalakan sepuluh api pembersih lahan | Delapan padam sehari, satu lolos ke hutan | Lolos ±4× lebih lama |
 
 #### 3.7 Bara di Bawah Tanah ✅ (patokan)
 
@@ -580,7 +594,7 @@ dokumen acuan masing-masing modul.
 |---|---|---|
 | 1 | Bagian Gambut (Sekitarmu, Anatomi, Hutan Rawa), Kanal, Bara, Karbon | ✅ selesai |
 | 2 | **Musim Api** | ✅ dibangun 19 November 2026; menunggu pemeriksaan tampilan |
-| 3 | Siapa yang Menyalakan? | ⏳ cari acuan |
+| 3 | Forensik Api | ⏳ acuan dan teks ditulis 24 November 2026; animasi menunggu persetujuan |
 | 4 | Bagian Mencegah (3 modul) | ⏳ cari acuan; menutup alur cerita skripsi berjudul *pencegahan* |
 | 5 | Kabut Asap, Yang Hilang dari Hutan | ⏳ cari acuan |
 | 6 | Kuis (utama + cek singkat) | ⏳ celah terbesar terhadap rumusan masalah |

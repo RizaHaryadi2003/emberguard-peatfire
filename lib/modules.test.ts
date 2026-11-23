@@ -25,7 +25,7 @@ describe("daftar modul", () => {
     // Tujuan panah lanjut babak terakhir (NextModuleAdvance).
     expect(nextAvailableModule("/modul/anatomi")?.href).toBe("/modul/hutan-rawa");
     expect(nextAvailableModule("/modul/bara")?.href).toBe("/modul/karbon");
-    // Sesudah Musim Api ada Siapa yang Menyalakan? yang belum dibuat.
+    // Sesudah Musim Api ada Forensik Api yang belum dibuat.
     expect(nextModule("/modul/musim-api")?.available).toBe(false);
     expect(nextAvailableModule("/modul/musim-api")?.href).toBe("/modul/bara");
   });

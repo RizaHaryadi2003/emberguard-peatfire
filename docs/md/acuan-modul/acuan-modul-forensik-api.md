@@ -1,8 +1,41 @@
-# Acuan Modul 06 · Siapa yang Menyalakan?
+# Acuan Modul 06 · Forensik Api
 
-Status: **usulan, menunggu persetujuan pengguna** (24 November 2026).
+Status: **acuan dan teks layar ditulis** (24 November 2026). Judul semula
+"Siapa yang Menyalakan?" diganti pengguna menjadi **Forensik Api**. Teks:
+`config/modul/forensik-api.ts`; model: `lib/model/ignition.ts` (+ uji).
+Animasi belum dibangun, menunggu persetujuan teks.
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 3 · Api, modul
 pertama; modul kedua adalah Bara di Bawah Tanah).
+
+## 0. Penentuan tema
+
+Tema ditentukan dengan empat langkah, berurutan:
+
+1. **Celah pada rantai sebab-akibat.** Kelima bagian modul disusun sebagai
+   rantai: Gambut (tanahnya) → Kering (mengapa ia kering) → **Api (dari mana
+   api datang)** → Dampak → Mencegah. Modul Kanal dan Musim Api sudah menjawab
+   "mengapa gambut kering", Modul Bara menjawab "bagaimana api merambat di
+   bawah tanah". Yang belum terjawab adalah mata rantai di antaranya: *dari
+   mana percikan pertama datang*. Tema modul ini adalah celah itu.
+2. **Salah kaprah pembaca.** Yang perlu dibantah bagi pembaca 17 tahun:
+   gambut terbakar sendiri karena panas, dan kebakaran bermula di hutan.
+   Tema dipilih supaya pengetahuan "sebelum → sesudah" (§1) bisa ditunjukkan
+   lewat aksi, bukan hanya dikatakan.
+3. **Acuan riset yang menentukan sudut pandang.** Cattau dkk. (2016) adalah
+   satu-satunya studi yang ditemukan yang memisahkan *tempat api menyala* dari
+   *tempat api terlihat menjalar*, dengan menelusuri titik api satelit mundur
+   ke deteksi paling awal. Cara kerja itu sejenis forensik kebakaran
+   (penulisnya sendiri menyebut *fire forensics* sebagai cara memastikan
+   sumber sulut). Karena itu modul tidak bertanya "siapa pelakunya", yang
+   tidak bisa dijawab satelit, melainkan "di mana dan bagaimana api lahir".
+4. **Judul.** Usulan awal "Siapa yang Menyalakan?" dan judul polos lain
+   (Titik Sulut, Asal Mula Api, Percikan Pertama, Sumber Penyulutan) ditolak
+   pengguna karena terdengar seperti tema pelajaran SD. **Forensik Api**
+   dipilih karena (a) memakai istilah bidang ilmu yang sungguh dipakai, (b)
+   langsung menyebut cara kerja modul, yaitu menelusuri kebakaran mundur ke
+   titik sulutnya, dan (c) menjadi pola cerita yang berbeda dari modul lain:
+   pembaca berperan sebagai penyelidik, bukan pengubah keadaan.
+   Keterangan di daftar modul: "Merekonstruksi titik sulut kebakaran gambut".
 
 ## 1. Pertanyaan modul
 
@@ -86,7 +119,7 @@ Lalu: "Gambut tidak bisa menyalakan dirinya sendiri. Jadi, siapa?" (E)
 |---|---|---|---|---|
 | 01 · Percikan | Menjatuhkan satu bara seukuran puntung ke petak gambut, lalu mengubah kebasahan gambut (basah · lembap · kering) dan angin | Gambut basah: bara padam. Lembap: hanya menyala bila ada angin. Kering: bara masuk, asap tipis keluar, tanpa nyala | Percikan sekecil itu cukup bila gambut kering; tanpa percikan, gambut kering pun tidak terbakar | B, C |
 | 02 · Titik pertama | Memutar waktu ke belakang pada peta satelit sebuah lanskap (hutan, lahan terbuka, kebun, kampung, kanal) sampai menemukan titik api paling awal; sebelumnya menebak di mana api bermula | Titik panas menyala hari demi hari; saat diputar mundur, titik menyusut ke satu sel pertama. Sesudah tebakan dibuka: tally 71 % lahan terbuka, 17 % kebun, 9 % hutan | Api hampir tidak pernah lahir di hutan basah; ia lahir di lahan terbuka yang sudah rusak, tempat orang datang dan bekerja | A |
-| 03 · Api yang lolos | Menyalakan api pembersih lahan kecil di tepi lahan terbuka dekat hutan, lalu melihat ke mana api itu pergi (beberapa kali, dengan gambut lembap lalu kering) | Kebanyakan api padam dalam sehari dan tinggal di petaknya; sesekali satu api lolos, menyeberang ke hutan, dan menyala berhari-hari | Puluhan api kecil padam sendiri, tetapi satu yang lolos menyala ±4× lebih lama dan menjadi kebakaran hutan; hutan terbakar oleh api yang datang dari luar | A |
+| 03 · Api yang lolos | Menyalakan api pembersih lahan kecil di tepi lahan terbuka dekat hutan, lalu melihat ke mana api itu pergi (sepuluh kali) | Kebanyakan api padam dalam sehari dan tinggal di petaknya; sesekali satu api lolos, menyeberang ke hutan, dan menyala berhari-hari | Puluhan api kecil padam sendiri, tetapi satu yang lolos menyala ±4× lebih lama dan menjadi kebakaran hutan; hutan terbakar oleh api yang datang dari luar | A |
 
 **Arahan terakhir** (tanpa kartu, sesuai keputusan 21 November 2026): "Gambut
 tidak menyala sendiri. Percikan dari tangan manusia ditambah gambut kering,
@@ -124,9 +157,17 @@ itulah awal asap. Di Pontianak, membuka lahan dengan membakar dilarang." (F)
   ±0,1 m/s (40 %) ke ±0,9 m/s (80 %); > 85 % → padam. Pilihan di layar
   dibulatkan ke tiga keadaan (basah 100 %, lembap 60 %, kering 25 %) dan dua
   angin (tenang, berangin 1 m/s).
-- **Lanskap (babak 02–03):** kisi sel; api muncul di sel sulut lalu merambat
-  ke tetangga per hari. Peluang sulut per kelas lahan mengikuti kerapatan A;
-  peluang lolos dan lama menyala dikalibrasi supaya rata-rata banyak putaran
-  mendekati angka A (80 % padam sehari, lolos ±10 %, lolos ±6,7 hari).
-  Lanskap dan urutan api ditulis **tetap** (benih acak tetap) agar tebakan di
-  babak 02 selalu bisa dibahas, dan diuji di `lib/model/ignition.test.ts`.
+- **Lanskap (babak 02):** kisi 24 × 16 sel, **1 sel = 1 km²** (sebesar satu
+  piksel titik api MODIS di A). Tata letak ilustratif: sungai dan kampung di
+  kiri, kebun sawit kiri bawah, lahan terbuka berkanal di tengah, hutan di
+  kanan. Titik sulut kasus di lahan terbuka tepi kanal, **8 km** dari kampung.
+  Api menyeberang ke empat tetangganya tiap hari dengan peluang **ilustratif**
+  (lahan terbuka 0,4, kebun 0,3, hutan 0,3; sungai dan kampung 0), benih acak
+  tetap (2026) supaya kebakarannya selalu sama. Hasil: 72 km² dalam 10 hari,
+  masuk hutan hari ke-4. Angka persentase di layar **tidak** berasal dari
+  simulasi ini, melainkan langsung dari Tabel 1 A.
+- **Sepuluh api (babak 03):** urutan **tetap**, bukan acak: 8 padam dalam
+  sehari (= 80 %, A §3.1), 1 padam setelah 2 hari, 1 lolos ke hutan dan
+  menyala 7 hari (A Tabel 4: 6,7 hari; lolos ±10 %, A Tabel 3). Api yang lolos
+  diletakkan ketujuh agar pembaca melihat api padam lebih dulu.
+- Diuji di `lib/model/ignition.test.ts` (19 uji).

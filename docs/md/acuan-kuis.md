@@ -175,7 +175,7 @@ tanpa menyebut tahap validasi ahli. Acuan F (Aiken 1985) tidak dipakai lagi.
 |---|---|---|---|
 | Gambut | Sekitarmu, Anatomi, Hutan Rawa | 2 | Memahami, Menganalisis |
 | Kering | Kanal, Musim Api | 2 | Menerapkan, Menganalisis |
-| Api | Bara (Siapa yang Menyalakan? belum ada) | 2 | Memahami, Mengevaluasi |
+| Api | Bara (Forensik Api belum ada) | 2 | Memahami, Mengevaluasi |
 | Dampak | Karbon (Kabut Asap, Yang Hilang dari Hutan belum ada) | 2 | Menerapkan, Menganalisis |
 | Mencegah | belum ada modul; sementara Kanal Babak 04 dan Bara Babak 04 | 2 | Mengevaluasi ×2 |
 
