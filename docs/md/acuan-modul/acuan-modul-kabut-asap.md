@@ -142,4 +142,9 @@ Yang **ilustratif / buku ajar** (bukan dari teks Wikipedia di atas):
   (rantai bola kecil), mengikuti rupa jelaga di bawah mikroskop elektron.
   Nasib tiap butir tetap dari `breath()` (Kodros dkk. 2021); jalurnya
   mengikuti satu cabang nyata dari trakea sampai ujung.
-- Saat menarik napas, paru-paru mengembang ±5 % (ilustratif).
+- Saat menarik napas, paru-paru mengembang ±5 % (ilustratif); saat diam paru-paru
+  tidak bergerak (atas permintaan pengguna, gerak "bernapas pelan" dihapus).
+- Tubuh kaca (`bodyShape.ts`): kepala, hidung, dagu, telinga, leher, bahu, dada
+  dari SDF, hanya untuk konteks: masker menempel di wajah dengan tali telinga,
+  udara masuk lewat mulut, turun lewat tekak dan leher ke trakea. Bentuk dan
+  ukurannya perkiraan; paru-paru digambar 1,3× ukuran modelnya.

@@ -117,3 +117,16 @@ describe("surface nets", () => {
     expect(m.indices.length / 3).toBeGreaterThan(10000);
   });
 });
+
+describe("tubuh kaca", () => {
+  it("paru-paru dan trakea berada di dalam tubuh, masker di depan wajah", async () => {
+    const { bodySdf, MASK_CENTER } = await import("./bodyShape");
+    // Karina (titik asal paru-paru di dunia) dan puncak paru kanan.
+    expect(bodySdf(0, -1.55, 0)).toBeLessThan(0);
+    expect(bodySdf(-1.0, -1.0, 0)).toBeLessThan(0);
+    // Leher tempat saluran napas turun.
+    expect(bodySdf(0, 0.2, -0.1)).toBeLessThan(0);
+    // Pusat masker tepat di permukaan wajah (tidak jauh di dalam/luar).
+    expect(Math.abs(bodySdf(MASK_CENTER[0], MASK_CENTER[1], MASK_CENTER[2]))).toBeLessThan(0.25);
+  });
+});

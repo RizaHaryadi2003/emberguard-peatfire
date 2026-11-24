@@ -10,6 +10,7 @@ import PerformanceGuard from "@/components/modul/shared/scene/PerformanceGuard";
 import { MASKS, type Fate, type Mask } from "@/lib/model/haze";
 import { KABUT_TEXT } from "@/config/modul/kabut-asap";
 import { lungBounds, lungSdf, type Side, type Vec3 } from "./lungShape";
+import { BODY_BOUNDS, EARS, MASK_CENTER, bodySdf } from "./bodyShape";
 import {
   buildAirway,
   pathFromTrachea,
@@ -23,6 +24,7 @@ import { BREATH_SEC } from "./timing";
 import {
   createBeamMaterial,
   createDustMaterial,
+  createGhostMaterial,
   createGlowMaterial,
   createMaskMaterial,
   createPleuraMaterial,
@@ -46,38 +48,84 @@ import {
 // kecil daripada yang tampak. Skala ukurannya sudah ditunjukkan di Babak 01.
 
 // ---------------------------------------------------------------------------
-// Tata letak dunia (satuan 10 cm), aliran dari atas ke bawah.
+// Tata letak dunia (satuan 10 cm). Tubuh kaca menghadap pembaca (+z):
+// udara berasap di depan wajah → masker di wajah → mulut → leher → trakea →
+// paru-paru di dalam dada.
 
+/** Besar paru-paru di adegan (1 = ukuran model lungShape). */
+const LUNG_SCALE = 1.3;
 /** Titik asal paru-paru (karina) di dunia. */
-const LUNG_POS = new THREE.Vector3(0, -1.25, 0);
-/** Masker: pusat, jari-jari elips (lebar x, tinggi z), dan tonjolannya. */
-const MASK_Y = 1.5;
-/** Masker dimiringkan ke arah pembaca supaya mukanya terlihat (radian). */
-const MASK_TILT = 0.55;
-/** Matriks kemiringan masker, berporos di pusatnya. */
+const LUNG_POS = new THREE.Vector3(0, -1.55, 0);
+/** Masker dibangun menghadap +y di sekitar y = 0, lalu diputar ke wajah. */
+const MASK_Y = 0;
+/** Matriks penempatan masker: putar menghadap depan (+z), geser ke wajah. */
 const MASK_MATRIX = new THREE.Matrix4()
-  .makeTranslation(0, MASK_Y, 0)
-  .multiply(new THREE.Matrix4().makeRotationX(MASK_TILT))
-  .multiply(new THREE.Matrix4().makeTranslation(0, -MASK_Y, 0));
-const MASK_RX = 0.85;
-const MASK_RZ = 0.62;
-/** Udara luar tempat butir asap melayang. */
-const AIR = { x: 1.75, y0: 2.05, y1: 3.2, z: 0.95 };
-/** Batas isi yang harus muat di bingkai gambar. */
-const CONTENT = { w: 3.4, h: 6.7, cy: 0.0 };
-/** Arah pandang awal: sedikit dari kanan dan dari atas. */
-const VIEW_DIR = new THREE.Vector3(0.24, 0.16, 1).normalize();
-const TARGET = new THREE.Vector3(0, CONTENT.cy, 0);
+  .makeTranslation(MASK_CENTER[0], MASK_CENTER[1], MASK_CENTER[2])
+  .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+/** Lebar dan tinggi masker (jari-jari elips). */
+const MASK_RX = 0.6;
+const MASK_RZ = 0.47;
+/** Udara luar di depan wajah, tempat butir asap melayang. */
+const AIR = { x: 1.9, y0: 0.15, y1: 2.45, z0: 1.75, z1: 3.3 };
+/** Isi yang harus muat di bingkai gambar (kotak dunia). */
+const CONTENT_MIN = new THREE.Vector3(-1.95, -3.95, -1.2);
+const CONTENT_MAX = new THREE.Vector3(1.95, 2.55, 3.3);
+/** Arah pandang awal: serong dari kanan dan sedikit dari atas. */
+const VIEW_DIR = new THREE.Vector3(0.62, 0.2, 1).normalize();
 const FOV = 28;
+/** Puncak trakea di dunia. */
+const TRACHEA_TOP_WORLD = new THREE.Vector3(
+  TRACHEA_TOP[0],
+  TRACHEA_TOP[1],
+  TRACHEA_TOP[2],
+)
+  .multiplyScalar(LUNG_SCALE)
+  .add(LUNG_POS);
 
-/** Saluran napas atas: dari balik masker turun ke puncak trakea. */
+/** Saluran napas atas: dari balik masker lewat rongga mulut, tekak, dan leher ke trakea. */
 const UPPER_AIRWAY = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(0, MASK_Y - 0.12, -0.1),
-  new THREE.Vector3(0, 1.0, -0.22),
-  new THREE.Vector3(0, 0.45, -0.18),
-  new THREE.Vector3(0, 0.0, -0.05),
-  new THREE.Vector3(0, LUNG_POS.y + TRACHEA_TOP[1], 0),
+  new THREE.Vector3(0, MASK_CENTER[1], MASK_CENTER[2] - 0.12),
+  new THREE.Vector3(0, 1.0, 0.5),
+  new THREE.Vector3(0, 0.88, 0.08),
+  new THREE.Vector3(0, 0.45, -0.12),
+  new THREE.Vector3(0, 0.0, -0.08),
+  TRACHEA_TOP_WORLD.clone(),
 ]);
+
+/**
+ * Pusat dan ukuran isi dilihat dari arah pandang awal: kedelapan sudut kotak
+ * isi diproyeksikan ke sumbu kanan dan atas kamera, supaya kamera bisa
+ * dimundurkan secukupnya agar semuanya muat di bingkai gambar.
+ */
+const FIT = (() => {
+  const right = new THREE.Vector3()
+    .crossVectors(new THREE.Vector3(0, 1, 0), VIEW_DIR)
+    .normalize();
+  const up = new THREE.Vector3().crossVectors(VIEW_DIR, right).normalize();
+  const center = CONTENT_MIN.clone().add(CONTENT_MAX).multiplyScalar(0.5);
+  let u0 = Infinity;
+  let u1 = -Infinity;
+  let v0 = Infinity;
+  let v1 = -Infinity;
+  let w = 0;
+  for (let i = 0; i < 8; i++) {
+    const c = new THREE.Vector3(
+      i & 1 ? CONTENT_MAX.x : CONTENT_MIN.x,
+      i & 2 ? CONTENT_MAX.y : CONTENT_MIN.y,
+      i & 4 ? CONTENT_MAX.z : CONTENT_MIN.z,
+    ).sub(center);
+    u0 = Math.min(u0, c.dot(right));
+    u1 = Math.max(u1, c.dot(right));
+    v0 = Math.min(v0, c.dot(up));
+    v1 = Math.max(v1, c.dot(up));
+    w = Math.max(w, c.dot(VIEW_DIR));
+  }
+  const target = center
+    .addScaledVector(right, (u0 + u1) / 2)
+    .addScaledVector(up, (v0 + v1) / 2);
+  return { target, halfW: (u1 - u0) / 2, halfH: (v1 - v0) / 2, depth: w };
+})();
+const TARGET = FIT.target;
 
 /** Bilangan semu 0–1 yang tetap untuk masukan yang sama. */
 function hash(n: number): number {
@@ -107,7 +155,7 @@ function breathProgress(start: number | null, reduced: boolean): number {
 // ---------------------------------------------------------------------------
 // Anatomi: dibangun sekali per kunjungan halaman (±0,3 detik).
 
-type Anatomy = { airway: Airway; lungs: Mesh[] };
+type Anatomy = { airway: Airway; lungs: Mesh[]; body: Mesh };
 let anatomyCache: Anatomy | null = null;
 function buildAnatomy(): Anatomy {
   if (anatomyCache) return anatomyCache;
@@ -121,10 +169,11 @@ function buildAnatomy(): Anatomy {
       (x, y, z) => lungSdf(x, y, z, side, false),
       min,
       max,
-      0.03,
+      0.024,
     );
   });
-  anatomyCache = { airway, lungs };
+  const body = surfaceNets(bodySdf, BODY_BOUNDS.min, BODY_BOUNDS.max, 0.045);
+  anatomyCache = { airway, lungs, body };
   return anatomyCache;
 }
 
@@ -167,7 +216,7 @@ function CameraRig({ rect }: { rect: FrameRect }) {
     const aspect = Math.max(0.2, rect.w / Math.max(1, rect.h));
     const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     const dist =
-      Math.max(CONTENT.h / 2 / tan, CONTENT.w / 2 / (tan * aspect)) * 1.04;
+      Math.max(FIT.halfH / tan, FIT.halfW / (tan * aspect)) + FIT.depth * 0.6;
     camera.fov = FOV;
     camera.aspect = aspect;
     // Bingkai "maya" seukuran kotak gambar, lalu diperluas ke seluruh layar:
@@ -220,14 +269,14 @@ function Atmosphere({ low }: { low: boolean }) {
     for (let i = 0; i < n; i++) {
       const near = i % 3 === 0;
       pos[i * 3] = near
-        ? (hash(i * 1.1) - 0.5) * 4.6
+        ? (hash(i * 1.1) - 0.5) * 5
         : (hash(i * 1.1) - 0.5) * 18;
       pos[i * 3 + 1] = near
-        ? 1.6 + hash(i * 2.3) * 2.6
+        ? -0.2 + hash(i * 2.3) * 3
         : -5 + hash(i * 2.3) * 11;
       pos[i * 3 + 2] = near
-        ? (hash(i * 3.7) - 0.5) * 2.6
-        : -7 + hash(i * 3.7) * 9.5;
+        ? 1.4 + hash(i * 3.7) * 2.4
+        : -7 + hash(i * 3.7) * 11;
       size[i] = 0.012 + hash(i * 4.9) ** 3 * 0.06;
       phase[i] = hash(i * 6.1);
       alpha[i] = 0.25 + hash(i * 7.3) * 0.6;
@@ -248,8 +297,8 @@ function Atmosphere({ low }: { low: boolean }) {
     const alpha = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       pos[i * 3] = (hash(i * 9.1) - 0.5) * 7;
-      pos[i * 3 + 1] = 1.7 + hash(i * 8.3) * 2.8;
-      pos[i * 3 + 2] = -2.5 + hash(i * 7.7) * 3;
+      pos[i * 3 + 1] = -0.3 + hash(i * 8.3) * 3.2;
+      pos[i * 3 + 2] = 0.8 + hash(i * 7.7) * 3.2;
       size[i] = 1.6 + hash(i * 6.6) * 2.4;
       phase[i] = hash(i * 5.5);
       alpha[i] = 0.035 + hash(i * 4.4) * 0.04;
@@ -543,12 +592,12 @@ function Lungs({
   );
 
   useFrame(() => {
-    const s = scaleRef.current ?? 1;
+    const s = scaleRef.current ?? LUNG_SCALE;
     group.current?.scale.setScalar(s);
   });
 
   return (
-    <group ref={group} position={LUNG_POS}>
+    <group ref={group} position={LUNG_POS} scale={LUNG_SCALE}>
       <primitive object={parts.tubes} name="tubes" />
       <primitive object={parts.joints} name="joints" />
       <primitive object={parts.rings} name="rings" />
@@ -703,6 +752,13 @@ function MaskModel({ mask }: { mask: Mask }) {
     [geo, edge],
   );
   const gap = mask !== "tanpa" && MASKS[mask].leak >= 0.2;
+  const loops = useMemo(() => earLoopGeometry(mask), [mask]);
+  const loopMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e9e4da", roughness: 0.7 }),
+    [],
+  );
+  useEffect(() => () => loops?.dispose(), [loops]);
+  useEffect(() => () => loopMat.dispose(), [loopMat]);
   return (
     <group matrixAutoUpdate={false} matrix={MASK_MATRIX}>
       <mesh geometry={seal}>
@@ -729,8 +785,61 @@ function MaskModel({ mask }: { mask: Mask }) {
           </mesh>
         </group>
       )}
+      {loops && <mesh geometry={loops} material={loopMat} />}
     </group>
   );
+}
+
+/**
+ * Tali masker dari kedua sisi masker melingkari pipi ke telinga. Dihitung di
+ * ruang dunia lalu dibawa ke ruang masker (kebalikan MASK_MATRIX), supaya
+ * ikut digambar di dalam kelompok masker.
+ */
+function earLoopGeometry(mask: Mask): THREE.BufferGeometry | null {
+  if (mask === "tanpa") return null;
+  const cover = maskCoverage(mask);
+  const inv = MASK_MATRIX.clone().invert();
+  const parts = EARS.map((ear) => {
+    const side = Math.sign(ear[0]);
+    const pts = [
+      new THREE.Vector3(side * MASK_RX * cover, 0.02, 0).applyMatrix4(
+        MASK_MATRIX,
+      ),
+      new THREE.Vector3(side * 0.74, MASK_CENTER[1] + 0.12, 0.62),
+      new THREE.Vector3(side * 0.86, MASK_CENTER[1] + 0.3, 0.2),
+      new THREE.Vector3(ear[0] + side * 0.06, ear[1], ear[2] + 0.02),
+      new THREE.Vector3(ear[0] + side * 0.02, ear[1] - 0.12, ear[2] - 0.16),
+    ].map((p) => p.applyMatrix4(inv));
+    return new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(pts),
+      40,
+      0.011,
+      6,
+      false,
+    );
+  });
+  const merged = mergeGeometries(parts);
+  parts.forEach((g) => g.dispose());
+  return merged;
+}
+
+/** Tubuh kaca: kepala, leher, bahu, dan dada yang tembus pandang. */
+function GlassBody({ body }: { body: Mesh }) {
+  const res = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(body.positions, 3));
+    g.setAttribute("normal", new THREE.BufferAttribute(body.normals, 3));
+    g.setIndex(new THREE.BufferAttribute(body.indices, 1));
+    return { g, mat: createGhostMaterial() };
+  }, [body]);
+  useEffect(
+    () => () => {
+      res.g.dispose();
+      res.mat.dispose();
+    },
+    [res],
+  );
+  return <mesh geometry={res.g} material={res.mat} renderOrder={1} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -788,7 +897,9 @@ function makeRoute(world: THREE.Vector3[], local: THREE.Vector3[]): Route {
   const isLocal = [...world.map(() => false), ...local.map(() => true)];
   const cum = [0];
   const at = (i: number) =>
-    isLocal[i] ? pts[i].clone().add(LUNG_POS) : pts[i];
+    isLocal[i]
+      ? pts[i].clone().multiplyScalar(LUNG_SCALE).add(LUNG_POS)
+      : pts[i];
   for (let i = 1; i < pts.length; i++)
     cum.push(cum[i - 1] + at(i).distanceTo(at(i - 1)));
   return { pts, local: isLocal, cum, total: cum[cum.length - 1] };
@@ -905,7 +1016,7 @@ function Particles({
       const home = new THREE.Vector3(
         (hash(i * 1.3) - 0.5) * 2 * AIR.x,
         AIR.y0 + hash(i * 2.7) * (AIR.y1 - AIR.y0),
-        (hash(i * 3.9) - 0.5) * 2 * AIR.z,
+        AIR.z0 + hash(i * 3.9) * (AIR.z1 - AIR.z0),
       );
       const th = hash(i * 5.3) * Math.PI * 2;
       const rho =
@@ -980,7 +1091,7 @@ function Particles({
     const now = clock.elapsedTime;
     const start = startRef.current;
     const t = breathProgress(start, reduced);
-    const lungScale = scaleRef.current ?? 1;
+    const lungScale = scaleRef.current ?? LUNG_SCALE;
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const p = new THREE.Vector3();
@@ -1016,7 +1127,7 @@ function Particles({
           routeAt(pl.route, ease((k - 0.24) / 0.76), lungScale, p);
           color = fate === "celah" ? COLOR.celah : COLOR.kain;
           inside = true;
-          size = k >= 1 ? 0.08 + 0.03 * Math.sin(now * 3 + i) : 0.12;
+          size = k >= 1 ? 0.12 + 0.03 * Math.sin(now * 3 + i) : 0.13;
         }
       }
       // Jelaga berputar pelan; di dalam saluran napas ukurannya mengecil
@@ -1090,14 +1201,14 @@ function Breathing({
   startRef: React.RefObject<number | null>;
   scaleRef: React.RefObject<number>;
 }) {
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const start = startRef.current;
     const raw = breathProgress(start, false);
     const t = raw < 0 ? 2 : raw;
-    const idle = 1 + 0.012 * Math.sin((clock.elapsedTime * Math.PI * 2) / 4.5);
+    // Saat diam paru-paru tidak bergerak; hanya mengembang ketika menarik napas.
     const inhale =
       t >= 0 && t <= 1.4 ? 0.05 * Math.sin(Math.PI * clamp01(t / 1.4)) : 0;
-    scaleRef.current = idle + inhale;
+    scaleRef.current = LUNG_SCALE * (1 + inhale);
   });
   return null;
 }
@@ -1124,7 +1235,7 @@ export default function LungScene({
   }, []);
 
   const startRef = useRef<number | null>(null);
-  const scaleRef = useRef(1);
+  const scaleRef = useRef(LUNG_SCALE);
   const seenBreath = useRef(breathId);
   useEffect(() => {
     startRef.current = null;
@@ -1136,7 +1247,8 @@ export default function LungScene({
     }
   }, [breathId]);
 
-  const maxDpr = low ? 1 : 1.5;
+  // HD: sampai 2× kepadatan piksel; PerformanceGuard menurunkannya bila berat.
+  const maxDpr = low ? 1 : 2;
   return (
     <Canvas
       dpr={[1, maxDpr]}
@@ -1190,6 +1302,7 @@ export default function LungScene({
 
       <Atmosphere low={low} />
       <MaskModel mask={mask} />
+      {anatomy && <GlassBody body={anatomy.body} />}
       <UpperAirway />
       {anatomy && <Lungs anatomy={anatomy} scaleRef={scaleRef} />}
       <Breathing startRef={startRef} scaleRef={scaleRef} />
@@ -1206,7 +1319,7 @@ export default function LungScene({
       {rect.w >= 480 && (
         <>
           <Html
-            position={[-AIR.x, AIR.y1 + 0.25, 0]}
+            position={[-AIR.x, AIR.y1 + 0.2, AIR.z1]}
             center={false}
             zIndexRange={[10, 0]}
             pointerEvents="none"
@@ -1216,7 +1329,7 @@ export default function LungScene({
             </p>
           </Html>
           <Html
-            position={[1.5, LUNG_POS.y + 0.9, 0]}
+            position={[2.0, LUNG_POS.y + 0.2, 0.4]}
             center={false}
             zIndexRange={[10, 0]}
             pointerEvents="none"
@@ -1229,7 +1342,7 @@ export default function LungScene({
       )}
 
       {!low && (
-        <EffectComposer multisampling={0}>
+        <EffectComposer multisampling={4}>
           <Bloom
             mipmapBlur
             intensity={0.9}

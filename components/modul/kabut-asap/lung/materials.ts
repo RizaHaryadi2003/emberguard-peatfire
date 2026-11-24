@@ -263,3 +263,31 @@ export function createBeamMaterial(): THREE.ShaderMaterial {
     toneMapped: false,
   });
 }
+
+/**
+ * Tubuh kaca: hampir bening di tengah, garis tepinya bercahaya biru pucat
+ * (efek Fresnel), seperti patung anatomi kaca. Cukup memberi bentuk tubuh
+ * tanpa menutupi paru-paru di dalamnya.
+ */
+export function createGhostMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    vertexShader: VIEW_VERTEX,
+    fragmentShader: /* glsl */ `
+      varying vec3 vPos;
+      varying vec3 vN;
+      varying vec3 vView;
+      void main() {
+        vec3 n = normalize(vN);
+        vec3 v = normalize(vView);
+        float fres = pow(1.0 - max(dot(n, v), 0.0), 2.6);
+        float top = max(0.0, dot(n, normalize(vec3(0.3, 0.9, 0.4))));
+        vec3 col = mix(vec3(0.55, 0.7, 0.95), vec3(0.85, 0.92, 1.0), fres) * (0.6 + 0.4 * top);
+        float a = 0.025 + 0.38 * fres + 0.04 * top;
+        gl_FragColor = vec4(col, a);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+  });
+}
