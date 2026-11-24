@@ -418,8 +418,75 @@ body {
 .kabut-drift {
   animation: kabutDrift 40s ease-in-out infinite alternate;
 }
+/* Jendela Pontianak: awan, burung, kendaraan, perahu, kilau air, bintang. */
+@keyframes kabutCloud {
+  from { transform: translateX(-420px); }
+  to { transform: translateX(2000px); }
+}
+.kabut-cloud { animation: kabutCloud 300s linear infinite; }
+@keyframes kabutFly {
+  0% { transform: translate(-120px, 0); }
+  50% { transform: translate(800px, -26px); }
+  100% { transform: translate(1780px, 8px); }
+}
+.kabut-fly { animation: kabutFly 36s linear infinite; }
+@keyframes kabutFlap {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(-0.55); }
+}
+.kabut-flap {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kabutFlap 0.4s ease-in-out infinite alternate;
+}
+@keyframes kabutDriveR {
+  from { transform: translateX(-60px); }
+  to { transform: translateX(1660px); }
+}
+@keyframes kabutDriveL {
+  from { transform: translateX(1660px); }
+  to { transform: translateX(-60px); }
+}
+.kabut-drive-r { animation: kabutDriveR 18s linear infinite; }
+.kabut-drive-l { animation: kabutDriveL 18s linear infinite; }
+@keyframes kabutBoat {
+  from { transform: translateX(-200px); }
+  to { transform: translateX(1800px); }
+}
+.kabut-boat { animation: kabutBoat 110s linear infinite; animation-delay: -40s; }
+@keyframes kabutShimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.kabut-shimmer { animation: kabutShimmer 2.6s ease-in-out infinite; }
+@keyframes kabutRipple {
+  from { transform: translateX(-14px); }
+  to { transform: translateX(14px); }
+}
+.kabut-ripple { animation: kabutRipple 7s ease-in-out infinite alternate; }
+@keyframes kabutTwinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.kabut-twinkle { animation: kabutTwinkle 3s ease-in-out infinite; }
+@keyframes kabutBlink {
+  0%, 60%, 100% { opacity: 1; }
+  70%, 90% { opacity: 0.1; }
+}
+.kabut-blink { animation: kabutBlink 2s step-end infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .kabut-drift {
+  .kabut-drift,
+  .kabut-cloud,
+  .kabut-fly,
+  .kabut-flap,
+  .kabut-drive-r,
+  .kabut-drive-l,
+  .kabut-boat,
+  .kabut-shimmer,
+  .kabut-ripple,
+  .kabut-twinkle,
+  .kabut-blink {
     animation: none;
   }
 }

@@ -82,3 +82,20 @@ gambut yang terbakar, dan hanya berhenti bila gambutnya tidak terbakar."
 - `breath(mask, n, seed)`: butir mana yang lolos lewat kain, lewat celah, atau
   tertahan, berbenih tetap. Pembagian lolos-lewat-celah vs lewat-kain
   **ilustratif**: sebanding dengan kebocoran bawaan.
+
+## 6. Jendela siang–malam (`lib/model/daylight.ts`)
+
+Penggeser **Waktu** di Babak 02 mengubah cahaya pemandangan; tidak mengubah
+ISPU. Semua takarannya **ilustratif**, bukan pengukuran:
+
+- Pontianak berada di garis khatulistiwa, jadi panjang siang hampir tetap
+  sepanjang tahun (±12 jam): terbit ±05.50 WIB, terbenam ±17.55 WIB. Ketinggian
+  matahari didekati gelombang sinus.
+- Keramaian kota (`cityActivity`), paduan kicau burung (`birdChorus`), dan
+  lampu menyala (`lightsOn`) adalah kurva perkiraan untuk suara dan cahaya.
+- Malam berkabut tampak jingga karena cahaya lampu kota dipantulkan butir
+  asap; makin pekat kabutnya, bintang makin hilang.
+- Tombol hari sungguhan juga memindahkan jam ke waktu pengukurannya
+  (8 Agustus 09.00, 27 Agustus 08.00).
+- Suara Babak 02 berganti ke suara kota (dengung lalu lintas, motor lewat,
+  klakson jauh, mesin klotok); makin pekat kabutnya, makin lengang kotanya.

@@ -45,6 +45,16 @@ describe("racikan tiap modul", () => {
     inRange(kabutAsapMix({ act: 1, haze: 3 }));
   });
 
+  it("kabut asap: kota ramai pagi, sepi dini hari; burung diam tengah malam", () => {
+    const pagi = kabutAsapMix({ act: 1, haze: 0, hour: 7 });
+    const dini = kabutAsapMix({ act: 1, haze: 0, hour: 3 });
+    expect(pagi.city).toBeGreaterThan(dini.city!);
+    expect(kabutAsapMix({ act: 1, haze: 0, hour: 0 }).birds).toBe(0);
+    expect(dini.frogs).toBeGreaterThan(pagi.frogs);
+    expect(kabutAsapMix({ act: 1, haze: 1, hour: 7 }).city).toBeLessThan(pagi.city!);
+    for (const hour of [0, 6, 12, 18, 23.75]) inRange(kabutAsapMix({ act: 1, haze: 0.5, hour }));
+  });
+
   it("forensik api: angin terdengar saat dinyalakan, api mengikuti kotak panas", () => {
     expect(forensikMix({ act: 0, windy: true, fire: 0 }).wind).toBeGreaterThan(forensikMix({ act: 0, windy: false, fire: 0 }).wind);
     expect(forensikMix({ act: 1, windy: false, fire: 1 }).fire).toBeGreaterThan(forensikMix({ act: 1, windy: false, fire: 0 }).fire);

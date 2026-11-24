@@ -7,6 +7,8 @@
 // makin sunyi dan angin makin kering; saat terbakar, yang tersisa derak bara.
 // Takarannya ilustratif, bukan hasil pengukuran bunyi.
 
+import { birdChorus, cityActivity, daylight } from "@/lib/model/daylight";
+
 export type AmbientMix = {
   /** Angin. */
   wind: number;
@@ -22,6 +24,10 @@ export type AmbientMix = {
   birds: number;
   /** Gemuruh dan derak api. */
   fire: number;
+  /** Kota: dengung lalu lintas, motor yang lewat, klakson di kejauhan. */
+  city?: number;
+  /** Mesin perahu klotok di sungai. */
+  boat?: number;
 };
 
 export const SILENT_MIX: AmbientMix = { wind: 0, water: 0, rain: 0, insects: 0, frogs: 0, birds: 0, fire: 0 };
@@ -34,6 +40,16 @@ export function crackleRate(fire: number): number {
 }
 
 /** Kicau burung per detik pada takaran 0–1. */
+/** Motor yang lewat per detik pada takaran kota 0–1. */
+export function passByRate(city: number): number {
+  return 0.22 * clamp01(city);
+}
+
+/** Klakson per detik pada takaran kota 0–1. */
+export function hornRate(city: number): number {
+  return 0.05 * clamp01(city);
+}
+
 export function birdRate(birds: number): number {
   return 0.45 * clamp01(birds);
 }
@@ -169,12 +185,29 @@ export function forensikMix(s: { act: number; windy: boolean; fire: number }): A
 }
 
 /**
- * Modul Kabut Asap: tepi Kapuas. Udara bersih terdengar hidup (air sungai,
- * burung); makin pekat kabutnya (`haze` 0–1), kota makin sunyi dan yang
- * tersisa angin dan desau air.
+ * Modul Kabut Asap. Babak 02 adalah jendela di tepi Kapuas, jadi yang
+ * terdengar suara kota: dengung lalu lintas dan motor yang ramai saat jam
+ * berangkat dan pulang, mesin klotok di sungai, burung saat fajar dan
+ * senja, jangkrik dan katak di malam hari. Makin pekat kabutnya (`haze`
+ * 0–1), kota makin lengang (orang diminta tetap di dalam rumah) dan
+ * burung makin sunyi. Takaran ilustratif.
  */
-export function kabutAsapMix(s: { act: number; haze: number }): AmbientMix {
+export function kabutAsapMix(s: { act: number; haze: number; hour?: number }): AmbientMix {
   const h = clamp01(s.haze);
   if (s.act === 0) return { ...SILENT_MIX, wind: 0.12 };
-  return { wind: 0.25 + 0.3 * h, water: 0.4, rain: 0, insects: 0.25 * (1 - h), frogs: 0, birds: 0.6 * (1 - h) ** 2, fire: 0 };
+  if (s.act === 2) return { wind: 0.25 + 0.3 * h, water: 0.4, rain: 0, insects: 0.25 * (1 - h), frogs: 0, birds: 0.6 * (1 - h) ** 2, fire: 0 };
+  const hour = s.hour ?? 8;
+  const day = daylight(hour);
+  const quiet = 1 - 0.45 * h;
+  return {
+    wind: 0.15 + 0.3 * h,
+    water: 0.3,
+    rain: 0,
+    insects: (0.06 + 0.5 * (1 - day)) * (1 - 0.5 * h),
+    frogs: 0.4 * (1 - day) * (1 - 0.5 * h),
+    birds: birdChorus(hour) * (1 - h) ** 2,
+    fire: 0,
+    city: (0.15 + 0.85 * cityActivity(hour)) * quiet,
+    boat: (0.1 + 0.5 * day) * quiet,
+  };
 }

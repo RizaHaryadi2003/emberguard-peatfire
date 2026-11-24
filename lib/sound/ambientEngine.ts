@@ -1,11 +1,13 @@
 // Mesin suara alam yang disintesis langsung di peramban (Web Audio API),
 // tanpa berkas audio. Suaranya disusun dari lapisan yang takarannya diatur
 // tiap modul lewat `AmbientMix` (lihat soundscapes.ts):
-//   - lapisan menerus : angin, air mengalir, hujan, tonggeret, gemuruh api;
-//   - peristiwa acak  : kicau burung, katak, tetes hujan, guntur, derak bara.
+//   - lapisan menerus : angin, air mengalir, hujan, tonggeret, gemuruh api,
+//                       dengung lalu lintas kota, mesin perahu klotok;
+//   - peristiwa acak  : kicau burung, katak, tetes hujan, guntur, derak bara,
+//                       motor yang lewat, klakson di kejauhan.
 // Semua perubahan takaran dihaluskan, jadi suara tidak pernah melompat.
 
-import { birdRate, crackleRate, frogRate, SILENT_MIX, type AmbientMix } from "./soundscapes";
+import { birdRate, crackleRate, frogRate, hornRate, passByRate, SILENT_MIX, type AmbientMix } from "./soundscapes";
 
 /** Derau acak berdurasi `seconds`; versi "coklat" lebih dalam dan lembut. */
 function createNoiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): AudioBuffer {
@@ -31,6 +33,8 @@ const PEAK = {
   rain: 0.16,
   insects: 0.035,
   fire: 0.9,
+  city: 0.5,
+  boat: 0.16,
 } as const;
 
 /** Kekerasan keseluruhan: biasa, dan saat narator sedang bicara. */
@@ -77,7 +81,7 @@ export class AmbientEngine {
       g.connect(this.master);
       return g;
     };
-    this.gains = { wind: gain(), water: gain(), rain: gain(), insects: gain(), fire: gain() };
+    this.gains = { wind: gain(), water: gain(), rain: gain(), insects: gain(), fire: gain(), city: gain(), boat: gain() };
 
     // Angin: derau coklat bersaring lolos-rendah yang frekuensinya diayun pelan.
     const windFilter = this.filter("lowpass", 420);
@@ -111,6 +115,37 @@ export class AmbientEngine {
     // Gemuruh api: derau coklat sangat rendah.
     const roarFilter = this.filter("lowpass", 160);
     this.loop(this.brown).connect(roarFilter).connect(this.gains.fire);
+
+    // Dengung kota: gemuruh rendah lalu lintas jauh ditambah desis ban di
+    // aspal, keduanya membesar-mengecil pelan seperti arus kendaraan.
+    const traffic = this.ctx.createGain();
+    traffic.gain.value = 0.75;
+    this.lfo(0.045, 0.2, traffic.gain);
+    this.loop(this.brown).connect(this.filter("lowpass", 240)).connect(traffic);
+    const tyres = this.ctx.createGain();
+    tyres.gain.value = 0.05;
+    this.loop(this.white).connect(this.filter("bandpass", 900, 0.6)).connect(tyres).connect(traffic);
+    traffic.connect(this.gains.city);
+
+    // Klotok: mesin satu silinder yang berdentum ±4 kali per detik di air,
+    // sesekali menjauh lalu mendekat.
+    const engine = this.ctx.createOscillator();
+    engine.type = "sawtooth";
+    engine.frequency.value = 52;
+    const thump = this.ctx.createGain();
+    thump.gain.value = 0.5;
+    const beat = this.ctx.createOscillator();
+    beat.type = "square";
+    beat.frequency.value = 4.2;
+    const beatDepth = this.ctx.createGain();
+    beatDepth.gain.value = 0.5;
+    beat.connect(beatDepth).connect(thump.gain);
+    beat.start();
+    const distance = this.ctx.createGain();
+    distance.gain.value = 0.6;
+    this.lfo(0.025, 0.4, distance.gain);
+    engine.connect(this.filter("lowpass", 190)).connect(thump).connect(distance).connect(this.gains.boat);
+    engine.start();
   }
 
   private filter(type: BiquadFilterType, frequency: number, q?: number): BiquadFilterNode {
@@ -192,6 +227,65 @@ export class AmbientEngine {
     osc.stop(at + pulses * 0.048 + 0.05);
   }
 
+  /**
+   * Motor lewat di jalan tepi sungai: dengung mesin yang mendekat lalu
+   * menjauh, nadanya turun sedikit saat lewat (efek Doppler) dan bergeser
+   * dari satu telinga ke telinga lain.
+   */
+  private passBy(at: number, strength: number) {
+    const length = 2.6 + Math.random() * 2.4;
+    const f0 = 85 + Math.random() * 70;
+    const fromLeft = Math.random() < 0.5;
+    const out = this.ctx.createGain();
+    out.gain.setValueAtTime(0.0001, at);
+    out.gain.exponentialRampToValueAtTime(0.03 * strength * (0.5 + Math.random() * 0.6), at + length * 0.5);
+    out.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    const pan = this.ctx.createStereoPanner();
+    pan.pan.setValueAtTime(fromLeft ? -0.85 : 0.85, at);
+    pan.pan.linearRampToValueAtTime(fromLeft ? 0.85 : -0.85, at + length);
+    const lp = this.filter("lowpass", 700 + Math.random() * 500);
+    for (const mult of [1, 2.02]) {
+      const osc = this.ctx.createOscillator();
+      osc.type = mult === 1 ? "sawtooth" : "square";
+      osc.frequency.setValueAtTime(f0 * mult * 1.05, at);
+      osc.frequency.linearRampToValueAtTime(f0 * mult * 0.93, at + length);
+      const g = this.ctx.createGain();
+      g.gain.value = mult === 1 ? 1 : 0.25;
+      osc.connect(g).connect(lp);
+      osc.start(at);
+      osc.stop(at + length + 0.05);
+    }
+    lp.connect(out).connect(pan).connect(this.master);
+  }
+
+  /** Klakson di kejauhan: satu atau dua bunyi pendek bernada ganda. */
+  private horn(at: number) {
+    const beeps = Math.random() < 0.35 ? 2 : 1;
+    const base = 380 + Math.random() * 120;
+    const lp = this.filter("lowpass", 1600);
+    const pan = this.ctx.createStereoPanner();
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    lp.connect(pan).connect(this.master);
+    for (let b = 0; b < beeps; b++) {
+      const t = at + b * 0.28;
+      const len = 0.14 + Math.random() * 0.22;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.012, t + 0.015);
+      g.gain.setValueAtTime(0.012, t + len);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.05);
+      g.connect(lp);
+      for (const f of [base, base * 1.26]) {
+        const osc = this.ctx.createOscillator();
+        osc.type = "square";
+        osc.frequency.value = f;
+        osc.connect(g);
+        osc.start(t);
+        osc.stop(t + len + 0.08);
+      }
+    }
+  }
+
   /** Guntur di kejauhan: gemuruh rendah yang naik pelan lalu bergulung lama. */
   private thunder(at: number, strength: number) {
     const src = this.ctx.createBufferSource();
@@ -226,6 +320,9 @@ export class AmbientEngine {
     if (Math.random() < perTick(birdRate(m.birds))) this.chirp(soon());
     if (Math.random() < perTick(frogRate(m.frogs))) this.croak(soon());
     if (m.rain > 0.6 && Math.random() < perTick(0.04 * m.rain)) this.thunder(soon(), m.rain);
+    const city = m.city ?? 0;
+    if (Math.random() < perTick(passByRate(city))) this.passBy(soon(), city);
+    if (Math.random() < perTick(hornRate(city))) this.horn(soon());
     if (m.water > 0) {
       for (const f of this.waterFilters) {
         const base = f === this.waterFilters[0] ? 520 : 980;
@@ -303,7 +400,7 @@ export class AmbientEngine {
     this.mix = mix;
     const now = this.ctx.currentTime;
     for (const key of Object.keys(PEAK) as (keyof typeof PEAK)[]) {
-      this.gains[key].gain.setTargetAtTime(PEAK[key] * mix[key], now, SMOOTH_S);
+      this.gains[key].gain.setTargetAtTime(PEAK[key] * (mix[key] ?? 0), now, SMOOTH_S);
     }
   }
 

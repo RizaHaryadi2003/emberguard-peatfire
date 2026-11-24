@@ -43,6 +43,7 @@ import {
 } from "@/config/modul/kabut-asap";
 import MicroscopeView from "./MicroscopeView";
 import WindowView from "./WindowView";
+import { dayPart, formatHour, parseHour } from "@/lib/model/daylight";
 import BreathView, { BREATH_SEC } from "./BreathView";
 
 /** Perbesaran awal mikroskop: rambut baru setipis garis. */
@@ -51,9 +52,14 @@ const START_ZOOM = 12;
 /** ISPU awal jendela: udara bersih. */
 const START_ISPU = 25;
 
+/** Jam awal jendela: pukul 08.00, sama dengan jam pembuka modul. */
+const START_HOUR = 8;
+
 /** Penggeser perbesaran bekerja dalam skala logaritma, 0–1000. */
-const zoomFromSlider = (v: number) => START_ZOOM * Math.pow(MAX_ZOOM / START_ZOOM, v / 1000);
-const sliderFromZoom = (z: number) => (1000 * Math.log(z / START_ZOOM)) / Math.log(MAX_ZOOM / START_ZOOM);
+const zoomFromSlider = (v: number) =>
+  START_ZOOM * Math.pow(MAX_ZOOM / START_ZOOM, v / 1000);
+const sliderFromZoom = (z: number) =>
+  (1000 * Math.log(z / START_ZOOM)) / Math.log(MAX_ZOOM / START_ZOOM);
 
 /**
  * Modul 09 — Kabut Asap.
@@ -74,6 +80,7 @@ export default function KabutAsapModule() {
   const [maxIspu, setMaxIspu] = useState(START_ISPU);
   const [day, setDay] = useState<RealDayId | null>(null);
   const [daysSeen, setDaysSeen] = useState<ReadonlySet<RealDayId>>(new Set());
+  const [hour, setHour] = useState(START_HOUR);
   // Babak 03: masker, napas, dan hasil tiap masker.
   const [mask, setMask] = useState<Mask>("kain");
   const [breathId, setBreathId] = useState(0);
@@ -85,7 +92,11 @@ export default function KabutAsapModule() {
   const [acked, setAcked] = useState<readonly number[]>([0, 0, 0]);
 
   const category = ispuCategory(ispu);
-  const actDone = [maxZoom >= REVEAL_ZOOM, maxIspu >= 301 && daysSeen.size === REAL_DAYS.length, results.size >= MASK_OPTIONS.length];
+  const actDone = [
+    maxZoom >= REVEAL_ZOOM,
+    maxIspu >= 301 && daysSeen.size === REAL_DAYS.length,
+    results.size >= MASK_OPTIONS.length,
+  ];
   const progress = [
     KABUT_TEXT.zoomValue(zoom),
     `ISPU ${Math.round(ispu)} · ${CATEGORY_LABEL[category]}`,
@@ -102,6 +113,7 @@ export default function KabutAsapModule() {
     setMaxIspu(START_ISPU);
     setDay(null);
     setDaysSeen(new Set());
+    setHour(START_HOUR);
     setMask("kain");
     setBreathing(false);
     setResults(new Map());
@@ -110,10 +122,22 @@ export default function KabutAsapModule() {
   };
 
   const guideSteps = KABUT_GUIDE[act];
-  const level = guideLevel(act, { maxZoom, inspected: scope !== null, maxIspu, daysSeen: daysSeen.size, masksTried: results.size }, acked[act]);
+  const level = guideLevel(
+    act,
+    {
+      maxZoom,
+      inspected: scope !== null,
+      maxIspu,
+      daysSeen: daysSeen.size,
+      masksTried: results.size,
+    },
+    acked[act],
+  );
   const step = guideSteps[level];
-  const shown = (floor: string) => level >= ((FLOOR_FROM[act] as Record<string, number>)[floor] ?? Infinity);
-  const ackStep = () => setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, level + 1) : v)));
+  const shown = (floor: string) =>
+    level >= ((FLOOR_FROM[act] as Record<string, number>)[floor] ?? Infinity);
+  const ackStep = () =>
+    setAcked((a) => a.map((v, i) => (i === act ? Math.max(v, level + 1) : v)));
 
   const moveZoom = (z: number) => {
     setZoom(z);
@@ -134,7 +158,9 @@ export default function KabutAsapModule() {
     setBreathId((b) => b + 1);
     setBreathing(true);
     const m = mask;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     timer.current = setTimeout(
       () => {
         setBreathing(false);
@@ -149,7 +175,15 @@ export default function KabutAsapModule() {
 
   return (
     <>
-      <ModuleAudio getMix={() => kabutAsapMix({ act, haze: act === 1 ? hazeLevel(ispu) : act === 2 ? 0.7 : 0 })} />
+      <ModuleAudio
+        getMix={() =>
+          kabutAsapMix({
+            act,
+            haze: act === 1 ? hazeLevel(ispu) : act === 2 ? 0.7 : 0,
+            hour,
+          })
+        }
+      />
       <ActModuleShell
         href="/modul/kabut-asap"
         hook={KABUT_HOOK}
@@ -167,12 +201,16 @@ export default function KabutAsapModule() {
           <>
             {act === 0 && (
               <div data-guide="scope" className="absolute inset-0">
-                <MicroscopeView zoom={zoom} selected={scope} onInspect={setScope} />
+                <MicroscopeView
+                  zoom={zoom}
+                  selected={scope}
+                  onInspect={setScope}
+                />
               </div>
             )}
             {act === 1 && (
               <>
-                <WindowView ispu={ispu} />
+                <WindowView ispu={ispu} hour={hour} />
                 <div data-guide="window" className="absolute inset-0" />
                 <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/70 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
                   {KABUT_TEXT.windowNote}
@@ -196,9 +234,15 @@ export default function KabutAsapModule() {
                   <label htmlFor="kabut-zoom" className={LABEL}>
                     {KABUT_TEXT.zoom}
                   </label>
-                  <span className="text-[11px] tabular-nums text-white/75">{KABUT_TEXT.zoomValue(zoom)}</span>
+                  <span className="text-[11px] tabular-nums text-white/75">
+                    {KABUT_TEXT.zoomValue(zoom)}
+                  </span>
                 </div>
-                <SliderTrack tone="neutral" pct={sliderFromZoom(zoom) / 10} ticks={[sliderFromZoom(REVEAL_ZOOM) / 10]}>
+                <SliderTrack
+                  tone="neutral"
+                  pct={sliderFromZoom(zoom) / 10}
+                  ticks={[sliderFromZoom(REVEAL_ZOOM) / 10]}
+                >
                   <input
                     id="kabut-zoom"
                     type="range"
@@ -206,7 +250,9 @@ export default function KabutAsapModule() {
                     max={1000}
                     step={1}
                     value={Math.round(sliderFromZoom(zoom))}
-                    onChange={(e) => moveZoom(zoomFromSlider(Number(e.target.value)))}
+                    onChange={(e) =>
+                      moveZoom(zoomFromSlider(Number(e.target.value)))
+                    }
                     aria-valuetext={KABUT_TEXT.zoomValue(zoom)}
                     className="water-slider relative z-10 w-full"
                   />
@@ -230,22 +276,70 @@ export default function KabutAsapModule() {
                     </span>
                   </div>
                   <IspuTrack ispu={ispu} onChange={(v) => moveIspu(v)} />
-                  <p className="mt-1 text-[10px] text-white/40">{KABUT_TEXT.slideHint}</p>
+                  <p className="mt-1 text-[10px] text-white/40">
+                    {KABUT_TEXT.slideHint}
+                  </p>
+                </div>
+                <div className="mt-2.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor="kabut-hour" className={LABEL}>
+                      {KABUT_TEXT.time}
+                    </label>
+                    <span className="text-[11px] tabular-nums text-white/80">
+                      {KABUT_TEXT.dayPart[dayPart(hour)]} · {formatHour(hour)}
+                    </span>
+                  </div>
+                  <SliderTrack
+                    tone="neutral"
+                    pct={(hour / 24) * 100}
+                    ticks={[25, 50, 75]}
+                  >
+                    <input
+                      id="kabut-hour"
+                      type="range"
+                      min={0}
+                      max={23.75}
+                      step={0.25}
+                      value={hour}
+                      onChange={(e) => setHour(Number(e.target.value))}
+                      aria-valuetext={`Pukul ${formatHour(hour)}`}
+                      className="water-slider relative z-10 w-full"
+                    />
+                  </SliderTrack>
                 </div>
                 <div data-guide="days" className="mt-2.5">
-                  <p className="mb-1.5 text-[11px] text-white/60">{KABUT_TEXT.realDayInvite}</p>
+                  <p className="mb-1.5 text-[11px] text-white/60">
+                    {KABUT_TEXT.realDayInvite}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {REAL_DAYS.map((d) => (
-                      <button key={d.id} type="button" aria-pressed={day === d.id} onClick={() => moveIspu(d.ispu, d.id)} className="btn-mono">
+                      <button
+                        key={d.id}
+                        type="button"
+                        aria-pressed={day === d.id}
+                        onClick={() => {
+                          moveIspu(d.ispu, d.id);
+                          setHour(parseHour(d.time));
+                        }}
+                        className="btn-mono"
+                      >
                         {REAL_DAY_LABEL[d.id]}
-                        <span className="tabular-nums opacity-60">· {d.ispu}</span>
+                        <span className="tabular-nums opacity-60">
+                          · {d.ispu}
+                        </span>
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="lg:hidden">
-                  <p data-guide="advice" className="mt-2 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] leading-snug text-white/80">
-                    <span className="font-medium text-white">{CATEGORY_LABEL[category]}:</span> {CATEGORY_ADVICE[category].everyone}
+                  <p
+                    data-guide="advice"
+                    className="mt-2 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] leading-snug text-white/80"
+                  >
+                    <span className="font-medium text-white">
+                      {CATEGORY_LABEL[category]}:
+                    </span>{" "}
+                    {CATEGORY_ADVICE[category].everyone}
                   </p>
                 </div>
               </>
@@ -255,28 +349,55 @@ export default function KabutAsapModule() {
               <>
                 <div data-guide="mask">
                   <p className={`${LABEL} mb-1.5`}>{KABUT_TEXT.mask}</p>
-                  <div role="radiogroup" aria-label={KABUT_TEXT.mask} className="flex flex-wrap gap-2">
+                  <div
+                    role="radiogroup"
+                    aria-label={KABUT_TEXT.mask}
+                    className="flex flex-wrap gap-2"
+                  >
                     {MASK_OPTIONS.map((m) => (
-                      <button key={m} type="button" role="radio" aria-checked={mask === m} disabled={breathing} onClick={() => chooseMask(m)} className="btn-mono">
+                      <button
+                        key={m}
+                        type="button"
+                        role="radio"
+                        aria-checked={mask === m}
+                        disabled={breathing}
+                        onClick={() => chooseMask(m)}
+                        className="btn-mono"
+                      >
                         {MASK_LABEL[m]}
-                        {results.has(m) && <span className="tabular-nums opacity-60">· {results.get(m)}</span>}
+                        {results.has(m) && (
+                          <span className="tabular-nums opacity-60">
+                            · {results.get(m)}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <button type="button" data-guide="breathe" onClick={breathe} disabled={breathing} className="btn-mono is-on">
+                  <button
+                    type="button"
+                    data-guide="breathe"
+                    onClick={breathe}
+                    disabled={breathing}
+                    className="btn-mono is-on"
+                  >
                     {breathing ? KABUT_TEXT.breathing : KABUT_TEXT.breathe}
                   </button>
                   {lastMask === mask && !breathing && lastFates && (
-                    <span aria-live="polite" className="stage-in text-[12px] font-medium text-[#ffb37a]">
+                    <span
+                      aria-live="polite"
+                      className="stage-in text-[12px] font-medium text-[#ffb37a]"
+                    >
                       {KABUT_TEXT.inhaled(inhaled(lastFates))}
                     </span>
                   )}
                 </div>
                 <div className="lg:hidden">
                   {lastMask && !breathing && (
-                    <p className="mt-2 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] leading-snug text-white/80">{explainMask(lastMask)}</p>
+                    <p className="mt-2 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] leading-snug text-white/80">
+                      {explainMask(lastMask)}
+                    </p>
                   )}
                 </div>
               </>
@@ -298,12 +419,18 @@ export default function KabutAsapModule() {
                 {scope ? (
                   <ScopeCard part={scope} onClose={() => setScope(null)} />
                 ) : (
-                  shown("why") && <p className={`${INVITE} stage-in`}>{KABUT_TEXT.zoomInvite}</p>
+                  shown("why") && (
+                    <p className={`${INVITE} stage-in`}>
+                      {KABUT_TEXT.zoomInvite}
+                    </p>
+                  )
                 )}
                 {shown("why") && (
                   <section data-guide="why" className={`${CARD} stage-in`}>
                     <p className={EYEBROW}>{KABUT_TEXT.why}</p>
-                    <p className="mt-1.5 text-[12px] leading-snug text-white/85">{KABUT_ACTS[0].observe}</p>
+                    <p className="mt-1.5 text-[12px] leading-snug text-white/85">
+                      {KABUT_ACTS[0].observe}
+                    </p>
                   </section>
                 )}
               </>
@@ -313,22 +440,41 @@ export default function KabutAsapModule() {
               <>
                 {shown("ispu") && (
                   <section className={`${CARD} stage-in`}>
-                    <p className={EYEBROW}>{day ? KABUT_TEXT.realDayNote(REAL_DAYS.find((d) => d.id === day)!.date, REAL_DAYS.find((d) => d.id === day)!.time) : KABUT_TEXT.ispu}</p>
+                    <p className={EYEBROW}>
+                      {day
+                        ? KABUT_TEXT.realDayNote(
+                            REAL_DAYS.find((d) => d.id === day)!.date,
+                            REAL_DAYS.find((d) => d.id === day)!.time,
+                          )
+                        : KABUT_TEXT.ispu}
+                    </p>
                     <div className="mt-1.5 flex items-end justify-between gap-2">
-                      <p className="font-playfair text-4xl italic leading-none tabular-nums text-white [@media(max-height:820px)]:text-3xl">{Math.round(ispu)}</p>
+                      <p className="font-playfair text-4xl italic leading-none tabular-nums text-white [@media(max-height:820px)]:text-3xl">
+                        {Math.round(ispu)}
+                      </p>
                       <CategoryChip category={category} />
                     </div>
-                    <p className="mt-2 text-[10px] leading-snug text-white/50">{KABUT_TEXT.pm25Equal(pm25FromIspu(ispu))}</p>
+                    <p className="mt-2 text-[10px] leading-snug text-white/50">
+                      {KABUT_TEXT.pm25Equal(pm25FromIspu(ispu))}
+                    </p>
                     <IspuScale ispu={ispu} />
                   </section>
                 )}
                 {shown("advice") && (
                   <section data-guide="advice" className={`${CARD} stage-in`}>
                     <p className={EYEBROW}>{KABUT_TEXT.advice}</p>
-                    <p className="mt-1.5 text-[10px] uppercase tracking-[0.12em] text-white/40">{KABUT_TEXT.everyone}</p>
-                    <p className="text-[12px] leading-snug text-white/90">{CATEGORY_ADVICE[category].everyone}</p>
-                    <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">{KABUT_TEXT.sensitive}</p>
-                    <p className="text-[12px] leading-snug text-white/75">{CATEGORY_ADVICE[category].sensitive}</p>
+                    <p className="mt-1.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      {KABUT_TEXT.everyone}
+                    </p>
+                    <p className="text-[12px] leading-snug text-white/90">
+                      {CATEGORY_ADVICE[category].everyone}
+                    </p>
+                    <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      {KABUT_TEXT.sensitive}
+                    </p>
+                    <p className="text-[12px] leading-snug text-white/75">
+                      {CATEGORY_ADVICE[category].sensitive}
+                    </p>
                   </section>
                 )}
               </>
@@ -343,14 +489,24 @@ export default function KabutAsapModule() {
                       {MASK_OPTIONS.map((m) => {
                         const v = results.get(m);
                         return (
-                          <div key={m} className="flex items-center gap-2 text-[11px]">
-                            <span className="w-24 shrink-0 text-white/75">{MASK_LABEL[m]}</span>
+                          <div
+                            key={m}
+                            className="flex items-center gap-2 text-[11px]"
+                          >
+                            <span className="w-24 shrink-0 text-white/75">
+                              {MASK_LABEL[m]}
+                            </span>
                             <span className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
                               {v !== undefined && (
-                                <span className="chart-bar absolute inset-y-0 left-0 rounded-full bg-[#e8b98a]" style={{ width: `${v}%` }} />
+                                <span
+                                  className="chart-bar absolute inset-y-0 left-0 rounded-full bg-[#e8b98a]"
+                                  style={{ width: `${v}%` }}
+                                />
                               )}
                             </span>
-                            <span className="w-8 shrink-0 text-right tabular-nums text-white">{v ?? "—"}</span>
+                            <span className="w-8 shrink-0 text-right tabular-nums text-white">
+                              {v ?? "—"}
+                            </span>
                           </div>
                         );
                       })}
@@ -362,15 +518,33 @@ export default function KabutAsapModule() {
                     <p className={EYEBROW}>{KABUT_TEXT.why}</p>
                     {lastMask && lastFates && !breathing ? (
                       <>
-                        <p className="mt-1.5 text-[12px] leading-snug text-white/85">{explainMask(lastMask)}</p>
+                        <p className="mt-1.5 text-[12px] leading-snug text-white/85">
+                          {explainMask(lastMask)}
+                        </p>
                         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/10 pt-2 text-[11px] tabular-nums">
-                          <span className="text-[#ff8a3d]">{KABUT_TEXT.viaGap(lastFates.filter((f) => f === "celah").length)}</span>
-                          <span className="text-[#e8b98a]">{KABUT_TEXT.viaFabric(lastFates.filter((f) => f === "kain").length)}</span>
-                          <span className="text-white/55">{KABUT_TEXT.stopped(lastFates.filter((f) => f === "tertahan").length)}</span>
+                          <span className="text-[#ff8a3d]">
+                            {KABUT_TEXT.viaGap(
+                              lastFates.filter((f) => f === "celah").length,
+                            )}
+                          </span>
+                          <span className="text-[#e8b98a]">
+                            {KABUT_TEXT.viaFabric(
+                              lastFates.filter((f) => f === "kain").length,
+                            )}
+                          </span>
+                          <span className="text-white/55">
+                            {KABUT_TEXT.stopped(
+                              lastFates.filter((f) => f === "tertahan").length,
+                            )}
+                          </span>
                         </div>
                       </>
                     ) : (
-                      <p className="mt-1.5 text-[12px] leading-snug text-white/70">{breathing ? KABUT_TEXT.breathing : KABUT_TEXT.breatheInvite}</p>
+                      <p className="mt-1.5 text-[12px] leading-snug text-white/70">
+                        {breathing
+                          ? KABUT_TEXT.breathing
+                          : KABUT_TEXT.breatheInvite}
+                      </p>
                     )}
                   </section>
                 )}
@@ -385,7 +559,9 @@ export default function KabutAsapModule() {
             text={step.text}
             index={level + 1}
             total={guideSteps.length}
-            onAuto={level < guideSteps.length - 1 && !step.done ? ackStep : undefined}
+            onAuto={
+              level < guideSteps.length - 1 && !step.done ? ackStep : undefined
+            }
             delayMs={level === 0 ? 1500 : 350}
           />
         }
@@ -396,8 +572,10 @@ export default function KabutAsapModule() {
 
 const CARD =
   "rounded-2xl border border-white/10 bg-[#0a0d0f]/55 p-3.5 [@media(max-height:820px)]:p-3 shadow-lg shadow-black/20 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]";
-const EYEBROW = "text-[10px] font-medium uppercase tracking-[0.18em] text-white/45";
-const LABEL = "text-[11px] font-medium uppercase tracking-[0.18em] text-white/45";
+const EYEBROW =
+  "text-[10px] font-medium uppercase tracking-[0.18em] text-white/45";
+const LABEL =
+  "text-[11px] font-medium uppercase tracking-[0.18em] text-white/45";
 const INVITE =
   "rounded-2xl border border-dashed border-white/20 bg-black/15 px-3.5 py-3 text-[11px] leading-snug text-white/65 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]";
 
@@ -408,9 +586,16 @@ function CategoryChip({ category }: { category: IspuCategory }) {
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
-      style={{ color: dark ? "#fff" : color, background: dark ? "#000" : `${color}26`, boxShadow: dark ? "inset 0 0 0 1px rgba(255,255,255,0.35)" : undefined }}
+      style={{
+        color: dark ? "#fff" : color,
+        background: dark ? "#000" : `${color}26`,
+        boxShadow: dark ? "inset 0 0 0 1px rgba(255,255,255,0.35)" : undefined,
+      }}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: dark ? "#fff" : color }} />
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: dark ? "#fff" : color }}
+      />
       {CATEGORY_LABEL[category]}
     </span>
   );
@@ -429,19 +614,42 @@ function IspuScale({ ispu }: { ispu: number }) {
     <div className="relative mt-3">
       <div className="flex h-1.5 overflow-hidden rounded-full">
         {bands.map(([c, a, b]) => (
-          <span key={c} style={{ flex: b - a, background: c === "berbahaya" ? "#000" : CATEGORY_COLOR[c], boxShadow: c === "berbahaya" ? "inset 0 0 0 1px rgba(255,255,255,0.3)" : undefined }} />
+          <span
+            key={c}
+            style={{
+              flex: b - a,
+              background: c === "berbahaya" ? "#000" : CATEGORY_COLOR[c],
+              boxShadow:
+                c === "berbahaya"
+                  ? "inset 0 0 0 1px rgba(255,255,255,0.3)"
+                  : undefined,
+            }}
+          />
         ))}
       </div>
-      <span className="absolute -top-1 h-3.5 w-[3px] -translate-x-1/2 rounded-full bg-white shadow" style={{ left: `${(Math.min(ispu, ISPU_MAX) / ISPU_MAX) * 100}%` }} />
+      <span
+        className="absolute -top-1 h-3.5 w-[3px] -translate-x-1/2 rounded-full bg-white shadow"
+        style={{ left: `${(Math.min(ispu, ISPU_MAX) / ISPU_MAX) * 100}%` }}
+      />
     </div>
   );
 }
 
 /** Penggeser ISPU dengan pita kategori sebagai lintasannya. */
-function IspuTrack({ ispu, onChange }: { ispu: number; onChange: (v: number) => void }) {
+function IspuTrack({
+  ispu,
+  onChange,
+}: {
+  ispu: number;
+  onChange: (v: number) => void;
+}) {
   return (
     <div className="relative mt-1">
-      <SliderTrack tone="neutral" pct={(ispu / ISPU_MAX) * 100} ticks={[50, 100, 200, 300].map((v) => (v / ISPU_MAX) * 100)}>
+      <SliderTrack
+        tone="neutral"
+        pct={(ispu / ISPU_MAX) * 100}
+        ticks={[50, 100, 200, 300].map((v) => (v / ISPU_MAX) * 100)}
+      >
         <input
           id="kabut-ispu"
           type="range"
@@ -459,22 +667,41 @@ function IspuTrack({ ispu, onChange }: { ispu: number; onChange: (v: number) => 
 }
 
 /** Ukuran sebenarnya tiap benda dan apakah sudah terlihat di lensa. */
-function SizeList({ zoom, compact = false }: { zoom: number; compact?: boolean }) {
+function SizeList({
+  zoom,
+  compact = false,
+}: {
+  zoom: number;
+  compact?: boolean;
+}) {
   // Sama dengan MicroscopeView: rambut selebar ±55 % lensa pada REVEAL_ZOOM.
-  const seen = (um: number) => (um / HAIR_UM) * (zoom / REVEAL_ZOOM) * 0.55 * 600 >= 2.5;
+  const seen = (um: number) =>
+    (um / HAIR_UM) * (zoom / REVEAL_ZOOM) * 0.55 * 600 >= 2.5;
   const rows: [string, number][] = [
     [KABUT_TEXT.hair, HAIR_UM],
     [KABUT_TEXT.pm10, PM10_UM],
     [KABUT_TEXT.pm25, PM25_UM],
   ];
   return (
-    <div className={compact ? "mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]" : "space-y-1.5 text-[12px]"}>
+    <div
+      className={
+        compact
+          ? "mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]"
+          : "space-y-1.5 text-[12px]"
+      }
+    >
       {rows.map(([label, um]) => (
         <div key={label} className="flex items-center justify-between gap-2">
           <span className="text-white/80">{label}</span>
-          <span className={`tabular-nums ${seen(um) ? "text-white" : "text-white/35"}`}>
+          <span
+            className={`tabular-nums ${seen(um) ? "text-white" : "text-white/35"}`}
+          >
             {KABUT_TEXT.um(um)}
-            {!compact && !seen(um) && <span className="ml-1.5 text-[10px] text-white/35">{KABUT_TEXT.tooSmall}</span>}
+            {!compact && !seen(um) && (
+              <span className="ml-1.5 text-[10px] text-white/35">
+                {KABUT_TEXT.tooSmall}
+              </span>
+            )}
           </span>
         </div>
       ))}
@@ -483,12 +710,25 @@ function SizeList({ zoom, compact = false }: { zoom: number; compact?: boolean }
 }
 
 /** Kartu penjelasan benda di mikroskop yang diklik. */
-function ScopeCard({ part, onClose }: { part: ScopePart; onClose: () => void }) {
+function ScopeCard({
+  part,
+  onClose,
+}: {
+  part: ScopePart;
+  onClose: () => void;
+}) {
   const { title, body } = scopeText(part);
   return (
-    <div key={part} role="dialog" aria-label={title} className={`sekitarmu-rise ${CARD} bg-[#0a0d0f]/70`}>
+    <div
+      key={part}
+      role="dialog"
+      aria-label={title}
+      className={`sekitarmu-rise ${CARD} bg-[#0a0d0f]/70`}
+    >
       <div className="flex items-start justify-between gap-3">
-        <p className="font-playfair text-lg italic leading-tight text-white">{title}</p>
+        <p className="font-playfair text-lg italic leading-tight text-white">
+          {title}
+        </p>
         <button
           type="button"
           onClick={onClose}

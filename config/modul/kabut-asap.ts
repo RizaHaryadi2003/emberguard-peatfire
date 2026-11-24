@@ -140,6 +140,8 @@ export const KABUT_TEXT = {
   realDayNote: (date: string, time: string) => `${date}, pukul ${time}`,
   realDayInvite: "Buka dua hari sungguhan ini:",
   slideHint: "Pengandaian: geser untuk melihat tiap kategori",
+  time: "Waktu",
+  dayPart: { dini: "Dini hari", pagi: "Pagi", siang: "Siang", sore: "Sore", malam: "Malam" },
   mask: "Masker",
   breathe: "Tarik napas",
   breathing: "Menarik napas…",
