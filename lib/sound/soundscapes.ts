@@ -42,12 +42,12 @@ export function crackleRate(fire: number): number {
 /** Kicau burung per detik pada takaran 0–1. */
 /** Motor yang lewat per detik pada takaran kota 0–1. */
 export function passByRate(city: number): number {
-  return 0.22 * clamp01(city);
+  return 0.45 * clamp01(city);
 }
 
 /** Klakson per detik pada takaran kota 0–1. */
 export function hornRate(city: number): number {
-  return 0.05 * clamp01(city);
+  return 0.09 * clamp01(city);
 }
 
 export function birdRate(birds: number): number {
@@ -200,8 +200,8 @@ export function kabutAsapMix(s: { act: number; haze: number; hour?: number }): A
   const day = daylight(hour);
   const quiet = 1 - 0.45 * h;
   return {
-    wind: 0.15 + 0.3 * h,
-    water: 0.3,
+    wind: 0.1 + 0.3 * h,
+    water: 0.15,
     rain: 0,
     insects: (0.06 + 0.5 * (1 - day)) * (1 - 0.5 * h),
     frogs: 0.4 * (1 - day) * (1 - 0.5 * h),

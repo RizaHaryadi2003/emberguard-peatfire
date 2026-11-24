@@ -34,7 +34,7 @@ const PEAK = {
   insects: 0.035,
   fire: 0.9,
   city: 0.5,
-  boat: 0.16,
+  boat: 0.12,
 } as const;
 
 /** Kekerasan keseluruhan: biasa, dan saat narator sedang bicara. */
@@ -116,22 +116,26 @@ export class AmbientEngine {
     const roarFilter = this.filter("lowpass", 160);
     this.loop(this.brown).connect(roarFilter).connect(this.gains.fire);
 
-    // Dengung kota: gemuruh rendah lalu lintas jauh ditambah desis ban di
-    // aspal, keduanya membesar-mengecil pelan seperti arus kendaraan.
+    // Dengung kota: arus kendaraan di kejauhan. Pita utamanya sengaja di
+    // ±300–1.500 Hz (desau ban dan mesin), karena nada di bawah ±250 Hz
+    // hampir tidak keluar dari pengeras suara laptop dan ponsel.
     const traffic = this.ctx.createGain();
-    traffic.gain.value = 0.75;
-    this.lfo(0.045, 0.2, traffic.gain);
-    this.loop(this.brown).connect(this.filter("lowpass", 240)).connect(traffic);
+    traffic.gain.value = 0.8;
+    this.lfo(0.045, 0.25, traffic.gain);
+    const rumble = this.ctx.createGain();
+    rumble.gain.value = 0.9;
+    this.loop(this.brown).connect(this.filter("lowpass", 650)).connect(rumble).connect(traffic);
     const tyres = this.ctx.createGain();
-    tyres.gain.value = 0.05;
-    this.loop(this.white).connect(this.filter("bandpass", 900, 0.6)).connect(tyres).connect(traffic);
+    tyres.gain.value = 0.16;
+    this.loop(this.white).connect(this.filter("bandpass", 750, 0.7)).connect(this.filter("lowpass", 1800)).connect(tyres).connect(traffic);
     traffic.connect(this.gains.city);
 
     // Klotok: mesin satu silinder yang berdentum ±4 kali per detik di air,
-    // sesekali menjauh lalu mendekat.
+    // sesekali menjauh lalu mendekat. Nada dasarnya rendah, tetapi
+    // harmoniknya dibiarkan sampai ±900 Hz supaya tetap terdengar.
     const engine = this.ctx.createOscillator();
     engine.type = "sawtooth";
-    engine.frequency.value = 52;
+    engine.frequency.value = 58;
     const thump = this.ctx.createGain();
     thump.gain.value = 0.5;
     const beat = this.ctx.createOscillator();
@@ -144,7 +148,7 @@ export class AmbientEngine {
     const distance = this.ctx.createGain();
     distance.gain.value = 0.6;
     this.lfo(0.025, 0.4, distance.gain);
-    engine.connect(this.filter("lowpass", 190)).connect(thump).connect(distance).connect(this.gains.boat);
+    engine.connect(this.filter("lowpass", 900)).connect(thump).connect(distance).connect(this.gains.boat);
     engine.start();
   }
 
@@ -228,41 +232,65 @@ export class AmbientEngine {
   }
 
   /**
-   * Motor lewat di jalan tepi sungai: dengung mesin yang mendekat lalu
-   * menjauh, nadanya turun sedikit saat lewat (efek Doppler) dan bergeser
-   * dari satu telinga ke telinga lain.
+   * Kendaraan lewat di jalan tepi sungai: mendekat lalu menjauh, bergeser
+   * dari satu telinga ke telinga lain. Motor terdengar sebagai dengung mesin
+   * yang nadanya turun saat lewat (efek Doppler); mobil sebagai desau ban.
    */
   private passBy(at: number, strength: number) {
-    const length = 2.6 + Math.random() * 2.4;
-    const f0 = 85 + Math.random() * 70;
+    const length = 2.4 + Math.random() * 2.2;
     const fromLeft = Math.random() < 0.5;
     const out = this.ctx.createGain();
     out.gain.setValueAtTime(0.0001, at);
-    out.gain.exponentialRampToValueAtTime(0.03 * strength * (0.5 + Math.random() * 0.6), at + length * 0.5);
+    out.gain.exponentialRampToValueAtTime(0.09 * (0.4 + 0.6 * strength) * (0.6 + Math.random() * 0.5), at + length * 0.5);
     out.gain.exponentialRampToValueAtTime(0.0001, at + length);
     const pan = this.ctx.createStereoPanner();
-    pan.pan.setValueAtTime(fromLeft ? -0.85 : 0.85, at);
-    pan.pan.linearRampToValueAtTime(fromLeft ? 0.85 : -0.85, at + length);
-    const lp = this.filter("lowpass", 700 + Math.random() * 500);
-    for (const mult of [1, 2.02]) {
-      const osc = this.ctx.createOscillator();
-      osc.type = mult === 1 ? "sawtooth" : "square";
-      osc.frequency.setValueAtTime(f0 * mult * 1.05, at);
-      osc.frequency.linearRampToValueAtTime(f0 * mult * 0.93, at + length);
-      const g = this.ctx.createGain();
-      g.gain.value = mult === 1 ? 1 : 0.25;
-      osc.connect(g).connect(lp);
-      osc.start(at);
-      osc.stop(at + length + 0.05);
+    pan.pan.setValueAtTime(fromLeft ? -0.9 : 0.9, at);
+    pan.pan.linearRampToValueAtTime(fromLeft ? 0.9 : -0.9, at + length);
+    out.connect(pan).connect(this.master);
+
+    // Desau ban: dimiliki motor maupun mobil.
+    const whoosh = this.ctx.createBufferSource();
+    whoosh.buffer = this.white;
+    whoosh.loop = true;
+    const band = this.filter("bandpass", 500, 0.8);
+    band.frequency.setValueAtTime(450, at);
+    band.frequency.linearRampToValueAtTime(1100, at + length * 0.5);
+    band.frequency.linearRampToValueAtTime(550, at + length);
+    const wg = this.ctx.createGain();
+    wg.gain.value = 0.35;
+    whoosh.connect(band).connect(wg).connect(out);
+    whoosh.start(at);
+    whoosh.stop(at + length + 0.05);
+
+    if (Math.random() < 0.65) {
+      // Motor: mesin kecil bernada ±150–260 Hz dengan harmonik yang serak.
+      const f0 = 150 + Math.random() * 110;
+      const lp = this.filter("lowpass", 1800 + Math.random() * 800);
+      lp.connect(out);
+      for (const [mult, type, level] of [
+        [1, "sawtooth", 1],
+        [2.01, "square", 0.3],
+      ] as const) {
+        const osc = this.ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f0 * mult * 1.06, at);
+        osc.frequency.linearRampToValueAtTime(f0 * mult * 0.92, at + length);
+        const g = this.ctx.createGain();
+        g.gain.value = level;
+        osc.connect(g).connect(lp);
+        osc.start(at);
+        osc.stop(at + length + 0.05);
+      }
+    } else {
+      wg.gain.value = 1.4;
     }
-    lp.connect(out).connect(pan).connect(this.master);
   }
 
   /** Klakson di kejauhan: satu atau dua bunyi pendek bernada ganda. */
   private horn(at: number) {
     const beeps = Math.random() < 0.35 ? 2 : 1;
     const base = 380 + Math.random() * 120;
-    const lp = this.filter("lowpass", 1600);
+    const lp = this.filter("lowpass", 2600);
     const pan = this.ctx.createStereoPanner();
     pan.pan.value = Math.random() * 1.6 - 0.8;
     lp.connect(pan).connect(this.master);
@@ -271,8 +299,8 @@ export class AmbientEngine {
       const len = 0.14 + Math.random() * 0.22;
       const g = this.ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.012, t + 0.015);
-      g.gain.setValueAtTime(0.012, t + len);
+      g.gain.exponentialRampToValueAtTime(0.035, t + 0.015);
+      g.gain.setValueAtTime(0.035, t + len);
       g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.05);
       g.connect(lp);
       for (const f of [base, base * 1.26]) {
