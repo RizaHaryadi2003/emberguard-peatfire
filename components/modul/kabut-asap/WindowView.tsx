@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createWindowTextures, type WindowTextures } from "./windowTextures";
 import { hazeLevel } from "@/lib/model/haze";
 import {
   daylight,
@@ -283,6 +284,9 @@ const RIPPLES = Array.from({ length: 46 }, (_, i) => {
   };
 });
 
+/** Tekstur dibuat sekali per kunjungan halaman, lalu dipakai ulang. */
+let textureCache: WindowTextures | null = null;
+
 export default function WindowView({
   ispu,
   hour,
@@ -381,6 +385,19 @@ export default function WindowView({
   const cloudAlpha = (0.85 - 0.45 * night) * (1 - h * 0.85);
   const glowAtNight = night * (0.1 + 0.5 * h);
 
+  // Tekstur kanvas dibuat setelah tampil pertama, supaya babak terbuka tanpa jeda.
+  const [tex, setTex] = useState<WindowTextures | null>(textureCache);
+  useEffect(() => {
+    if (textureCache) return;
+    const id = window.setTimeout(() => {
+      textureCache = createWindowTextures();
+      setTex(textureCache);
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, []);
+  /** Rincian tekstur paling jelas di siang hari, memudar di malam dan dalam kabut. */
+  const detail = (0.3 + 0.7 * day) * (1 - 0.6 * h);
+
   return (
     <div className="pointer-events-none fixed inset-0" aria-hidden>
       <svg
@@ -464,6 +481,42 @@ export default function WindowView({
             <stop offset="0" stopColor="#000" stopOpacity={0} />
             <stop offset="1" stopColor="#000" stopOpacity={0.35} />
           </linearGradient>
+          {tex && (
+            <>
+              <pattern id="tWood" patternUnits="userSpaceOnUse" width="256" height="256" patternTransform="rotate(90) scale(0.55)">
+                <image href={tex.wood} width="256" height="256" />
+              </pattern>
+              <pattern id="tZinc" patternUnits="userSpaceOnUse" width="256" height="256" patternTransform="scale(0.6)">
+                <image href={tex.zinc} width="256" height="256" />
+              </pattern>
+              <pattern id="tWaterFar" patternUnits="userSpaceOnUse" width="512" height="256" patternTransform="scale(0.8 0.28)">
+                <image href={tex.water} width="512" height="256" />
+              </pattern>
+              <pattern id="tWaterNear" patternUnits="userSpaceOnUse" width="512" height="256" patternTransform="scale(1.8 0.7)">
+                <image href={tex.water} width="512" height="256" />
+              </pattern>
+              <pattern id="tFoliageFar" patternUnits="userSpaceOnUse" width="256" height="256" patternTransform="scale(0.32)">
+                <image href={tex.foliage} width="256" height="256" />
+              </pattern>
+              <pattern id="tFoliage" patternUnits="userSpaceOnUse" width="256" height="256" patternTransform="scale(0.7)">
+                <image href={tex.foliage} width="256" height="256" />
+              </pattern>
+              <pattern id="tGrime" patternUnits="userSpaceOnUse" width="128" height="128" patternTransform="scale(0.45 0.7)">
+                <image href={tex.grime} width="128" height="128" />
+              </pattern>
+              <pattern id="tGrain" patternUnits="userSpaceOnUse" width="128" height="128">
+                <image href={tex.grain} width="128" height="128" />
+              </pattern>
+              {/* Air jauh memakai riak halus, air dekat riak lebar: kesan kedalaman. */}
+              <linearGradient id="tWaterFade" x1="0" y1={WATERLINE} x2="0" y2="900" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#fff" stopOpacity={1} />
+                <stop offset="0.45" stopColor="#fff" stopOpacity={0} />
+              </linearGradient>
+              <mask id="tWaterFarMask" maskUnits="userSpaceOnUse" x="0" y={WATERLINE} width="1600" height={900 - WATERLINE}>
+                <rect y={WATERLINE} width="1600" height={900 - WATERLINE} fill="url(#tWaterFade)" />
+              </mask>
+            </>
+          )}
         </defs>
 
         {/* ── Langit ─────────────────────────────────────────────── */}
@@ -608,6 +661,9 @@ export default function WindowView({
                 height={b.h}
                 fill={b.i % 3 ? cityCol : cityShade}
               />
+              {tex && (
+                <rect x={b.x} y={CITY_BASE - b.h} width={b.w} height={b.h} fill="url(#tGrime)" opacity={0.28 * detail} />
+              )}
               {b.step && (
                 <rect
                   x={b.x + b.w * 0.25}
@@ -754,6 +810,7 @@ export default function WindowView({
 
         {/* ── Tepi seberang: pepohonan dan kelapa ─────────────────── */}
         <path d={FAR_TREES} fill={farTreeCol} />
+        {tex && <path d={FAR_TREES} fill="url(#tFoliageFar)" opacity={0.55 * detail} />}
         {PALMS_FAR.map((p, i) => (
           <g key={i} fill={palmLeafFar}>
             <path d={p.trunk} />
@@ -779,6 +836,12 @@ export default function WindowView({
           height={900 - WATERLINE}
           fill="url(#kWater)"
         />
+        {tex && (
+          <g opacity={(0.18 + 0.2 * day) * (1 - 0.55 * h)}>
+            <rect y={WATERLINE} width="1600" height={900 - WATERLINE} fill="url(#tWaterFar)" mask="url(#tWaterFarMask)" />
+            <rect y={WATERLINE + 90} width="1600" height={900 - WATERLINE - 90} fill="url(#tWaterNear)" opacity={0.85} />
+          </g>
+        )}
         {/* Bayangan tepi seberang di air */}
         <rect
           y={WATERLINE}
@@ -951,15 +1014,7 @@ export default function WindowView({
               />
               {/* Dinding papan */}
               <rect x={r.x} y={top} width={r.w} height={r.h} fill={nearWood} />
-              <path
-                d={Array.from(
-                  { length: Math.floor(r.h / 9) },
-                  (_, k) => `M${r.x} ${top + 9 * (k + 1)}h${r.w}`,
-                ).join("")}
-                stroke={nearWoodDark}
-                strokeOpacity={0.5}
-                strokeWidth={1}
-              />
+              {tex && <rect x={r.x} y={top} width={r.w} height={r.h} fill="url(#tWood)" opacity={0.9 * detail + 0.1} />}
               <rect
                 x={r.x}
                 y={top}
@@ -972,6 +1027,13 @@ export default function WindowView({
                 d={`M ${r.x - 18} ${top + 2} L ${r.x + r.w / 2} ${roofTop} L ${r.x + r.w + 18} ${top + 2} Z`}
                 fill={rust ? roofRust : roofCol}
               />
+              {tex && (
+                <path
+                  d={`M ${r.x - 18} ${top + 2} L ${r.x + r.w / 2} ${roofTop} L ${r.x + r.w + 18} ${top + 2} Z`}
+                  fill="url(#tZinc)"
+                  opacity={0.85 * detail + 0.1}
+                />
+              )}
               <path
                 d={`M ${r.x + r.w / 2} ${roofTop} L ${sunFromLeft ? r.x - 18 : r.x + r.w + 18} ${top + 2} L ${r.x + r.w / 2} ${top + 2} Z`}
                 fill="#ffffff"
@@ -1053,7 +1115,9 @@ export default function WindowView({
         {PALMS_NEAR.map((p, i) => (
           <g key={i}>
             <path d={p.trunk} fill={palmTrunk} />
+            {tex && <path d={p.trunk} fill="url(#tWood)" opacity={0.6 * detail} />}
             <path d={p.fronds} fill={palmLeaf} />
+            {tex && <path d={p.fronds} fill="url(#tFoliage)" opacity={0.7 * detail} />}
           </g>
         ))}
         <rect width="1600" height="900" fill={hz} opacity={0.16 * h} />
@@ -1083,6 +1147,7 @@ export default function WindowView({
           fill="url(#kFloor)"
           opacity={0.35 * h}
         />
+        {tex && <rect width="1600" height="900" fill="url(#tGrain)" opacity={0.07} />}
       </svg>
     </div>
   );
