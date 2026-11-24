@@ -154,7 +154,7 @@ export const KABUT_TEXT = {
   outside: "Udara luar",
   lungs: "Paru-paru",
   why: "Mengapa begitu",
-  windowNote: "Pemandangan ilustratif dari jendela di tepi Kapuas",
+  windowNote: "Pemandangan ilustratif dari jendela di tengah kota",
   close: "Tutup",
 } as const;
 
@@ -224,8 +224,8 @@ export const KABUT_GUIDE: readonly (readonly GuideStep[])[] = [
     { target: "next", text: "Tugas selesai. Sekarang lihat seberapa banyak butir ini di udara Pontianak." },
   ],
   [
-    { target: "window", text: "Ini pemandangan dari jendela di tepi Kapuas saat udara bersih." },
-    { target: "ispu", text: "Naikkan ISPU pelan-pelan. Perhatikan kota di seberang sungai.", done: (s) => s.maxIspu >= 150 },
+    { target: "window", text: "Ini pemandangan dari jendela di tengah kota saat udara bersih." },
+    { target: "ispu", text: "Naikkan ISPU pelan-pelan. Perhatikan gedung terjauh, jembatan, lalu jalan di bawah.", done: (s) => s.maxIspu >= 150 },
     { target: "ispu", text: "Teruskan sampai kategori Berbahaya.", done: (s) => s.maxIspu >= 301 },
     { target: "advice", text: "Tiap kategori punya anjuran resmi. Di kategori Berbahaya: hindari semua aktivitas di luar." },
     { target: "days", text: "Sekarang buka dua hari sungguhan di bulan Agustus 2026.", done: (s) => s.daysSeen >= 2 },

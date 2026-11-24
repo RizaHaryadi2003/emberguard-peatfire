@@ -418,7 +418,7 @@ body {
 .kabut-drift {
   animation: kabutDrift 40s ease-in-out infinite alternate;
 }
-/* Jendela Pontianak: awan, burung, kendaraan, perahu, kilau air, bintang. */
+/* Jendela kota: awan, burung, kendaraan, pejalan kaki, uap got, bintang. */
 @keyframes kabutCloud {
   from { transform: translateX(-420px); }
   to { transform: translateX(2000px); }
@@ -449,21 +449,26 @@ body {
 }
 .kabut-drive-r { animation: kabutDriveR 18s linear infinite; }
 .kabut-drive-l { animation: kabutDriveL 18s linear infinite; }
-@keyframes kabutBoat {
-  from { transform: translateX(-200px); }
-  to { transform: translateX(1800px); }
+@keyframes kabutSteam {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-110px) scale(3); opacity: 0; }
 }
-.kabut-boat { animation: kabutBoat 110s linear infinite; animation-delay: -40s; }
-@keyframes kabutShimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+.kabut-steam {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kabutSteam 4.4s ease-out infinite;
 }
-.kabut-shimmer { animation: kabutShimmer 2.6s ease-in-out infinite; }
-@keyframes kabutRipple {
-  from { transform: translateX(-14px); }
-  to { transform: translateX(14px); }
+@keyframes kabutWalkR {
+  from { transform: translateX(-40px); }
+  to { transform: translateX(1640px); }
 }
-.kabut-ripple { animation: kabutRipple 7s ease-in-out infinite alternate; }
+@keyframes kabutWalkL {
+  from { transform: translateX(1640px); }
+  to { transform: translateX(-40px); }
+}
+.kabut-walk-r { animation: kabutWalkR 70s linear infinite; }
+.kabut-walk-l { animation: kabutWalkL 70s linear infinite; }
 @keyframes kabutTwinkle {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
@@ -482,9 +487,9 @@ body {
   .kabut-flap,
   .kabut-drive-r,
   .kabut-drive-l,
-  .kabut-boat,
-  .kabut-shimmer,
-  .kabut-ripple,
+  .kabut-steam,
+  .kabut-walk-r,
+  .kabut-walk-l,
   .kabut-twinkle,
   .kabut-blink {
     animation: none;

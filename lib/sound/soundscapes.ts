@@ -26,8 +26,6 @@ export type AmbientMix = {
   fire: number;
   /** Kota: dengung lalu lintas, motor yang lewat, klakson di kejauhan. */
   city?: number;
-  /** Mesin perahu klotok di sungai. */
-  boat?: number;
 };
 
 export const SILENT_MIX: AmbientMix = { wind: 0, water: 0, rain: 0, insects: 0, frogs: 0, birds: 0, fire: 0 };
@@ -47,7 +45,12 @@ export function passByRate(city: number): number {
 
 /** Klakson per detik pada takaran kota 0–1. */
 export function hornRate(city: number): number {
-  return 0.09 * clamp01(city);
+  return 0.12 * clamp01(city);
+}
+
+/** Sirene di kejauhan per detik pada takaran kota 0–1 (±1 tiap 1,5 menit saat ramai). */
+export function sirenRate(city: number): number {
+  return 0.011 * clamp01(city);
 }
 
 export function birdRate(birds: number): number {
@@ -185,12 +188,12 @@ export function forensikMix(s: { act: number; windy: boolean; fire: number }): A
 }
 
 /**
- * Modul Kabut Asap. Babak 02 adalah jendela di tepi Kapuas, jadi yang
- * terdengar suara kota: dengung lalu lintas dan motor yang ramai saat jam
- * berangkat dan pulang, mesin klotok di sungai, burung saat fajar dan
- * senja, jangkrik dan katak di malam hari. Makin pekat kabutnya (`haze`
- * 0–1), kota makin lengang (orang diminta tetap di dalam rumah) dan
- * burung makin sunyi. Takaran ilustratif.
+ * Modul Kabut Asap. Babak 02 adalah jendela di tengah kota besar, jadi yang
+ * terdengar suara kota: dengung lalu lintas, motor dan mobil yang lewat,
+ * klakson, sesekali sirene di kejauhan; ramai saat jam berangkat dan pulang,
+ * sepi dini hari. Burung saat fajar dan senja, jangkrik samar di malam hari.
+ * Makin pekat kabutnya (`haze` 0–1), kota makin lengang (orang diminta tetap
+ * di dalam rumah) dan burung makin sunyi. Takaran ilustratif.
  */
 export function kabutAsapMix(s: { act: number; haze: number; hour?: number }): AmbientMix {
   const h = clamp01(s.haze);
@@ -198,16 +201,14 @@ export function kabutAsapMix(s: { act: number; haze: number; hour?: number }): A
   if (s.act === 2) return { wind: 0.25 + 0.3 * h, water: 0.4, rain: 0, insects: 0.25 * (1 - h), frogs: 0, birds: 0.6 * (1 - h) ** 2, fire: 0 };
   const hour = s.hour ?? 8;
   const day = daylight(hour);
-  const quiet = 1 - 0.45 * h;
   return {
-    wind: 0.1 + 0.3 * h,
-    water: 0.15,
+    wind: 0.12 + 0.3 * h,
+    water: 0,
     rain: 0,
-    insects: (0.06 + 0.5 * (1 - day)) * (1 - 0.5 * h),
-    frogs: 0.4 * (1 - day) * (1 - 0.5 * h),
-    birds: birdChorus(hour) * (1 - h) ** 2,
+    insects: 0.25 * (1 - day) * (1 - 0.5 * h),
+    frogs: 0,
+    birds: 0.7 * birdChorus(hour) * (1 - h) ** 2,
     fire: 0,
-    city: (0.15 + 0.85 * cityActivity(hour)) * quiet,
-    boat: (0.1 + 0.5 * day) * quiet,
+    city: (0.25 + 0.75 * cityActivity(hour)) * (1 - 0.45 * h),
   };
 }

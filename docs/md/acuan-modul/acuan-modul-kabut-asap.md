@@ -97,5 +97,11 @@ ISPU. Semua takarannya **ilustratif**, bukan pengukuran:
   asap; makin pekat kabutnya, bintang makin hilang.
 - Tombol hari sungguhan juga memindahkan jam ke waktu pengukurannya
   (8 Agustus 09.00, 27 Agustus 08.00).
-- Suara Babak 02 berganti ke suara kota (dengung lalu lintas, motor lewat,
-  klakson jauh, mesin klotok); makin pekat kabutnya, makin lengang kotanya.
+- Pemandangan jendela adalah pusat kota besar **ilustratif** bergaya New York
+  (pencakar langit art deco, jembatan gantung, tangki air di atap, gedung bata
+  bertangga darurat, taksi kuning), atas pilihan desain pengguna; bukan
+  gambaran Pontianak. Angka ISPU tetap data Pontianak.
+- Makin pekat kabutnya, makin sedikit pejalan kaki di trotoar: menggambarkan
+  anjuran resmi mengurangi aktivitas di luar ruangan.
+- Suara Babak 02 berganti ke suara kota (dengung lalu lintas, motor dan mobil
+  lewat, klakson, sirene di kejauhan); makin pekat kabutnya, makin lengang.

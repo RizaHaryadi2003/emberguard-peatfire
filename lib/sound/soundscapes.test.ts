@@ -50,7 +50,7 @@ describe("racikan tiap modul", () => {
     const dini = kabutAsapMix({ act: 1, haze: 0, hour: 3 });
     expect(pagi.city).toBeGreaterThan(dini.city!);
     expect(kabutAsapMix({ act: 1, haze: 0, hour: 0 }).birds).toBe(0);
-    expect(dini.frogs).toBeGreaterThan(pagi.frogs);
+    expect(dini.insects).toBeGreaterThan(pagi.insects);
     expect(kabutAsapMix({ act: 1, haze: 1, hour: 7 }).city).toBeLessThan(pagi.city!);
     for (const hour of [0, 6, 12, 18, 23.75]) inRange(kabutAsapMix({ act: 1, haze: 0.5, hour }));
   });

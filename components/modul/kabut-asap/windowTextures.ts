@@ -1,10 +1,9 @@
-// Tekstur Jendela Pontianak yang digambar lewat kanvas 2D, tanpa berkas
-// gambar: serat papan kayu, seng bergelombang berkarat, riak air sungai,
-// rimbun daun, dan noda luntur dinding gedung.
+// Tekstur jendela kota yang digambar lewat kanvas 2D, tanpa berkas gambar:
+// dinding bata, aspal jalan, noda luntur dinding gedung, dan butir foto.
 //
 // Sebagian besar tekstur dibuat abu-abu dengan transparansi (gelap/terang di
 // atas bening). Dengan begitu tekstur hanya menambah rincian, sedangkan warna
-// dan cahayanya tetap diatur pemandangan: papan yang sama tampak coklat hangat
+// dan cahayanya tetap diatur pemandangan: bata yang sama tampak merah hangat
 // di pagi hari dan hampir hitam di malam hari.
 //
 // Semua tekstur bisa diulang tanpa sambungan terlihat (tileable), dibuat sekali
@@ -81,96 +80,40 @@ const shade = (v: number, k: number): [number, number, number, number] => {
   return d < 0 ? [0, 0, 0, Math.min(255, -d * k * 255)] : [255, 255, 255, Math.min(255, d * k * 255)];
 };
 
-/** Papan kayu tegak: tiap bilah berbeda rona, berserat, bercelah, sesekali bermata kayu. */
-function wood(): string {
-  const W = 256;
-  const plank = 32;
-  const grain = fbm(4, 16, 4, 11);
-  const blotch = fbm(4, 4, 3, 12);
-  const rand = mulberry32(13);
-  const tone = Array.from({ length: W / plank }, () => rand());
-  const knots = Array.from({ length: 5 }, () => ({ x: rand() * W, y: rand() * W, r: 3 + rand() * 4 }));
+/** Dinding bata: susunan setengah bata bergeser, tiap bata beda rona, nat terang. */
+function brick(): string {
+  const W = 128;
+  const bw = 32;
+  const bh = 12;
+  const tone = fbm(4, 8, 2, 71);
+  const soot = fbm(3, 3, 3, 72);
+  const rand = mulberry32(73);
+  const each = Array.from({ length: (W / bw) * (W / bh + 1) }, () => rand());
   return paint(W, W, (u, v, x, y) => {
-    const p = Math.floor(x / plank);
-    const inP = (x % plank) / plank;
-    let k = 0.5 + (tone[p] - 0.5) * 0.35;
-    // Serat: garis tegak yang berkelok mengikuti derau.
-    const g = Math.sin((u * 64 + grain(u, v) * 6) * Math.PI * 2);
-    k += g * 0.06 + (blotch(u, v) - 0.5) * 0.3;
-    // Celah gelap antarbilah dan tepi bilah yang sedikit terang.
-    if (inP < 0.05) k = 0.08;
-    else if (inP < 0.1) k += 0.12;
-    for (const n of knots) {
-      const d = Math.hypot(x - n.x, (y - n.y) * 0.6);
-      if (d < n.r * 2) k -= (1 - d / (n.r * 2)) * 0.35;
-    }
-    return shade(k, 0.85);
+    const row = Math.floor(y / bh);
+    const off = row % 2 ? bw / 2 : 0;
+    const col = Math.floor(((x + off) % W) / bw);
+    const inX = (x + off) % bw;
+    const inY = y % bh;
+    // Nat semen di antara bata.
+    if (inX < 2 || inY < 2) return [214, 204, 186, 150];
+    let k = 0.5 + (each[row * (W / bw) + col] - 0.5) * 0.45 + (tone(u, v) - 0.5) * 0.25;
+    k -= (soot(u, v) - 0.4) * 0.35;
+    if (inY === 2) k += 0.1;
+    return shade(Math.min(1, Math.max(0, k)), 0.8);
   });
 }
 
-/** Seng bergelombang: alur tegak berkilau, noda karat yang meleleh ke bawah. */
-function zinc(): string {
-  const W = 256;
-  const rust = fbm(6, 3, 4, 21);
-  const drip = fbm(32, 2, 3, 22);
-  return paint(W, W, (u, v, x) => {
-    const wave = Math.sin((x / 8) * Math.PI * 2);
-    const light = 0.5 + wave * 0.22;
-    const r = rust(u, v) * 0.8 + drip(u, v) * 0.5 * v;
-    if (r > 0.62) {
-      const a = Math.min(1, (r - 0.62) * 4) * 0.85;
-      const l = 0.75 + wave * 0.2;
-      return [Math.round(122 * l), Math.round(64 * l), Math.round(34 * l), Math.round(a * 255)];
-    }
-    return shade(light + (rust(u * 2, v * 2) - 0.5) * 0.2, 0.7);
+/** Aspal jalan: butir kerikil halus dan tambalan yang lebih gelap. */
+function asphalt(): string {
+  const W = 128;
+  const patch = fbm(3, 3, 3, 81);
+  const rand = mulberry32(82);
+  return paint(W, W, (u, v) => {
+    let k = 0.5 + (rand() - 0.5) * 0.5;
+    if (patch(u, v) > 0.66) k -= 0.12;
+    return shade(k, 0.45);
   });
-}
-
-/** Riak air sungai: guratan mendatar panjang, terang dan gelap bergantian. */
-function water(): string {
-  const W = 512;
-  const H = 256;
-  const big = fbm(3, 24, 4, 31);
-  const fine = fbm(8, 64, 3, 32);
-  return paint(W, H, (u, v) => {
-    const n = big(u, v) * 0.65 + fine(u, v) * 0.35;
-    const k = 0.5 + (n - 0.5) * 2.2;
-    return shade(Math.min(1, Math.max(0, k)), 0.55);
-  });
-}
-
-/** Rimbun daun: gumpalan daun kecil, terang di atas dan teduh di bawah. */
-function foliage(): string {
-  const W = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = W;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-  const rand = mulberry32(41);
-  // Gambar tiga kali bergeser satu ubin supaya tepinya menyambung.
-  for (let i = 0; i < 900; i++) {
-    const x = rand() * W;
-    const y = rand() * W;
-    const r = 2 + rand() * 4.5;
-    const rot = rand() * Math.PI;
-    const light = rand();
-    for (const dx of [-W, 0, W])
-      for (const dy of [-W, 0, W]) {
-        ctx.save();
-        ctx.translate(x + dx, y + dy);
-        ctx.rotate(rot);
-        ctx.beginPath();
-        ctx.ellipse(0, 1, r, r * 0.55, 0, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.32)";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(0, -0.6, r * 0.85, r * 0.45, 0, 0, Math.PI * 2);
-        ctx.fillStyle = light > 0.55 ? `rgba(255,255,230,${0.12 + light * 0.18})` : "rgba(0,0,0,0.18)";
-        ctx.fill();
-        ctx.restore();
-      }
-  }
-  return canvas.toDataURL("image/png");
 }
 
 /** Dinding beton kota: noda luntur hujan yang memanjang ke bawah. */
@@ -190,9 +133,9 @@ function grain(): string {
   return paint(128, 128, () => shade(rand(), 0.35));
 }
 
-export type WindowTextures = Record<"wood" | "zinc" | "water" | "foliage" | "grime" | "grain", string>;
+export type WindowTextures = Record<"brick" | "asphalt" | "grime" | "grain", string>;
 
 /** Buat semua tekstur (±50 ms, sekali saja). Hanya di peramban. */
 export function createWindowTextures(): WindowTextures {
-  return { wood: wood(), zinc: zinc(), water: water(), foliage: foliage(), grime: grime(), grain: grain() };
+  return { brick: brick(), asphalt: asphalt(), grime: grime(), grain: grain() };
 }
