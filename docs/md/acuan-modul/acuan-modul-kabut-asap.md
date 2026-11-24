@@ -106,45 +106,29 @@ ISPU. Semua takarannya **ilustratif**, bukan pengukuran:
 - Suara Babak 02 berganti ke suara kota (dengung lalu lintas, motor dan mobil
   lewat, klakson, sirene di kejauhan); makin pekat kabutnya, makin lengang.
 
-## 7. Paru-paru 3D Babak 03 (`components/modul/kabut-asap/lung/`)
+## 7. Ilustrasi sistem pernapasan Babak 03
 
-Atas permintaan pengguna, Babak 03 menjadi satu adegan 3D: udara berasap →
-masker → saluran napas atas → trakea → bronkus → bronkiolus → gugus alveolus.
-Angka anatomi diambil dari Wikipedia bahasa Inggris (dibaca lewat API
-Wikipedia, 24 November 2026; nomor revisi dicatat supaya bisa dilacak):
+Atas permintaan pengguna, Babak 03 memakai ilustrasi sistem pernapasan dari
+Wikipedia (gambar utama artikel "Respiratory system"):
+`File:Respiratory system complete en.svg`, karya LadyofHats dan Jmarchn,
+**domain publik**, disusun mengacu atlas anatomi Sobotta (1982). Label teks,
+garis penunjuk, dan kotak labelnya dibuang; lihat
+`public/images/kabut-asap/SUMBER.md`. (Percobaan model paru-paru 3D sempat
+dibuat lalu dibatalkan pengguna pada hari yang sama.)
 
-| Artikel (revisi) | Yang dipakai |
-|---|---|
-| Respiratory system (1382186282) | ±23 generasi percabangan; generasi 0–16 saluran penghantar, 17–23 zona tukar gas; trakea 1,8 cm; bronkus utama 1–1,4 cm; bronkus subsegmental 1–6 mm; volume tidal ±500 mL; ±300 juta alveolus 75–300 µm |
-| Trachea (1381221726) | panjang 10–11 cm, diameter dalam 1,5–2 cm; 16–20 cincin tulang rawan berbentuk C setinggi ±4 mm |
-| Bronchus (1340641776) | bronkus utama kanan lebih lebar, lebih pendek, lebih tegak; bronkus utama kiri ±5 cm |
-| Lung (1384668034) | lobus dan celah antarlobus (celah mendatar tak lengkap pada 25 % paru kanan); bobot; luas permukaan 50–75 m² |
-| Pulmonary alveolus (1382757975) | ±480 juta alveolus, luas 70–80 m² |
+Di atas ilustrasi, kanvas 2D menggambar masker di wajah, butir asap, dan
+lintasannya. Yang **ilustratif**:
 
-Yang **ilustratif / buku ajar** (bukan dari teks Wikipedia di atas):
+- Lintasan butir: hidung atau mulut → tekak → trakea → bronkus utama →
+  titik acak di paru-paru; nasib tiap butir tetap dari `breath()` (Kodros
+  dkk. 2021).
+- Butir yang terhirup tampak mengendap pada sisipan alveolus sesudah napas
+  selesai; jumlah titiknya sama dengan jumlah butir yang terhirup.
+- Ukuran butir tidak berskala (PM2.5 = 2,5 µm); bentuknya gumpalan jelaga.
+- Celah tepi masker digambar sebanding dengan kebocoran bawaan masker.
 
-- Sudut bronkus utama 25° (kanan) dan 45° (kiri) dari garis tegak: nilai buku
-  ajar yang lazim.
-- Pohon bronkus dibangun dengan cara "mengisi ruang" (space-filling) seperti
-  model Tawhai dkk. dan Kitaoka dkk.: wilayah tiap cabang dibelah dua, cabang
-  anak tumbuh 40 % jarak ke pusat wilayahnya, belokan ≤ 60°; jari-jari anak
-  mengikuti hukum Murray (r³ induk = r³ anak₁ + r³ anak₂). Hasilnya 3.778
-  cabang, 2.753 ujung, 13 generasi; berhenti di bronkiolus ±1 mm karena
-  cabang yang lebih kecil tak terlihat di layar (diuji di `lung.test.ts`).
-- Bentuk paru-paru (SDF) adalah perkiraan bentuk, bukan pindaian satu tubuh:
-  puncak meruncing, dasar cekung mengikuti diafragma (kubah kanan lebih tinggi),
-  takik jantung di paru kiri, celah miring dan mendatar.
-- Arteri (biru) dan vena (merah) pulmonalis digambar menyertai bronkus sampai
-  generasi 9; letaknya ilustratif.
-- Gugus alveolus di ujung cabang mewakili asinus; alveolus sesungguhnya
-  (0,075–0,3 mm) terlalu kecil untuk tampak.
-- Butir asap TIDAK berskala (PM2.5 = 2,5 µm). Bentuknya gumpalan jelaga
-  (rantai bola kecil), mengikuti rupa jelaga di bawah mikroskop elektron.
-  Nasib tiap butir tetap dari `breath()` (Kodros dkk. 2021); jalurnya
-  mengikuti satu cabang nyata dari trakea sampai ujung.
-- Saat menarik napas, paru-paru mengembang ±5 % (ilustratif); saat diam paru-paru
-  tidak bergerak (atas permintaan pengguna, gerak "bernapas pelan" dihapus).
-- Tubuh kaca (`bodyShape.ts`): kepala, hidung, dagu, telinga, leher, bahu, dada
-  dari SDF, hanya untuk konteks: masker menempel di wajah dengan tali telinga,
-  udara masuk lewat mulut, turun lewat tekak dan leher ke trakea. Bentuk dan
-  ukurannya perkiraan; paru-paru digambar 1,3× ukuran modelnya.
+Angka anatomi pendukung (Wikipedia, dibaca lewat API 24 November 2026):
+trakea panjang 10–11 cm, diameter 1,5–2 cm, 16–20 cincin tulang rawan C
+(Trachea, rev. 1381221726); ±23 generasi percabangan, generasi 17–23 zona
+tukar gas, ±300 juta alveolus 75–300 µm (Respiratory system, rev. 1382186282);
+±480 juta alveolus, luas 70–80 m² (Pulmonary alveolus, rev. 1382757975).

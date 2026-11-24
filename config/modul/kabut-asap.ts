@@ -155,6 +155,7 @@ export const KABUT_TEXT = {
   lungs: "Paru-paru",
   why: "Mengapa begitu",
   windowNote: "Pemandangan ilustratif dari jendela di tengah kota",
+  alveoliZoom: "Alveolus, diperbesar",
   close: "Tutup",
 } as const;
 
