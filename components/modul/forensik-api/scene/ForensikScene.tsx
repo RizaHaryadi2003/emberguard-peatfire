@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import { PEAT_MAX_YEARS, PEAT_THICKNESS } from "@/lib/model/peat";
-import { isCanal, landAt, type SparkResult, type Wetness, type Wind } from "@/lib/model/ignition";
+import type { SparkResult, Wetness, Wind } from "@/lib/model/ignition";
 import { FORENSIK_TEXT, type InspectPart } from "@/config/modul/forensik-api";
 import type { SceneState } from "@/components/modul/anatomi/scene/sceneState";
 import SkyLighting from "@/components/modul/shared/scene/SkyLighting";
@@ -20,7 +20,7 @@ import {
   type Quality,
 } from "@/components/modul/shared/scene/dioramaConstants";
 import PeatPlot from "./PeatPlot";
-import LandscapeMap, { cellOf } from "./LandscapeMap";
+import LandscapeMap, { partAtLocal } from "./LandscapeMap";
 
 // Kanvas 3D Modul Forensik Api. Babak 01 memakai bongkahan gambut yang sama
 // dengan Modul Anatomi, sebagai petak tempat bara dijatuhkan. Babak 02 dan
@@ -81,13 +81,11 @@ export type ForensikSceneProps = {
   onOverload: () => void;
 };
 
-/** Yang dibutuhkan untuk menebak petak yang diklik dari luar kanvas. */
-export type MapPicker = { camera: THREE.Camera; tiles: THREE.InstancedMesh };
-
-/** Bagian peta di petak (x, y): kanal didahulukan karena ia membelah lahan terbuka. */
-function partAt(x: number, y: number): InspectPart {
-  return isCanal(x, y) ? "kanal" : landAt(x, y);
-}
+/**
+ * Yang dibutuhkan untuk menebak bagian peta yang diklik: permukaan tanah yang
+ * dikenai sinar, dan grup lanskap untuk menerjemahkan titiknya ke koordinat peta.
+ */
+export type MapPicker = { camera: THREE.Camera; surface: THREE.Object3D; root: THREE.Object3D };
 
 /**
  * Kanvas memenuhi layar di belakang panel, dan isinya dipaskan ke bingkai
@@ -154,10 +152,10 @@ export default function ForensikScene(props: ForensikSceneProps) {
     if (!p || stage !== "map") return null;
     const ndc = new THREE.Vector2((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, p.camera);
-    const hit = raycaster.intersectObject(p.tiles, false)[0];
-    if (!hit || hit.instanceId === undefined) return null;
-    const { x, y } = cellOf(hit.instanceId);
-    return partAt(x, y);
+    const hit = raycaster.intersectObject(p.surface, false)[0];
+    if (!hit) return null;
+    const local = p.root.worldToLocal(hit.point.clone());
+    return partAtLocal(local.x, local.z);
   };
 
   return (

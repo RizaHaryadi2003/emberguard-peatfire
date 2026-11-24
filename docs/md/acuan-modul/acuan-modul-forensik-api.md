@@ -178,4 +178,8 @@ itulah awal asap. Di Pontianak, membuka lahan dengan membakar dilarang." (F)
   selama 2 hari sesudah api tiba, lalu menjadi bekas terbakar; rupa basah,
   lembap, dan kering petak babak 01 memakai letak muka air 3, 28, dan 80 cm
   hanya untuk warna, tidak disambungkan ke kadar air Lin dkk. (lihat §3).
+- **Rupa lanskap (ilustratif):** batas lahan, alur sungai, dan sebaran pohon
+  digambar berkelok supaya alami; model dan api tetap memakai kotak 1 km².
+  Bercak api bertepi lembut sedikit melebihi kotaknya, sehingga kotak yang
+  bersebelahan menyatu. Klik pembaca dibaca dari lahan yang terlihat.
 - Diuji di `lib/model/ignition.test.ts` (21 uji).
