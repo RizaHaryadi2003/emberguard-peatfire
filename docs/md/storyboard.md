@@ -51,7 +51,7 @@ MODUL  13 modul dalam 5 bagian
    │                  Bara di Bawah Tanah    bagaimana ia terbakar       ✅
    │
    ├─ 4 · Dampak      Gudang Karbon          apa yang lepas ke udara     ✅
-   │                  Kabut Asap             apa yang kita hirup         ⏳
+   │                  Kabut Asap             apa yang kita hirup         ✅
    │                  Yang Hilang dari Hutan apa yang tidak kembali      ⏳
    │
    └─ 5 · Mencegah    Membasahi Kembali      sekat kanal, sumur bor      ⏳
@@ -424,18 +424,25 @@ dan Modul Kanal.
 **Penutup:** *"Yang tidak bisa ditanam kembali."* Hutan bisa ditanam ulang
 dalam beberapa dasawarsa, gambutnya tidak.
 
-#### 3.9 Kabut Asap ⏳
+#### 3.9 Kabut Asap ✅
 
-Belum ada acuan. Rancangan awal (sebelum aturan acuan) disimpan sebagai
-bahan, **belum boleh dikodekan**:
+`/modul/kabut-asap` · acuan: `acuan-modul/acuan-modul-kabut-asap.md`
 
-- Panggung: Kota Pontianak dari kejauhan, lahan terbakar di kaki langit.
-- Kendali utama: pengatur hari 1 → 30 yang menggerakkan seluruh pemandangan
-  (langit, jarak pandang, ISPU). `getAtmosphere` di `lib/model/` sudah
-  menyediakan perubahan langit.
-- Gagasan babak: geser hari · bernapas seperti hari itu · pilih sudut
-  pandang (pelajar, pedagang, pemadam) · lacak asap melewati batas provinsi.
-- Angka ISPU dan dampak harus dari acuan, bukan perkiraan.
+- **Hook:** "27 Agustus 2026, pukul 08.00. Udara Pontianak menyentuh angka 312." → "Apa yang kita hirup?"
+- **Pertanyaan:** Apa yang sebenarnya kita hirup saat Pontianak berkabut asap, dan apa yang bisa menahannya?
+- **Sebelum → sesudah:** *asap hanya gangguan pandangan; masker apa pun cukup* →
+  *yang berbahaya adalah PM2.5, 28 kali lebih kecil dari lebar rambut; ISPU
+  memberi tahu kapan berlindung; hanya masker yang rapat yang menahannya.*
+- **Acuan:** US EPA; Permen LHK P.14/2020; Pontianak Post & RRI (Agustus 2026); Kodros dkk. (2021).
+- **Panggung (konsep berbeda, 2D, tiga skala):** lensa mikroskop · pemandangan
+  tepi Kapuas dari jendela yang memudar oleh kabut · aliran seratus butir asap
+  melewati masker ke paru-paru.
+
+| Babak | Tugas | Yang terlihat | Angka |
+|---|---|---|---|
+| 01 Sekecil Apa | Perbesar mikroskop sampai PM2.5 terlihat | Rambut menjadi batang; 28 butir PM2.5 selebar rambut | Rambut 70 µm, PM2.5 ≤ 2,5 µm |
+| 02 Jendela Pontianak | Geser ISPU sampai Berbahaya, buka 8 & 27 Agustus 2026 | Kota hilang di balik kabut jingga; kategori dan anjuran resmi | ISPU 88 → 312; ISPA ±300/hari |
+| 03 Satu Tarikan Napas | Coba empat masker | Butir tertahan, menembus kain, atau lolos lewat celah | Kain 71, medis 53, N95 rapat 6 dari 100 |
 
 #### 3.10 Yang Hilang dari Hutan ⏳
 
@@ -600,7 +607,7 @@ dokumen acuan masing-masing modul.
 | 2 | **Musim Api** | ✅ dibangun 19 November 2026; menunggu pemeriksaan tampilan |
 | 3 | Forensik Api | ✅ dibangun 24 November 2026; menunggu pemeriksaan pengguna |
 | 4 | Bagian Mencegah (3 modul) | ⏳ cari acuan; menutup alur cerita skripsi berjudul *pencegahan* |
-| 5 | Kabut Asap, Yang Hilang dari Hutan | ⏳ cari acuan |
+| 5 | Kabut Asap ✅ (24 November 2026); Yang Hilang dari Hutan | ⏳ cari acuan |
 | 6 | Kuis (utama + cek singkat) | ⏳ celah terbesar terhadap rumusan masalah |
 | 7 | Simulasi | ⏳ paling besar; kerjakan terakhir |
 

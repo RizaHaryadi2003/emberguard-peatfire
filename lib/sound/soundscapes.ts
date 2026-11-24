@@ -167,3 +167,14 @@ export function forensikMix(s: { act: number; windy: boolean; fire: number }): A
     return { wind: s.windy ? 0.75 : 0.2, water: 0, rain: 0, insects: 0.35, frogs: 0, birds: 0.2, fire: fire * 0.35 };
   return peatForestMix(fire * 0.8);
 }
+
+/**
+ * Modul Kabut Asap: tepi Kapuas. Udara bersih terdengar hidup (air sungai,
+ * burung); makin pekat kabutnya (`haze` 0–1), kota makin sunyi dan yang
+ * tersisa angin dan desau air.
+ */
+export function kabutAsapMix(s: { act: number; haze: number }): AmbientMix {
+  const h = clamp01(s.haze);
+  if (s.act === 0) return { ...SILENT_MIX, wind: 0.12 };
+  return { wind: 0.25 + 0.3 * h, water: 0.4, rain: 0, insects: 0.25 * (1 - h), frogs: 0, birds: 0.6 * (1 - h) ** 2, fire: 0 };
+}

@@ -409,3 +409,17 @@ body {
   outline: 2px solid rgb(255 255 255 / 0.7);
   outline-offset: 2px;
 }
+
+/* Modul Kabut Asap: gumpalan kabut yang melayang pelan menyeberangi jendela. */
+@keyframes kabutDrift {
+  from { transform: translateX(-260px); }
+  to { transform: translateX(260px); }
+}
+.kabut-drift {
+  animation: kabutDrift 40s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kabut-drift {
+    animation: none;
+  }
+}

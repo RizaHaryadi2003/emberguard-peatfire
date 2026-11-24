@@ -71,7 +71,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     lead: "Apa yang ditanggung udara, tubuh kita, dan hutan setelah gambut terbakar.",
     modules: [
       { href: "/modul/karbon", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar" },
-      { href: null, title: "Kabut Asap", caption: "Dari lahan yang terbakar ke napas kita" },
+      { href: "/modul/kabut-asap", title: "Kabut Asap", caption: "Dari lahan yang terbakar ke napas kita" },
       { href: null, title: "Yang Hilang dari Hutan", caption: "Satwa dan hutan yang tidak kembali" },
     ],
   },

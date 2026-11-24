@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   birdRate,
   forensikMix,
+  kabutAsapMix,
   crackleRate,
   hutanRawaMix,
   kanalMix,
@@ -39,6 +40,11 @@ describe("laju peristiwa", () => {
 });
 
 describe("racikan tiap modul", () => {
+  it("kabut asap: makin pekat makin sunyi burungnya", () => {
+    expect(kabutAsapMix({ act: 1, haze: 1 }).birds).toBeLessThan(kabutAsapMix({ act: 1, haze: 0 }).birds);
+    inRange(kabutAsapMix({ act: 1, haze: 3 }));
+  });
+
   it("forensik api: angin terdengar saat dinyalakan, api mengikuti kotak panas", () => {
     expect(forensikMix({ act: 0, windy: true, fire: 0 }).wind).toBeGreaterThan(forensikMix({ act: 0, windy: false, fire: 0 }).wind);
     expect(forensikMix({ act: 1, windy: false, fire: 1 }).fire).toBeGreaterThan(forensikMix({ act: 1, windy: false, fire: 0 }).fire);
