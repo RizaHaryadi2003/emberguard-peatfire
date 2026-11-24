@@ -52,7 +52,7 @@ MODUL  13 modul dalam 5 bagian
    │
    ├─ 4 · Dampak      Gudang Karbon          apa yang lepas ke udara     ✅
    │                  Kabut Asap             apa yang kita hirup         ✅
-   │                  Yang Hilang dari Hutan apa yang tidak kembali      ⏳
+   │                  Suksesi Gagal          apa yang tidak kembali      ⏳
    │
    └─ 5 · Mencegah    Membasahi Kembali      sekat kanal, sumur bor      ⏳
                       Tanpa Api              membuka lahan tanpa bakar   ⏳
@@ -444,7 +444,7 @@ dalam beberapa dasawarsa, gambutnya tidak.
 | 02 Jendela Pontianak | Geser ISPU sampai Berbahaya, buka 8 & 27 Agustus 2026 | Kota hilang di balik kabut jingga; kategori dan anjuran resmi | ISPU 88 → 312; ISPA ±300/hari |
 | 03 Satu Tarikan Napas | Coba empat masker | Butir tertahan, menembus kain, atau lolos lewat celah | Kain 71, medis 53, N95 rapat 6 dari 100 |
 
-#### 3.10 Yang Hilang dari Hutan ⏳
+#### 3.10 Suksesi Gagal ⏳ (dulu "Yang Hilang dari Hutan")
 
 Belum ada acuan. Calon sumber lokal: Faradiba dkk. (2022), Rasau Jaya,
 Kubu Raya (36 jenis di hutan utuh vs 8 jenis di bekas terbakar); lihat
@@ -607,7 +607,7 @@ dokumen acuan masing-masing modul.
 | 2 | **Musim Api** | ✅ dibangun 19 November 2026; menunggu pemeriksaan tampilan |
 | 3 | Forensik Api | ✅ dibangun 24 November 2026; menunggu pemeriksaan pengguna |
 | 4 | Bagian Mencegah (3 modul) | ⏳ cari acuan; menutup alur cerita skripsi berjudul *pencegahan* |
-| 5 | Kabut Asap ✅ (24 November 2026); Yang Hilang dari Hutan | ⏳ cari acuan |
+| 5 | Kabut Asap ✅ (24 November 2026); Suksesi Gagal | ⏳ cari acuan |
 | 6 | Kuis (utama + cek singkat) | ⏳ celah terbesar terhadap rumusan masalah |
 | 7 | Simulasi | ⏳ paling besar; kerjakan terakhir |
 

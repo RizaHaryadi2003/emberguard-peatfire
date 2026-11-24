@@ -70,7 +70,7 @@ hanya masker yang rapat ke wajah yang benar-benar menahannya.*
 **Arahan terakhir:** "Saat ISPU berbahaya, anjurannya tetap di dalam ruangan.
 Bila harus keluar, pakai masker yang rapat ke wajah. Asap ini datang dari
 gambut yang terbakar, dan hanya berhenti bila gambutnya tidak terbakar."
-→ panah ke Modul Yang Hilang dari Hutan.
+→ panah ke Modul Suksesi Gagal.
 
 ## 5. Model (`lib/model/haze.ts`)
 
