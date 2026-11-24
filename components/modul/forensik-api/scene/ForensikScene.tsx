@@ -43,10 +43,12 @@ const STAGES = {
     center: new THREE.Vector3(0, -0.35, 0),
   },
   map: {
-    pose: { pos: [0, 7.6, 4.4] as [number, number, number], target: [0, 0, 0] as [number, number, number] },
-    halfW: 3.2,
-    halfH: 2.15,
-    center: new THREE.Vector3(0, 0, 0.15),
+    // Lebih landai daripada peta datar, supaya dinding bongkahan di bawah
+    // peta ikut terlihat dan peta mengisi tinggi bingkai seperti petak babak 01.
+    pose: { pos: [0, 5.4, 6.6] as [number, number, number], target: [0, 0, 0] as [number, number, number] },
+    halfW: 3.25,
+    halfH: 2.2,
+    center: new THREE.Vector3(0, -0.72, 0.25),
   },
 } as const;
 

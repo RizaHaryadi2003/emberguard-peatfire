@@ -240,9 +240,6 @@ export default function ForensikModule() {
                 <InspectCard part={inspect} onClose={() => setInspect(null)} />
               </div>
             )}
-            <p className="pointer-events-none absolute inset-x-0 top-0 hidden text-right text-[10px] text-white/50 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] sm:block">
-              {act === 0 ? FORENSIK_TEXT.plotNote : `${FORENSIK_TEXT.cellScale} · ${FORENSIK_TEXT.illustrative}`}
-            </p>
           </>
         }
         controls={
@@ -409,6 +406,7 @@ export default function ForensikModule() {
                       <Legend color="#ff6f1c" glow label={FORENSIK_TEXT.hot} />
                       <Legend color="#2a221c" label={FORENSIK_TEXT.scar} />
                     </div>
+                    <p className="mt-2 text-[10px] leading-snug text-white/45">{FORENSIK_TEXT.cellScale}</p>
                   </section>
                 )}
                 {shown("share") && (
@@ -436,6 +434,7 @@ export default function ForensikModule() {
                       <BurnDots lit={burnsLit} burning={burning} />
                     </div>
                     <p className="mt-2 text-[11px] tabular-nums text-white/70">{FORENSIK_TEXT.tally(tally.lit, tally.out1Day, tally.escaped)}</p>
+                    <p className="mt-2 border-t border-white/10 pt-2 text-[10px] leading-snug text-white/45">{FORENSIK_TEXT.cellScale}</p>
                   </section>
                 )}
                 {shown("why") && (

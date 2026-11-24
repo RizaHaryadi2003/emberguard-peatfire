@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { Html, useTexture } from "@react-three/drei";
 import { CASE_IGNITION, GRID_H, GRID_W, isCanal, landAt, type Land } from "@/lib/model/ignition";
 import { CASE_FIRE, FORENSIK_TEXT, LAND_LABEL, type InspectPart } from "@/config/modul/forensik-api";
 import type { SceneState } from "@/components/modul/anatomi/scene/sceneState";
 import { createSmokeTexture } from "@/components/modul/shared/scene/proceduralTextures";
-import type { Quality } from "@/components/modul/shared/scene/dioramaConstants";
+import { PEAT_LAYER_TINT, type Quality } from "@/components/modul/shared/scene/dioramaConstants";
 import { burnsAt, cellIndex, fireAt, type CellFire } from "../fireView";
 import type { BurnAnim, MapPicker } from "./ForensikScene";
 
@@ -26,7 +26,7 @@ const TILE_H = 0.1;
 const RIVER_TOP = 0.035;
 
 /** Celah antarkotak, supaya peta terbaca sebagai kisi titik api satelit. */
-const GAP = 0.02;
+const GAP = 0.014;
 
 const LAND_COLOR: Record<Land, string> = {
   terbuka: "#a08d5c",
@@ -45,6 +45,23 @@ const HIGHLIGHT_COLOR = "#ffffff";
 
 /** Jumlah gumpal asap di atas kotak yang panas, menurut mutu grafis. */
 const SMOKE = { high: 36, low: 16 } as const;
+
+/**
+ * Lapisan dinding bongkahan di bawah peta, dari atas ke bawah: tebalnya di
+ * adegan (m). Hanya rupa, supaya peta terbaca sebagai sepotong lahan gambut
+ * yang sama dengan petak babak 01 — bukan skala kedalaman sungguhan (peta ini
+ * 24 km lebarnya).
+ */
+const WALL_LAYERS: { id: "fibrik" | "hemik" | "saprik" | "mineral"; h: number }[] = [
+  { id: "fibrik", h: 0.3 },
+  { id: "hemik", h: 0.4 },
+  { id: "saprik", h: 0.45 },
+  { id: "mineral", h: 0.3 },
+];
+
+/** Lebar dan dalam bongkahan (m): sedikit lebih besar dari peta, menjadi bingkai tanah. */
+const BLOCK_W = GRID_W * S + 0.06;
+const BLOCK_D = GRID_H * S + 0.06;
 
 /** Letak label tiap bagian peta (petak, boleh pecahan). */
 const LABELS: { part: InspectPart; x: number; y: number }[] = [
@@ -431,6 +448,7 @@ export default function LandscapeMap({
 
   return (
     <group ref={groupRef}>
+      <PeatWalls />
       <instancedMesh ref={tilesRef} args={[res.tileGeo, res.tileMat, res.n]} castShadow receiveShadow />
       <mesh geometry={res.canalGeo} material={res.canalMat} receiveShadow />
       <instancedMesh ref={scarRef} args={[res.flatGeo, res.scarMat, res.n]} frustumCulled={false} />
@@ -463,5 +481,46 @@ export default function LandscapeMap({
         );
       })}
     </group>
+  );
+}
+
+/**
+ * Dinding bongkahan di bawah peta: empat lapisan gambut dengan tekstur yang
+ * sama seperti bongkahan Modul Anatomi, sehingga peta tampak sebagai
+ * sepotong lahan yang diangkat dari tanah, bukan papan datar.
+ */
+function PeatWalls() {
+  const maps = useTexture(WALL_LAYERS.map((l) => `/textures/gambut/${l.id}_color.webp`));
+  const layers = useMemo(() => {
+    let top = 0;
+    return WALL_LAYERS.map((l, i) => {
+      const tex = maps[i].clone();
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.repeat.set(BLOCK_W / 1.1, l.h / 1.1);
+      tex.needsUpdate = true;
+      const [r, g, b] = PEAT_LAYER_TINT[l.id];
+      const mat = new THREE.MeshStandardMaterial({ map: tex, color: new THREE.Color(r, g, b), roughness: 0.95 });
+      const geo = new THREE.BoxGeometry(BLOCK_W, l.h, BLOCK_D);
+      const y = top - l.h / 2;
+      top -= l.h;
+      return { id: l.id, tex, mat, geo, y };
+    });
+  }, [maps]);
+  useEffect(
+    () => () =>
+      layers.forEach((l) => {
+        l.tex.dispose();
+        l.mat.dispose();
+        l.geo.dispose();
+      }),
+    [layers],
+  );
+  return (
+    <>
+      {layers.map((l) => (
+        <mesh key={l.id} geometry={l.geo} material={l.mat} position={[0, l.y - 0.001, 0]} castShadow receiveShadow />
+      ))}
+    </>
   );
 }

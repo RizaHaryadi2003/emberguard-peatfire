@@ -61,9 +61,9 @@ const OPEN_VS_FOREST = Math.round(IGNITION_DENSITY.terbuka / IGNITION_DENSITY.hu
 export const ESCAPED_BURN_NO = BURNS.findIndex((b) => b.escaped) + 1;
 
 export const FORENSIK_HOOK: ShellHook = {
-  setup: "Agustus 2026. Enam bidang lahan gambut terbakar di Pontianak Utara dan Pontianak Tenggara.",
-  question: "Gambut tidak bisa menyala sendiri. Lalu dari mana apinya?",
-  cta: "Mulai penyelidikan",
+  setup: "Agustus 2026. Enam lahan gambut di Pontianak terbakar.",
+  question: "Dari mana apinya?",
+  cta: "Mulai menyelidik",
   scrollHint: "atau gulir ke bawah",
 };
 
@@ -144,7 +144,7 @@ export const FORENSIK_TEXT = {
   rewind: "Putar waktu",
   dayValue: (d: number) => (d === 0 ? "hari ke-0 · titik sulut" : `hari ke-${d}`),
   cellsBurned: (n: number) => `${n} km² terbakar`,
-  cellScale: "1 kotak = 1 km², sebesar satu titik api satelit",
+  cellScale: "1 kotak = 1 km², sebesar satu titik api satelit. Lanskapnya contoh.",
   burn: "Nyalakan api",
   burnNo: (i: number, n: number) => `Api ${i} dari ${n}`,
   burnOut: (days: number) => (days === 1 ? "padam dalam sehari" : `padam setelah ${days} hari`),
@@ -159,12 +159,10 @@ export const FORENSIK_TEXT = {
   dragHint: "Seret untuk memutar · klik bagian peta untuk penjelasannya",
   close: "Tutup",
   guideCount: (i: number, n: number) => `${i} / ${n}`,
-  illustrative: "Lanskap ini contoh, bukan peta tempat sungguhan.",
   ignitionMark: "Titik sulut",
   hot: "Masih panas",
   scar: "Sudah padam",
   untried: "—",
-  plotNote: "Petak gambut 4 m, satu bara seukuran puntung",
   burning: "Api sedang menyala…",
   allBurnt: "Kesepuluh api sudah dinyalakan",
   burnsTitle: "Sepuluh api pembersih lahan",
