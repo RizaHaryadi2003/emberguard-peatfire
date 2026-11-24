@@ -89,7 +89,7 @@ describe("letak cek singkat", () => {
     // Bukan modul terakhir bagiannya.
     expect(partCheckFor("/modul/sekitarmu")).toBeNull();
     expect(partCheckFor("/modul/kanal")).toBeNull();
-    // Bara modul terakhir bagian Api, tetapi Forensik Api belum ada.
+    // Bagian Api sudah lengkap, tetapi soal cek singkatnya belum ditulis.
     expect(partCheckFor("/modul/bara")).toBeNull();
     expect(partCheckFor("/modul/karbon")).toBeNull();
   });

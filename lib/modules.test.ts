@@ -25,9 +25,10 @@ describe("daftar modul", () => {
     // Tujuan panah lanjut babak terakhir (NextModuleAdvance).
     expect(nextAvailableModule("/modul/anatomi")?.href).toBe("/modul/hutan-rawa");
     expect(nextAvailableModule("/modul/bara")?.href).toBe("/modul/karbon");
-    // Sesudah Musim Api ada Forensik Api yang belum dibuat.
-    expect(nextModule("/modul/musim-api")?.available).toBe(false);
-    expect(nextAvailableModule("/modul/musim-api")?.href).toBe("/modul/bara");
+    // Sesudah Musim Api langsung Forensik Api, lalu Bara.
+    expect(nextModule("/modul/musim-api")?.available).toBe(true);
+    expect(nextAvailableModule("/modul/musim-api")?.href).toBe("/modul/forensik-api");
+    expect(nextAvailableModule("/modul/forensik-api")?.href).toBe("/modul/bara");
   });
 
   it("menolak alamat yang tidak terdaftar", () => {

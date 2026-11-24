@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   birdRate,
+  forensikMix,
   crackleRate,
   hutanRawaMix,
   kanalMix,
@@ -38,6 +39,12 @@ describe("laju peristiwa", () => {
 });
 
 describe("racikan tiap modul", () => {
+  it("forensik api: angin terdengar saat dinyalakan, api mengikuti kotak panas", () => {
+    expect(forensikMix({ act: 0, windy: true, fire: 0 }).wind).toBeGreaterThan(forensikMix({ act: 0, windy: false, fire: 0 }).wind);
+    expect(forensikMix({ act: 1, windy: false, fire: 1 }).fire).toBeGreaterThan(forensikMix({ act: 1, windy: false, fire: 0 }).fire);
+    inRange(forensikMix({ act: 2, windy: false, fire: 5 }));
+  });
+
   it("hutan gambut: aman terdengar hidup, bahaya terdengar api", () => {
     const safe = peatForestMix(0);
     const burning = peatForestMix(1);

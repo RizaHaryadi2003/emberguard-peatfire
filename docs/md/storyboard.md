@@ -47,7 +47,7 @@ MODUL  13 modul dalam 5 bagian
    ├─ 2 · Kering      Kanal & Pengeringan    mengapa jadi kering         ✅
    │                  Musim Api              kapan paling rawan          ✅
    │
-   ├─ 3 · Api         Forensik Api           di mana apinya lahir        ⏳
+   ├─ 3 · Api         Forensik Api           di mana apinya lahir        ✅
    │                  Bara di Bawah Tanah    bagaimana ia terbakar       ✅
    │
    ├─ 4 · Dampak      Gudang Karbon          apa yang lepas ke udara     ✅
@@ -353,9 +353,9 @@ dan Modul Kanal.
 
 ### Bagian 3 · Api
 
-#### 3.6 Forensik Api ⏳
+#### 3.6 Forensik Api ✅
 
-`/modul/forensik-api` (belum dibangun) · acuan: `acuan-modul/acuan-modul-forensik-api.md`
+`/modul/forensik-api` · acuan: `acuan-modul/acuan-modul-forensik-api.md`
 
 - **Hook:** "Agustus 2026. Enam bidang lahan gambut terbakar di Pontianak Utara
   dan Pontianak Tenggara." → "Gambut tidak bisa menyala sendiri. Lalu dari mana apinya?"
@@ -365,6 +365,10 @@ dan Modul Kanal.
   lahir di lahan terbuka, dan satu api yang lolos menjadi kebakaran hutan.*
 - **Acuan:** Cattau dkk. (2016), Kalimantan Tengah; Lin dkk. (2024).
 - **Pola cerita:** pembaca menjadi penyelidik yang menelusuri api mundur.
+- **Panggung:** babak 01 memakai bongkahan gambut Modul Anatomi sebagai petak
+  tempat bara dijatuhkan; babak 02–03 memakai peta lanskap 3D dari atas,
+  24 × 16 kotak, satu kotak = 1 km² (sebesar satu titik api satelit). Kotak
+  panas berpijar jingga, kotak yang sudah padam menghitam.
 
 | Babak | Tugas | Yang terlihat | Angka |
 |---|---|---|---|
@@ -594,7 +598,7 @@ dokumen acuan masing-masing modul.
 |---|---|---|
 | 1 | Bagian Gambut (Sekitarmu, Anatomi, Hutan Rawa), Kanal, Bara, Karbon | ✅ selesai |
 | 2 | **Musim Api** | ✅ dibangun 19 November 2026; menunggu pemeriksaan tampilan |
-| 3 | Forensik Api | ⏳ acuan dan teks ditulis 24 November 2026; animasi menunggu persetujuan |
+| 3 | Forensik Api | ✅ dibangun 24 November 2026; menunggu pemeriksaan pengguna |
 | 4 | Bagian Mencegah (3 modul) | ⏳ cari acuan; menutup alur cerita skripsi berjudul *pencegahan* |
 | 5 | Kabut Asap, Yang Hilang dari Hutan | ⏳ cari acuan |
 | 6 | Kuis (utama + cek singkat) | ⏳ celah terbesar terhadap rumusan masalah |

@@ -61,7 +61,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     title: "Api",
     lead: "Dari mana api datang, dan mengapa ia sulit dipadamkan.",
     modules: [
-      { href: null, title: "Forensik Api", caption: "Merekonstruksi titik sulut kebakaran gambut" },
+      { href: "/modul/forensik-api", title: "Forensik Api", caption: "Merekonstruksi titik sulut kebakaran gambut" },
       { href: "/modul/bara", title: "Bara di Bawah Tanah", caption: "Api yang merambat tanpa terlihat" },
     ],
   },

@@ -155,3 +155,15 @@ export function karbonMix(s: { burning: number; burnt: boolean; recovery: number
     fire: Math.max(burning, 0.08 * (1 - life)),
   };
 }
+
+/**
+ * Modul Forensik Api. Babak 01: lahan terbuka yang sepi; angin terdengar saat
+ * dinyalakan, dan derak kecil saat bara masuk ke gambut. Babak 02–03: lanskap
+ * dari atas; api terdengar sebanding dengan kotak yang masih panas (`fire`).
+ */
+export function forensikMix(s: { act: number; windy: boolean; fire: number }): AmbientMix {
+  const fire = clamp01(s.fire);
+  if (s.act === 0)
+    return { wind: s.windy ? 0.75 : 0.2, water: 0, rain: 0, insects: 0.35, frogs: 0, birds: 0.2, fire: fire * 0.35 };
+  return peatForestMix(fire * 0.8);
+}

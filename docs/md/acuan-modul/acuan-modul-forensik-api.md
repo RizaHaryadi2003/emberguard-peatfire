@@ -1,9 +1,10 @@
 # Acuan Modul 06 · Forensik Api
 
-Status: **acuan dan teks layar ditulis** (24 November 2026). Judul semula
+Status: **dibangun** (24 November 2026), `/modul/forensik-api`. Judul semula
 "Siapa yang Menyalakan?" diganti pengguna menjadi **Forensik Api**. Teks:
 `config/modul/forensik-api.ts`; model: `lib/model/ignition.ts` (+ uji).
-Animasi belum dibangun, menunggu persetujuan teks.
+Adegan: `components/modul/forensik-api/` (petak gambut babak 01, peta
+lanskap babak 02–03; keadaan kotak api diuji di `fireView.test.ts`).
 Nomor modul mengikuti `config/modules-content.ts` (Bagian 3 · Api, modul
 pertama; modul kedua adalah Bara di Bawah Tanah).
 
@@ -170,4 +171,11 @@ itulah awal asap. Di Pontianak, membuka lahan dengan membakar dilarang." (F)
   sehari (= 80 %, A §3.1), 1 padam setelah 2 hari, 1 lolos ke hutan dan
   menyala 7 hari (A Tabel 4: 6,7 hari; lolos ±10 %, A Tabel 3). Api yang lolos
   diletakkan ketujuh agar pembaca melihat api padam lebih dulu.
-- Diuji di `lib/model/ignition.test.ts` (19 uji).
+- **Letak sepuluh api (babak 03):** lahan terbuka satu sampai dua kotak dari
+  tepi hutan (**ilustratif**). Api yang lolos menjalar dengan aturan yang sama
+  seperti kasus babak 02 selama 7 hari (benih 7), dan masuk ke hutan.
+- **Tampilan saja (ilustratif, tanpa angka di layar):** kotak terlihat panas
+  selama 2 hari sesudah api tiba, lalu menjadi bekas terbakar; rupa basah,
+  lembap, dan kering petak babak 01 memakai letak muka air 3, 28, dan 80 cm
+  hanya untuk warna, tidak disambungkan ke kadar air Lin dkk. (lihat §3).
+- Diuji di `lib/model/ignition.test.ts` (21 uji).

@@ -247,3 +247,33 @@ export function burnTally(n: number): { lit: number; out1Day: number; escaped: n
     escaped: done.filter((b) => b.escaped).length,
   };
 }
+
+/**
+ * Letak kesepuluh api pembersih lahan, berurutan seperti `BURNS`: semuanya
+ * di lahan terbuka satu sampai dua sel dari tepi hutan, di baris yang
+ * berbeda-beda. **Ilustratif**, hanya untuk menempatkan api di peta.
+ */
+export const BURN_SITES: readonly { x: number; y: number }[] = [
+  { x: 13, y: 1 },
+  { x: 12, y: 3 },
+  { x: 13, y: 13 },
+  { x: 13, y: 10 },
+  { x: 14, y: 2 },
+  { x: 12, y: 12 },
+  { x: 15, y: 8 },
+  { x: 14, y: 14 },
+  { x: 13, y: 4 },
+  { x: 12, y: 0 },
+];
+
+/** Benih acak jalannya api yang lolos (dipilih supaya api menyeberang ke hutan). */
+const ESCAPE_SEED = 7;
+
+/**
+ * Jalannya api yang lolos: menjalar dari petaknya selama `BURNS[i].days`
+ * hari dengan aturan yang sama seperti kasus babak 02.
+ */
+export function escapedFire(): Detection[] {
+  const i = BURNS.findIndex((b) => b.escaped);
+  return spreadFire(BURN_SITES[i], BURNS[i].days, ESCAPE_SEED);
+}

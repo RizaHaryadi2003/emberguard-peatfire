@@ -136,7 +136,10 @@ export const FORENSIK_TEXT = {
   tried: (n: number) => `${n} dari 6 percobaan`,
   table: "Catatan percobaan",
   guessTitle: "Menurutmu, api ini lahir di mana?",
+  guessLocked: (land: string) => `Tebakanmu: ${land.toLowerCase()}. Buktikan dengan memutar waktu mundur.`,
   guessRight: "Tebakanmu tepat.",
+  caseFound: `Api ini lahir di lahan terbuka di tepi kanal, ${CASE_KM} km dari kampung.`,
+  burnedSoFar: "terbakar sampai hari ini",
   guessWrong: (land: string) => `Ternyata bukan di ${land.toLowerCase()}.`,
   rewind: "Putar waktu",
   dayValue: (d: number) => (d === 0 ? "hari ke-0 · titik sulut" : `hari ke-${d}`),
@@ -148,6 +151,7 @@ export const FORENSIK_TEXT = {
   burnEscaped: (days: number) => `lolos ke hutan, menyala ${days} hari`,
   tally: (lit: number, out: number, escaped: number) => `${lit} api · ${out} padam sehari · ${escaped} lolos`,
   share: "Di mana api lahir · Kalimantan, 2000–2010",
+  shareShort: `Kalimantan, 2000–2010: ${pct(IGNITION_SHARE.terbuka)} api lahir di lahan terbuka, ${pct(IGNITION_SHARE.kebun)} di kebun sawit, ${pct(IGNITION_SHARE.hutan)} di hutan.`,
   nearVillage: `${pct(NEAR_VILLAGE_SHARE)} titik sulut berada dalam 5 km dari kampung`,
   forestFromOpen: `${pct(FOREST_FIRE_FROM_OPEN)} kebakaran besar di hutan berawal dari lahan terbuka`,
   why: "Mengapa begitu",
@@ -156,6 +160,17 @@ export const FORENSIK_TEXT = {
   close: "Tutup",
   guideCount: (i: number, n: number) => `${i} / ${n}`,
   illustrative: "Lanskap ini contoh, bukan peta tempat sungguhan.",
+  ignitionMark: "Titik sulut",
+  hot: "Masih panas",
+  scar: "Sudah padam",
+  untried: "—",
+  plotNote: "Petak gambut 4 m, satu bara seukuran puntung",
+  burning: "Api sedang menyala…",
+  allBurnt: "Kesepuluh api sudah dinyalakan",
+  burnsTitle: "Sepuluh api pembersih lahan",
+  burnWhy: `Kebanyakan api pembersih lahan padam sendiri di petaknya. Yang berbahaya adalah sedikit api yang lolos: ia menyala ±${ESCAPE_TIMES} kali lebih lama, menyeberang ke hutan, dan di sana menjadi kebakaran besar.`,
+  burnWhyWait: "Nyalakan api satu per satu, lalu lihat berapa yang tetap di petaknya.",
+  sparkWait: "Pilih keadaan gambut dan angin, lalu jatuhkan bara.",
 } as const;
 
 /**
@@ -280,6 +295,20 @@ export const FORENSIK_GUIDE: readonly (readonly GuideStep[])[] = [
     },
   ],
 ];
+
+/**
+ * Arahan ke berapa (0 = pertama) tiap kartu kolom kanan mulai tampil, per
+ * babak. Kartu muncul tepat saat arahan yang menunjuknya tiba, seperti
+ * modul lain, supaya pembaca tidak disuguhi semuanya sekaligus.
+ *   babak 01: catatan percobaan, penjelasan
+ *   babak 02: hari dan luas terbakar, porsi titik sulut, ajakan klik peta
+ *   babak 03: hitungan api, penjelasan
+ */
+export const FLOOR_FROM = [
+  { table: 1, why: 2 },
+  { readout: 0, share: 4, invite: 5 },
+  { tally: 1, why: 5 },
+] as const;
 
 /**
  * Arahan yang sedang aktif. Syarat selesai dibaca dari nilai terjauh yang

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALWAYS_IGNITES_MC,
   BURNS,
+  BURN_SITES,
   CASE_DAYS,
   CASE_IGNITION,
   ESCAPED_DAYS,
@@ -16,6 +17,7 @@ import {
   burnedByLand,
   detectionsUntil,
   dropSpark,
+  escapedFire,
   ignites,
   kmFromVillage,
   landAt,
@@ -137,5 +139,19 @@ describe("sepuluh api pembersih lahan babak 03", () => {
   it("ringkasan dibatasi jumlah api yang ada", () => {
     expect(burnTally(99).lit).toBe(BURNS.length);
     expect(burnTally(-1).lit).toBe(0);
+  });
+});
+
+describe("sepuluh api pembersih lahan di peta", () => {
+  it("tiap api punya satu letak di lahan terbuka", () => {
+    expect(BURN_SITES).toHaveLength(BURNS.length);
+    for (const s of BURN_SITES) expect(landAt(s.x, s.y)).toBe("terbuka");
+  });
+
+  it("api yang lolos menyeberang ke hutan dan menyala sepanjang umurnya", () => {
+    const fire = escapedFire();
+    const escaped = BURNS.find((b) => b.escaped)!;
+    expect(burnedByLand(fire).hutan).toBeGreaterThan(0);
+    expect(Math.max(...fire.map((d) => d.day))).toBe(escaped.days);
   });
 });
