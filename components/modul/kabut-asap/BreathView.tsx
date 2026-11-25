@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MASKS, breath, type Fate, type Mask } from "@/lib/model/haze";
 import { KABUT_TEXT } from "@/config/modul/kabut-asap";
+import LungArt from "./LungArt";
+import { BRONCHI, CARINA, SACS, TRACHEA } from "./lungGeometry";
 
-// Babak 03 · Satu Tarikan Napas, digambar 2D di atas ilustrasi sistem
-// pernapasan dari Wikipedia (LadyofHats, domain publik; lihat
-// public/images/kabut-asap/SUMBER.md): kepala dalam potongan samping, tekak,
-// trakea, bronkus, paru-paru, dan sisipan alveolus yang diperbesar.
+// Babak 03 · Satu Tarikan Napas, digambar 2D. Kepala dalam potongan samping,
+// rongga hidung, mulut, dan tekak diambil dari ilustrasi sistem pernapasan
+// Wikipedia (LadyofHats, domain publik; lihat public/images/kabut-asap/
+// SUMBER.md), dipotong sebatas leher. Trakea, bronkus, paru-paru, dan lensa
+// alveolus digambar ulang sebagai vektor (LungArt) agar menyatu dengan latar
+// gelap.
 //
 // Seratus butir asap melayang di udara di depan wajah. Saat pembaca menarik
 // napas, tiap butir menjalani nasibnya dari model (lib/model/haze.ts, Kodros
@@ -36,28 +40,16 @@ const P = (x: number, y: number): Pt => ({ x, y });
 const NOSE = [P(286, 182), P(318, 170), P(372, 160), P(420, 188)];
 /** Rongga mulut: dari bibir di atas lidah ke belakang. */
 const MOUTH = [P(306, 238), P(340, 226), P(392, 222), P(424, 236)];
-/** Tekak, pangkal tenggorok, trakea, sampai karina. */
-const THROAT = [
-  P(430, 262),
-  P(424, 300),
-  P(414, 340),
-  P(414, 380),
-  P(424, 420),
-  P(432, 470),
-  P(440, 522),
-];
+/** Tekak dan pangkal tenggorok, lalu trakea sampai karina. */
+const THROAT = [P(430, 262), P(424, 300), P(414, 340), ...TRACHEA, CARINA];
 /** Bronkus utama kanan (kiri gambar) dan kiri (kanan gambar). */
-const BRONCHUS_R = [P(426, 545), P(408, 575), P(395, 610)];
-const BRONCHUS_L = [P(462, 545), P(495, 565), P(520, 592)];
-/** Wilayah tujuan di dalam paru-paru: elips kasar tiap paru. */
-const LUNG_R = { cx: 330, cy: 600, rx: 72, ry: 125 };
-const LUNG_L = { cx: 560, cy: 600, rx: 72, ry: 125 };
-/** Gugus alveolus pada sisipan, tempat butir terlihat mengendap. */
-const ALVEOLI = [
-  { cx: 662, cy: 140, r: 40 },
-  { cx: 776, cy: 120, r: 46 },
-  { cx: 800, cy: 222, r: 44 },
-];
+const BRONCHUS_R = BRONCHI.R.slice(1);
+const BRONCHUS_L = BRONCHI.L.slice(1);
+/** Wilayah tujuan di dalam paru-paru: elips yang muat di dalam tiap paru. */
+const LUNG_R = { cx: 338, cy: 650, rx: 68, ry: 110 };
+const LUNG_L = { cx: 580, cy: 650, rx: 48, ry: 108 };
+/** Ilustrasi Wikipedia hanya dipakai sebatas kepala dan leher. */
+const HEAD_CLIP = { x0: 255, x1: 500, y1: 392 };
 /** Udara di depan wajah, tempat butir melayang. */
 const AIR = { x0: 22, x1: 248, y0: 70, y1: 470 };
 
@@ -225,15 +217,15 @@ export default function BreathView({
         ...(lungR ? BRONCHUS_R : BRONCHUS_L),
         target,
       ]);
-      const alv = ALVEOLI[i % ALVEOLI.length];
+      const sac = SACS[Math.floor(hash(i * 2.2) * SACS.length)];
       const b = hash(i * 9.9) * Math.PI * 2;
-      const br = Math.sqrt(hash(i * 3.1)) * alv.r * 0.85;
+      const br = Math.sqrt(hash(i * 3.1)) * sac.r * 0.7;
       return {
         home,
         outside,
         route: fate === "tertahan" && mask !== "tanpa" ? null : route,
         delay: hash(i * 9.1) * 0.14,
-        deposit: P(alv.cx + Math.cos(b) * br, alv.cy + Math.sin(b) * br),
+        deposit: P(sac.x + Math.cos(b) * br, sac.y + Math.sin(b) * br),
         size: 0.8 + hash(i * 4.6) * 0.5,
       };
     });
@@ -527,9 +519,23 @@ export default function BreathView({
               top: box.oy,
               width: IMG.w * box.s,
               height: IMG.h * box.s,
+              clipPath: `inset(0 ${(1 - HEAD_CLIP.x1 / IMG.w) * 100}% 0 ${(HEAD_CLIP.x0 / IMG.w) * 100}%)`,
+              // Leher memudar ke trakea buatan, tanpa tepi potong yang keras.
+              maskImage: `linear-gradient(to bottom, #000 ${(HEAD_CLIP.y1 / IMG.h) * 100 - 3}%, transparent ${(HEAD_CLIP.y1 / IMG.h) * 100}%)`,
             }}
             draggable={false}
           />
+          <div
+            className="pointer-events-none absolute"
+            style={{
+              left: box.ox,
+              top: box.oy,
+              width: IMG.w * box.s,
+              height: IMG.h * box.s,
+            }}
+          >
+            <LungArt breathId={breathId} breathSec={BREATH_SEC} />
+          </div>
           {/* Label hanya bila gambar cukup besar; di ponsel saling bertumpuk. */}
           {box.s >= 0.45 && (
             <>
@@ -541,13 +547,13 @@ export default function BreathView({
               </p>
               <p
                 className="pointer-events-none absolute text-[10px] font-medium uppercase tracking-[0.18em] text-[#ffb0b0]/80"
-                style={at(660, 470)}
+                style={at(668, 690)}
               >
                 {KABUT_TEXT.lungs}
               </p>
               <p
                 className="pointer-events-none absolute text-[10px] font-medium uppercase tracking-[0.18em] text-white/55"
-                style={at(590, 340)}
+                style={at(628, 338)}
               >
                 {KABUT_TEXT.alveoliZoom}
               </p>

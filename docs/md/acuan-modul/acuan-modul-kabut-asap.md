@@ -116,6 +116,16 @@ garis penunjuk, dan kotak labelnya dibuang; lihat
 `public/images/kabut-asap/SUMBER.md`. (Percobaan model paru-paru 3D sempat
 dibuat lalu dibatalkan pengguna pada hari yang sama.)
 
+Pembaruan 25 November 2026: ilustrasi Wikipedia kini hanya dipakai sebatas
+kepala dan leher (rongga hidung, mulut, tekak). Trakea, bronkus, paru-paru,
+diafragma, dan sisipan alveolus digambar ulang sebagai vektor bernada lembut
+(`LungArt.tsx`, `lungGeometry.ts`) agar menyatu dengan latar gelap: paru kanan
+tiga lobus, paru kiri dua lobus dengan lekuk jantung, trakea 17 cincin
+tulang rawan (dalam rentang 16–20), pohon bronkus 6–7 generasi pertama saja
+(aslinya ±23), dan lensa bulat berisi gugus kantong alveolus berbalut
+kapiler. Bentuknya disederhanakan, bukan atlas. Paru-paru sedikit mengembang
+selama tarikan napas (ilustratif).
+
 Di atas ilustrasi, kanvas 2D menggambar masker di wajah, butir asap, dan
 lintasannya. Yang **ilustratif**:
 
