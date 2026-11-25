@@ -9,11 +9,11 @@
  *    Page dkk. (2008)     — pakis, rumput, dan teki; hampir mustahil kembali
  *    Faradiba dkk. (2022) — Rasau Jaya, Kubu Raya (pembuka)
  *  Angka hitungan dibaca langsung dari lib/model/succession.ts.
- *  DRAF TEKS: menunggu dibaca pengguna sebelum animasi dibuat.
  * ============================================================================
  */
 
 import type { ShellAct, ShellHook } from "@/components/modul/shared/ActModuleShell";
+import { guideLevel as sharedGuideLevel, type GuideStep as SharedGuideStep } from "@/lib/guide";
 import {
   RASAU_JAYA,
   REBURNED_SHARE,
@@ -31,7 +31,7 @@ const num = (v: number) => v.toLocaleString("id-ID");
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
 export const SUKSESI_HOOK: ShellHook = {
-  setup: `Rasau Jaya, Kubu Raya. Hutan lindung yang tidak pernah terbakar punya ${RASAU_JAYA.unburned} jenis tumbuhan. Di hutan lindung yang pernah terbakar, tinggal ${RASAU_JAYA.burned}, kebanyakan pakis.`,
+  setup: `Rasau Jaya, Kubu Raya. Hutan yang tak pernah terbakar: ${RASAU_JAYA.unburned} jenis tumbuhan. Yang pernah terbakar: ${RASAU_JAYA.burned}.`,
   question: "Ke mana hutannya pergi?",
   cta: "Mulai survei",
   scrollHint: "atau gulir ke bawah",
@@ -45,15 +45,15 @@ export const SUKSESI_ACTS: readonly ShellAct[] = [
     task: "Berjalan sampai ujung jalur di hutan rawa gambut yang belum pernah terbakar, dan hitung pohonnya.",
     observe: `Satu jalur di hutan utuh berisi sekitar ${treesInTransect(0)} pohon besar dari ${SPECIES_UNBURNED} jenis. Di bawahnya tumbuh sekitar ${num(SEEDLINGS_PER_M2.unburned)} anakan pohon di setiap meter persegi: calon hutan berikutnya.`,
     term: { word: "Transek", meaning: "jalur ukur lurus berukuran tetap tempat peneliti mencatat semua pohon, supaya hutan yang berbeda bisa dibandingkan dengan adil." },
-    hint: "Seret ke kanan untuk berjalan di sepanjang jalur.",
+    hint: "Seret gambar ke kiri, atau geser Jalan, untuk maju di sepanjang jalur.",
     fact: { value: `± ${treesInTransect(0)}`, caption: `pohon besar dalam satu jalur ukur hutan rawa gambut utuh` },
   },
   {
     number: "02",
     title: "Sekali, Dua Kali",
-    body: "Di hutan biasa, sesudah api lewat, biji yang tersimpan di tanah bisa tumbuh menggantikan pohon yang mati. Di gambut, apinya merambat di dalam tanah dan bisa memusnahkan biji itu. Yang menentukan nasib hutan adalah berapa kali api datang sebelum hutan sempat pulih.",
+    body: "Di hutan biasa, biji di dalam tanah bisa tumbuh menggantikan pohon yang mati terbakar. Di gambut, api merambat di dalam tanah dan bisa memusnahkan biji itu. Yang menentukan adalah berapa kali api datang sebelum hutan sempat pulih.",
     task: "Pilih berapa kali lahan ini terbakar, lalu berjalan lagi di jalur yang sama.",
-    observe: `Sesudah sekali terbakar, masih ada sekitar ${treesInTransect(1)} pohon, lebih dari sepertiga. Hutan seperti ini masih bisa pulih dalam beberapa puluh tahun bila tidak terbakar lagi. Sesudah dua kali, tinggal sekitar ${treesInTransect(2)}. Lebih dari itu, hampir tidak ada pohon tersisa: yang tumbuh hanya pakis dan rumput.`,
+    observe: `Sekali terbakar, masih ada sekitar ${treesInTransect(1)} pohon, lebih dari sepertiga: hutan ini masih bisa pulih bila tidak terbakar lagi. Dua kali, tinggal sekitar ${treesInTransect(2)}. Lebih dari itu, hampir tidak ada pohon; yang tumbuh pakis dan rumput.`,
     term: { word: "Suksesi", meaning: "pergantian tumbuhan di lahan terbuka, dari rumput dan semak sampai kembali menjadi hutan. Disebut gagal bila lahan berhenti di pakis dan semak." },
     hint: "Coba keempat pilihan: tidak terbakar sampai lebih dari dua kali.",
     fact: { value: `${treesInTransect(0)} → ${treesInTransect(2)}`, caption: "pohon dalam satu jalur sesudah dua kali terbakar" },
@@ -109,4 +109,70 @@ export const SUKSESI_TEXT = {
   unburned: "Tidak terbakar",
   burned: "Terbakar",
   why: "Mengapa begitu",
+  walk: "Jalan",
+  wait: "Waktu sesudah api",
+  dry: "Kemarau datang",
+  burningNow: "Api menjalar…",
+  fireCount: (n: number) => (n === 0 ? "Belum pernah terbakar" : n >= 3 ? "Terbakar lebih dari dua kali" : `Terbakar ${n === 1 ? "sekali" : "dua kali"}`),
+  species: (n: number) => `${n} jenis pohon`,
+  treesNow: "Pohon hidup di jalur ini",
+  compare: "Hutan utuh dan bekas terbakar",
+  maxFires: "Lahan ini sudah terbakar lebih dari dua kali. Hampir tidak ada pohon yang tersisa untuk dibakar.",
 } as const;
+
+/* ============================================================================
+ *  TUNTUNAN LANGKAH DEMI LANGKAH
+ * ========================================================================== */
+
+export type GuideTarget = "walk" | "figure" | "count" | "fires" | "chart" | "why" | "wait" | "dry" | "seedlings" | "next";
+
+export type GuideState = {
+  /** Jarak terjauh yang sudah ditempuh di babak 01 (m). */
+  maxWalked: number;
+  /** Banyaknya pilihan jumlah kebakaran yang sudah dicoba (babak 02). */
+  firesTried: number;
+  /** Tahun terlama yang sudah ditunggu (babak 03). */
+  maxYears: number;
+  /** Kemarau yang sudah datang di babak 03. */
+  droughts: number;
+};
+
+export type GuideStep = SharedGuideStep<GuideState> & { target: GuideTarget };
+
+export const SUKSESI_GUIDE: readonly (readonly GuideStep[])[] = [
+  [
+    { target: "walk", text: "Kamu berdiri di awal jalur ukur. Seret gambar atau geser Jalan untuk maju.", done: (s) => s.maxWalked >= 40 },
+    { target: "figure", text: "Tiap pohon yang kamu lewati diberi pita jingga: itu tandanya sudah tercatat." },
+    { target: "walk", text: "Teruskan sampai ujung jalur, 400 meter.", done: (s) => s.maxWalked >= TRANSECT.lengthM },
+    { target: "count", text: `Sekitar ${treesInTransect(0)} pohon besar dalam satu jalur. Ingat angka ini.` },
+    { target: "next", text: "Sekarang bandingkan dengan lahan yang pernah terbakar." },
+  ],
+  [
+    { target: "fires", text: "Pilih Sekali: lahan ini terbakar satu kali.", done: (s) => s.firesTried >= 2 },
+    { target: "chart", text: "Lebih dari sepertiga pohon masih hidup. Sekarang coba Dua kali.", done: (s) => s.firesTried >= 3 },
+    { target: "fires", text: "Satu pilihan lagi: lebih dari dua kali.", done: (s) => s.firesTried >= 4 },
+    { target: "why", text: "Yang tumbuh di lahan ini sekarang pakis dan rumput, bukan pohon." },
+    { target: "next", text: "Mengapa api datang lagi? Lanjut ke babak berikutnya." },
+  ],
+  [
+    { target: "wait", text: "Lahan ini baru sekali terbakar. Majukan waktu dan lihat apa yang tumbuh.", done: (s) => s.maxYears >= 3 },
+    { target: "seedlings", text: "Anakan pohon sedikit, karena bijinya ikut terbakar. Pakis tumbuh jauh lebih cepat." },
+    { target: "dry", text: "Sekarang kemarau datang.", done: (s) => s.droughts >= 1 },
+    { target: "figure", text: "Pakis kering menyala dan api menghabisi pohon yang tersisa. Lahan ini kini dua kali terbakar." },
+    {
+      target: "next",
+      text: "Sekali terbakar, hutan masih bisa pulih. Yang membuatnya gagal adalah api yang datang lagi. Lahan bekas terbakar harus dijaga basah dan bebas api.",
+    },
+  ],
+];
+
+/** Arahan ke berapa tiap kartu kolom kanan mulai tampil, per babak. */
+export const FLOOR_FROM = [
+  { count: 0, why: 3 },
+  { chart: 0, why: 1 },
+  { seedlings: 1, why: 3 },
+] as const;
+
+export function guideLevel(act: number, s: GuideState, acked: number): number {
+  return sharedGuideLevel(SUKSESI_GUIDE[act], s, acked);
+}

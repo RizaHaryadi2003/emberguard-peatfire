@@ -72,7 +72,7 @@ export const MODULE_PARTS: readonly ModulePart[] = [
     modules: [
       { href: "/modul/karbon", title: "Gudang Karbon", caption: "Apa yang lepas saat gambut terbakar" },
       { href: "/modul/kabut-asap", title: "Kabut Asap", caption: "Dari lahan yang terbakar ke napas kita" },
-      { href: null, title: "Suksesi Gagal", caption: "Hutan yang tidak tumbuh kembali sesudah api" },
+      { href: "/modul/suksesi-gagal", title: "Suksesi Gagal", caption: "Hutan yang tidak tumbuh kembali sesudah api" },
     ],
   },
   {
