@@ -116,15 +116,23 @@ garis penunjuk, dan kotak labelnya dibuang; lihat
 `public/images/kabut-asap/SUMBER.md`. (Percobaan model paru-paru 3D sempat
 dibuat lalu dibatalkan pengguna pada hari yang sama.)
 
-Pembaruan 25 November 2026: ilustrasi Wikipedia kini hanya dipakai sebatas
-kepala dan leher (rongga hidung, mulut, tekak). Trakea, bronkus, paru-paru,
-diafragma, dan sisipan alveolus digambar ulang sebagai vektor bernada lembut
-(`LungArt.tsx`, `lungGeometry.ts`) agar menyatu dengan latar gelap: paru kanan
-tiga lobus, paru kiri dua lobus dengan lekuk jantung, trakea 17 cincin
-tulang rawan (dalam rentang 16–20), pohon bronkus 6–7 generasi pertama saja
-(aslinya ±23), dan lensa bulat berisi gugus kantong alveolus berbalut
-kapiler. Bentuknya disederhanakan, bukan atlas. Paru-paru sedikit mengembang
-selama tarikan napas (ilustratif).
+Pembaruan 25 November 2026 (atas permintaan pengguna): Babak 03 kini adegan
+3D tanpa kepala, bergaya ilustrasi Wikipedia di atas (bukan gaya realistis
+percobaan 3D pertama): paru-paru merah muda tembus pandang di tengah dan
+pekat di tepi, garis celah antarlobus (kanan tiga lobus, kiri dua lobus
+dengan takik jantung), percabangan bronkus berwarna per lobus (hijau atas,
+kuning tengah, biru bawah) yang dibangun dengan cara mengisi ruang dan hukum
+Murray, trakea putih dengan 17 cincin tulang rawan toska (rentang 16–20),
+diafragma jingga dua kubah, dan sisipan gugus alveolus dengan pembuluh merah
+dan biru. Masker digambar sebagai cangkang melayang di atas pangkal saluran
+napas (mewakili masker di wajah). Gambar Wikipedia tidak lagi dipakai
+langsung (`lung/LungScene.tsx`, `lung/lungShape.ts`, `lung/airwayTree.ts`,
+`lung/surfaceNets.ts`).
+
+Yang ilustratif di adegan 3D: butir asap melayang di seluruh layar di
+sekeliling paru-paru, terisap ke masker saat tarik napas, dan yang lolos
+menyusuri satu jalur bronkus nyata ke ujung yang dipilih acak sehingga
+tersebar di kedua paru-paru; paru-paru mengembang ±4,5 % selama napas.
 
 Di atas ilustrasi, kanvas 2D menggambar masker di wajah, butir asap, dan
 lintasannya. Yang **ilustratif**:
