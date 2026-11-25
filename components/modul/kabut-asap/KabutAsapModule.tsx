@@ -44,7 +44,7 @@ import {
 import MicroscopeView from "./MicroscopeView";
 import WindowView from "./WindowView";
 import { dayPart, formatHour, parseHour } from "@/lib/model/daylight";
-import BreathView, { BREATH_SEC } from "./BreathView";
+import { BREATH_SEC } from "./BreathView";
 
 /** Perbesaran awal mikroskop: rambut baru setipis garis. */
 const START_ZOOM = 12;
@@ -83,7 +83,8 @@ export default function KabutAsapModule() {
   const [hour, setHour] = useState(START_HOUR);
   // Babak 03: masker, napas, dan hasil tiap masker.
   const [mask, setMask] = useState<Mask>("kain");
-  const [breathId, setBreathId] = useState(0);
+  // Nomor tarikan napas; dipakai lagi saat visual Babak 03 kembali.
+  const [, setBreathId] = useState(0);
   const [breathing, setBreathing] = useState(false);
   const [results, setResults] = useState<ReadonlyMap<Mask, number>>(new Map());
   const [lastMask, setLastMask] = useState<Mask | null>(null);
@@ -217,7 +218,9 @@ export default function KabutAsapModule() {
                 </p>
               </>
             )}
-            {act === 2 && <BreathView mask={mask} breathId={breathId} />}
+            {/* Visual Babak 03 sengaja dikosongkan sementara atas permintaan pengguna
+                (paru-paru dirancang ulang nanti); teks, panel masker, dan
+                hasilnya tetap berjalan. Komponen lama: BreathView. */}
             {/* Kartu penjelasan benda mikroskop, hanya di layar < 1024 px. */}
             {act === 0 && scope && (
               <div className="absolute left-0 right-0 top-0 z-20 md:right-auto md:w-[300px] lg:hidden">
