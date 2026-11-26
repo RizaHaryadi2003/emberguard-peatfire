@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { HERO_LOOPS, introScale, LINE_BOX, loopPoints, traceLoop } from "@/lib/heroLines";
+import { afterIntro } from "@/lib/introGate";
 
 /** Warna garis: abu-abu gelap di atas latar polos, putih di atas video. */
 const DARK: [number, number, number] = [58, 57, 54];
@@ -58,9 +59,11 @@ export default function HeroLines({ light }: Props) {
     };
     resize();
 
-    // Skala pembuka (lihat introScale) → 1.
+    // Skala pembuka (lihat introScale) → 1. Bila pembuka situs sedang tayang,
+    // garis baru mulai melebar sesudah pembuka selesai.
     const scale = reduced ? { sx: 1, sy: 1 } : introScale(w, h);
-    const intro = reduced ? null : gsap.to(scale, { sx: 1, sy: 1, delay: 0.5, duration: 1.9, ease: "power3.inOut" });
+    const intro = reduced ? null : gsap.to(scale, { sx: 1, sy: 1, delay: 0.5, duration: 1.9, ease: "power3.inOut", paused: true });
+    const cancelWait = afterIntro(() => intro?.play());
 
     // Campuran warna 0 (gelap) → 1 (putih), mendekati sasaran secara bertahap.
     let mix = lightRef.current ? 1 : 0;
@@ -103,9 +106,9 @@ export default function HeroLines({ light }: Props) {
     const start = performance.now();
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
-      // Selama pembuka gambar tiap bingkai; sesudahnya cukup ±30 bingkai per detik.
-      const introDone = !intro || intro.progress() === 1;
-      if (introDone && now - lastDraw < IDLE_FRAME_MS) return;
+      // Selama garis melebar gambar tiap bingkai; selain itu cukup ±30 bingkai per detik.
+      const expanding = intro?.isActive() ?? false;
+      if (!expanding && now - lastDraw < IDLE_FRAME_MS) return;
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       last = now;
       lastDraw = now;
@@ -124,6 +127,7 @@ export default function HeroLines({ light }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelWait();
       intro?.kill();
       window.removeEventListener("resize", onResize);
     };

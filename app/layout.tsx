@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Marcellus, Playfair_Display } from "next/font/google";
+import { EB_Garamond, Inter, Marcellus, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import "./globals.css";
 
@@ -25,6 +25,13 @@ const marcellus = Marcellus({
   variable: "--font-marcellus",
 });
 
+// EB Garamond: nama situs pada pembuka (serif klasik, pengganti huruf acuan).
+const garamond = EB_Garamond({
+  subsets: ["latin"],
+  weight: "500",
+  variable: "--font-garamond",
+});
+
 export const metadata: Metadata = {
   title: "Emberguard — Media Edukasi Pencegahan Karhutla",
   description:
@@ -37,7 +44,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable}`}>
+    // suppressHydrationWarning: skrip pembuka menambah kelas pada <html> sebelum React hidup.
+    <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable} ${garamond.variable}`} suppressHydrationWarning>
       <body>
         <Navbar />
         {children}

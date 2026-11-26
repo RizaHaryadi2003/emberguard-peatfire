@@ -31,6 +31,37 @@
   font-family: var(--font-marcellus), "Marcellus", Georgia, serif;
 }
 
+.font-garamond,
+.font-garamond * {
+  font-family: var(--font-garamond), "EB Garamond", Georgia, serif;
+}
+
+/* ---------- Pembuka situs (lihat lib/introGate.ts) ---------- */
+/* Pembuka hanya terlihat selama tayang atau saat memudar keluar. */
+html:not(.intro-playing):not(.intro-exiting) .intro-splash {
+  display: none;
+}
+/* Selama pembuka tayang, animasi kemunculan beranda ditahan. */
+html.intro-playing .hero-anim {
+  animation-play-state: paused;
+}
+/* Saat pembuka keluar, beranda seolah didekati kamera: sedikit lebih besar lalu pas. */
+@keyframes berandaMasuk {
+  0% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+html.intro-entering #beranda {
+  animation: berandaMasuk 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* Kursor ketik: berkedip tegas seperti kursor penyunting teks. */
+@keyframes introCursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.intro-cursor-blink {
+  animation: introCursor 1s step-end infinite;
+}
+
 /* ---------- Skala huruf halaman section ---------- */
 /* Satu skala untuk beranda, Modul, Simulasi, dan Kuis (bagian pembingkai,
    bukan isi modul/soal), supaya ukuran huruf selalu konsisten. */
