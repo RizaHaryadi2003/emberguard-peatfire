@@ -3,8 +3,9 @@
 // Setiap garis adalah lingkaran lonjong yang tepinya sedikit bergelombang,
 // dihitung dalam kotak 1000 × 1000 dengan titik pusat (500, 500), lalu
 // direntangkan ke layar: tegak setinggi layar, mendatar selebar `lineSpan`
-// (paling lebar 0,78 × tinggi layar). Hasilnya oval tegak yang ramping, tidak
-// melebar "kembung" mengikuti layar yang lebar.
+// (paling lebar 1,1 × tinggi layar). Oval itu lebih tinggi daripada layar dan
+// ujung atas-bawahnya dipudarkan, jadi yang tampak dua lengkungan tegak di
+// kiri-kanan teks — terputus di atas dan bawah, tidak melebar ke samping.
 //
 // Gelombang di tepi garis terus bergeser searah jarum jam (lihat `spin`),
 // sehingga keempat garis tampak berputar pelan dan saling bersilangan.
@@ -30,10 +31,10 @@ export type LoopSpec = {
 
 /** Empat garis yang saling bertumpuk; nilainya tetap supaya gambar selalu sama. */
 export const HERO_LOOPS: LoopSpec[] = [
-  { rx: 460, ry: 470, tilt: 0.02, waves: [{ amp: 0.022, freq: 2, phase: 0.4 }, { amp: 0.01, freq: 3, phase: 1.9 }], spin: 0.24, width: 1.1, opacity: 0.9 },
-  { rx: 446, ry: 458, tilt: -0.03, waves: [{ amp: 0.026, freq: 2, phase: 2.2 }, { amp: 0.008, freq: 5, phase: 0.7 }], spin: 0.18, width: 0.8, opacity: 0.7 },
-  { rx: 474, ry: 484, tilt: 0.05, waves: [{ amp: 0.018, freq: 3, phase: 3.1 }, { amp: 0.012, freq: 2, phase: 5.0 }], spin: 0.3, width: 0.7, opacity: 0.55 },
-  { rx: 434, ry: 448, tilt: -0.05, waves: [{ amp: 0.028, freq: 2, phase: 4.4 }, { amp: 0.007, freq: 4, phase: 2.6 }], spin: 0.14, width: 0.55, opacity: 0.45 },
+  { rx: 460, ry: 600, tilt: 0.02, waves: [{ amp: 0.022, freq: 2, phase: 0.4 }, { amp: 0.01, freq: 3, phase: 1.9 }], spin: 0.24, width: 1.1, opacity: 0.9 },
+  { rx: 446, ry: 585, tilt: -0.03, waves: [{ amp: 0.026, freq: 2, phase: 2.2 }, { amp: 0.008, freq: 5, phase: 0.7 }], spin: 0.18, width: 0.8, opacity: 0.7 },
+  { rx: 474, ry: 615, tilt: 0.05, waves: [{ amp: 0.018, freq: 3, phase: 3.1 }, { amp: 0.012, freq: 2, phase: 5.0 }], spin: 0.3, width: 0.7, opacity: 0.55 },
+  { rx: 434, ry: 572, tilt: -0.05, waves: [{ amp: 0.028, freq: 2, phase: 4.4 }, { amp: 0.007, freq: 4, phase: 2.6 }], spin: 0.14, width: 0.55, opacity: 0.45 },
 ];
 
 /** Jumlah titik sampel per garis; cukup halus tanpa membebani gambar. */
@@ -90,7 +91,7 @@ export function traceLoop(sink: PathSink, p: [number, number][]): void {
 
 /** Lebar dan tinggi layar (px) yang direntangi kotak hitung 1000 × 1000. */
 export function lineSpan(viewportW: number, viewportH: number): { x: number; y: number } {
-  return { x: Math.min(viewportW, viewportH * 0.78), y: viewportH };
+  return { x: Math.min(viewportW, viewportH * 1.1), y: viewportH };
 }
 
 /**

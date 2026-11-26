@@ -77,12 +77,13 @@ export default function HeroLines({ light }: Props) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Gradasi tegak: ujung atas dan bawah oval memudar di 14 % tepi layar.
+      // Gradasi tegak: ujung atas dan bawah oval dipudarkan (4–24 % dan 76–96 %),
+      // jadi garis terputus di atas-bawah dan hanya lengkungan kiri-kanan yang tampak.
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0.0, `rgba(${rgb},0)`);
-      grad.addColorStop(0.14, `rgba(${rgb},1)`);
-      grad.addColorStop(0.86, `rgba(${rgb},1)`);
-      grad.addColorStop(1.0, `rgba(${rgb},0)`);
+      grad.addColorStop(0.04, `rgba(${rgb},0)`);
+      grad.addColorStop(0.24, `rgba(${rgb},1)`);
+      grad.addColorStop(0.76, `rgba(${rgb},1)`);
+      grad.addColorStop(0.96, `rgba(${rgb},0)`);
       ctx.strokeStyle = grad;
 
       const span = lineSpan(w, h);

@@ -61,11 +61,13 @@ describe("introScale", () => {
     expect((avgRy / LINE_BOX) * h * sy).toBeCloseTo(270);
   });
 
-  it("oval akhir tegak (lebih tinggi daripada lebar) di laptop maupun ponsel", () => {
+  it("oval akhir tegak (lebih tinggi daripada lebar) dan melewati tinggi layar", () => {
     for (const [w, h] of [[1440, 900], [1920, 1080], [390, 844]]) {
       const span = lineSpan(w, h);
       for (const l of HERO_LOOPS) {
         expect((l.ry / LINE_BOX) * span.y).toBeGreaterThan((l.rx / LINE_BOX) * span.x);
+        // Ujung atas-bawah di luar layar → yang tampak hanya lengkungan sisi.
+        expect(l.ry / LINE_BOX).toBeGreaterThan(0.5);
       }
     }
   });
