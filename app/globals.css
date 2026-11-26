@@ -31,9 +31,9 @@
   font-family: var(--font-marcellus), "Marcellus", Georgia, serif;
 }
 
-.font-garamond,
-.font-garamond * {
-  font-family: var(--font-garamond), "EB Garamond", Georgia, serif;
+.font-cormorant,
+.font-cormorant * {
+  font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
 }
 
 /* ---------- Pembuka situs (lihat lib/introGate.ts) ---------- */

@@ -9,22 +9,25 @@
 // kunci tepat pada waktunya dan kecepatannya bersambung mulus di setiap titik,
 // jadi burung tidak pernah tersentak walau jarak antartitik berbeda-beda.
 
-/** Waktu adegan (detik sejak pembuka dimulai). */
+/** Waktu adegan (detik sejak pembuka dimulai). Temponya tenang, tidak tergesa. */
 export const INTRO = {
-  cursorIn: 0.3,
-  typeStart: 1.25,
+  cursorIn: 0.4,
+  typeStart: 1.7,
   /** Jeda rata-rata antarhuruf; tiap huruf diberi selisih kecil seperti orang mengetik. */
-  keyGap: 0.11,
+  keyGap: 0.15,
   /** Jeda sesudah huruf terakhir sebelum kursor hilang. */
-  holdAfterType: 0.35,
+  holdAfterType: 0.5,
   /** Titik muncul, jatuh memantul, lalu ekor koma tumbuh. */
-  dotDrop: 0.45,
-  commaTail: 0.35,
+  dotDrop: 0.6,
+  commaTail: 0.45,
   /** Jeda sesudah koma jadi sebelum rangkong masuk. */
-  holdAfterComma: 0.25,
+  holdAfterComma: 0.4,
   /** Lama layar masuk ke beranda sesudah rangkong keluar. */
-  exit: 0.9,
+  exit: 1.2,
 } as const;
+
+/** Pengali tempo terbang: 1 = tempo awal; lebih besar = lebih pelan. */
+export const FLIGHT_PACE = 1.2;
 
 /** Selisih kecil per huruf (pecahan dari keyGap) supaya ketikan tidak terasa mesin. */
 const KEY_JITTER = [0.1, -0.25, 0.35, -0.1, 0.2, -0.3, 0.05, 0.4, -0.2, 0.15, -0.05, 0.3];
@@ -65,16 +68,16 @@ export function orbitKeys({ vw, textW, textH }: FlightLayout): FlightKey[] {
   const u = textW / 2;
   const h = textH;
   return [
-    { t: 0.0, x: vw / 2 + 160, y: -0.85 * h, s: 1.0 },
-    { t: 0.45, x: u * 1.05, y: -1.0 * h, s: 1.0 },
-    { t: 0.85, x: 0, y: -0.95 * h, s: 1.05 },
-    { t: 1.2, x: -u * 1.02, y: -1.3 * h, s: 0.86 },
-    { t: 1.5, x: -u * 0.35, y: -1.8 * h, s: 0.66 },
-    { t: 1.8, x: u * 0.45, y: -1.85 * h, s: 0.62 },
-    { t: 2.1, x: u * 0.98, y: -1.45 * h, s: 0.76 },
-    { t: 2.45, x: u * 0.3, y: -2.35 * h, s: 0.44 },
-    { t: 2.8, x: -u * 0.8, y: -2.9 * h, s: 0.24 },
-    { t: 3.05, x: -vw / 2 - 120, y: -3.2 * h, s: 0.18 },
+    { t: 0.0 * FLIGHT_PACE, x: vw / 2 + 160, y: -0.85 * h, s: 1.0 },
+    { t: 0.45 * FLIGHT_PACE, x: u * 1.05, y: -1.0 * h, s: 1.0 },
+    { t: 0.85 * FLIGHT_PACE, x: 0, y: -0.95 * h, s: 1.05 },
+    { t: 1.2 * FLIGHT_PACE, x: -u * 1.02, y: -1.3 * h, s: 0.86 },
+    { t: 1.5 * FLIGHT_PACE, x: -u * 0.35, y: -1.8 * h, s: 0.66 },
+    { t: 1.8 * FLIGHT_PACE, x: u * 0.45, y: -1.85 * h, s: 0.62 },
+    { t: 2.1 * FLIGHT_PACE, x: u * 0.98, y: -1.45 * h, s: 0.76 },
+    { t: 2.45 * FLIGHT_PACE, x: u * 0.3, y: -2.35 * h, s: 0.44 },
+    { t: 2.8 * FLIGHT_PACE, x: -u * 0.8, y: -2.9 * h, s: 0.24 },
+    { t: 3.05 * FLIGHT_PACE, x: -vw / 2 - 120, y: -3.2 * h, s: 0.18 },
   ];
 }
 
@@ -90,9 +93,9 @@ export const SWEEP_SCALE = 3;
 export function sweepKeys({ vw, textH, birdFront, birdBack }: FlightLayout): FlightKey[] {
   const s = SWEEP_SCALE;
   return [
-    { t: 3.2, x: -vw / 2 - birdFront * s - 20, y: 0.2 * textH, s },
-    { t: 3.85, x: 0, y: 0.05 * textH, s: s * 1.03 },
-    { t: 4.5, x: vw / 2 + birdBack * s + 20, y: -0.15 * textH, s },
+    { t: 3.2 * FLIGHT_PACE, x: -vw / 2 - birdFront * s - 20, y: 0.2 * textH, s },
+    { t: 3.85 * FLIGHT_PACE, x: 0, y: 0.05 * textH, s: s * 1.03 },
+    { t: 4.5 * FLIGHT_PACE, x: vw / 2 + birdBack * s + 20, y: -0.15 * textH, s },
   ];
 }
 
@@ -126,24 +129,11 @@ export function positionAt(keys: FlightKey[], t: number): Vec {
   return lerpVec(b1, b2, p1.t, p2.t, t);
 }
 
-/** Posisi beserta kecepatan (px/detik), dari selisih kecil di sekitar `t`. */
-export function sampleFlight(keys: FlightKey[], t: number): Vec & { vx: number; vy: number } {
+/** Posisi beserta kecepatan (px/detik) dan laju perubahan skala (per detik), dari selisih kecil di sekitar `t`. */
+export function sampleFlight(keys: FlightKey[], t: number): Vec & { vx: number; vy: number; vs: number } {
   const dt = 0.008;
   const p = positionAt(keys, t);
   const a = positionAt(keys, t - dt);
   const b = positionAt(keys, t + dt);
-  return { ...p, vx: (b.x - a.x) / (2 * dt), vy: (b.y - a.y) / (2 * dt) };
-}
-
-/**
- * Arah hadap dan kemiringan badan dari kecepatan.
- * - `facing`: +1 menghadap kanan, −1 kiri; di antaranya burung tampak
- *   menyamping tipis saat berbalik, jadi belokan terlihat mulus.
- * - `bank`: kemiringan (radian), hidung naik saat menanjak.
- */
-export function attitude(vx: number, vy: number): { facing: number; bank: number } {
-  const raw = Math.max(-1, Math.min(1, vx / 140));
-  const facing = raw === 0 ? 0.2 : Math.sign(raw) * Math.max(Math.abs(raw), 0.2);
-  const bank = Math.max(-0.4, Math.min(0.4, Math.atan2(vy * Math.sign(vx || 1), Math.abs(vx) + 40))) * 0.7;
-  return { facing, bank };
+  return { ...p, vx: (b.x - a.x) / (2 * dt), vy: (b.y - a.y) / (2 * dt), vs: (b.s - a.s) / (2 * dt) };
 }

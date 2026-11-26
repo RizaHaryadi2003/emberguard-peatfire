@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attitude, orbitKeys, positionAt, sampleFlight, sweepKeys, typingTimes, type FlightLayout } from "./introFlight";
+import { orbitKeys, positionAt, sampleFlight, sweepKeys, typingTimes, type FlightLayout } from "./introFlight";
 
 const L: FlightLayout = { vw: 1440, vh: 900, textW: 560, textH: 105, birdFront: 100, birdBack: 85 };
 
@@ -41,7 +41,7 @@ describe("positionAt", () => {
         expect(Math.hypot(vr.x - vl.x, vr.y - vl.y) / speed).toBeLessThan(0.005);
       }
     }
-    expect(sampleFlight(orbitKeys(L), 1).vx).toBeLessThan(0); // di depan teks terbang ke kiri
+    expect(sampleFlight(orbitKeys(L), 1.1).vx).toBeLessThan(0); // di depan teks terbang ke kiri
   });
 
   it("masuk dari luar layar kanan dan menyapu sampai luar layar kanan", () => {
@@ -51,20 +51,5 @@ describe("positionAt", () => {
     expect(sweep[0].x + L.birdFront * sweep[0].s).toBeLessThan(-L.vw / 2);
     const end = sweep.at(-1)!;
     expect(end.x - L.birdBack * end.s).toBeGreaterThan(L.vw / 2);
-  });
-});
-
-describe("attitude", () => {
-  it("menghadap arah terbang dan miring naik saat menanjak", () => {
-    expect(attitude(300, 0).facing).toBe(1);
-    expect(attitude(-300, 0).facing).toBe(-1);
-    // Ke kanan sambil naik (y layar mengecil): hidung naik = putaran negatif.
-    expect(attitude(300, -200).bank).toBeLessThan(0);
-    // Ke kiri sambil naik: hidung (di kiri) naik = putaran positif.
-    expect(attitude(-300, -200).bank).toBeGreaterThan(0);
-  });
-
-  it("tidak pernah benar-benar pipih saat berbalik", () => {
-    expect(Math.abs(attitude(0, 100).facing)).toBeGreaterThanOrEqual(0.2);
   });
 });

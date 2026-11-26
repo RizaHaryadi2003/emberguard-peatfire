@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EB_Garamond, Inter, Marcellus, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Inter, Marcellus, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import "./globals.css";
 
@@ -25,11 +25,11 @@ const marcellus = Marcellus({
   variable: "--font-marcellus",
 });
 
-// EB Garamond: nama situs pada pembuka (serif klasik, pengganti huruf acuan).
-const garamond = EB_Garamond({
+// Cormorant Garamond Light: nama situs pada pembuka (serif halus dan elegan).
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: "500",
-  variable: "--font-garamond",
+  weight: "300",
+  variable: "--font-cormorant",
 });
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: skrip pembuka menambah kelas pada <html> sebelum React hidup.
-    <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable} ${garamond.variable}`} suppressHydrationWarning>
+    <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <body>
         <Navbar />
         {children}
