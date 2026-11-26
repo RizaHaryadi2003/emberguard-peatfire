@@ -3,7 +3,7 @@
 // Setiap garis adalah lingkaran lonjong yang tepinya sedikit bergelombang,
 // dihitung dalam kotak 1000 × 1000 dengan titik pusat (500, 500), lalu
 // direntangkan ke layar: tegak setinggi layar, mendatar selebar `lineSpan`
-// (paling lebar 1,1 × tinggi layar). Oval itu lebih tinggi daripada layar dan
+// (paling lebar 1,25 × tinggi layar). Oval itu lebih tinggi daripada layar dan
 // ujung atas-bawahnya dipudarkan, jadi yang tampak dua lengkungan tegak di
 // kiri-kanan teks — terputus di atas dan bawah, tidak melebar ke samping.
 //
@@ -91,7 +91,7 @@ export function traceLoop(sink: PathSink, p: [number, number][]): void {
 
 /** Lebar dan tinggi layar (px) yang direntangi kotak hitung 1000 × 1000. */
 export function lineSpan(viewportW: number, viewportH: number): { x: number; y: number } {
-  return { x: Math.min(viewportW, viewportH * 1.1), y: viewportH };
+  return { x: Math.min(viewportW, viewportH * 1.25), y: viewportH };
 }
 
 /**
