@@ -54,10 +54,10 @@ export default function Navbar() {
     <nav
       ref={rootRef}
       aria-label="Navigasi utama"
-      className="font-marcellus fixed left-2 top-2 z-[110] w-[212px] md:left-1/2 md:top-4 md:w-[346px] md:-translate-x-1/2"
+      className="font-marcellus fixed left-2 top-2 z-[110] w-[196px] md:left-1/2 md:top-4 md:w-[300px] md:-translate-x-1/2"
     >
       {/* Kartu utama */}
-      <div className={`${CARD} relative flex h-11 items-center justify-between px-3 md:h-[58px] md:px-3.5`}>
+      <div className={`${CARD} relative flex h-11 items-center justify-between px-3 md:h-[50px]`}>
         <SiteSoundButton />
 
         <Link
@@ -65,7 +65,7 @@ export default function Navbar() {
           aria-label={`${BRAND_NAME} — Beranda`}
           className="absolute left-1/2 -translate-x-1/2 transition-transform duration-500 hover:rotate-45"
         >
-          <RingLogo className="h-8 w-8 md:h-9 md:w-9" />
+          <RingLogo className="h-[30px] w-[30px]" />
         </Link>
 
         <button
@@ -73,7 +73,7 @@ export default function Navbar() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="menu-utama"
-          className="flex cursor-pointer items-center gap-2.5 text-[15px] transition-opacity hover:opacity-70"
+          className="type-label flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-70"
         >
           <span>{open ? "Tutup" : "Menu"}</span>
           {/* Dua titik: tegak saat tertutup, mendatar saat terbuka */}
@@ -81,39 +81,39 @@ export default function Navbar() {
             aria-hidden
             className={`flex flex-col gap-[3px] transition-transform duration-300 ${open ? "rotate-90" : ""}`}
           >
-            <span className="h-[5px] w-[5px] rounded-full bg-current" />
-            <span className="h-[5px] w-[5px] rounded-full bg-current" />
+            <span className="h-1 w-1 rounded-full bg-current" />
+            <span className="h-1 w-1 rounded-full bg-current" />
           </span>
         </button>
       </div>
 
-      {/* Kartu daftar menu */}
-      <div
-        id="menu-utama"
-        inert={!open}
-        className={`${CARD} mt-2 w-[calc(100vw-1rem)] max-w-[346px] overflow-clip transition-[opacity,transform] duration-300 md:w-full ${
-          open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
-        }`}
-      >
-        <ol>
-          {NAV_LINKS.map((link, i) => {
-            const active = isActive(pathname, link.href);
-            return (
-              <li key={link.href} className="border-b border-[#474747]/25 last:border-b-0">
-                <Link
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  aria-current={active ? "page" : undefined}
-                  className="group flex items-baseline gap-4 px-4 py-2.5 transition-colors hover:bg-[#474747]/[0.06]"
+      {/* Kartu daftar menu: tinggi membuka mulus, lalu butir muncul bergiliran (lihat .nav-menu di globals.css) */}
+      <div id="menu-utama" inert={!open} data-open={open} className="nav-menu mt-1.5 w-[calc(100vw-1rem)] max-w-[300px] md:w-full">
+        <div className="min-h-0 overflow-hidden">
+          <ol className={CARD}>
+            {NAV_LINKS.map((link, i) => {
+              const active = isActive(pathname, link.href);
+              return (
+                <li
+                  key={link.href}
+                  className="nav-menu-item border-b border-[#474747]/20 last:border-b-0"
+                  style={{ "--i": i } as React.CSSProperties}
                 >
-                  <span className="w-4 text-[11px] text-[#474747]/70">{i + 1}.</span>
-                  <span className="text-[22px] leading-tight">{link.label}</span>
-                  {active && <span aria-hidden className="ml-auto h-1.5 w-1.5 self-center rounded-full bg-[#474747]" />}
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
+                  <Link
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="flex items-baseline gap-3.5 px-3.5 py-2.5 transition-colors hover:bg-[#474747]/[0.06]"
+                  >
+                    <span className="w-4 text-[10px] text-[#474747]/65">{i + 1}.</span>
+                    <span className="text-[17px] leading-tight">{link.label}</span>
+                    {active && <span aria-hidden className="ml-auto h-1 w-1 self-center rounded-full bg-[#474747]" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </nav>
   );

@@ -143,7 +143,7 @@ function NarratorToggle({ modul, clip, interrupt }: Narration) {
  */
 export default function ModuleAudio({ getMix, narration }: { getMix: () => AmbientMix; narration?: Narration }) {
   return (
-    <div className="fixed right-2 top-2 z-[100] flex items-center gap-2 md:right-5 md:top-[25px]">
+    <div className="fixed right-2 top-2 z-[100] flex items-center gap-2 md:right-5 md:top-[21px]">
       {narration && <NarratorToggle {...narration} />}
       <AmbientSoundToggle getMix={getMix} />
     </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
+import SectionBackdrop from "@/components/layout/SectionBackdrop";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { QUIZ_TEXT, type QuizItem } from "@/config/kuis";
 import { moduleAt } from "@/config/modules-content";
@@ -34,7 +35,8 @@ export default function QuizRunner({ items }: { items: readonly QuizItem[] }) {
   if (phase === "result") return <Result items={items} picks={s.picks} onRestart={restart} />;
 
   return (
-    <main className="min-h-[100dvh] bg-black px-5 pb-8 pt-20 text-white sm:px-10 lg:pt-24">
+    <main className="relative isolate min-h-[100dvh] px-5 pb-8 pt-20 text-white sm:px-10 lg:pt-24">
+      <SectionBackdrop />
       <div className="mx-auto flex w-full max-w-6xl flex-col">
         <QuizProgress
           items={items}
@@ -61,27 +63,25 @@ export default function QuizRunner({ items }: { items: readonly QuizItem[] }) {
 /** Layar pembuka kuis. */
 function Intro({ count, onStart }: { count: number; onStart: () => void }) {
   return (
-    <main className="flex min-h-[100dvh] items-center bg-black px-5 text-white sm:px-10">
+    <main className="relative isolate flex min-h-[100dvh] items-center px-5 text-white sm:px-10">
+      <SectionBackdrop />
       <div className="mx-auto w-full max-w-3xl">
-        <p className="hero-anim hero-fade text-[11px] font-medium uppercase tracking-[0.22em] text-white/45" style={{ animationDelay: "0.1s" }}>
+        <p className="hero-anim hero-fade type-eyebrow text-white/80" style={{ animationDelay: "0.1s" }}>
           {QUIZ_TEXT.eyebrow} · {QUIZ_TEXT.meta.replace("10", String(count))}
         </p>
-        <h1
-          className="hero-anim hero-reveal mt-4 font-playfair text-5xl italic leading-[0.95] sm:text-7xl"
-          style={{ letterSpacing: "-0.04em", animationDelay: "0.2s" }}
-        >
+        <h1 className="hero-anim hero-reveal type-display mt-4 text-[#f1f1f1]" style={{ animationDelay: "0.2s" }}>
           {QUIZ_TEXT.title}
         </h1>
-        <p className="hero-anim hero-fade mt-6 max-w-md text-sm leading-relaxed text-white/65 sm:text-[15px]" style={{ animationDelay: "0.4s" }}>
+        <p className="hero-anim hero-fade type-lead mt-6 max-w-md text-white/90" style={{ animationDelay: "0.4s" }}>
           {QUIZ_TEXT.lead}
         </p>
         <div className="hero-anim hero-fade mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "0.55s" }}>
-          <button type="button" onClick={onStart} className="btn-mono is-on !px-6 !py-3 !text-sm">
+          <button type="button" onClick={onStart} className="btn-cream">
             {QUIZ_TEXT.start} <ArrowRight size={16} />
           </button>
-          <p className="text-xs text-white/45">
+          <p className="font-marcellus text-[12px] text-white/80">
             {QUIZ_TEXT.suggestion}{" "}
-            <Link href="/modul" className="text-white/70 underline underline-offset-4 hover:text-white">
+            <Link href="/modul" className="text-white underline underline-offset-4 hover:text-white/80">
               {QUIZ_TEXT.toModules}
             </Link>
           </p>
@@ -99,24 +99,25 @@ function Result({ items, picks, onRestart }: { items: readonly QuizItem[]; picks
   const missed = missedItems(items, picks);
 
   return (
-    <main className="min-h-[100dvh] bg-black px-5 pb-8 pt-20 text-white sm:px-10 lg:pt-24">
+    <main className="relative isolate min-h-[100dvh] px-5 pb-8 pt-20 text-white sm:px-10 lg:pt-24">
+      <SectionBackdrop />
       <div className="stage-in mx-auto grid w-full max-w-6xl gap-10 lg:mt-[8vh] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
         <section>
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/45">{QUIZ_TEXT.resultEyebrow}</p>
+          <p className="type-eyebrow text-white/80">{QUIZ_TEXT.resultEyebrow}</p>
           <p className="mt-4 flex items-baseline gap-4">
-            <span className="pl-3 pr-2 font-playfair text-8xl italic leading-none sm:text-9xl" style={{ letterSpacing: "-0.04em" }}>
+            <span className="font-marcellus text-7xl leading-none text-[#f1f1f1] sm:text-8xl">
               {score}
             </span>
-            <span className="text-lg font-medium" style={{ color: passed ? "#fff" : ACCENT }}>
+            <span className="type-title" style={{ color: passed ? "#fff" : ACCENT }}>
               {passed ? QUIZ_TEXT.passed : QUIZ_TEXT.retry}
             </span>
           </p>
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/65">{passed ? QUIZ_TEXT.passedLead : QUIZ_TEXT.retryLead}</p>
+          <p className="type-lead mt-5 max-w-sm text-white/90">{passed ? QUIZ_TEXT.passedLead : QUIZ_TEXT.retryLead}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <button type="button" onClick={onRestart} className="btn-mono is-on">
+            <button type="button" onClick={onRestart} className="btn-cream">
               <RotateCcw size={14} /> {QUIZ_TEXT.again}
             </button>
-            <Link href="/modul" className="btn-mono">
+            <Link href="/modul" className="btn-line">
               {QUIZ_TEXT.modules}
             </Link>
           </div>
@@ -124,7 +125,7 @@ function Result({ items, picks, onRestart }: { items: readonly QuizItem[]; picks
 
         <section className="flex flex-col gap-8">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">{QUIZ_TEXT.perPart}</p>
+            <p className="type-eyebrow text-white/80">{QUIZ_TEXT.perPart}</p>
             <ul className="mt-3 divide-y divide-white/10 border-y border-white/10">
               {parts.map((r) => (
                 <li key={r.part} className="flex items-center justify-between py-2.5 text-sm">
@@ -145,7 +146,7 @@ function Result({ items, picks, onRestart }: { items: readonly QuizItem[]; picks
           </div>
 
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">{QUIZ_TEXT.wrongConcepts}</p>
+            <p className="type-eyebrow text-white/80">{QUIZ_TEXT.wrongConcepts}</p>
             {missed.length === 0 ? (
               <p className="mt-3 text-sm text-white/65">{QUIZ_TEXT.allRight}</p>
             ) : (

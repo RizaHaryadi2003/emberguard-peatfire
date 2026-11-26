@@ -1,17 +1,18 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { HERO_LOOPS, introScale, LINE_BOX, loopPath } from "@/lib/heroLines";
+import { HERO_LOOPS, introScale, LINE_BOX, loopPoints, traceLoop } from "@/lib/heroLines";
 
-gsap.registerPlugin(useGSAP);
-
-/** Lintasan dihitung sekali saja; bentuknya tidak pernah berubah. */
-const PATHS = HERO_LOOPS.map((spec) => ({ d: loopPath(spec), width: spec.width, opacity: spec.opacity }));
-
-const C = LINE_BOX / 2;
-const transformFor = (sx: number, sy: number) => `translate(${C} ${C}) scale(${sx} ${sy}) translate(${-C} ${-C})`;
+/** Warna garis: abu-abu gelap di atas latar polos, putih di atas video. */
+const DARK: [number, number, number] = [58, 57, 54];
+const LIGHT: [number, number, number] = [255, 255, 255];
+/** Lama perpindahan warna garis (detik). */
+const COLOR_S = 1.5;
+/** Ketajaman kanvas dibatasi agar layar beresolusi tinggi tidak terbebani. */
+const MAX_DPR = 1.5;
+/** Setelah pembuka, gerak putar pelan cukup digambar ±30 kali per detik. */
+const IDLE_FRAME_MS = 1000 / 30;
 
 type Props = {
   /** Garis putih (di atas video) atau abu-abu gelap (di atas latar polos). */
@@ -19,68 +20,119 @@ type Props = {
 };
 
 /**
- * Garis lingkaran goresan tangan. Saat halaman dimuat, garis tampil sebagai
- * lingkaran kecil di tengah lalu melebar ke tepi layar, seperti paru-paru
- * yang mengembang. Setelah itu garis diam, jadi tidak ada kerja gambar
- * ulang selama video berputar di belakangnya (masker pemudar tepi hanya
- * digambar ulang selama animasi pembuka yang singkat itu).
+ * Garis lingkaran goresan tangan, digambar di satu kanvas.
  *
- * Skala diubah pada atribut `transform` milik <g> (bukan CSS transform)
- * supaya `vector-effect: non-scaling-stroke` menjaga garis tetap setipis
- * rambut sepanjang animasi.
+ * - Pembuka: garis tampil sebagai lingkaran kecil di tengah lalu melebar ke
+ *   tepi layar, seperti paru-paru yang mengembang.
+ * - Sesudahnya: gelombang di tepi keempat garis terus bergeser searah jarum
+ *   jam dengan laju berbeda, jadi garis tampak hidup dan saling bersilangan.
+ *
+ * Kanvas dipilih karena menggambar ulang empat garis per bingkai sangat
+ * murah, sedangkan SVG layar penuh yang berubah tiap bingkai harus dihitung
+ * ulang. Tepi atas-bawah dipudarkan dengan gradasi warna garis itu sendiri,
+ * bukan masker, jadi tidak ada lapisan tambahan di atas video.
  */
 export default function HeroLines({ light }: Props) {
-  const groupRef = useRef<SVGGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lightRef = useRef(light);
+  useEffect(() => {
+    lightRef.current = light;
+  }, [light]);
 
-  useGSAP(() => {
-    const g = groupRef.current;
-    if (!g) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      g.setAttribute("transform", transformFor(1, 1));
-      return;
-    }
-    const start = introScale(window.innerWidth, window.innerHeight);
-    const s = { ...start };
-    g.setAttribute("transform", transformFor(s.sx, s.sy));
-    gsap.to(s, {
-      sx: 1,
-      sy: 1,
-      delay: 0.5,
-      duration: 1.9,
-      ease: "power3.inOut",
-      onUpdate: () => g.setAttribute("transform", transformFor(s.sx, s.sy)),
-    });
-  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
 
-  return (
-    <svg
-      aria-hidden
-      viewBox={`0 0 ${LINE_BOX} ${LINE_BOX}`}
-      preserveAspectRatio="none"
-      className={`pointer-events-none absolute inset-0 z-20 h-full w-full transition-colors duration-[1500ms] ${
-        light ? "text-white" : "text-[#3a3936]"
-      }`}
-    >
-      {/* Tepi atas dan bawah layar dipudarkan, jadi yang tampak hanya lengkungan di kiri-kanan. */}
-      <defs>
-        <linearGradient id="hero-line-fade" x1="0" y1="0" x2="0" y2={LINE_BOX} gradientUnits="userSpaceOnUse">
-          <stop offset="0.04" stopColor="#fff" stopOpacity="0" />
-          <stop offset="0.24" stopColor="#fff" />
-          <stop offset="0.76" stopColor="#fff" />
-          <stop offset="0.96" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
-        <mask id="hero-line-mask" maskUnits="userSpaceOnUse" x="0" y="0" width={LINE_BOX} height={LINE_BOX}>
-          <rect width={LINE_BOX} height={LINE_BOX} fill="url(#hero-line-fade)" />
-        </mask>
-      </defs>
-      <g mask="url(#hero-line-mask)">
-        {/* Skala awal yang sama dengan animasi, agar tidak berkedip sebelum skrip berjalan. */}
-        <g ref={groupRef} transform={transformFor(0.4, 0.5)} fill="none" stroke="currentColor">
-          {PATHS.map((p, i) => (
-            <path key={i} d={p.d} strokeWidth={p.width} strokeOpacity={p.opacity} vectorEffect="non-scaling-stroke" />
-          ))}
-        </g>
-      </g>
-    </svg>
-  );
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    };
+    resize();
+
+    // Skala pembuka (lihat introScale) → 1.
+    const scale = reduced ? { sx: 1, sy: 1 } : introScale(w, h);
+    const intro = reduced ? null : gsap.to(scale, { sx: 1, sy: 1, delay: 0.5, duration: 1.9, ease: "power3.inOut" });
+
+    // Campuran warna 0 (gelap) → 1 (putih), mendekati sasaran secara bertahap.
+    let mix = lightRef.current ? 1 : 0;
+
+    const draw = (time: number, dt: number) => {
+      const target = lightRef.current ? 1 : 0;
+      mix += Math.sign(target - mix) * Math.min(Math.abs(target - mix), dt / COLOR_S);
+      const rgb = DARK.map((c, i) => Math.round(c + (LIGHT[i] - c) * mix)).join(",");
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Gradasi tegak: pudar di 4–24 % atas dan 76–96 % bawah layar.
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0.04, `rgba(${rgb},0)`);
+      grad.addColorStop(0.24, `rgba(${rgb},1)`);
+      grad.addColorStop(0.76, `rgba(${rgb},1)`);
+      grad.addColorStop(0.96, `rgba(${rgb},0)`);
+      ctx.strokeStyle = grad;
+
+      const kx = (w / LINE_BOX) * scale.sx;
+      const ky = (h / LINE_BOX) * scale.sy;
+      for (const spec of HERO_LOOPS) {
+        const pts = loopPoints(spec, time).map(
+          ([x, y]) => [w / 2 + (x - LINE_BOX / 2) * kx, h / 2 + (y - LINE_BOX / 2) * ky] as [number, number],
+        );
+        ctx.beginPath();
+        traceLoop(ctx, pts);
+        ctx.globalAlpha = spec.opacity;
+        ctx.lineWidth = spec.width;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    let raf = 0;
+    let last = 0;
+    let lastDraw = 0;
+    const start = performance.now();
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      // Selama pembuka gambar tiap bingkai; sesudahnya cukup ±30 bingkai per detik.
+      const introDone = !intro || intro.progress() === 1;
+      if (introDone && now - lastDraw < IDLE_FRAME_MS) return;
+      const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
+      last = now;
+      lastDraw = now;
+      draw((now - start) / 1000, dt);
+    };
+
+    const onResize = () => {
+      resize();
+      // Gerak dikurangi: tidak ada putaran, jadi gambar ulang sekali di sini.
+      if (reduced) draw(0, COLOR_S);
+    };
+    window.addEventListener("resize", onResize);
+
+    if (reduced) draw(0, COLOR_S);
+    else raf = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      intro?.kill();
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  // Gerak dikurangi: warna baru digambar ulang lewat penangan resize di atas.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) window.dispatchEvent(new Event("resize"));
+  }, [light]);
+
+  return <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-20 h-full w-full" />;
 }

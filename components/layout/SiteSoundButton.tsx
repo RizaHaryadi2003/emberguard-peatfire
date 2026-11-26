@@ -10,7 +10,7 @@ const VOLUME = 0.45;
 /** Ikon headphone garis tipis; tanda silang di tengah saat suara mati. */
 function HeadphoneIcon({ on }: { on: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-[26px] w-[26px]" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+    <svg viewBox="0 0 24 24" aria-hidden className="h-[22px] w-[22px]" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
       <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
       <rect x="3" y="14" width="4" height="7" rx="1.6" />
       <rect x="17" y="14" width="4" height="7" rx="1.6" />
@@ -67,10 +67,10 @@ export default function SiteSoundButton() {
       onClick={() => siteSoundPreference.set(!on)}
       aria-pressed={on}
       aria-label={on ? "Matikan suara" : "Nyalakan suara"}
-      className="flex cursor-pointer items-center gap-2.5 text-[#474747] transition-opacity hover:opacity-70"
+      className="flex cursor-pointer items-center gap-2 text-[#474747] transition-opacity hover:opacity-70"
     >
       <HeadphoneIcon on={on} />
-      <span className="hidden font-marcellus text-[15px] md:inline">Suara</span>
+      <span className="type-label hidden md:inline">Suara</span>
     </button>
   );
 }

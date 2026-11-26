@@ -31,7 +31,7 @@ export default function EyebrowRotator({ prefix, words }: Props) {
   }, [words.length]);
 
   return (
-    <p className="font-marcellus text-[11px] uppercase tracking-[0.04em] text-white/90 sm:text-xs" aria-live="off">
+    <p className="type-eyebrow text-white/90" aria-live="off">
       {prefix}{" "}
       <span
         className={`inline-block transition-[opacity,transform] duration-[400ms] ${

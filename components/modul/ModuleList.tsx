@@ -15,18 +15,18 @@ function ModuleCard({ m }: { m: NumberedModule }) {
   const content = (
     <>
       <div className="flex items-center justify-between">
-        <span className="text-xs tabular-nums text-white/45">{m.number}</span>
+        <span className="type-eyebrow tabular-nums text-white/70">{m.number}</span>
         {m.available ? (
           <ArrowUpRight
             size={18}
-            className="text-white/70 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
+            className="text-white/85 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
           />
         ) : (
-          <Lock size={14} className="text-white/30" />
+          <Lock size={14} className="text-white/45" />
         )}
       </div>
-      <p className={`mt-10 text-lg font-medium ${m.available ? "text-white" : "text-white/40"}`}>{m.title}</p>
-      <p className={`mt-1 text-xs ${m.available ? "text-white/55" : "text-white/30"}`}>
+      <p className={`mt-10 font-marcellus text-[17px] leading-tight ${m.available ? "text-white" : "text-white/55"}`}>{m.title}</p>
+      <p className={`mt-1.5 font-marcellus text-[12px] leading-snug ${m.available ? "text-white/80" : "text-white/50"}`}>
         {m.available ? m.caption : "Segera hadir"}
       </p>
     </>
@@ -36,12 +36,12 @@ function ModuleCard({ m }: { m: NumberedModule }) {
       {m.available && m.href ? (
         <Link
           href={m.href}
-          className="group block h-full rounded-2xl border border-white/15 bg-white/[0.04] p-5 transition-colors duration-300 hover:border-white/35 hover:bg-white/[0.07]"
+          className="group block h-full rounded-lg border border-white/30 bg-white/[0.06] p-5 transition-colors duration-300 hover:border-white/60 hover:bg-white/[0.12]"
         >
           {content}
         </Link>
       ) : (
-        <div className="h-full rounded-2xl border border-white/[0.07] p-5" aria-disabled="true">
+        <div className="h-full rounded-lg border border-white/15 p-5" aria-disabled="true">
           {content}
         </div>
       )}
@@ -84,37 +84,34 @@ export default function ModuleList() {
   );
 
   return (
-    <section id="modul" className="relative bg-black text-white">
+    <section id="modul" className="relative text-white">
       <div ref={rootRef} className="mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-10 sm:pt-36">
         <div className="grid gap-8 md:grid-cols-[1fr_minmax(0,380px)] md:items-end">
           <div>
-            <p className="intro-anim text-[11px] font-medium uppercase tracking-[0.22em] text-white/45">
+            <p className="intro-anim type-eyebrow text-white/80">
               {MODULE_LIST_INTRO.eyebrow} · {MODULES.length} modul dalam {MODULE_PARTS.length} bagian
             </p>
-            <h1
-              className="intro-anim mt-4 font-playfair text-6xl italic leading-[0.95] sm:text-8xl"
-              style={{ letterSpacing: "-0.05em" }}
-            >
+            <h1 className="intro-anim type-display mt-4 text-[#f1f1f1]">
               {MODULE_LIST_INTRO.title}
             </h1>
           </div>
-          <p className="intro-anim text-sm leading-relaxed text-white/65 sm:text-[15px]">{MODULE_LIST_INTRO.lead}</p>
+          <p className="intro-anim type-lead font-marcellus text-white/90">{MODULE_LIST_INTRO.lead}</p>
         </div>
 
         {MODULE_PARTS.map((part, p) => {
           const modules = MODULES.filter((m) => m.partNumber === String(p + 1).padStart(2, "0"));
           return (
-            <section key={part.id} id={part.id} className="part-block mt-20 scroll-mt-28 border-t border-white/10 pt-10">
+            <section key={part.id} id={part.id} className="part-block mt-20 scroll-mt-28 border-t border-white/25 pt-10">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:items-end">
                 <div>
-                  <p className="part-anim text-[11px] font-medium uppercase tracking-[0.22em] text-[#e8702a]">
+                  <p className="part-anim type-eyebrow text-white/75">
                     Bagian {p + 1}
                   </p>
-                  <h2 className="part-anim mt-2 font-playfair text-4xl italic leading-none sm:text-5xl" style={{ letterSpacing: "-0.03em" }}>
+                  <h2 className="part-anim type-title mt-2 text-[#f1f1f1]">
                     {part.title}
                   </h2>
                 </div>
-                <p className="part-anim text-sm leading-relaxed text-white/60">{part.lead}</p>
+                <p className="part-anim type-lead font-marcellus text-white/85">{part.lead}</p>
               </div>
               <ol className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {modules.map((m) => (

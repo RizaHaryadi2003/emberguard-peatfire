@@ -1,26 +1,52 @@
 import { describe, expect, it } from "vitest";
-import { HERO_LOOPS, introScale, LINE_BOX, loopPath, loopPoints } from "./heroLines";
+import { HERO_LOOPS, introScale, LINE_BOX, loopPoints, SAMPLES, traceLoop } from "./heroLines";
+
+const radiusAt = (spec: (typeof HERO_LOOPS)[number], [x, y]: [number, number]) =>
+  Math.hypot((x - LINE_BOX / 2) / spec.rx, (y - LINE_BOX / 2) / spec.ry);
 
 describe("loopPoints", () => {
   it("menghasilkan titik di sekitar jari-jari lonjong", () => {
     for (const spec of HERO_LOOPS) {
-      for (const [x, y] of loopPoints(spec)) {
-        const nx = (x - LINE_BOX / 2) / spec.rx;
-        const ny = (y - LINE_BOX / 2) / spec.ry;
+      for (const p of loopPoints(spec, 0)) {
         // Gelombang dan kemiringan kecil: jarak ternormalisasi tetap dekat 1.
-        expect(Math.hypot(nx, ny)).toBeGreaterThan(0.9);
-        expect(Math.hypot(nx, ny)).toBeLessThan(1.1);
+        expect(radiusAt(spec, p)).toBeGreaterThan(0.9);
+        expect(radiusAt(spec, p)).toBeLessThan(1.1);
       }
     }
   });
+
+  it("gelombang bergeser searah jarum jam seiring waktu", () => {
+    const spec = { ...HERO_LOOPS[0], tilt: 0, waves: [{ amp: 0.05, freq: 1, phase: 0 }] };
+    // Puncak gelombang (sin = 1) pada t = π/2 saat waktu 0. Setelah bergeser
+    // seperempat putaran, puncak pindah ke t = π — searah jarum jam di layar
+    // (sumbu y mengarah ke bawah).
+    const time = Math.PI / 2 / spec.spin;
+    const peakIndex = (pts: [number, number][]) => {
+      let best = 0;
+      pts.forEach((p, i) => {
+        if (radiusAt(spec, p) > radiusAt(spec, pts[best])) best = i;
+      });
+      return best;
+    };
+    expect(peakIndex(loopPoints(spec, 0))).toBe(SAMPLES / 4);
+    expect(peakIndex(loopPoints(spec, time))).toBe(SAMPLES / 2);
+  });
 });
 
-describe("loopPath", () => {
-  it("berupa lintasan tertutup yang selalu sama", () => {
-    const d = loopPath(HERO_LOOPS[0]);
-    expect(d.startsWith("M")).toBe(true);
-    expect(d.endsWith("Z")).toBe(true);
-    expect(loopPath(HERO_LOOPS[0])).toBe(d);
+describe("traceLoop", () => {
+  it("menggambar satu lintasan tertutup dengan satu kurva per titik", () => {
+    const calls: string[] = [];
+    traceLoop(
+      {
+        moveTo: () => calls.push("M"),
+        bezierCurveTo: () => calls.push("C"),
+        closePath: () => calls.push("Z"),
+      },
+      loopPoints(HERO_LOOPS[0]),
+    );
+    expect(calls[0]).toBe("M");
+    expect(calls.at(-1)).toBe("Z");
+    expect(calls.filter((c) => c === "C")).toHaveLength(SAMPLES);
   });
 });
 
@@ -31,10 +57,8 @@ describe("introScale", () => {
     const { sx, sy } = introScale(w, h, 0.3);
     const avgRx = HERO_LOOPS.reduce((s, l) => s + l.rx, 0) / HERO_LOOPS.length;
     const avgRy = HERO_LOOPS.reduce((s, l) => s + l.ry, 0) / HERO_LOOPS.length;
-    const pxRx = (avgRx / LINE_BOX) * w * sx;
-    const pxRy = (avgRy / LINE_BOX) * h * sy;
-    expect(pxRx).toBeCloseTo(270);
-    expect(pxRy).toBeCloseTo(270);
+    expect((avgRx / LINE_BOX) * w * sx).toBeCloseTo(270);
+    expect((avgRy / LINE_BOX) * h * sy).toBeCloseTo(270);
   });
 
   it("selalu lebih kecil dari ukuran akhir", () => {

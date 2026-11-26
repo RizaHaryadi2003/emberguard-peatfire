@@ -13,8 +13,133 @@
 /* Berlaku juga untuk semua anak elemen, karena aturan `*` di atas
    memberi setiap elemen font Inter secara langsung. */
 .font-marcellus,
-.font-marcellus * {
+.font-marcellus *,
+.type-eyebrow,
+.type-eyebrow *,
+.type-display,
+.type-display *,
+.type-title,
+.type-title *,
+.type-lead,
+.type-lead *,
+.type-label,
+.type-label *,
+.btn-cream,
+.btn-cream *,
+.btn-line,
+.btn-line * {
   font-family: var(--font-marcellus), "Marcellus", Georgia, serif;
+}
+
+/* ---------- Skala huruf halaman section ---------- */
+/* Satu skala untuk beranda, Modul, Simulasi, dan Kuis (bagian pembingkai,
+   bukan isi modul/soal), supaya ukuran huruf selalu konsisten. */
+.type-eyebrow {
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.type-display {
+  font-size: clamp(1.75rem, 3.3vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+.type-title {
+  font-size: clamp(1.25rem, 1.9vw, 1.6rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.type-lead {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.type-label {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* Tombol: krem padat (utama) dan bergaris tepi (kedua). */
+.btn-cream,
+.btn-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding: 0 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #f2efe9;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.btn-cream {
+  background: #f2efe9;
+  color: #474747;
+}
+.btn-cream:hover {
+  background: #fff;
+}
+.btn-line {
+  border-color: rgb(242 239 233 / 0.65);
+  color: #f2efe9;
+}
+.btn-line:hover {
+  border-color: #f2efe9;
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* Latar halaman section: sama dengan beranda (abu-abu bergradasi). */
+.section-backdrop {
+  background: linear-gradient(to bottom, #6c6b67, #b3b2ac);
+}
+
+/* ---------- Animasi menu navigasi ---------- */
+/* Kartu daftar membuka dengan tinggi 0 → penuh (grid 0fr → 1fr), lalu tiap
+   butir muncul bergiliran. Saat menutup, semuanya mundur tanpa jeda. */
+.nav-menu {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top center;
+  transition:
+    grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-menu[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+.nav-menu-item {
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(3px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    filter 0.25s ease;
+}
+.nav-menu[data-open="true"] .nav-menu-item {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  transition:
+    opacity 0.5s ease calc(0.12s + var(--i) * 0.06s),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(0.12s + var(--i) * 0.06s),
+    filter 0.5s ease calc(0.12s + var(--i) * 0.06s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-menu,
+  .nav-menu-item {
+    transition-duration: 0.01s !important;
+    transition-delay: 0s !important;
+  }
 }
 
 html,
