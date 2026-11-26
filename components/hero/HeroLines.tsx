@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { HERO_LOOPS, introScale, LINE_BOX, loopPoints, traceLoop } from "@/lib/heroLines";
+import { HERO_LOOPS, introScale, LINE_BOX, lineSpan, loopPoints, traceLoop } from "@/lib/heroLines";
 import { afterIntro } from "@/lib/introGate";
 
 /** Warna garis: abu-abu gelap di atas latar polos, putih di atas video. */
@@ -77,16 +77,17 @@ export default function HeroLines({ light }: Props) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Gradasi tegak: pudar di 4–24 % atas dan 76–96 % bawah layar.
+      // Gradasi tegak: ujung atas dan bawah oval memudar di 14 % tepi layar.
       const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0.04, `rgba(${rgb},0)`);
-      grad.addColorStop(0.24, `rgba(${rgb},1)`);
-      grad.addColorStop(0.76, `rgba(${rgb},1)`);
-      grad.addColorStop(0.96, `rgba(${rgb},0)`);
+      grad.addColorStop(0.0, `rgba(${rgb},0)`);
+      grad.addColorStop(0.14, `rgba(${rgb},1)`);
+      grad.addColorStop(0.86, `rgba(${rgb},1)`);
+      grad.addColorStop(1.0, `rgba(${rgb},0)`);
       ctx.strokeStyle = grad;
 
-      const kx = (w / LINE_BOX) * scale.sx;
-      const ky = (h / LINE_BOX) * scale.sy;
+      const span = lineSpan(w, h);
+      const kx = (span.x / LINE_BOX) * scale.sx;
+      const ky = (span.y / LINE_BOX) * scale.sy;
       for (const spec of HERO_LOOPS) {
         const pts = loopPoints(spec, time).map(
           ([x, y]) => [w / 2 + (x - LINE_BOX / 2) * kx, h / 2 + (y - LINE_BOX / 2) * ky] as [number, number],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HERO_LOOPS, introScale, LINE_BOX, loopPoints, SAMPLES, traceLoop } from "./heroLines";
+import { HERO_LOOPS, introScale, LINE_BOX, lineSpan, loopPoints, SAMPLES, traceLoop } from "./heroLines";
 
 const radiusAt = (spec: (typeof HERO_LOOPS)[number], [x, y]: [number, number]) =>
   Math.hypot((x - LINE_BOX / 2) / spec.rx, (y - LINE_BOX / 2) / spec.ry);
@@ -57,8 +57,17 @@ describe("introScale", () => {
     const { sx, sy } = introScale(w, h, 0.3);
     const avgRx = HERO_LOOPS.reduce((s, l) => s + l.rx, 0) / HERO_LOOPS.length;
     const avgRy = HERO_LOOPS.reduce((s, l) => s + l.ry, 0) / HERO_LOOPS.length;
-    expect((avgRx / LINE_BOX) * w * sx).toBeCloseTo(270);
+    expect((avgRx / LINE_BOX) * lineSpan(w, h).x * sx).toBeCloseTo(270);
     expect((avgRy / LINE_BOX) * h * sy).toBeCloseTo(270);
+  });
+
+  it("oval akhir tegak (lebih tinggi daripada lebar) di laptop maupun ponsel", () => {
+    for (const [w, h] of [[1440, 900], [1920, 1080], [390, 844]]) {
+      const span = lineSpan(w, h);
+      for (const l of HERO_LOOPS) {
+        expect((l.ry / LINE_BOX) * span.y).toBeGreaterThan((l.rx / LINE_BOX) * span.x);
+      }
+    }
   });
 
   it("selalu lebih kecil dari ukuran akhir", () => {
