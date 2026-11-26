@@ -53,3 +53,6 @@ export const narratorPreference = createPreference("emberguard-narator", true);
 
 /** Nama peristiwa jendela saat narator mulai/berhenti bicara (untuk meredam suara alam). */
 export const NARRATION_EVENT = "emberguard:narasi";
+
+/** Suara latar situs (tombol "Suara" di navigasi): mati secara bawaan. */
+export const siteSoundPreference = createPreference("emberguard-suara-situs", false);

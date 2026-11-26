@@ -10,6 +10,13 @@
   font-family: var(--font-playfair), "Playfair Display", serif;
 }
 
+/* Berlaku juga untuk semua anak elemen, karena aturan `*` di atas
+   memberi setiap elemen font Inter secara langsung. */
+.font-marcellus,
+.font-marcellus * {
+  font-family: var(--font-marcellus), "Marcellus", Georgia, serif;
+}
+
 html,
 body {
   background: #000;
@@ -71,12 +78,6 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* Gambar dasar: zoom-out perlahan (efek Ken Burns). */
-@keyframes heroZoom {
-  0% { transform: scale(1.12); }
-  100% { transform: scale(1); }
-}
-
 .hero-anim {
   opacity: 0;
   animation-fill-mode: forwards;
@@ -93,14 +94,9 @@ body {
   animation-duration: 1s;
 }
 
-.hero-zoom {
-  animation: heroZoom 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 /* Hormati pengguna yang meminta gerak dikurangi. */
 @media (prefers-reduced-motion: reduce) {
-  .hero-anim,
-  .hero-zoom {
+  .hero-anim {
     animation: none;
     opacity: 1;
   }

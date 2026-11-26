@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Marcellus, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import "./globals.css";
 
@@ -18,6 +18,13 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
+// Marcellus: serif berujung melebar untuk judul beranda, label, tombol, dan navigasi.
+const marcellus = Marcellus({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-marcellus",
+});
+
 export const metadata: Metadata = {
   title: "Emberguard — Media Edukasi Pencegahan Karhutla",
   description:
@@ -30,7 +37,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable}`}>
       <body>
         <Navbar />
         {children}

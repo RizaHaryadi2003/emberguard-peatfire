@@ -17,6 +17,18 @@ export const NAV_LINKS = [
   { label: "Kuis", href: "/kuis" },
 ] as const;
 
+/** Label kecil di atas judul: awalan tetap, kata terakhir bergantian. */
+export const EYEBROW = {
+  prefix: "Saatnya",
+  words: ["memahami", "mencegah", "bertindak"],
+};
+
+/** Dua tombol di bawah judul: utama (padat) dan kedua (bergaris tepi). */
+export const HERO_ACTIONS = {
+  primary: { label: "Mulai Modul", href: "/modul" },
+  secondary: { label: "Coba Simulasi", href: "/simulasi" },
+};
+
 export const HEADING = {
   line1: "Sebelum bara",
   line2: "menjadi bencana",
