@@ -25,10 +25,11 @@ const marcellus = Marcellus({
   variable: "--font-marcellus",
 });
 
-// Cormorant Garamond Light: nama situs pada pembuka (serif halus dan elegan).
+// Cormorant Garamond Regular: nama situs pada pembuka (serif halus dan elegan,
+// sedikit lebih tegas dari Light).
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: "300",
+  weight: "400",
   variable: "--font-cormorant",
 });
 

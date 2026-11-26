@@ -9,25 +9,24 @@
 // kunci tepat pada waktunya dan kecepatannya bersambung mulus di setiap titik,
 // jadi burung tidak pernah tersentak walau jarak antartitik berbeda-beda.
 
-/** Waktu adegan (detik sejak pembuka dimulai). Temponya tenang, tidak tergesa. */
+/**
+ * Waktu adegan (detik). Temponya tenang dan sabar seperti acuan: kursor
+ * berkedip cukup lama, huruf diketik pelan, lalu koreografi koma
+ * (lib/introComma.ts) sebelum rangkong masuk.
+ */
 export const INTRO = {
-  cursorIn: 0.4,
-  typeStart: 1.7,
+  cursorIn: 0.5,
+  typeStart: 2.1,
   /** Jeda rata-rata antarhuruf; tiap huruf diberi selisih kecil seperti orang mengetik. */
-  keyGap: 0.15,
-  /** Jeda sesudah huruf terakhir sebelum kursor hilang. */
-  holdAfterType: 0.5,
-  /** Titik muncul, jatuh memantul, lalu ekor koma tumbuh. */
-  dotDrop: 0.6,
-  commaTail: 0.45,
-  /** Jeda sesudah koma jadi sebelum rangkong masuk. */
-  holdAfterComma: 0.4,
+  keyGap: 0.19,
+  /** Jeda sesudah koma duduk sebelum rangkong masuk. */
+  holdAfterComma: 0.5,
   /** Lama layar masuk ke beranda sesudah rangkong keluar. */
-  exit: 1.2,
+  exit: 1.4,
 } as const;
 
 /** Pengali tempo terbang: 1 = tempo awal; lebih besar = lebih pelan. */
-export const FLIGHT_PACE = 1.2;
+export const FLIGHT_PACE = 1.45;
 
 /** Selisih kecil per huruf (pecahan dari keyGap) supaya ketikan tidak terasa mesin. */
 const KEY_JITTER = [0.1, -0.25, 0.35, -0.1, 0.2, -0.3, 0.05, 0.4, -0.2, 0.15, -0.05, 0.3];

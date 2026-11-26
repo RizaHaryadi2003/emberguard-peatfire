@@ -1,17 +1,9 @@
-// Rangkong "3D" yang digambar sebagai siluet 2D.
+// Sikap terbang rangkong 3D pada pembuka.
 //
-// Rangkong disusun sebagai model 3D sederhana dalam koordinat badannya
-// sendiri: x ke depan (arah paruh), y ke atas, z ke sayap kanan. Bagian-
-// bagiannya:
-//   - bidang tegak (bidang simetri badan): profil badan, leher, ekor, dan
-//     kepala — terlihat penuh dari samping, menipis bila dilihat dari depan;
-//   - bola-bola sepanjang tulang punggung: memberi badan volume dari sudut
-//     mana pun (proyeksi bola selalu lingkaran);
-//   - bidang ekor mendatar dan dua bidang sayap yang berengsel di bahu.
-// Setiap bingkai model diputar (arah hadap, angguk, miring) lalu diproyeksi
-// tegak lurus ke layar. Karena bidang datar yang diproyeksi tegak lurus
-// selalu menjadi transformasi afin 2D, tiap bidang cukup digambar dengan satu
-// matriks kanvas. Hasilnya siluet hitam yang tampak berputar dalam ruang.
+// Koordinat badan rangkong: x ke depan (arah paruh), y ke atas, z ke sayap
+// kanan. Lintasan terbang di layar (lib/introFlight.ts) diubah menjadi sikap:
+// arah hadap (termasuk saat menjauh atau mendekat), angguk, dan miring ke
+// dalam belokan. Model 3D-nya ada di components/intro/hornbill3d.
 
 export type Vec3 = [number, number, number];
 
@@ -44,21 +36,6 @@ function mul3(a: number[], b: number[]): number[] {
 
 export function apply(m: number[], [x, y, z]: Vec3): Vec3 {
   return [m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z];
-}
-
-/** Proyeksi tegak lurus ke layar: x tetap, y dibalik (kanvas ke bawah), dikali skala px. */
-export const project = (w: Vec3, k: number): [number, number] => [w[0] * k, -w[1] * k];
-
-/**
- * Matriks kanvas (a, b, c, d, e, f) untuk sebuah bidang: titik (p, q) pada
- * bidang = asal + p·U + q·V (koordinat badan). Hasil:
- * layar = (a·p + c·q + e, b·p + d·q + f), relatif terhadap pusat rangkong.
- */
-export function planeMatrix(m: number[], origin: Vec3, U: Vec3, V: Vec3, k: number): [number, number, number, number, number, number] {
-  const [a, b] = project(apply(m, U), k);
-  const [c, d] = project(apply(m, V), k);
-  const [e, f] = project(apply(m, origin), k);
-  return [a, b, c, d, e, f];
 }
 
 /**
@@ -103,4 +80,21 @@ export function wingAngle(phase: number, roll: number): number {
   const amp = (55 * (1 - 0.75 * glide) * Math.PI) / 180;
   const base = ((12 - 4 * glide) * Math.PI) / 180;
   return base + amp * Math.cos(phase);
+}
+
+/** Kecepatan menjauh/mendekat per satuan laju perubahan skala (px/detik). */
+export const DEPTH_K = 900;
+
+type FlightSampler = (t: number) => { vx: number; vy: number; vs: number };
+
+/**
+ * Sikap dan laju belok dari lintasan pada waktu t. Laju belok dihitung dari
+ * selisih arah hadap ±0,12 detik, jadi miringnya badan berubah halus.
+ */
+export function attitudeAlong(sample: FlightSampler, t: number): { att: Attitude; yawRate: number } {
+  const yawOf = (q: ReturnType<FlightSampler>) => Math.atan2(-q.vs * DEPTH_K, q.vx);
+  const p = sample(t);
+  const h = 0.12;
+  const yawRate = clamp(angleDelta(yawOf(sample(t - h)), yawOf(sample(t + h))) / (2 * h), -12, 12);
+  return { att: attitudeFrom({ vx: p.vx, vy: p.vy, vz: p.vs * DEPTH_K }, yawRate), yawRate };
 }

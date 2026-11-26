@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { angleDelta, apply, attitudeFrom, planeMatrix, rotation, wingAngle } from "./bird3d";
+import { angleDelta, apply, attitudeAlong, attitudeFrom, rotation, wingAngle } from "./bird3d";
 
 const close = (a: number[], b: number[]) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i], 6));
 
@@ -22,17 +22,13 @@ describe("rotation", () => {
   });
 });
 
-describe("planeMatrix", () => {
-  it("bidang tegak dilihat dari samping = gambar profil apa adanya (y dibalik)", () => {
-    const m = rotation({ yaw: 0, pitch: 0, roll: 0 });
-    // Titik profil (sx, sy) → badan (sx, −sy, 0): U = (1,0,0), V = (0,−1,0)
-    close(planeMatrix(m, [0, 0, 0], [1, 0, 0], [0, -1, 0], 2), [2, 0, 0, 2, 0, 0]);
-  });
-
-  it("bidang tegak dilihat dari depan menjadi garis (tipis)", () => {
-    const m = rotation({ yaw: -Math.PI / 2, pitch: 0, roll: 0 });
-    const [a] = planeMatrix(m, [0, 0, 0], [1, 0, 0], [0, -1, 0], 1);
-    expect(Math.abs(a)).toBeLessThan(1e-9);
+describe("attitudeAlong", () => {
+  it("berbelok makin tajam = miring makin dalam", () => {
+    // Lintasan melingkar: arah hadap berputar tetap.
+    const circle = (w: number) => (t: number) => ({ vx: Math.cos(w * t) * 300, vy: 0, vs: (-Math.sin(w * t) * 300) / 900 });
+    const slow = Math.abs(attitudeAlong(circle(0.5), 1).att.roll);
+    const fast = Math.abs(attitudeAlong(circle(2), 1).att.roll);
+    expect(fast).toBeGreaterThan(slow);
   });
 });
 
