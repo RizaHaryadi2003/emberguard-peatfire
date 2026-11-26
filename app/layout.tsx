@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter, Marcellus, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
+import { INTRO_GATE_SCRIPT } from "@/lib/introGate";
 import "./globals.css";
 
 // Font dimuat lewat next/font (di-host sendiri, tanpa pergeseran tata letak).
@@ -47,6 +48,13 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning: skrip pembuka menambah kelas pada <html> sebelum React hidup.
     <html lang="id" className={`${inter.variable} ${playfair.variable} ${marcellus.variable} ${cormorant.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Penentu tayang-tidaknya pembuka, dijalankan sebelum halaman digambar
+            (lihat lib/introGate.ts). Diletakkan di tata letak akar karena tata
+            letak ini hanya dirender sekali di server: skrip tidak ikut dirender
+            ulang saat berpindah halaman di dalam situs. */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_GATE_SCRIPT }} />
+      </head>
       <body>
         <Navbar />
         {children}
