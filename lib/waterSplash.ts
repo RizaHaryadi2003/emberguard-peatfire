@@ -118,3 +118,27 @@ export function splashAt(t: number): Splash {
 
 /** Sesudah waktu ini (detik) semua kolom dan butir sudah kembali ke air. */
 export const SPLASH_END = 0.21;
+
+/**
+ * Kawah sesaat sesudah tetesan menyatu. Literatur memodelkannya sebagai
+ * rongga setengah bola dengan bibir terangkat (Engel 1966; Bisighini dkk.
+ * 2010). Ukuran dari neraca energi: ±35% energi gerak tetesan 3,6 mm pada
+ * ±1 m/s menjadi energi permukaan dan potensial kawah → jari-jari ±3 mm,
+ * didominasi tegangan permukaan (Froude ±28), dengan skala waktu
+ * √(ρR³/σ) ≈ 12–19 ms. Kawah terdalam pada 12 ms lalu runtuh tepat saat
+ * kolom muncul (JET_START).
+ */
+export const CRATER = { depth: 2.6e-3, radius: 3.0e-3, peakAt: 0.012 };
+
+/** Kedalaman (m, positif ke bawah) dan jari-jari kawah pada t detik. */
+export function craterAt(t: number): { depth: number; radius: number } {
+  if (t <= 0 || t >= JET_START) return { depth: 0, radius: CRATER.radius };
+  const grow = Math.min(t / CRATER.peakAt, 1);
+  const depth =
+    t < CRATER.peakAt
+      ? CRATER.depth * Math.sin((Math.PI / 2) * grow)
+      : CRATER.depth * Math.cos(((Math.PI / 2) * (t - CRATER.peakAt)) / (JET_START - CRATER.peakAt));
+  // Mulut kawah melebar cepat lalu bertahan sampai runtuh.
+  const radius = CRATER.radius * (0.55 + 0.45 * Math.sin((Math.PI / 2) * grow));
+  return { depth, radius };
+}

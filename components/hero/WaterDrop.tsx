@@ -2,7 +2,7 @@
 
 import { type Ref, type RefObject, useEffect, useImperativeHandle, useRef } from "react";
 import { DROP_RADIUS, fallHeight, RING_RADIUS, sharedRipple } from "@/lib/waterRipple";
-import { SECOND_SCALE, splashAt } from "@/lib/waterSplash";
+import { craterAt, SECOND_SCALE, splashAt } from "@/lib/waterSplash";
 
 /**
  * Ketajaman kanvas mengikuti layar sampai 2× (Retina), agar tepi kolom, butir,
@@ -10,6 +10,13 @@ import { SECOND_SCALE, splashAt } from "@/lib/waterSplash";
  * titik jatuh yang di-raymarch, dan kanvas hanya digambar saat digulir.
  */
 const MAX_DPR = 2;
+/**
+ * Warna latar beranda di atas dan di bawah layar (.section-backdrop di
+ * app/globals.css: #6c6b67 → #b3b2ac). Dipakai untuk pembiasan di dalam air.
+ */
+const BACKDROP_TOP = [0x6c / 255, 0x6b / 255, 0x67 / 255] as const;
+const BACKDROP_BOTTOM = [0xb3 / 255, 0xb2 / 255, 0xac / 255] as const;
+
 /** Lama tetesan tenggelam menyatu dengan air (detik). */
 const MERGE_S = 0.006;
 
@@ -79,14 +86,20 @@ uniform vec4 uJet0;        // tinggi, jari-jari ujung, jari-jari kaki, tinggi ka
 uniform vec4 uJet1;
 uniform vec2 uBulb;        // z dan jari-jari gembung di ujung kolom
 uniform float uZTop;       // batas atas ruang kolom
+uniform vec2 uCrater;      // kedalaman dan jari-jari kawah (m)
+uniform vec3 uBg0;         // warna latar halaman di atas dan di bawah layar,
+uniform vec3 uBg1;         // dilihat lewat pembiasan air
+uniform float uFocusT;     // jarak fokus kamera (m)
 out vec4 outColor;
 
 // Pembesar riak. Riak setinggi aslinya hampir tak tampak di layar, jadi
 // tinggi (dekat titik jatuh) dan kemiringan (jauh) dibesarkan; bentuk, jarak,
 // dan waktunya tetap hasil fisika.
-const float H_GAIN = 3.0;
+const float H_GAIN = 2.0;
 const float SLOPE_GAIN = 9.0;
 const float CAUSTIC_GAIN = 0.03;
+// Kekuatan kabur fokus: lingkar kabur (m) per meter jarak dari bidang fokus.
+const float DOF = 0.05;
 // Kekuatan pantulan studio di permukaan air (1 = sepenuhnya).
 const float WATER_REFL = 0.6;
 // Ruang dekat titik jatuh yang digambar sebagai benda 3D penuh (m).
@@ -120,7 +133,8 @@ float panel(vec3 d, vec3 c, vec2 h, float soft) {
 // kiri dan kanan belakang (garis tepi terang pada air yang melengkung), cahaya
 // isi lembut dari depan, dan ruang redup. Nilai HDR agar kilau tampak nyata.
 float studio(vec3 d) {
-  float key = panel(d, normalize(KEY), vec2(0.34, 0.22), 0.08) * 30.0;
+  // Tepi softbox dilembutkan (difuser besar, di luar fokus lensa makro).
+  float key = panel(d, normalize(KEY), vec2(0.3, 0.18), 0.2) * 30.0;
   float stripL = panel(d, normalize(vec3(-0.85, 0.3, 0.42)), vec2(0.05, 0.5), 0.04) * 9.0;
   float stripR = panel(d, normalize(vec3(0.85, 0.3, 0.42)), vec2(0.05, 0.5), 0.04) * 9.0;
   vec3 f = normalize(vec3(0.0, -0.75, 0.66));
@@ -148,7 +162,10 @@ float sdJet(vec3 p, vec4 jet) {
   // Di bawah permukaan kaki terus melebar, menyatu dengan dinding kawah.
   float flare = max((min(exp(-p.z / jet.w), 4.0) - atCap) / max(1.0 - atCap, 1e-3), 0.0);
   // Dikuadratkan: nilai dan turunannya sama-sama nol di pangkal tutup.
-  float rc = jet.y + (jet.z - jet.y) * flare * flare;
+  // Badan meruncing ke atas seperti jet Worthington sungguhan; kuadrat
+  // menjaga sambungan ke tutup tetap mulus.
+  float rise = clamp(1.0 - max(p.z, 0.0) / max(capZ, 1e-4), 0.0, 1.0);
+  float rc = jet.y * (1.0 + 0.45 * rise * rise) + (jet.z - jet.y) * flare * flare;
   return (r - rc) * 0.6;
 }
 
@@ -160,8 +177,18 @@ float sdObjects(vec3 p) {
   return max(d, -p.z);
 }
 
+// Kawah berbibir: mangkuk mulus (1 − x²)² dan bibir terangkat di luarnya.
+float craterHeight(float r) {
+  if (uCrater.x <= 0.0) return 0.0;
+  float x = r / uCrater.y;
+  float bowl = x < 1.0 ? (1.0 - x * x) * (1.0 - x * x) : 0.0;
+  float rim = exp(-pow((x - 1.15) / 0.42, 2.0));
+  return uCrater.x * (0.24 * rim - bowl);
+}
+
 float sdScene(vec3 p) {
-  float surf = (p.z - H_GAIN * profileAt(length(p.xy)).x) * 0.8;
+  float r = length(p.xy);
+  float surf = (p.z - H_GAIN * profileAt(r).x - craterHeight(r)) * 0.7;
   float d = smin(surf, sdJet(p, uJet0), 1.8e-3);
   d = smin(d, sdJet(p, uJet1), 1.2e-3);
   if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
@@ -263,15 +290,84 @@ float shadowAt(vec2 xy, vec2 at, float z, float r, float strength) {
   return strength * exp(-dot(d, d) / (2.0 * sig * sig)) / (1.0 + 30.0 * z);
 }
 
+// --- Pembiasan -------------------------------------------------------------
+// Air bening memperlihatkan apa yang ada di belakangnya lewat pembiasan. Latar
+// halaman diketahui (gradasi abu-abu tegak), jadi sinar yang keluar dari
+// tetesan, butir, atau kolom bisa dilacak ke latar itu: hasilnya bayangan
+// latar yang terbalik seperti pada foto tetesan. Sinar yang terbelok jauh
+// melihat ruang studio yang gelap, sehingga tepi air tampak gelap alami.
+const float IOR = 1.333;
+const float BACKDROP = 0.09;          // jarak latar di belakang benda (m)
+const vec3 ROOM = vec3(0.14, 0.14, 0.135);
+const vec3 WHITE = vec3(0.957, 0.953, 0.945);
+
+vec3 backdropAt(vec3 q) {
+  vec3 d = q - uCamPos;
+  float depth = max(dot(d, uFwd), 1e-4);
+  float y = 0.5 * uRes.y - dot(d, uUp) / depth * uFocal;
+  return mix(uBg0, uBg1, clamp(y / uRes.y, 0.0, 1.0));
+}
+
+// Warna sinar yang keluar dari air di titik q dengan arah r2.
+vec3 seen(vec3 q, vec3 r2, vec3 rd) {
+  if (dot(r2, r2) < 0.5) return ROOM; // pantul sempurna di dalam
+  float w = smoothstep(0.55, 0.93, dot(normalize(r2), rd));
+  return mix(ROOM, backdropAt(q + normalize(r2) * BACKDROP), w);
+}
+
+// Badan air: bias masuk, bias keluar, ditambah pantulan studio (Fresnel).
+vec3 waterBody(vec3 rd, vec3 n, vec3 trans) {
+  float F = fresnel(dot(-rd, n));
+  vec3 spec = WHITE * (1.0 - exp(-F * studio(reflect(rd, n))));
+  return trans * (1.0 - F) * 0.95 + spec;
+}
+
+vec3 ellipsoidColor(vec3 rd, vec3 q, vec3 n, vec3 c, float r, float s) {
+  vec3 r1 = refract(rd, n, 1.0 / IOR);
+  vec3 sc = vec3(r, r, r * s);
+  vec3 o = (q - c) / sc;
+  vec3 d = r1 / sc;
+  float a = dot(d, d);
+  float b = dot(o, d);
+  float h = max(b * b - a * (dot(o, o) - 1.0), 0.0);
+  vec3 q2 = q + r1 * ((-b + sqrt(h)) / a);
+  vec3 n2 = ellipsoidNormal(q2, c, r, s);
+  return waterBody(rd, n, seen(q2, refract(r1, -n2, IOR), rd));
+}
+
+// Kolom dan dinding kawah: telusuri sinar di dalam air sampai keluar.
+vec3 sceneBodyColor(vec3 p, vec3 n, vec3 rd) {
+  vec3 r1 = refract(rd, n, 1.0 / IOR);
+  float t = 3e-4;
+  for (int i = 0; i < 24; i++) {
+    vec3 q = p + r1 * t;
+    float d = sdScene(q);
+    if (d > -1e-5 && t > 5e-4) return waterBody(rd, n, seen(q, refract(r1, -sceneNormal(q), IOR), rd));
+    t += max(-d, 1.5e-4);
+  }
+  // Sinar masuk ke kolam: tampak latar di baliknya, sedikit redup.
+  return waterBody(rd, n, backdropAt(p + r1 * 0.03) * 0.86);
+}
+
+// Profil riak yang dikaburkan sesuai jarak dari bidang fokus, seperti foto
+// makro: riak di dekat percikan tajam, riak jauh melembut.
+vec3 profileFocus(float r, float t) {
+  float coc = DOF * abs(t - uFocusT);
+  if (coc < 2e-4) return profileAt(r);
+  return (profileAt(r - coc) + profileAt(r - 0.5 * coc) + profileAt(r) + profileAt(r + 0.5 * coc) + profileAt(r + coc)) / 5.0;
+}
+
 // Satu sampel: (cahaya setelah pemetaan nada, alfa). \`fine\` = piksel ini
 // memuat tepi benda atau pantulannya, jadi perlu sampel tambahan.
-vec2 shadeSample(vec2 sc, out bool fine) {
+vec4 shadeSample(vec2 sc, out bool fine) {
   fine = false;
   vec3 ro = uCamPos;
   vec3 rd = normalize(uFwd * uFocal + uRight * sc.x - uUp * sc.y);
 
   float light = 0.0;
   float dark = 0.0;
+  float bodyCover = 0.0;
+  vec3 body = vec3(0.0);
   float tHit = 1e9;
   vec3 n = vec3(0.0, 0.0, 1.0);
   bool core = false;
@@ -298,7 +394,7 @@ vec2 shadeSample(vec2 sc, out bool fine) {
   if (tHit < 1e9) {
     vec3 p = ro + rd * tHit;
     float r = length(p.xy);
-    vec3 pr = profileAt(r);
+    vec3 pr = core ? profileAt(r) : profileFocus(r, tHit);
     if (core) n = sceneNormal(p);
     else {
       vec2 dir = r > 1e-6 ? p.xy / r : vec2(0.0);
@@ -342,7 +438,7 @@ vec2 shadeSample(vec2 sc, out bool fine) {
     }
 
     // Kaustik di dasar: puncak riak memusatkan cahaya, lembah menyebarkannya.
-    float c = -profileAt(length(p.xy - vec2(0.0015, -0.004))).z * CAUSTIC_GAIN;
+    float c = -profileFocus(length(p.xy - vec2(0.0015, -0.004)), tHit).z * CAUSTIC_GAIN;
     c = c / sqrt(1.0 + 4.0 * c * c);
     sL += max(c, 0.0) * 0.7 * seeFloor;
     sD += max(-c, 0.0) * 0.4 * seeFloor;
@@ -361,18 +457,18 @@ vec2 shadeSample(vec2 sc, out bool fine) {
     }
     sD += sh * mix(0.5, 1.0, seeFloor);
 
-    light += sL * mix(1.0, 0.6, steep) * pool;
+    light += sL * pool;
     dark += sD * pool;
 
-    // Bagian curam (dinding kawah, kolom) diwarnai sebagai badan air.
-    if (steep > 0.0) {
-      float bl = 0.0;
-      float bd = 0.0;
-      shadeBody(rd, n, bl, bd);
-      light += bl * steep * uFade;
-      dark += bd * steep * uFade;
-    }
+    // Bagian curam (dinding kawah, kolom) digambar sebagai badan air bening.
+    if (steep > 0.0) bodyCover = steep * uFade;
+    if (bodyCover > 0.0) body = sceneBodyColor(p, n, rd);
   }
+
+  float L = 1.0 - exp(-light);
+  float D = clamp(dark, 0.0, 0.85);
+  vec4 col = vec4(WHITE * L, L + D * (1.0 - L));
+  if (bodyCover > 0.0) col = mix(col, vec4(body, 1.0), bodyCover);
 
   // 3. Tetesan jatuh dan butir yang melambung: elipsoid analitik dengan tepi
   //    halus selebar satu piksel.
@@ -390,18 +486,11 @@ vec2 shadeSample(vec2 sc, out bool fine) {
     // Di luar tepi (sinar nyaris lewat), warnai titik tepi terdekat.
     vec3 toC = c - ro;
     vec3 side = toC - rd * dot(toC, rd);
-    vec3 q = h.x > 0.0 ? ro + rd * h.x : c - normalize(side + 1e-9) * b.z;
+    vec3 q = h.x > 0.0 ? ro + rd * h.x : c - normalize(side + 1e-9) * b.z * 0.999;
     vec3 bn = ellipsoidNormal(q, c, b.z, s);
-    float bl = 0.0;
-    float bd = 0.0;
-    shadeBody(rd, bn, bl, bd);
-    light = mix(light, bl, cover);
-    dark = mix(dark, bd, cover);
+    col = mix(col, vec4(ellipsoidColor(rd, q, bn, c, b.z, s), 1.0), cover);
   }
-
-  float L = 1.0 - exp(-light);
-  float D = clamp(dark, 0.0, 0.85);
-  return vec2(L, L + D * (1.0 - L));
+  return col;
 }
 
 // Pola 4 sampel berputar (rotated grid) di dalam satu piksel layar.
@@ -411,7 +500,7 @@ void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;
   vec2 sc = px - 0.5 * uRes;
   bool fine;
-  vec2 acc = shadeSample(sc, fine);
+  vec4 acc = shadeSample(sc, fine);
   // Hanya piksel di tepi kolom, butir, tetesan, kawah, dan pantulannya yang
   // diambil 5 sampel; bidang air lainnya cukup satu. Tepi jadi halus tanpa
   // membebani seluruh layar.
@@ -420,13 +509,10 @@ void main() {
     for (int i = 0; i < 4; i++) acc += shadeSample(sc + SUB[i] / uDpr, unused);
     acc /= 5.0;
   }
-  float L = acc.x;
-  float alpha = acc.y;
   // Derau halus ±½ tingkat warna agar gradasi lembut tidak berpita.
-  float nz = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-  alpha = clamp(alpha + (nz - 0.5) / 255.0, 0.0, 1.0);
-  L = clamp(L + (nz - 0.5) / 255.0, 0.0, alpha);
-  outColor = vec4(vec3(0.957, 0.953, 0.945) * L, alpha);
+  float nz = (fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5) / 255.0;
+  float alpha = clamp(acc.a + nz, 0.0, 1.0);
+  outColor = vec4(clamp(acc.rgb + nz, 0.0, alpha), alpha);
 }`;
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string) {
@@ -522,7 +608,8 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
     gl.useProgram(program);
     const names = [
       "uRes", "uDpr", "uFocal", "uCamPos", "uFwd", "uRight", "uUp", "uRingM", "uProfile", "uSamples",
-      "uExtent", "uRipple", "uFade", "uDrop", "uBead", "uJet0", "uJet1", "uBulb", "uZTop",
+      "uExtent", "uRipple", "uFade", "uDrop", "uBead", "uJet0", "uJet1", "uBulb", "uZTop", "uCrater",
+      "uBg0", "uBg1", "uFocusT",
     ] as const;
     const U = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(program, n)])) as Record<
       (typeof names)[number],
@@ -544,6 +631,8 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
     gl.uniform1f(U.uSamples, field.samples);
     gl.uniform1f(U.uExtent, field.extent);
     gl.uniform1f(U.uRingM, RING_RADIUS);
+    gl.uniform3fv(U.uBg0, BACKDROP_TOP);
+    gl.uniform3fv(U.uBg1, BACKDROP_BOTTOM);
 
     let lastTime = -1;
     let frame = 0;
@@ -633,6 +722,10 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
       gl.uniform4f(U.uJet1, j1.height, j1.tipRadius, j1.baseRadius, j1.baseHeight);
       gl.uniform2f(U.uBulb, bulb[0], bulb[1]);
       gl.uniform1f(U.uZTop, Math.max(j0.height, j1.height, bulb[0] + bulb[1], 0.002) + 0.002);
+      const crater = craterAt(s.time);
+      gl.uniform2f(U.uCrater, crater.depth, crater.radius);
+      // Fokus pada percikan, ±6 mm di atas titik jatuh.
+      gl.uniform1f(U.uFocusT, Math.hypot(cam.pos[0], cam.pos[1], cam.pos[2] - 0.006));
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);

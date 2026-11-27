@@ -48,3 +48,16 @@ describe("akhir percikan", () => {
     }
   });
 });
+
+describe("kawah", () => {
+  it("datar sebelum menyentuh air dan saat kolom muncul, terdalam di puncaknya", async () => {
+    const { craterAt, CRATER } = await import("./waterSplash");
+    expect(craterAt(0).depth).toBe(0);
+    expect(craterAt(JET_START).depth).toBe(0);
+    expect(craterAt(CRATER.peakAt).depth).toBeCloseTo(CRATER.depth, 6);
+    // Bergerak mulus: tidak ada lompatan antarlangkah 1 ms.
+    for (let t = 0; t < JET_START; t += 0.001) {
+      expect(Math.abs(craterAt(t + 0.001).depth - craterAt(t).depth)).toBeLessThan(CRATER.depth * 0.2);
+    }
+  });
+});
