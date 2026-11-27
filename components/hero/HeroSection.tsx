@@ -109,7 +109,7 @@ export default function HeroSection() {
             <blockquote data-split className="story-quote font-marcellus">
               “{SCROLL_STORY.quote.text}”
             </blockquote>
-            <figcaption className="type-eyebrow mt-6 text-[#f1f1f1]/80">
+            <figcaption className="story-author font-marcellus">
               {SCROLL_STORY.quote.author}
             </figcaption>
           </figure>
