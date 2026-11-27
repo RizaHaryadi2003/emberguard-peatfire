@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { HERO_POSTER, HERO_VIDEOS } from "@/config/assets";
-import { EYEBROW, HEADING, HERO_ACTIONS } from "@/config/hero-content";
+import { EYEBROW, HEADING, HERO_ACTIONS, SCROLL_STORY } from "@/config/hero-content";
 import EyebrowRotator from "./EyebrowRotator";
 import HeroLines from "./HeroLines";
 import HeroVideo from "./HeroVideo";
+import { useHeroScroll } from "./useHeroScroll";
 
 /** Video muncul setelah garis selesai melebar (lihat HeroLines: jeda 0,5 s + 1,9 s). */
 const VIDEO_REVEAL_MS = 2100;
@@ -18,68 +19,107 @@ const VIDEO_REVEAL_MS = 2100;
  *
  * Tanpa video, hero memakai latar abu-abu bergradasi dan garis gelap.
  * Begitu video tampil, garis berubah putih dan peredup menjaga teks tetap terbaca.
+ *
+ * Saat digulir, hero ditahan di layar (useHeroScroll): judul pergi, lalu
+ * kalimat pembuka, kutipan, dan satu paragraf bergantian muncul di tengah
+ * garis lingkaran. Teksnya diatur di config/hero-content.ts (SCROLL_STORY).
  */
 export default function HeroSection() {
   const hasVideo = HERO_VIDEOS.length > 0;
   const [videoShown, setVideoShown] = useState(false);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const blocksRef = useRef<(HTMLElement | null)[]>([]);
+  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef });
 
   return (
-    <section
-      id="beranda"
-      className="section-backdrop relative h-[100dvh] w-full overflow-clip"
-    >
-      {hasVideo && (
-        <>
-          <HeroVideo
-            sources={HERO_VIDEOS}
-            poster={HERO_POSTER}
-            revealDelayMs={VIDEO_REVEAL_MS}
-            onShown={() => setVideoShown(true)}
-          />
-          {/* Peredup tipis agar teks putih tetap terbaca di atas video yang terang. */}
-          <div
-            aria-hidden
-            className={`absolute inset-0 z-10 bg-black/35 transition-opacity duration-[900ms] ${
-              videoShown ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        </>
-      )}
+    // Pembungkus yang ditahan; transform pembuka (#beranda) tetap di section.
+    <div ref={pinRef}>
+      <section
+        id="beranda"
+        className="section-backdrop relative h-[100dvh] w-full overflow-clip"
+      >
+        {hasVideo && (
+          <>
+            <HeroVideo
+              sources={HERO_VIDEOS}
+              poster={HERO_POSTER}
+              revealDelayMs={VIDEO_REVEAL_MS}
+              onShown={() => setVideoShown(true)}
+            />
+            {/* Peredup tipis agar teks putih tetap terbaca di atas video yang terang. */}
+            <div
+              aria-hidden
+              className={`absolute inset-0 z-10 bg-black/35 transition-opacity duration-[900ms] ${
+                videoShown ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </>
+        )}
 
-      <HeroLines light={videoShown} />
+        <HeroLines light={videoShown} />
 
-      {/* Label, judul, dan tombol di tengah layar */}
-      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center px-5 pb-[4vh] text-center">
-        <div className="hero-anim hero-fade" style={{ animationDelay: "0.2s" }}>
-          <EyebrowRotator prefix={EYEBROW.prefix} words={EYEBROW.words} />
-        </div>
-
-        <h1
-          className="hero-anim hero-reveal type-display mt-5 text-[#f1f1f1]"
-          style={{ animationDelay: "0.3s" }}
-        >
-          <span className="block">{HEADING.line1}</span>
-          <span className="block">{HEADING.line2}</span>
-        </h1>
-
+        {/* Label, judul, dan tombol di tengah layar */}
         <div
-          className="hero-anim hero-fade mt-7 flex w-full max-w-[320px] flex-col gap-2.5 sm:w-auto sm:max-w-none sm:flex-row"
-          style={{ animationDelay: "0.5s" }}
+          ref={heroRef}
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center px-5 pb-[4vh] text-center"
         >
-          <Link
-            href={HERO_ACTIONS.primary.href}
-            className="btn-cream sm:w-[164px]"
+          <div className="hero-anim hero-fade" style={{ animationDelay: "0.2s" }}>
+            <EyebrowRotator prefix={EYEBROW.prefix} words={EYEBROW.words} />
+          </div>
+
+          <h1
+            className="hero-anim hero-reveal type-display mt-5 text-[#f1f1f1]"
+            style={{ animationDelay: "0.3s" }}
           >
-            {HERO_ACTIONS.primary.label}
-          </Link>
-          <Link
-            href={HERO_ACTIONS.secondary.href}
-            className="btn-line sm:w-[164px]"
+            <span className="block">{HEADING.line1}</span>
+            <span className="block">{HEADING.line2}</span>
+          </h1>
+
+          <div
+            className="hero-anim hero-fade mt-7 flex w-full max-w-[320px] flex-col gap-2.5 sm:w-auto sm:max-w-none sm:flex-row"
+            style={{ animationDelay: "0.5s" }}
           >
-            {HERO_ACTIONS.secondary.label}
-          </Link>
+            <Link
+              href={HERO_ACTIONS.primary.href}
+              className="btn-cream sm:w-[164px]"
+            >
+              {HERO_ACTIONS.primary.label}
+            </Link>
+            <Link
+              href={HERO_ACTIONS.secondary.href}
+              className="btn-line sm:w-[164px]"
+            >
+              {HERO_ACTIONS.secondary.label}
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+
+        {/* Urutan teks gulir: tersembunyi sampai digerakkan useHeroScroll. */}
+        <div
+          aria-label="Pengantar"
+          className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center px-5 text-center text-[#f1f1f1] [perspective:900px]"
+        >
+          <div ref={(el) => { blocksRef.current[0] = el; }} className="story-block absolute">
+            <h2 data-split className="story-opening font-marcellus">
+              {SCROLL_STORY.opening}
+            </h2>
+          </div>
+          <figure ref={(el) => { blocksRef.current[1] = el; }} className="story-block absolute">
+            <blockquote data-split className="story-quote font-marcellus">
+              “{SCROLL_STORY.quote.text}”
+            </blockquote>
+            <figcaption className="type-eyebrow mt-6 text-[#f1f1f1]/80">
+              {SCROLL_STORY.quote.author}
+            </figcaption>
+          </figure>
+          <div ref={(el) => { blocksRef.current[2] = el; }} className="story-block absolute">
+            <p data-split className="story-paragraph font-marcellus">
+              {SCROLL_STORY.paragraph}
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

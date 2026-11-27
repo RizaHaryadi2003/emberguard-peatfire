@@ -647,3 +647,41 @@ body {
     animation: none;
   }
 }
+
+/* ---------- Urutan teks gulir beranda (components/hero/useHeroScroll.ts) ---------- */
+/* Tersembunyi sampai GSAP mengambil alih, supaya tidak berkedip saat dimuat. */
+.story-block {
+  visibility: hidden;
+  max-width: calc(100vw - 2.5rem);
+  transform-style: preserve-3d;
+}
+.story-opening {
+  font-size: clamp(2.5rem, 6.4vw, 6.5rem);
+  line-height: 1;
+  font-weight: 400;
+  max-width: 14ch;
+  text-wrap: balance;
+}
+.story-quote {
+  font-size: clamp(2rem, 4.6vw, 4.6rem);
+  line-height: 1.05;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+.story-paragraph {
+  font-size: clamp(1.3rem, 2.5vw, 2.4rem);
+  line-height: 1.18;
+  max-width: 34ch;
+}
+.story-line {
+  will-change: transform, opacity, filter;
+}
+/* Selama pembuka tayang, halaman belum boleh digulir. */
+html.intro-playing {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-line {
+    will-change: opacity;
+  }
+}

@@ -33,3 +33,25 @@ export const HEADING = {
   line1: "Sebelum bara",
   line2: "menjadi bencana",
 };
+
+/**
+ * Urutan teks saat beranda digulir (pola layar tertahan seperti acuan
+ * frequencybreathwork.com): judul hero pergi → kalimat pembuka → kutipan →
+ * satu paragraf penjelasan. Teks tampil di tengah garis lingkaran.
+ */
+export const SCROLL_STORY = {
+  /** Kalimat pembuka (permintaan pengguna, sementara mengikuti acuan). */
+  opening: "The Art and Science of Breathwork",
+  /** Kutipan Friedrich Nietzsche (Der Wille zur Macht, catatan 822). */
+  quote: {
+    text: "We have art in order not to die of the truth.",
+    author: "Friedrich Nietzsche",
+  },
+  /**
+   * DRAF — PARAGRAF SEMENTARA TULISAN CLAUDE. Ganti sendiri bila kurang cocok.
+   * Klaim "ribuan tahun" mengikuti laju tumbuh gambut ±1 mm/tahun
+   * (acuan-modul-anatomi.md, Anshari dkk. 2026).
+   */
+  paragraph:
+    "Di bawah kaki kita, gambut menyimpan air, karbon, dan sisa hutan dari ribuan tahun lalu. Saat ia mengering, satu percikan cukup untuk membakarnya dari dalam: diam, lama, dan sulit dipadamkan. Emberguard mengajakmu memahami cara kerja api itu, lewat sains dan cerita, sebelum bara menjadi bencana.",
+};
