@@ -61,10 +61,10 @@ describe("medan riak tetesan", () => {
     expect(rebound).toBeGreaterThan(0);
   });
 
-  it("muka riak melebar terus dan tiba di lingkaran dalam ±0,13 detik", () => {
+  it("muka riak melebar terus dan tiba di lingkaran dalam ±0,28 detik", () => {
     const t = crestArrivalTime(field);
-    expect(t).toBeGreaterThan(0.1);
-    expect(t).toBeLessThan(0.16);
+    expect(t).toBeGreaterThan(0.22);
+    expect(t).toBeLessThan(0.34);
     expect(field.crestRadius(t)).toBeGreaterThanOrEqual(RING_RADIUS);
     expect(field.crestRadius(t * 0.5)).toBeLessThan(field.crestRadius(t));
   });

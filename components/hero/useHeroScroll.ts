@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { factorAngle } from "@/lib/factorRing";
 import { sharedRipple } from "@/lib/waterRipple";
+import { SPLASH_END } from "@/lib/waterSplash";
 import type { WaterHandle } from "./WaterDrop";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -61,9 +62,11 @@ type Refs = {
  *    lingkaran kiri-kanan pelan-pelan melebar.
  * 2. Tiap blok teks dipecah per baris (SplitText). Baris masuk dari
  *    kedalaman (kabur, miring ke belakang) menjadi tajam, lalu pergi ke atas.
- * 3. Logo bulat di navigasi menjadi tetesan air yang jatuh ke tengah roda.
- *    Riaknya melebar (dihitung fisika, lib/waterRipple.ts) dan lingkaran
- *    faktor muncul tepat saat puncak riak tiba di jari-jarinya.
+ * 3. Logo bulat di navigasi menjadi tetesan air, dilihat dari depan. Tetesan
+ *    jatuh, kolom air memantul naik dan melepas satu butir yang melambung
+ *    lalu jatuh kembali (lib/waterSplash.ts). Kamera lalu naik ke atas dan
+ *    riaknya (lib/waterRipple.ts) menjadi lingkaran faktor tepat saat muka
+ *    riak tiba di jari-jarinya.
  * 4. Roda diperbesar ke satu faktor dan titiknya melebar menjadi layar krem.
  *
  * Semua langkah mengikuti posisi gulir (scrub), jadi menggulir balik
@@ -170,9 +173,16 @@ export function useHeroScroll({ pin, hero, blocks, wheel, spread }: Refs) {
   }, [pin, hero, blocks, wheel, spread]);
 }
 
-/** Lama gerak lambat riak pada linimasa, dan sampai detik nyata ke berapa. */
-const RIPPLE_UNITS = 5.5;
-const RIPPLE_END_FACTOR = 2.2;
+/**
+ * Panjang tiap babak air pada linimasa (satuan waktu linimasa). Waktu nyata
+ * di dalamnya tetap linear, jadi gerak lambatnya merata seperti rekaman
+ * kamera kecepatan tinggi.
+ */
+const SPLASH_UNITS = 6;
+const CAMERA_UNITS = 3.5;
+const SETTLE_UNITS = 1.6;
+/** Riak dibiarkan berjalan sampai kelipatan ini dari waktu tibanya. */
+const RIPPLE_END_FACTOR = 1.35;
 
 /**
  * Langkah roda faktor: logo menjadi tetesan dan jatuh ke air, riaknya
@@ -216,7 +226,7 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   gsap.set(ghost, { autoAlpha: 0 });
   gsap.set(cover, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
   gsap.set(wheel.coverTitle.current, { autoAlpha: 0, y: 16 });
-  if (water) Object.assign(water.state, { morph: 0, fall: 0, time: 0, fade: 1 });
+  if (water) Object.assign(water.state, { morph: 0, fall: 0, time: 0, camera: 0, fade: 1 });
   const redraw = () => water?.invalidate();
 
   // 1. Salinan logo muncul tepat di atas logo navigasi.
@@ -235,21 +245,25 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   let ringAt: number;
   if (useWater) {
     const { crest } = sharedRipple();
-    const end = crest * RIPPLE_END_FACTOR;
 
     // 2. Garis logo mengerut menjadi tetesan bening di tempat yang sama.
     tl.to(ghost, { autoAlpha: 0, scale: () => (0.5 * logoRect().width) / ghostSize(), duration: 0.7, ease: "power2.in" });
     tl.to(water.state, { morph: 1, duration: 0.7, ease: "power2.out", onUpdate: redraw }, "<");
 
-    // 3. Jatuh bebas ke tengah roda (percepatannya ada di fallHeight).
+    // 3. Jatuh bebas ke titik jatuh (percepatannya ada di fallHeight).
     tl.to(water.state, { fall: 1, duration: 2.2, ease: "none", onUpdate: redraw });
 
-    // 4. Menyatu dengan air; riak melebar dalam gerak lambat dengan waktu
-    //    yang sebanding waktu nyata, lalu air memudar.
-    const hitAt = tl.duration();
-    tl.to(water.state, { time: end, duration: RIPPLE_UNITS, ease: "none", onUpdate: redraw }, hitAt);
-    tl.to(water.state, { fade: 0, duration: 1.6, ease: "power1.inOut", onUpdate: redraw }, hitAt + RIPPLE_UNITS - 1.6);
-    ringAt = hitAt + (RIPPLE_UNITS * crest) / end;
+    // 4. Dari depan, dalam gerak lambat: kawah, kolom air naik, butir lepas,
+    //    melambung, jatuh kembali, dan kolom kecil kedua.
+    tl.to(water.state, { time: SPLASH_END, duration: SPLASH_UNITS, ease: "none", onUpdate: redraw });
+
+    // 5. Kamera naik ke atas sementara riak terus melebar, sampai muka riak
+    //    tepat di lingkaran faktor; lalu air memudar.
+    tl.to(water.state, { time: crest, duration: CAMERA_UNITS, ease: "none", onUpdate: redraw });
+    tl.to(water.state, { camera: 1, duration: CAMERA_UNITS, ease: "power2.inOut", onUpdate: redraw }, "<");
+    ringAt = tl.duration();
+    tl.to(water.state, { time: crest * RIPPLE_END_FACTOR, duration: SETTLE_UNITS, ease: "none", onUpdate: redraw });
+    tl.to(water.state, { fade: 0, duration: SETTLE_UNITS, ease: "power1.inOut", onUpdate: redraw }, "<");
   } else {
     // Tanpa WebGL2 atau bila gerak dikurangi: salinan logo turun ke tengah.
     tl.to(ghost, {
@@ -263,7 +277,7 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
     tl.to(ghost, { autoAlpha: 0, duration: 0.4 }, ringAt);
   }
 
-  // 5. Lingkaran faktor muncul tepat saat puncak riak tiba di jari-jarinya;
+  // 6. Lingkaran faktor muncul tepat saat muka riak tiba di jari-jarinya;
   //    titik faktor muncul bersamaan karena riak tiba di semuanya sekaligus,
   //    lalu nama faktor menyusul berurutan searah jarum jam.
   tl.fromTo(ring, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.9, ease: "power2.out", immediateRender: false }, ringAt - 0.25);

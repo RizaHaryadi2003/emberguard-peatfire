@@ -29,13 +29,13 @@ export const IMPACT_WIDTH = 2.6e-3;
 /** Kedalaman kawah terdalam tepat sesudah tetesan menyatu (m). */
 export const CRATER_DEPTH = 1.2e-3;
 /** Jari-jari lingkaran faktor dalam ukuran nyata (m). */
-export const RING_RADIUS = 0.055;
+export const RING_RADIUS = 0.12;
 /** Jangkauan riak yang dihitung, kelipatan jari-jari lingkaran. */
 export const FIELD_EXTENT = 2.2;
 
 /** Jumlah titik jari-jari dan bilangan gelombang pada perhitungan. */
-const RADIAL_SAMPLES = 768;
-const WAVE_SAMPLES = 160;
+const RADIAL_SAMPLES = 1024;
+const WAVE_SAMPLES = 200;
 const K_MAX = 3200;
 /** Bagian kemiringan riak terkuat yang masih dihitung sebagai muka riak. */
 const FRONT_SHARE = 0.25;
