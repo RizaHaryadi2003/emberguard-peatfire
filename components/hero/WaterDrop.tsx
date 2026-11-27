@@ -137,29 +137,34 @@ float smin(float a, float b, float k) {
 }
 
 // Kolom air sebagai benda putar: kaki melebar, badan ramping, ujung membulat.
+// Pelebaran kaki dan kemiringannya dinolkan tepat di pangkal tutup bulat,
+// jadi badan dan tutup bertemu mulus tanpa anak tangga maupun lipatan.
 float sdJet(vec3 p, vec4 jet) {
   if (jet.x <= 0.0) return 1e3;
   float r = length(p.xy);
   float capZ = jet.x - jet.y;
   if (p.z > capZ) return length(vec2(r, p.z - capZ)) - jet.y;
+  float atCap = exp(-max(capZ, 0.0) / jet.w);
   // Di bawah permukaan kaki terus melebar, menyatu dengan dinding kawah.
-  float rc = jet.y + (jet.z - jet.y) * min(exp(-p.z / jet.w), 4.0);
-  return (r - rc) * 0.7;
+  float flare = max((min(exp(-p.z / jet.w), 4.0) - atCap) / max(1.0 - atCap, 1e-3), 0.0);
+  // Dikuadratkan: nilai dan turunannya sama-sama nol di pangkal tutup.
+  float rc = jet.y + (jet.z - jet.y) * flare * flare;
+  return (r - rc) * 0.6;
 }
 
 // Kolom tanpa permukaan air, untuk pantulannya. Bagian di bawah permukaan
 // dipotong agar pantulan kaki kolom bertemu garis air dengan rapi.
 float sdObjects(vec3 p) {
   float d = min(sdJet(p, uJet0), sdJet(p, uJet1));
-  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 4e-4);
+  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
   return max(d, -p.z);
 }
 
 float sdScene(vec3 p) {
   float surf = (p.z - H_GAIN * profileAt(length(p.xy)).x) * 0.8;
-  float d = smin(surf, sdJet(p, uJet0), 1.2e-3);
-  d = smin(d, sdJet(p, uJet1), 8e-4);
-  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 4e-4);
+  float d = smin(surf, sdJet(p, uJet0), 1.8e-3);
+  d = smin(d, sdJet(p, uJet1), 1.2e-3);
+  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
   return d;
 }
 
@@ -212,8 +217,9 @@ void shadeBody(vec3 rd, vec3 n, inout float light, inout float dark) {
 }
 
 // Butir, tetesan, atau kolom yang terpantul di permukaan air.
-bool reflectedBody(vec3 p, vec3 rr, out vec3 n) {
+bool reflectedBody(vec3 p, vec3 rr, out vec3 n, out float hitZ) {
   n = vec3(0.0);
+  hitZ = 1.0;
   float best = 1e9;
   if (uBead.w > 0.0) {
     vec3 c = vec3(0.0, 0.0, uBead.x);
@@ -243,6 +249,7 @@ bool reflectedBody(vec3 p, vec3 rr, out vec3 n) {
       t += max(d, 2e-5);
     }
   }
+  if (best < 1e9) hitZ = p.z + rr.z * best;
   return best < 1e9;
 }
 
@@ -256,9 +263,10 @@ float shadowAt(vec2 xy, vec2 at, float z, float r, float strength) {
   return strength * exp(-dot(d, d) / (2.0 * sig * sig)) / (1.0 + 30.0 * z);
 }
 
-void main() {
-  vec2 px = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;
-  vec2 sc = px - 0.5 * uRes;
+// Satu sampel: (cahaya setelah pemetaan nada, alfa). \`fine\` = piksel ini
+// memuat tepi benda atau pantulannya, jadi perlu sampel tambahan.
+vec2 shadeSample(vec2 sc, out bool fine) {
+  fine = false;
   vec3 ro = uCamPos;
   vec3 rd = normalize(uFwd * uFocal + uRight * sc.x - uUp * sc.y);
 
@@ -280,6 +288,9 @@ void main() {
       if (d < 2e-5) { tHit = t; core = true; break; }
       t += max(d, 1e-5);
     }
+    // Perhalus titik temu agar tepi tidak bertangga.
+    if (core) for (int i = 0; i < 3; i++) tHit += sdScene(ro + rd * tHit);
+    fine = true;
   }
   // 2. Di luar itu: bidang air dengan riak sebagai kemiringan.
   if (!core && rd.z < 0.0) tHit = -ro.z / rd.z;
@@ -296,7 +307,9 @@ void main() {
     }
     // Air hanya di sekitar lingkaran, memudar halus ke luar.
     float pool = (1.0 - smoothstep(1.2 * uRingM, 1.95 * uRingM, r)) * uFade;
-    float steep = smoothstep(0.25, 0.7, 1.0 - n.z);
+    // Peralihan lebar dari warna permukaan ke warna badan air (kaki kolom,
+    // dinding kawah), supaya tidak muncul garis sudut.
+    float steep = smoothstep(0.12, 0.85, 1.0 - n.z);
     // Dasar air makin sulit terlihat saat dipandang miring (pantulan menguat).
     float seeFloor = pow(clamp(-rd.z, 0.0, 1.0), 2.0);
 
@@ -307,8 +320,15 @@ void main() {
     vec3 rr = reflect(rd, n);
     float F = fresnel(dot(-rd, n));
     vec3 bn;
-    bool mirrored = reflectedBody(p, rr, bn);
-    float env = mirrored ? 0.0 : studio(rr);
+    float hitZ;
+    bool mirrored = reflectedBody(p, rr, bn, hitZ);
+    // Di air sungguhan kaki kolom melengkung menyatu dengan permukaan, jadi
+    // pantulannya memudar mulus ke garis air, bukan terpotong bersudut.
+    float mirrorW = mirrored ? smoothstep(1.0e-3, 5.5e-3, hitZ) : 0.0;
+    // Pantulan benda di air (dan sekitarnya) bertepi tajam: perlu sampel tambahan.
+    bool things = uJet0.x > 0.0 || uJet1.x > 0.0 || uBead.w > 0.0 || uDrop.w > 0.0;
+    if (mirrored || (things && r < 0.06)) fine = true;
+    float env = studio(rr) * (1.0 - mirrorW);
     float refl = F * env * WATER_REFL;
     float calm = fresnel(-rd.z) * studio(reflect(rd, vec3(0.0, 0.0, 1.0))) * WATER_REFL;
     float sL = refl;
@@ -317,8 +337,8 @@ void main() {
       float bl = 0.0;
       float bd = 0.0;
       shadeBody(rr, bn, bl, bd);
-      sL += F * 2.2 * bl;
-      sD += F * 1.5 * bd;
+      sL += F * 2.2 * bl * mirrorW;
+      sD += F * 1.5 * bd * mirrorW;
     }
 
     // Kaustik di dasar: puncak riak memusatkan cahaya, lembah menyebarkannya.
@@ -365,6 +385,7 @@ void main() {
     float depth = dot(c - ro, uFwd);
     float edgePx = (1.0 - h.y) * b.z * uFocal / max(depth, 1e-4);
     float cover = clamp(edgePx + 0.5, 0.0, 1.0) * b.w;
+    if (edgePx > -2.0 && edgePx < 2.0) fine = true;
     if (cover <= 0.0 || (h.x > 0.0 && h.x > tHit)) continue;
     // Di luar tepi (sinar nyaris lewat), warnai titik tepi terdekat.
     vec3 toC = c - ro;
@@ -380,7 +401,27 @@ void main() {
 
   float L = 1.0 - exp(-light);
   float D = clamp(dark, 0.0, 0.85);
-  float alpha = L + D * (1.0 - L);
+  return vec2(L, L + D * (1.0 - L));
+}
+
+// Pola 4 sampel berputar (rotated grid) di dalam satu piksel layar.
+const vec2 SUB[4] = vec2[4](vec2(0.125, 0.375), vec2(-0.375, 0.125), vec2(-0.125, -0.375), vec2(0.375, -0.125));
+
+void main() {
+  vec2 px = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;
+  vec2 sc = px - 0.5 * uRes;
+  bool fine;
+  vec2 acc = shadeSample(sc, fine);
+  // Hanya piksel di tepi kolom, butir, tetesan, kawah, dan pantulannya yang
+  // diambil 5 sampel; bidang air lainnya cukup satu. Tepi jadi halus tanpa
+  // membebani seluruh layar.
+  if (fine) {
+    bool unused;
+    for (int i = 0; i < 4; i++) acc += shadeSample(sc + SUB[i] / uDpr, unused);
+    acc /= 5.0;
+  }
+  float L = acc.x;
+  float alpha = acc.y;
   // Derau halus ±½ tingkat warna agar gradasi lembut tidak berpita.
   float nz = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
   alpha = clamp(alpha + (nz - 0.5) / 255.0, 0.0, 1.0);
