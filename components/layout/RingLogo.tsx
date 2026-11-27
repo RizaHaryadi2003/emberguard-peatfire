@@ -3,9 +3,9 @@
  * seperti goresan pensil yang diulang. Bentuknya senada dengan garis
  * lingkaran di beranda.
  */
-export default function RingLogo({ className = "" }: { className?: string }) {
+export default function RingLogo({ className = "", ...rest }: { className?: string; "data-ring-logo"?: boolean }) {
   return (
-    <svg viewBox="0 0 40 40" aria-hidden className={className} fill="none" stroke="currentColor">
+    <svg viewBox="0 0 40 40" aria-hidden className={className} {...rest} fill="none" stroke="currentColor">
       <ellipse cx="20" cy="20" rx="15" ry="16.2" strokeWidth="0.9" />
       <ellipse cx="21.3" cy="19.6" rx="14.2" ry="15.8" strokeWidth="0.6" strokeOpacity="0.85" transform="rotate(-10 20 20)" />
       <ellipse cx="18.8" cy="20.5" rx="15.8" ry="15" strokeWidth="0.55" strokeOpacity="0.7" transform="rotate(14 20 20)" />

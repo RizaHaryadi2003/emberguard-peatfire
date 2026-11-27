@@ -1,12 +1,8 @@
 import type { CSSProperties, Ref } from "react";
+import { factorAngle, ringPath } from "@/lib/factorRing";
 
 /** Jarak label dari tepi titik (px). */
 const LABEL_GAP = 14;
-
-/** Sudut faktor ke-i (radian): dimulai dari atas, searah jarum jam. */
-export function factorAngle(i: number, count: number): number {
-  return -Math.PI / 2 + (2 * Math.PI * i) / count;
-}
 
 /**
  * Letak label terhadap titiknya: di luar lingkaran, menjauhi pusat.
@@ -38,18 +34,23 @@ type Props = {
   factors: string[];
   rootRef: Ref<HTMLDivElement>;
   centerRef: Ref<HTMLDivElement>;
+  ringRef: Ref<SVGPathElement>;
   markerRefs: { current: (HTMLDivElement | null)[] };
 };
 
 /**
- * Roda faktor: lingkaran garis rambut, judul di tengah, dan satu titik +
+ * Roda faktor: lingkaran garis rambut yang bersegi halus, judul di tengah, dan satu titik +
  * label per faktor di keliling lingkaran. Tampil-sembunyinya digerakkan
  * useHeroScroll; komponen ini hanya menata letak.
  */
-export default function FactorWheel({ center, factors, rootRef, centerRef, markerRefs }: Props) {
+export default function FactorWheel({ center, factors, rootRef, centerRef, ringRef, markerRefs }: Props) {
   return (
     <div ref={rootRef} className="factor-wheel" aria-label={`${center}: ${factors.join(", ")}`}>
-      <div className="factor-ring" />
+      {/* Lingkaran bersegi halus di tiap faktor (lib/factorRing.ts), digambar
+          searah jarum jam mulai dari faktor pertama. */}
+      <svg viewBox="0 0 1000 1000" className="factor-ring" aria-hidden>
+        <path ref={ringRef} d={ringPath(factors.length, 1000)} pathLength={1000} />
+      </svg>
       <div ref={centerRef} className="factor-center font-marcellus">
         {center}
       </div>

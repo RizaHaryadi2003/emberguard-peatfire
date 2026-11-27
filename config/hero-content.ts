@@ -53,6 +53,8 @@ export const SCROLL_STORY = {
    */
   paragraph:
     "Kebakaran hutan dan lahan tidak pernah punya satu penyebab. Api memang berawal dari satu percikan, tetapi ia tumbuh karena banyak hal sekaligus: lahan yang dikeringkan, kemarau yang memanjang, aturan yang lemah, dan pengetahuan yang belum sampai. Untuk mencegahnya, kita perlu melihat semuanya.",
+  /** Kalimat pendek yang bergantian sesudah paragraf, menuju roda faktor. */
+  bridge: ["Kenapa karhutla terus terjadi?", "Faktornya banyak,", "yaitu…"],
 };
 
 /**

@@ -65,7 +65,8 @@ export default function Navbar() {
           aria-label={`${BRAND_NAME} — Beranda`}
           className="absolute left-1/2 -translate-x-1/2 transition-transform duration-500 hover:rotate-45"
         >
-          <RingLogo className="h-[30px] w-[30px]" />
+          {/* data-ring-logo: titik awal lingkaran faktor di beranda (useHeroScroll). */}
+          <RingLogo className="h-[30px] w-[30px]" data-ring-logo />
         </Link>
 
         <button

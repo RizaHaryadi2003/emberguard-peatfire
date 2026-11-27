@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { HERO_LOOPS, introScale, LINE_BOX, lineSpan, loopPoints, traceLoop } from "@/lib/heroLines";
 import { afterIntro } from "@/lib/introGate";
@@ -18,6 +18,8 @@ const IDLE_FRAME_MS = 1000 / 30;
 type Props = {
   /** Garis putih (di atas video) atau abu-abu gelap (di atas latar polos). */
   light: boolean;
+  /** Pengali lebar mendatar garis (1 = semula); dinaikkan urutan gulir beranda. */
+  spread?: RefObject<number>;
 };
 
 /**
@@ -25,6 +27,7 @@ type Props = {
  *
  * - Pembuka: garis tampil sebagai lingkaran kecil di tengah lalu melebar ke
  *   tepi layar, seperti paru-paru yang mengembang.
+ * - Saat beranda digulir: garis melebar ke samping mengikuti `spread`.
  * - Sesudahnya: gelombang di tepi keempat garis terus bergeser searah jarum
  *   jam dengan laju berbeda, jadi garis tampak hidup dan saling bersilangan.
  *
@@ -33,7 +36,7 @@ type Props = {
  * ulang. Tepi atas-bawah dipudarkan dengan gradasi warna garis itu sendiri,
  * bukan masker, jadi tidak ada lapisan tambahan di atas video.
  */
-export default function HeroLines({ light }: Props) {
+export default function HeroLines({ light, spread }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lightRef = useRef(light);
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function HeroLines({ light }: Props) {
       ctx.strokeStyle = grad;
 
       const span = lineSpan(w, h);
-      const kx = (span.x / LINE_BOX) * scale.sx;
+      const kx = (span.x / LINE_BOX) * scale.sx * (spread?.current ?? 1);
       const ky = (span.y / LINE_BOX) * scale.sy;
       for (const spec of HERO_LOOPS) {
         const pts = loopPoints(spec, time).map(
@@ -105,11 +108,15 @@ export default function HeroLines({ light }: Props) {
     let raf = 0;
     let last = 0;
     let lastDraw = 0;
+    let lastSpread = spread?.current ?? 1;
     const start = performance.now();
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
-      // Selama garis melebar gambar tiap bingkai; selain itu cukup ±30 bingkai per detik.
-      const expanding = intro?.isActive() ?? false;
+      // Selama garis melebar (pembuka atau gulir) gambar tiap bingkai; selain
+      // itu cukup ±30 bingkai per detik.
+      const spreadNow = spread?.current ?? 1;
+      const expanding = (intro?.isActive() ?? false) || spreadNow !== lastSpread;
+      lastSpread = spreadNow;
       if (!expanding && now - lastDraw < IDLE_FRAME_MS) return;
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       last = now;
@@ -133,7 +140,7 @@ export default function HeroLines({ light }: Props) {
       intro?.kill();
       window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [spread]);
 
   // Gerak dikurangi: warna baru digambar ulang lewat penangan resize di atas.
   useEffect(() => {

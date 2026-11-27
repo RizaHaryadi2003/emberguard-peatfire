@@ -690,6 +690,14 @@ body {
   height: 1px;
   background: currentColor;
 }
+/* Kalimat jembatan menuju roda faktor: satu per satu, ukuran kutipan. */
+.story-bridge {
+  font-size: clamp(1.6rem, 2.9vw, 2.75rem);
+  line-height: 1.16;
+  letter-spacing: -0.006em;
+  max-width: 22ch;
+  text-wrap: balance;
+}
 .story-paragraph {
   font-size: clamp(1rem, 1.45vw, 1.4rem);
   line-height: 1.55;
@@ -711,8 +719,31 @@ body {
 .factor-ring {
   position: absolute;
   inset: 0;
-  border: 1px solid rgb(242 239 233 / 0.55);
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.factor-ring path {
+  fill: none;
+  stroke: rgb(242 239 233 / 0.6);
+  /* Tebal garis diatur useHeroScroll agar ±1 px di layar. Tidak memakai
+     vector-effect: non-scaling-stroke, karena peramban lalu menghitung
+     pathLength/dash dalam satuan layar dan garis tergambar terlalu cepat. */
+  stroke-width: 2;
+  /* pathLength 1000 (bukan 1): GSAP membulatkan nilai px, jadi skala 1
+     membuat garis melompat dari kosong ke utuh. */
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+/* Salinan logo navigasi yang turun menjadi awal lingkaran faktor. */
+.factor-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  color: #f1f1f1;
+  visibility: hidden;
 }
 .factor-center {
   position: absolute;

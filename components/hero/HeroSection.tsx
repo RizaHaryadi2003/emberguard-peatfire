@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HERO_POSTER, HERO_VIDEOS } from "@/config/assets";
 import { EYEBROW, FACTOR_WHEEL, HEADING, HERO_ACTIONS, SCROLL_STORY } from "@/config/hero-content";
 import EyebrowRotator from "./EyebrowRotator";
+import RingLogo from "@/components/layout/RingLogo";
 import FactorWheel from "./FactorWheel";
 import HeroLines from "./HeroLines";
 import HeroVideo from "./HeroVideo";
@@ -34,6 +35,10 @@ export default function HeroSection() {
   const blocksRef = useRef<(HTMLElement | null)[]>([]);
   const wheelRef = useRef<HTMLDivElement>(null);
   const wheelCenterRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<SVGPathElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  // Pengali lebar garis kiri-kanan; diubah urutan gulir, dibaca HeroLines.
+  const spreadRef = useRef(1);
   const markersRef = useRef<(HTMLDivElement | null)[]>([]);
   const coverRef = useRef<HTMLDivElement>(null);
   const coverTitleRef = useRef<HTMLHeadingElement>(null);
@@ -41,15 +46,17 @@ export default function HeroSection() {
   const wheel = useMemo(
     () => ({
       root: wheelRef,
+      ring: ringRef,
       center: wheelCenterRef,
       markers: markersRef,
       focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
+      ghost: ghostRef,
       cover: coverRef,
       coverTitle: coverTitleRef,
     }),
     [],
   );
-  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef, wheel });
+  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef, wheel, spread: spreadRef });
 
   return (
     // Pembungkus yang ditahan; transform pembuka (#beranda) tetap di section.
@@ -76,7 +83,7 @@ export default function HeroSection() {
           </>
         )}
 
-        <HeroLines light={videoShown} />
+        <HeroLines light={videoShown} spread={spreadRef} />
 
         {/* Label, judul, dan tombol di tengah layar */}
         <div
@@ -137,14 +144,32 @@ export default function HeroSection() {
               {SCROLL_STORY.paragraph}
             </p>
           </div>
+          {SCROLL_STORY.bridge.map((line, i) => (
+            <div
+              key={line}
+              ref={(el) => { blocksRef.current[3 + i] = el; }}
+              data-pace="short"
+              className="story-block absolute"
+            >
+              <p data-split className="story-bridge font-marcellus">
+                {line}
+              </p>
+            </div>
+          ))}
 
           <FactorWheel
             center={FACTOR_WHEEL.center}
             factors={FACTOR_WHEEL.factors}
             rootRef={wheelRef}
             centerRef={wheelCenterRef}
+            ringRef={ringRef}
             markerRefs={markersRef}
           />
+        </div>
+
+        {/* Salinan logo navigasi yang turun menjadi awal lingkaran faktor. */}
+        <div ref={ghostRef} aria-hidden className="factor-ghost pointer-events-none z-[41]">
+          <RingLogo className="h-full w-full" />
         </div>
 
         {/* Layar krem hasil pembesaran faktor: jembatan ke bagian berikutnya
