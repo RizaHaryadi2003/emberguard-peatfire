@@ -35,7 +35,6 @@ riaknya menjadi lingkaran faktor. Kode: `lib/waterRipple.ts`,
 | Jari-jari tetesan | 1,8 mm | Tetesan kecil dari ujung pipet |
 | Lingkaran faktor | 12 cm; muka riak tiba ±0,28 s | Dihitung model A |
 | Kolom air | puncak ±1,3 cm, butir 1,5 mm lepas pada ±0,05 s, butir mendarat ±0,14 s, kolom kedua ±5 mm | **Disetel**, bukan diukur; agar mirip rekaman gerak lambat (B, D) |
-
 | Kawah | dalam 2,6 mm, jari-jari 3 mm, terdalam 12 ms, runtuh 28 ms | Neraca energi (±35% energi gerak) dengan skala waktu √(ρR³/σ); acuan G |
 | Laju jet | 0,8 m/s ≈ 5,7 × √(σ/ρD) | Sebanding laju kapiler (acuan F); faktor pengali **disetel** |
 
@@ -53,7 +52,7 @@ riaknya menjadi lingkaran faktor. Kode: `lib/waterRipple.ts`,
 
 - Riak memakai teori linear. Kolom dan butir digerakkan dengan kinematika
   sederhana (perlambatan tetap, jatuh bebas), bukan simulasi aliran.
-- Tinggi riak dibesarkan 3× di dekat titik jatuh dan kemiringannya 9× di
+- Tinggi riak dibesarkan 2× di dekat titik jatuh (kawah tidak dibesarkan) dan kemiringannya 9× di
   tempat lain agar tampak di layar. Bentuk, jarak, dan waktunya tetap hasil model.
 - Pencahayaan studio (softbox, lampu jalur) bersifat artistik, tetapi
   pantulannya mengikuti hukum Fresnel untuk air (F₀ = 0,02).
