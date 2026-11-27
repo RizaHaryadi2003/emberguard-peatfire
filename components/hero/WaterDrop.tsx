@@ -4,8 +4,12 @@ import { type Ref, type RefObject, useEffect, useImperativeHandle, useRef } from
 import { DROP_RADIUS, fallHeight, RING_RADIUS, sharedRipple } from "@/lib/waterRipple";
 import { SECOND_SCALE, splashAt } from "@/lib/waterSplash";
 
-/** Ketajaman kanvas dibatasi agar layar beresolusi tinggi tidak terbebani. */
-const MAX_DPR = 1.5;
+/**
+ * Ketajaman kanvas mengikuti layar sampai 2× (Retina), agar tepi kolom, butir,
+ * dan riak halus tetap tajam. Beban tetap ringan karena hanya ruang kecil di
+ * titik jatuh yang di-raymarch, dan kanvas hanya digambar saat digulir.
+ */
+const MAX_DPR = 2;
 /** Lama tetesan tenggelam menyatu dengan air (detik). */
 const MERGE_S = 0.006;
 

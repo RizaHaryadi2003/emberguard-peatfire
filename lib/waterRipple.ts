@@ -34,7 +34,7 @@ export const RING_RADIUS = 0.12;
 export const FIELD_EXTENT = 2.2;
 
 /** Jumlah titik jari-jari dan bilangan gelombang pada perhitungan. */
-const RADIAL_SAMPLES = 1024;
+const RADIAL_SAMPLES = 2048;
 const WAVE_SAMPLES = 200;
 const K_MAX = 3200;
 /** Bagian kemiringan riak terkuat yang masih dihitung sebagai muka riak. */
