@@ -745,15 +745,6 @@ body {
   color: #f1f1f1;
   visibility: hidden;
 }
-.factor-center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(1.6rem, 2.6vw, 2.5rem);
-  line-height: 1;
-  letter-spacing: -0.006em;
-}
 .factor-marker {
   position: absolute;
   width: 0;

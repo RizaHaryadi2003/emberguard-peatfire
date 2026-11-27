@@ -34,7 +34,6 @@ export default function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<(HTMLElement | null)[]>([]);
   const wheelRef = useRef<HTMLDivElement>(null);
-  const wheelCenterRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGPathElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   // Pengali lebar garis kiri-kanan; diubah urutan gulir, dibaca HeroLines.
@@ -47,7 +46,6 @@ export default function HeroSection() {
     () => ({
       root: wheelRef,
       ring: ringRef,
-      center: wheelCenterRef,
       markers: markersRef,
       focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
       ghost: ghostRef,
@@ -158,10 +156,8 @@ export default function HeroSection() {
           ))}
 
           <FactorWheel
-            center={FACTOR_WHEEL.center}
             factors={FACTOR_WHEEL.factors}
             rootRef={wheelRef}
-            centerRef={wheelCenterRef}
             ringRef={ringRef}
             markerRefs={markersRef}
           />

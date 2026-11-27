@@ -59,7 +59,7 @@ export const SCROLL_STORY = {
 
 /**
  * Roda faktor karhutla (pola lingkaran "Frequency" pada acuan
- * frequencybreathwork.com): judul di tengah, delapan faktor di sekeliling
+ * frequencybreathwork.com) tanpa judul di tengah: delapan faktor di sekeliling
  * lingkaran, dimulai dari atas searah jarum jam. Setelah semua muncul, gulir
  * berikutnya memperbesar ke faktor `focus`.
  *
@@ -67,7 +67,6 @@ export const SCROLL_STORY = {
  * yang paling rapi tetap delapan. Sumber riset tiap faktor belum dicatat.
  */
 export const FACTOR_WHEEL = {
-  center: "Faktor",
   factors: [
     "Ekonomi",
     "Politik",

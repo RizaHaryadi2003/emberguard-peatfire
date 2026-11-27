@@ -30,30 +30,25 @@ function labelStyle(angle: number): CSSProperties {
 }
 
 type Props = {
-  center: string;
   factors: string[];
   rootRef: Ref<HTMLDivElement>;
-  centerRef: Ref<HTMLDivElement>;
   ringRef: Ref<SVGPathElement>;
   markerRefs: { current: (HTMLDivElement | null)[] };
 };
 
 /**
- * Roda faktor: lingkaran garis rambut yang bersegi halus, judul di tengah, dan satu titik +
+ * Roda faktor: lingkaran garis rambut yang bersegi halus dan satu titik +
  * label per faktor di keliling lingkaran. Tampil-sembunyinya digerakkan
  * useHeroScroll; komponen ini hanya menata letak.
  */
-export default function FactorWheel({ center, factors, rootRef, centerRef, ringRef, markerRefs }: Props) {
+export default function FactorWheel({ factors, rootRef, ringRef, markerRefs }: Props) {
   return (
-    <div ref={rootRef} className="factor-wheel" aria-label={`${center}: ${factors.join(", ")}`}>
+    <div ref={rootRef} className="factor-wheel" aria-label={`Faktor karhutla: ${factors.join(", ")}`}>
       {/* Lingkaran bersegi halus di tiap faktor (lib/factorRing.ts), digambar
           searah jarum jam mulai dari faktor pertama. */}
       <svg viewBox="0 0 1000 1000" className="factor-ring" aria-hidden>
         <path ref={ringRef} d={ringPath(factors.length, 1000)} pathLength={1000} />
       </svg>
-      <div ref={centerRef} className="factor-center font-marcellus">
-        {center}
-      </div>
       {factors.map((name, i) => {
         const angle = factorAngle(i, factors.length);
         return (

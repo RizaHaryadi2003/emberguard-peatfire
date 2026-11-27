@@ -23,7 +23,6 @@ export type WheelRefs = {
   root: RefObject<HTMLElement | null>;
   /** Lintasan lingkaran (pathLength = 1000) yang digambar searah jarum jam. */
   ring: RefObject<SVGPathElement | null>;
-  center: RefObject<HTMLElement | null>;
   markers: RefObject<(HTMLElement | null)[]>;
   /** Urutan faktor yang diperbesar. */
   focusIndex: number;
@@ -201,7 +200,6 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   gsap.set(root, { autoAlpha: 1 });
   // Kotak lingkaran 1000 satuan → tebal ±1 px di layar berapa pun ukurannya.
   gsap.set(ring, { strokeDashoffset: 1000, attr: { "stroke-width": 1000 / Math.max(root.offsetWidth, 1) } });
-  gsap.set(wheel.center.current, { autoAlpha: 0, y: 10 });
   gsap.set(markers, { autoAlpha: 1 });
   gsap.set(dots, { autoAlpha: 0, scale: 0.4 });
   gsap.set(labels, { autoAlpha: 0, y: 6 });
@@ -237,7 +235,6 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   const drawAt = tl.duration();
   tl.to(ghost, { autoAlpha: 0, duration: 0.4 }, drawAt);
   tl.to(ring, { strokeDashoffset: 0, duration: DRAW, ease: "none" }, drawAt);
-  tl.to(wheel.center.current, { autoAlpha: 1, y: 0, duration: 1, ease: "power2.out" }, drawAt + 0.6);
   markers.forEach((_, i) => {
     const at = drawAt + (DRAW * i) / count;
     tl.to(dots[i], { autoAlpha: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, at);
@@ -250,7 +247,7 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   //    cepat, kemudian lingkaran krem mengambil alih dari ukuran yang sama dan
   //    melambat sampai menutup layar, jadi tidak ada jeda di antaranya.
   const zoomAt = tl.duration();
-  tl.to([ring, wheel.center.current, ...others, ...labels], { autoAlpha: 0, duration: 1, ease: "power1.inOut" }, zoomAt);
+  tl.to([ring, ...others, ...labels], { autoAlpha: 0, duration: 1, ease: "power1.inOut" }, zoomAt);
   tl.set(root, { transformOrigin: `${50 + cos * 50}% ${50 + sin * 50}%` }, zoomAt);
   tl.to(
     root,
