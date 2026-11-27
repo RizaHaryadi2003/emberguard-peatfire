@@ -49,9 +49,33 @@ export const SCROLL_STORY = {
   },
   /**
    * DRAF — PARAGRAF SEMENTARA TULISAN CLAUDE. Ganti sendiri bila kurang cocok.
-   * Klaim "ribuan tahun" mengikuti laju tumbuh gambut ±1 mm/tahun
-   * (acuan-modul-anatomi.md, Anshari dkk. 2026).
+   * Paragraf ini menjembatani ke roda faktor (FACTOR_WHEEL) di bawah.
    */
   paragraph:
-    "Di bawah kaki kita, gambut menyimpan air, karbon, dan sisa hutan dari ribuan tahun lalu. Saat ia mengering, satu percikan cukup untuk membakarnya dari dalam: diam, lama, dan sulit dipadamkan. Emberguard mengajakmu memahami cara kerja api itu, lewat sains dan cerita, sebelum bara menjadi bencana.",
+    "Kebakaran hutan dan lahan tidak pernah punya satu penyebab. Api memang berawal dari satu percikan, tetapi ia tumbuh karena banyak hal sekaligus: lahan yang dikeringkan, kemarau yang memanjang, aturan yang lemah, dan pengetahuan yang belum sampai. Untuk mencegahnya, kita perlu melihat semuanya.",
+};
+
+/**
+ * Roda faktor karhutla (pola lingkaran "Frequency" pada acuan
+ * frequencybreathwork.com): judul di tengah, delapan faktor di sekeliling
+ * lingkaran, dimulai dari atas searah jarum jam. Setelah semua muncul, gulir
+ * berikutnya memperbesar ke faktor `focus`.
+ *
+ * DRAF — DAFTAR FAKTOR SEMENTARA. Isi dan urutannya boleh diganti; jumlah
+ * yang paling rapi tetap delapan. Sumber riset tiap faktor belum dicatat.
+ */
+export const FACTOR_WHEEL = {
+  center: "Faktor",
+  factors: [
+    "Ekonomi",
+    "Politik",
+    "Edukasi",
+    "Hukum",
+    "Iklim",
+    "Kanal & Drainase",
+    "Budaya Membakar",
+    "Sengketa Lahan",
+  ],
+  /** Faktor yang diperbesar di akhir; harus sama persis dengan salah satu di atas. */
+  focus: "Edukasi",
 };

@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { HERO_POSTER, HERO_VIDEOS } from "@/config/assets";
-import { EYEBROW, HEADING, HERO_ACTIONS, SCROLL_STORY } from "@/config/hero-content";
+import { EYEBROW, FACTOR_WHEEL, HEADING, HERO_ACTIONS, SCROLL_STORY } from "@/config/hero-content";
 import EyebrowRotator from "./EyebrowRotator";
+import FactorWheel from "./FactorWheel";
 import HeroLines from "./HeroLines";
 import HeroVideo from "./HeroVideo";
 import { useHeroScroll } from "./useHeroScroll";
@@ -22,7 +23,8 @@ const VIDEO_REVEAL_MS = 2100;
  *
  * Saat digulir, hero ditahan di layar (useHeroScroll): judul pergi, lalu
  * kalimat pembuka, kutipan, dan satu paragraf bergantian muncul di tengah
- * garis lingkaran. Teksnya diatur di config/hero-content.ts (SCROLL_STORY).
+ * garis lingkaran, disusul roda faktor yang diperbesar ke satu faktor.
+ * Teksnya diatur di config/hero-content.ts (SCROLL_STORY, FACTOR_WHEEL).
  */
 export default function HeroSection() {
   const hasVideo = HERO_VIDEOS.length > 0;
@@ -30,7 +32,24 @@ export default function HeroSection() {
   const pinRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<(HTMLElement | null)[]>([]);
-  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef });
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const wheelCenterRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<(HTMLDivElement | null)[]>([]);
+  const coverRef = useRef<HTMLDivElement>(null);
+  const coverTitleRef = useRef<HTMLHeadingElement>(null);
+  // Objek stabil supaya urutan gulir tidak dibangun ulang tiap render.
+  const wheel = useMemo(
+    () => ({
+      root: wheelRef,
+      center: wheelCenterRef,
+      markers: markersRef,
+      focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
+      cover: coverRef,
+      coverTitle: coverTitleRef,
+    }),
+    [],
+  );
+  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef, wheel });
 
   return (
     // Pembungkus yang ditahan; transform pembuka (#beranda) tetap di section.
@@ -118,6 +137,23 @@ export default function HeroSection() {
               {SCROLL_STORY.paragraph}
             </p>
           </div>
+
+          <FactorWheel
+            center={FACTOR_WHEEL.center}
+            factors={FACTOR_WHEEL.factors}
+            rootRef={wheelRef}
+            centerRef={wheelCenterRef}
+            markerRefs={markersRef}
+          />
+        </div>
+
+        {/* Layar krem hasil pembesaran faktor: jembatan ke bagian berikutnya
+            (rancangannya belum ditentukan pengguna). */}
+        <div aria-hidden className="factor-cover pointer-events-none absolute left-1/2 top-1/2 z-[45]" ref={coverRef} />
+        <div className="pointer-events-none absolute inset-0 z-[46] flex items-center justify-center">
+          <h2 ref={coverTitleRef} className="factor-cover-title font-marcellus">
+            {FACTOR_WHEEL.focus}
+          </h2>
         </div>
       </section>
     </div>

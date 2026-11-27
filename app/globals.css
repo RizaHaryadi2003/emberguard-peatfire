@@ -698,6 +698,82 @@ body {
   color: rgb(241 241 241 / 0.92);
   text-wrap: pretty;
 }
+/* Roda faktor (components/hero/FactorWheel.tsx), pola lingkaran acuan. */
+.factor-wheel {
+  --size: min(32rem, 58vh, 64vw);
+  --radius: calc(var(--size) / 2);
+  --dot: 22px;
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  visibility: hidden;
+}
+.factor-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(242 239 233 / 0.55);
+  border-radius: 50%;
+}
+.factor-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(1.6rem, 2.6vw, 2.5rem);
+  line-height: 1;
+  letter-spacing: -0.006em;
+}
+.factor-marker {
+  position: absolute;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+.factor-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  border: 1px solid rgb(71 71 71 / 0.55);
+  background: #f2efe9;
+  transform: translate(-50%, -50%);
+}
+.factor-label {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #f1f1f1;
+}
+.factor-cover {
+  width: 160vmax;
+  height: 160vmax;
+  border-radius: 50%;
+  background: #f2efe9;
+  visibility: hidden;
+}
+.factor-cover-title {
+  font-size: clamp(2.1rem, 4.2vw, 4.1rem);
+  line-height: 1;
+  letter-spacing: -0.012em;
+  color: #474747;
+  visibility: hidden;
+}
+@media (max-width: 640px) {
+  .factor-wheel {
+    --size: min(56vw, 46vh);
+    --dot: 16px;
+  }
+  .factor-label {
+    white-space: normal;
+    width: max-content;
+    max-width: 72px;
+    font-size: 11px;
+  }
+}
 .story-line {
   will-change: transform, opacity, filter;
 }
