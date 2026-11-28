@@ -10,30 +10,41 @@
  *                   jalurnya diawali "/", mis. "/videos/gambut-pagi.mp4".
  *  - Berkas daring: tempel URL lengkap.
  *
- *  Saran video: 2–3 klip pendek (8–15 detik), MP4 (H.264) tanpa suara, tiap
- *  klip dalam dua ukuran: 2560×1440 untuk laptop (±13–16 MB) dan 1280×720
- *  untuk ponsel (±3–5 MB). Klip diputar bergiliran; bila hanya satu, klip
- *  itu diulang.
+ *  Saran video: 2–3 klip pendek (8–15 detik), MP4 tanpa suara, tiap klip
+ *  dalam tiga ukuran: 3840×2160 HEVC (±26–31 MB), 2560×1440 H.264 cadangan
+ *  (±19–23 MB), dan 1280×720 H.264 untuk ponsel (±5–6 MB). Klip diputar
+ *  bergiliran tanpa jeda; bila hanya satu, klip itu diulang.
  * ============================================================================
  */
 
-/** Satu klip video latar dalam dua ukuran. */
+/** Satu klip video latar dalam tiga ukuran. */
 export type HeroClip = {
-  /** Untuk layar lebar (laptop): 2560 × 1440, tajam di layar Retina. */
+  /** Laptop yang mendukung HEVC (Safari, Chrome/Edge di Mac & Windows): 3840 × 2160. */
+  uhd: string;
+  /** Laptop tanpa HEVC (cadangan H.264): 2560 × 1440. */
   large: string;
-  /** Untuk ponsel dan tablet: 1280 × 720, ringan dimuat. */
+  /** Ponsel dan tablet (H.264): 1280 × 720, ringan dimuat. */
   small: string;
 };
 
 /**
- * Video latar beranda, diputar bergiliran. Biarkan kosong bila belum ada:
- * beranda memakai latar abu-abu bergradasi dengan garis gelap.
+ * Video latar beranda, diputar bergiliran tanpa jeda (saling memudar).
+ * Biarkan kosong bila belum ada: beranda memakai latar abu-abu bergradasi
+ * dengan garis gelap.
  */
 export const HERO_VIDEOS: HeroClip[] = [
   // Tampak atas sungai di hutan rawa lebat — Tom Fisk, Pexels (sumber: data/SUMBER.md).
-  { large: "/videos/hutan-rawa-sungai-1440.mp4", small: "/videos/hutan-rawa-sungai-720.mp4" },
+  {
+    uhd: "/videos/hutan-rawa-sungai-2160.mp4",
+    large: "/videos/hutan-rawa-sungai-1440.mp4",
+    small: "/videos/hutan-rawa-sungai-720.mp4",
+  },
   // Hutan hujan berkabut tebal — Vũ Ngọc Long, Pexels.
-  { large: "/videos/hutan-kabut-1440.mp4", small: "/videos/hutan-kabut-720.mp4" },
+  {
+    uhd: "/videos/hutan-kabut-2160.mp4",
+    large: "/videos/hutan-kabut-1440.mp4",
+    small: "/videos/hutan-kabut-720.mp4",
+  },
 ];
 
 /**

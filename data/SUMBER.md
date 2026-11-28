@@ -56,11 +56,12 @@ tidak boleh dijual ulang apa adanya; lihat
 https://help.pexels.com/hc/en-us/articles/360042295174). Nama pembuat tetap
 dicantumkan di sini sebagai etika. Diunduh 28 November 2026 dalam 4K
 (3840 × 2160, 30 fps), lalu dipotong 15 detik, diperkecil, dan
-dikompres ulang (H.264, tanpa suara) dalam dua ukuran: 2560 × 1440 untuk
-laptop dan 1280 × 720 untuk ponsel.
+dikompres ulang tanpa suara dalam tiga ukuran: 3840 × 2160 HEVC untuk laptop
+yang mendukungnya, 2560 × 1440 H.264 sebagai cadangan, dan 1280 × 720 H.264
+untuk ponsel.
 
 | Berkas | Video asli | Pembuat | Potongan |
 |---|---|---|---|
-| hutan-rawa-sungai-1440.mp4 / -720.mp4 | "A Big River Swamp In A Dense Forest", https://www.pexels.com/video/2736469/ | Tom Fisk | detik 3–18; ±8,5 / 2,4 Mbps |
-| hutan-kabut-1440.mp4 / -720.mp4 | "Misty Rainforest Aerial View in Dense Fog", https://www.pexels.com/video/30770305/ | Vũ Ngọc Long | detik 2–17; ±7,0 / 2,0 Mbps |
-| poster-hutan-rawa.jpg | bingkai pertama hutan-rawa-sungai-1440.mp4 | Tom Fisk | 1920 × 1080 |
+| hutan-rawa-sungai-2160/-1440/-720.mp4 | "A Big River Swamp In A Dense Forest", https://www.pexels.com/video/2736469/ | Tom Fisk | detik 3–18; ±16 / 12 / 3,2 Mbps |
+| hutan-kabut-2160/-1440/-720.mp4 | "Misty Rainforest Aerial View in Dense Fog", https://www.pexels.com/video/30770305/ | Vũ Ngọc Long | detik 2–17; ±14 / 10 / 2,8 Mbps |
+| poster-hutan-rawa.jpg | bingkai pertama video rawa | Tom Fisk | 1920 × 1080 |
