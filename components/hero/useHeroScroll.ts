@@ -4,7 +4,8 @@ import { type RefObject, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { factorPoint, factorProgress, squarePoint } from "@/lib/factorSquare";
+import { factorAngle, FIRST_ANGLE, ringRadius } from "@/lib/factorRing";
+import { waveAt, wavePath } from "@/lib/heroWaves";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -21,13 +22,15 @@ const LINES_SPREAD = 1.55;
 
 export type WheelRefs = {
   root: RefObject<HTMLElement | null>;
-  /** Lintasan persegi (pathLength = 1000) yang digambar searah jarum jam. */
+  /** Lintasan lingkaran (pathLength = 1000) yang digambar searah jarum jam. */
   ring: RefObject<SVGPathElement | null>;
   markers: RefObject<(HTMLElement | null)[]>;
   /** Urutan faktor yang diperbesar. */
   focusIndex: number;
-  /** Salinan logo navigasi yang turun menjadi titik awal lingkaran. */
+  /** Salinan logo navigasi (di depan navigasi) yang turun menjadi titik awal lingkaran. */
   ghost: RefObject<HTMLElement | null>;
+  /** Cincin gelombang halus di latar saat logo turun dan lingkaran terbentuk. */
+  waves: RefObject<(SVGPathElement | null)[]>;
   /** Lingkaran krem yang melebar dari titik faktor hingga menutup layar. */
   cover: RefObject<HTMLElement | null>;
   /** Judul faktor di atas lingkaran krem (jembatan ke bagian berikutnya). */
@@ -48,6 +51,8 @@ type Refs = {
   wheel: WheelRefs;
   /** Pengali lebar garis lingkaran kiri-kanan, dibaca HeroLines tiap bingkai. */
   spread: RefObject<number>;
+  /** false sampai salinan logo (portal ke body) terpasang. */
+  ready: boolean;
 };
 
 /**
@@ -57,9 +62,12 @@ type Refs = {
  *    lingkaran kiri-kanan pelan-pelan melebar.
  * 2. Tiap blok teks dipecah per baris (SplitText). Baris masuk dari
  *    kedalaman (kabur, miring ke belakang) menjadi tajam, lalu pergi ke atas.
- * 3. Salinan logo bulat di navigasi turun ke tengah sisi atas persegi, lalu
- *    berjalan searah jarum jam sambil menggambar persegi faktor; titik dan
- *    nama faktor menyala saat logo melewatinya (lib/factorSquare.ts).
+ * 3. Logo bulat di navigasi lepas dari kartunya (salinannya di depan
+ *    navigasi, logo aslinya disembunyikan), turun ke puncak roda, lalu
+ *    berjalan searah jarum jam sambil menggambar lingkaran yang bersegi halus
+ *    di tiap faktor (lib/factorRing.ts); titik dan nama faktor menyala saat
+ *    logo melewatinya. Sementara itu cincin gelombang tipis melebar pelan di
+ *    latar (lib/heroWaves.ts).
  * 4. Roda diperbesar ke satu faktor dan titiknya melebar menjadi layar krem.
  *
  * Semua langkah mengikuti posisi gulir (scrub), jadi menggulir balik
@@ -67,12 +75,13 @@ type Refs = {
  * tidak pada lapisan layar penuh, agar ringan di laptop menengah. Bila
  * pengguna meminta gerak dikurangi, baris hanya memudar.
  */
-export function useHeroScroll({ pin, hero, blocks, wheel, spread }: Refs) {
+export function useHeroScroll({ pin, hero, blocks, wheel, spread, ready }: Refs) {
   useEffect(() => {
     let ctx: gsap.Context | null = null;
     let lastWidth = window.innerWidth;
     let cancelled = false;
 
+    if (!ready) return;
     const build = () => {
       ctx?.revert();
       ctx = gsap.context(() => {
@@ -163,18 +172,24 @@ export function useHeroScroll({ pin, hero, blocks, wheel, spread }: Refs) {
       window.removeEventListener("resize", onResize);
       ctx?.revert();
     };
-  }, [pin, hero, blocks, wheel, spread]);
+  }, [pin, hero, blocks, wheel, spread, ready]);
 }
 
-/** Lama turunnya logo dan lama menggambar persegi (satuan waktu linimasa). */
+/** Lama turunnya logo dan lama menggambar lingkaran (satuan waktu linimasa). */
 const DESCEND_UNITS = 2.2;
 const DRAW_UNITS = 4.4;
+/** Takaran segi halus lingkaran di tiap faktor (sama dengan ringPath). */
+const RING_CORNER = 0.022;
+/** Gelombang latar: lama satu cincin, jarak antarcincin, dan kekuatannya. */
+const WAVE_UNITS = 4.6;
+const WAVE_GAP = 1.15;
+const WAVE_OPACITY = 0.2;
 
 /**
- * Langkah roda faktor: salinan logo navigasi turun ke tengah sisi atas, lalu
- * berjalan menyusuri persegi searah jarum jam sambil menggambar garisnya;
- * tiap titik faktor menyala saat logo melewatinya. Sesudah itu roda
- * diperbesar ke satu faktor.
+ * Langkah roda faktor: logo navigasi turun ke puncak roda, lalu berjalan
+ * menyusuri lingkaran searah jarum jam sambil menggambar garisnya; tiap titik
+ * faktor menyala saat logo melewatinya. Gelombang halus melebar di latar.
+ * Sesudah itu roda diperbesar ke satu faktor.
  */
 function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   const root = wheel.root.current;
@@ -182,6 +197,7 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   const cover = wheel.cover.current;
   const ghost = wheel.ghost.current;
   const markers = (wheel.markers.current ?? []).filter((m): m is HTMLElement => !!m);
+  const waves = (wheel.waves.current ?? []).filter((w): w is SVGPathElement => !!w);
   const focus = markers[wheel.focusIndex];
   if (!root || !ring || !cover || !ghost || !focus) return;
 
@@ -189,35 +205,42 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   const dots = markers.map((m) => m.querySelector(".factor-dot"));
   const others = markers.filter((m) => m !== focus);
   const count = markers.length;
-  const focusAt = factorPoint(wheel.focusIndex, count);
+  const angle = factorAngle(wheel.focusIndex, count);
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
   const dotSize = () => (focus.querySelector(".factor-dot") as HTMLElement | null)?.offsetWidth ?? 22;
 
-  // Letak di layar. Selama ditahan, section menempati layar penuh, jadi
-  // koordinat layar = koordinat section. Navigasi tetap (fixed), jadi letak
-  // logonya tidak bergantung posisi gulir.
-  const logoRect = () =>
-    document.querySelector("[data-ring-logo]")?.getBoundingClientRect() ??
-    new DOMRect(window.innerWidth / 2 - 15, 16, 30, 30);
+  // Letak di layar. Selama ditahan, section menempati layar penuh, dan
+  // salinan logo memakai posisi tetap (fixed), jadi koordinat layar dipakai
+  // langsung. Navigasi juga tetap, jadi letak logonya tidak bergantung gulir.
+  const navLogo = document.querySelector<SVGElement>("[data-ring-logo]");
+  const logoRect = () => navLogo?.getBoundingClientRect() ?? new DOMRect(window.innerWidth / 2 - 15, 16, 30, 30);
+  const logoColor = navLogo ? getComputedStyle(navLogo).color : "#474747";
   const ghostSize = () => ghost.offsetWidth || 30;
-  /** Titik persegi di layar pada kemajuan keliling u. */
-  const onSquare = (u: number) => {
-    const p = squarePoint(u);
-    const half = root.offsetWidth / 2;
-    return { x: window.innerWidth / 2 + p.x * half, y: window.innerHeight / 2 + p.y * half };
+  const center = () => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  /** Titik lingkaran di layar pada kemajuan keliling u (0 = puncak). */
+  const onRing = (u: number) => {
+    const theta = FIRST_ANGLE + 2 * Math.PI * u;
+    const r = ringRadius(theta, count, RING_CORNER) * (root.offsetWidth / 2);
+    return { x: center().x + r * Math.cos(theta), y: center().y + r * Math.sin(theta) };
   };
 
   gsap.set(root, { autoAlpha: 1 });
-  // Kotak persegi 1000 satuan → tebal ±1 px di layar berapa pun ukurannya.
+  // Kotak lingkaran 1000 satuan → tebal ±1 px di layar berapa pun ukurannya.
   gsap.set(ring, { strokeDashoffset: 1000, autoAlpha: 1, attr: { "stroke-width": 1000 / Math.max(root.offsetWidth, 1) } });
   gsap.set(markers, { autoAlpha: 1 });
   gsap.set(dots, { autoAlpha: 0, scale: 0.4 });
   gsap.set(labels, { autoAlpha: 0, y: 6 });
-  gsap.set(ghost, { autoAlpha: 0 });
+  gsap.set(ghost, { autoAlpha: 0, color: logoColor });
+  gsap.set(waves, { autoAlpha: 0 });
   gsap.set(cover, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
   gsap.set(wheel.coverTitle.current, { autoAlpha: 0, y: 16 });
 
-  // 1. Salinan logo muncul tepat di atas logo navigasi, lalu turun perlahan
-  //    ke tengah sisi atas persegi sambil mengecil seukuran titik faktor.
+  // 1. Logo navigasi sendiri yang lepas: salinannya muncul tepat menimpa logo
+  //    (di depan kartu navigasi) dan logo aslinya hilang di saat yang sama,
+  //    lalu turun perlahan ke puncak roda sambil mengecil seukuran titik
+  //    faktor dan berganti warna menjadi krem.
+  const startAt = Math.max(tl.duration() - 0.6, 0);
   tl.fromTo(
     ghost,
     {
@@ -226,21 +249,23 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
       y: () => logoRect().top + logoRect().height / 2 - ghostSize() / 2,
       scale: () => logoRect().width / ghostSize(),
     },
-    { autoAlpha: 1, duration: 0.3, immediateRender: false },
-    ">-0.6",
+    { autoAlpha: 1, duration: 0.15, immediateRender: false },
+    startAt,
   );
+  if (navLogo) tl.to(navLogo, { autoAlpha: 0, duration: 0.15 }, startAt);
   tl.to(ghost, {
-    x: () => onSquare(0).x - ghostSize() / 2,
-    y: () => onSquare(0).y - ghostSize() / 2,
+    x: () => onRing(0).x - ghostSize() / 2,
+    y: () => onRing(0).y - ghostSize() / 2,
     scale: () => dotSize() / ghostSize(),
+    color: "#f1f1f1",
     duration: reduce ? 1 : DESCEND_UNITS,
     ease: "power2.inOut",
   });
 
-  // 2. Logo berjalan menyusuri persegi searah jarum jam dan garis tergambar
+  // 2. Logo berjalan menyusuri lingkaran searah jarum jam dan garis tergambar
   //    tepat di belakangnya (lintasan dan waktu sama-sama linear). Titik
   //    faktor menyala saat logo tiba di sana; di ujung putaran logo melebur
-  //    ke titik faktor pertama.
+  //    ke titik faktor pertama, dan logo navigasi tumbuh kembali.
   const drawAt = tl.duration();
   const walk = { u: 0 };
   tl.to(ring, { strokeDashoffset: 0, duration: DRAW_UNITS, ease: "none" }, drawAt);
@@ -251,18 +276,38 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
       duration: DRAW_UNITS,
       ease: "none",
       onUpdate: () => {
-        const p = onSquare(walk.u);
+        const p = onRing(walk.u);
         gsap.set(ghost, { x: p.x - ghostSize() / 2, y: p.y - ghostSize() / 2 });
       },
     },
     drawAt,
   );
   markers.forEach((_, i) => {
-    const at = drawAt + DRAW_UNITS * factorProgress(i, count);
+    const at = drawAt + (DRAW_UNITS * i) / count;
     tl.to(dots[i], { autoAlpha: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, at);
     tl.to(labels[i], { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out" }, at + 0.1);
   });
   tl.to(ghost, { autoAlpha: 0, duration: 0.4 }, drawAt + DRAW_UNITS - 0.2);
+  if (navLogo) tl.to(navLogo, { autoAlpha: 1, duration: 0.6, ease: "power1.out" }, drawAt + DRAW_UNITS);
+
+  // Gelombang latar: cincin tipis melebar dari pusat roda, satu per satu,
+  // sejak logo mulai turun sampai lingkaran selesai.
+  if (!reduce) {
+    waves.forEach((path, k) => {
+      const state = { p: 0 };
+      const draw = () => {
+        const c = center();
+        const far = Math.hypot(window.innerWidth, window.innerHeight) * 0.55;
+        const w = waveAt(state.p, root.offsetWidth * 0.12, far);
+        path.setAttribute(
+          "d",
+          wavePath(c.x, c.y, { radius: w.radius, wobble: w.wobble, lobes: 7 + k, phase: state.p * 2.4 + k * 1.7 }),
+        );
+        gsap.set(path, { autoAlpha: w.opacity * WAVE_OPACITY });
+      };
+      tl.fromTo(state, { p: 0 }, { p: 1, duration: WAVE_UNITS, ease: "none", onUpdate: draw, immediateRender: false }, startAt + 0.4 + k * WAVE_GAP);
+    });
+  }
   tl.to({}, { duration: 1.4 });
 
   // 3. Masuk ke faktor pilihan dengan halus: yang lain memudar lebih dulu,
@@ -271,15 +316,10 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   //    melambat sampai menutup layar, jadi tidak ada jeda di antaranya.
   const zoomAt = tl.duration();
   tl.to([ring, ...others, ...labels], { autoAlpha: 0, duration: 1, ease: "power1.inOut" }, zoomAt);
-  tl.set(root, { transformOrigin: `${50 + focusAt.x * 50}% ${50 + focusAt.y * 50}%` }, zoomAt);
+  tl.set(root, { transformOrigin: `${50 + cos * 50}% ${50 + sin * 50}%` }, zoomAt);
   tl.to(
     root,
-    {
-      x: () => -focusAt.x * (root.offsetWidth / 2),
-      y: () => -focusAt.y * (root.offsetHeight / 2),
-      duration: 2.4,
-      ease: "power2.inOut",
-    },
+    { x: () => -cos * (root.offsetWidth / 2), y: () => -sin * (root.offsetHeight / 2), duration: 2.4, ease: "power2.inOut" },
     zoomAt + 0.3,
   );
   tl.to(root, { scale: FOCUS_SCALE, duration: 2.6, ease: "power2.in" }, zoomAt + 0.3);

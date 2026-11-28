@@ -706,7 +706,14 @@ body {
   color: rgb(241 241 241 / 0.92);
   text-wrap: pretty;
 }
-/* Roda faktor (components/hero/FactorWheel.tsx): persegi garis rambut. */
+/* Gelombang halus di latar beranda (lib/heroWaves.ts). */
+.hero-waves path {
+  fill: none;
+  stroke: #f2efe9;
+  stroke-width: 1;
+  visibility: hidden;
+}
+/* Roda faktor (components/hero/FactorWheel.tsx), lingkaran bersegi halus. */
 .factor-wheel {
   --size: min(32rem, 58vh, 64vw);
   --radius: calc(var(--size) / 2);
@@ -735,9 +742,11 @@ body {
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
 }
-/* Salinan logo navigasi yang turun lalu menggambar persegi faktor. */
+/* Salinan logo navigasi yang turun lalu menggambar lingkaran faktor; di
+   depan navigasi (z 110) supaya tampak sebagai logo itu sendiri. */
 .factor-ghost {
-  position: absolute;
+  position: fixed;
+  z-index: 120;
   left: 0;
   top: 0;
   width: 30px;

@@ -1,11 +1,11 @@
 import type { CSSProperties, Ref } from "react";
-import { factorPoint, squarePath } from "@/lib/factorSquare";
+import { factorAngle, ringPath } from "@/lib/factorRing";
 
 /** Jarak label dari tepi titik (px). */
 const LABEL_GAP = 14;
 
 /**
- * Letak label terhadap titiknya: di luar persegi, menjauhi pusat.
+ * Letak label terhadap titiknya: di luar lingkaran, menjauhi pusat.
  * Label di atas/bawah dipusatkan mendatar, label di kiri/kanan dipusatkan
  * tegak, sisanya menyudut seperti pada acuan.
  */
@@ -37,21 +37,20 @@ type Props = {
 };
 
 /**
- * Roda faktor: persegi garis rambut dan satu titik + label per faktor di
- * kelilingnya (tengah sisi dan sudut). Tampil-sembunyinya digerakkan
+ * Roda faktor: lingkaran garis rambut yang bersegi halus dan satu titik +
+ * label per faktor di keliling lingkaran. Tampil-sembunyinya digerakkan
  * useHeroScroll; komponen ini hanya menata letak.
  */
 export default function FactorWheel({ factors, rootRef, ringRef, markerRefs }: Props) {
   return (
     <div ref={rootRef} className="factor-wheel" aria-label={`Faktor karhutla: ${factors.join(", ")}`}>
-      {/* Persegi (lib/factorSquare.ts), digambar searah jarum jam mulai dari
-          faktor pertama di tengah sisi atas. */}
+      {/* Lingkaran bersegi halus di tiap faktor (lib/factorRing.ts), digambar
+          searah jarum jam mulai dari faktor pertama. */}
       <svg viewBox="0 0 1000 1000" className="factor-ring" aria-hidden>
-        <path ref={ringRef} d={squarePath(1000)} pathLength={1000} />
+        <path ref={ringRef} d={ringPath(factors.length, 1000)} pathLength={1000} />
       </svg>
       {factors.map((name, i) => {
-        const point = factorPoint(i, factors.length);
-        const angle = Math.atan2(point.y, point.x);
+        const angle = factorAngle(i, factors.length);
         return (
           <div
             key={name}
@@ -60,8 +59,8 @@ export default function FactorWheel({ factors, rootRef, ringRef, markerRefs }: P
             }}
             className="factor-marker"
             style={{
-              left: `calc(50% + ${point.x} * var(--radius))`,
-              top: `calc(50% + ${point.y} * var(--radius))`,
+              left: `calc(50% + ${Math.cos(angle).toFixed(4)} * var(--radius))`,
+              top: `calc(50% + ${Math.sin(angle).toFixed(4)} * var(--radius))`,
             }}
           >
             <span className="factor-dot" />
