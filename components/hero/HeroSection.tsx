@@ -39,7 +39,8 @@ export default function HeroSection() {
   const wheelRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGPathElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
-  const wavesRef = useRef<(SVGPathElement | null)[]>([]);
+  const wavesRef = useRef<HTMLCanvasElement>(null);
+  const linesRef = useRef<HTMLDivElement>(null);
   // Salinan logo dipasang lewat portal ke body (di depan navigasi), jadi baru
   // ada sesudah komponen terpasang di peramban.
   const mounted = useSyncExternalStore(
@@ -61,6 +62,7 @@ export default function HeroSection() {
       focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
       ghost: ghostRef,
       waves: wavesRef,
+      lines: linesRef,
       cover: coverRef,
       coverTitle: coverTitleRef,
     }),
@@ -93,20 +95,14 @@ export default function HeroSection() {
           </>
         )}
 
-        {/* Gelombang halus di latar saat logo turun dan lingkaran faktor
+        {/* Riak bulat bertimbul di latar saat logo turun dan lingkaran faktor
             terbentuk (useHeroScroll, lib/heroWaves.ts). */}
-        <svg aria-hidden className="hero-waves pointer-events-none absolute inset-0 z-[15] h-full w-full">
-          {[0, 1, 2, 3].map((k) => (
-            <path
-              key={k}
-              ref={(el) => {
-                wavesRef.current[k] = el;
-              }}
-            />
-          ))}
-        </svg>
+        <canvas ref={wavesRef} aria-hidden className="pointer-events-none absolute inset-0 z-[15] h-full w-full" />
 
-        <HeroLines light={videoShown} spread={spreadRef} />
+        {/* Garis lingkaran kiri-kanan; memudar saat lingkaran faktor dimulai. */}
+        <div ref={linesRef} className="pointer-events-none absolute inset-0 z-20">
+          <HeroLines light={videoShown} spread={spreadRef} />
+        </div>
 
         {/* Label, judul, dan tombol di tengah layar */}
         <div

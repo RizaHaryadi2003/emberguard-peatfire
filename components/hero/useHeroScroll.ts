@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { factorAngle, FIRST_ANGLE, ringRadius } from "@/lib/factorRing";
-import { waveAt, wavePath } from "@/lib/heroWaves";
+import { drawRipples, type Ripple, waveAt } from "@/lib/heroWaves";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -29,8 +29,10 @@ export type WheelRefs = {
   focusIndex: number;
   /** Salinan logo navigasi (di depan navigasi) yang turun menjadi titik awal lingkaran. */
   ghost: RefObject<HTMLElement | null>;
-  /** Cincin gelombang halus di latar saat logo turun dan lingkaran terbentuk. */
-  waves: RefObject<(SVGPathElement | null)[]>;
+  /** Kanvas riak bulat bertimbul di latar saat logo turun dan lingkaran terbentuk. */
+  waves: RefObject<HTMLCanvasElement | null>;
+  /** Pembungkus garis lingkaran kiri-kanan (HeroLines), dipudarkan saat roda dimulai. */
+  lines: RefObject<HTMLElement | null>;
   /** Lingkaran krem yang melebar dari titik faktor hingga menutup layar. */
   cover: RefObject<HTMLElement | null>;
   /** Judul faktor di atas lingkaran krem (jembatan ke bagian berikutnya). */
@@ -66,8 +68,8 @@ type Refs = {
  *    navigasi, logo aslinya disembunyikan), turun ke puncak roda, lalu
  *    berjalan searah jarum jam sambil menggambar lingkaran yang bersegi halus
  *    di tiap faktor (lib/factorRing.ts); titik dan nama faktor menyala saat
- *    logo melewatinya. Sementara itu cincin gelombang tipis melebar pelan di
- *    latar (lib/heroWaves.ts).
+ *    logo melewatinya. Sementara itu garis lingkaran kiri-kanan memudar dan
+ *    riak bulat bertimbul melebar pelan di latar (lib/heroWaves.ts).
  * 4. Roda diperbesar ke satu faktor dan titiknya melebar menjadi layar krem.
  *
  * Semua langkah mengikuti posisi gulir (scrub), jadi menggulir balik
@@ -180,10 +182,10 @@ const DESCEND_UNITS = 2.2;
 const DRAW_UNITS = 4.4;
 /** Takaran segi halus lingkaran di tiap faktor (sama dengan ringPath). */
 const RING_CORNER = 0.022;
-/** Gelombang latar: lama satu cincin, jarak antarcincin, dan kekuatannya. */
+/** Riak latar: lama satu riak, jarak antarriak, dan jumlahnya. */
 const WAVE_UNITS = 4.6;
 const WAVE_GAP = 1.15;
-const WAVE_OPACITY = 0.4;
+const WAVE_COUNT = 4;
 
 /**
  * Langkah roda faktor: logo navigasi turun ke puncak roda, lalu berjalan
@@ -197,7 +199,8 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   const cover = wheel.cover.current;
   const ghost = wheel.ghost.current;
   const markers = (wheel.markers.current ?? []).filter((m): m is HTMLElement => !!m);
-  const waves = (wheel.waves.current ?? []).filter((w): w is SVGPathElement => !!w);
+  const waveCanvas = wheel.waves.current;
+  const lines = wheel.lines.current;
   const focus = markers[wheel.focusIndex];
   if (!root || !ring || !cover || !ghost || !focus) return;
 
@@ -232,7 +235,7 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   gsap.set(dots, { autoAlpha: 0, scale: 0.4 });
   gsap.set(labels, { autoAlpha: 0, y: 6 });
   gsap.set(ghost, { autoAlpha: 0, color: logoColor });
-  gsap.set(waves, { autoAlpha: 0 });
+  if (lines) gsap.set(lines, { autoAlpha: 1 });
   gsap.set(cover, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
   gsap.set(wheel.coverTitle.current, { autoAlpha: 0, y: 16 });
 
@@ -253,6 +256,8 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
     startAt,
   );
   if (navLogo) tl.to(navLogo, { autoAlpha: 0, duration: 0.15 }, startAt);
+  // Garis lingkaran kiri-kanan memudar perlahan, memberi panggung pada roda.
+  if (lines) tl.to(lines, { autoAlpha: 0, duration: 2, ease: "power1.inOut" }, startAt);
   tl.to(ghost, {
     x: () => onRing(0).x - ghostSize() / 2,
     y: () => onRing(0).y - ghostSize() / 2,
@@ -290,22 +295,33 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
   tl.to(ghost, { autoAlpha: 0, duration: 0.4 }, drawAt + DRAW_UNITS - 0.2);
   if (navLogo) tl.to(navLogo, { autoAlpha: 1, duration: 0.6, ease: "power1.out" }, drawAt + DRAW_UNITS);
 
-  // Gelombang latar: cincin tipis melebar dari pusat roda, satu per satu,
-  // sejak logo mulai turun sampai lingkaran selesai.
-  if (!reduce) {
-    waves.forEach((path, k) => {
-      const state = { p: 0 };
-      const draw = () => {
-        const c = center();
-        const far = Math.hypot(window.innerWidth, window.innerHeight) * 0.55;
-        const w = waveAt(state.p, root.offsetWidth * 0.12, far);
-        path.setAttribute(
-          "d",
-          wavePath(c.x, c.y, { radius: w.radius, wobble: w.wobble, lobes: 7 + k, phase: state.p * 2.4 + k * 1.7 }),
-        );
-        gsap.set(path, { autoAlpha: w.opacity * WAVE_OPACITY });
-      };
-      tl.fromTo(state, { p: 0 }, { p: 1, duration: WAVE_UNITS, ease: "none", onUpdate: draw, immediateRender: false }, startAt + 0.4 + k * WAVE_GAP);
+  // Riak latar: riak bulat bertimbul melebar dari pusat roda, satu per satu,
+  // sejak logo mulai turun sampai lingkaran selesai. Semua riak digambar di
+  // satu kanvas, paling banyak sekali per bingkai.
+  const waveCtx = waveCanvas?.getContext("2d");
+  if (!reduce && waveCanvas && waveCtx) {
+    const progress = Array.from({ length: WAVE_COUNT }, () => ({ p: 0 }));
+    let frame = 0;
+    const paint = () => {
+      frame = 0;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = waveCanvas.clientWidth;
+      const h = waveCanvas.clientHeight;
+      if (waveCanvas.width !== Math.round(w * dpr) || waveCanvas.height !== Math.round(h * dpr)) {
+        waveCanvas.width = Math.round(w * dpr);
+        waveCanvas.height = Math.round(h * dpr);
+      }
+      waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      waveCtx.clearRect(0, 0, w, h);
+      const far = Math.hypot(w, h) * 0.55;
+      const ripples: Ripple[] = progress.map((s) => waveAt(s.p, root.offsetWidth * 0.1, far));
+      drawRipples(waveCtx, w / 2, h / 2, ripples);
+    };
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+    progress.forEach((state, k) => {
+      tl.fromTo(state, { p: 0 }, { p: 1, duration: WAVE_UNITS, ease: "none", onUpdate: request, immediateRender: false }, startAt + 0.4 + k * WAVE_GAP);
     });
   }
   tl.to({}, { duration: 1.4 });

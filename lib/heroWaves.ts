@@ -1,53 +1,78 @@
-// Gelombang halus di latar beranda saat logo turun dan lingkaran faktor
-// terbentuk: beberapa cincin tipis melebar dari pusat roda seperti riak di
-// permukaan air yang tenang, lalu memudar. Tepinya sedikit bergelombang
-// (beberapa lekuk yang perlahan berputar) agar tidak tampak seperti
-// lingkaran jangka.
+// Gelombang di latar beranda saat logo turun dan lingkaran faktor terbentuk:
+// beberapa riak bulat melebar dari pusat roda seperti riak di permukaan air
+// yang tenang, lalu memudar.
+//
+// Agar tampak timbul (sedikit 3D), tiap riak digambar sebagai paket gelombang
+// kecil (puncak terang diapit lembah gelap) dan diterangi dari atas: bagian
+// terang digeser sedikit ke arah cahaya, bayangan ke arah sebaliknya. Pada
+// riak sungguhan, lereng yang menghadap cahaya memantulkan lebih terang dan
+// lereng di baliknya lebih gelap; pergeseran kecil ini meniru kesan itu tanpa
+// kabur, masker, atau WebGL, sehingga ringan di laptop menengah.
 
-/** Jumlah titik per cincin; cukup halus untuk garis rambut di layar besar. */
-const SAMPLES = 144;
-
-export type WaveShape = {
-  /** Jari-jari rata-rata (px). */
-  radius: number;
-  /** Simpangan tepi terhadap jari-jari (bagian, mis. 0,01 = 1%). */
-  wobble: number;
-  /** Jumlah lekuk di sepanjang keliling. */
-  lobes: number;
-  /** Putaran lekuk (rad). */
-  phase: number;
-};
-
-/** Jari-jari cincin pada sudut θ. */
-export function waveRadius(theta: number, w: WaveShape): number {
-  // Dua harmonik dengan arah putar berlawanan: lekuknya terasa mengalir.
-  const a = Math.sin(w.lobes * theta + w.phase);
-  const b = Math.sin((w.lobes + 2) * theta - 0.7 * w.phase + 1.3);
-  return w.radius * (1 + w.wobble * (0.65 * a + 0.35 * b));
-}
-
-/** Lintasan SVG tertutup sebuah cincin berpusat di (cx, cy). */
-export function wavePath(cx: number, cy: number, w: WaveShape): string {
-  const parts: string[] = [];
-  for (let i = 0; i < SAMPLES; i++) {
-    const theta = (2 * Math.PI * i) / SAMPLES;
-    const r = waveRadius(theta, w);
-    parts.push(`${i === 0 ? "M" : "L"}${(cx + r * Math.cos(theta)).toFixed(1)} ${(cy + r * Math.sin(theta)).toFixed(1)}`);
-  }
-  return parts.join(" ") + "Z";
+/**
+ * Profil satu riak terhadap jarak dari puncaknya, dalam satuan lebar riak:
+ * positif = puncak (terang), negatif = lembah (gelap). Puncak utama di 0,
+ * lembah di kedua sisinya, lalu mendatar.
+ */
+export function rippleProfile(x: number): number {
+  return Math.exp(-((x / 1.5) ** 2)) * Math.cos(2.3 * x);
 }
 
 /**
- * Keadaan satu cincin pada kemajuannya p (0..1): melebar dengan laju yang
- * melambat (seperti riak yang kehilangan tenaga), muncul lembut lalu memudar.
+ * Keadaan satu riak pada kemajuannya p (0..1): melebar dengan laju yang
+ * melambat (seperti riak yang kehilangan tenaga), muncul lembut lalu memudar,
+ * dan makin landai (melebar) saat menjauh.
  */
-export function waveAt(p: number, from: number, to: number): { radius: number; opacity: number; wobble: number } {
+export function waveAt(p: number, from: number, to: number): { radius: number; strength: number; width: number } {
   const c = Math.min(1, Math.max(0, p));
   const ease = 1 - Math.pow(1 - c, 2.2);
+  const radius = from + (to - from) * ease;
   return {
-    radius: from + (to - from) * ease,
-    opacity: Math.sin(Math.PI * c) ** 1.5,
-    // Riak muda lebih bergelombang, lalu merata saat melebar.
-    wobble: 0.012 * (1 - 0.5 * c),
+    radius,
+    strength: Math.sin(Math.PI * c) ** 1.5,
+    width: 9 + 0.025 * radius,
   };
+}
+
+export type Ripple = { radius: number; strength: number; width: number };
+
+const LIGHT = "242, 239, 233";
+const SHADE = "38, 36, 33";
+/** Kekuatan puncak terang dan lembah gelap (alfa maksimum). */
+const LIGHT_ALPHA = 0.55;
+const SHADE_ALPHA = 0.3;
+/** Pergeseran cahaya/bayangan per lebar riak (arah cahaya: atas). */
+const LIGHT_SHIFT = 0.28;
+const STOPS = 14;
+const SPAN = 3;
+
+/** Satu lapisan (terang atau gelap) dari sebuah riak, berpusat di (cx, cy). */
+function fillLayer(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: Ripple, light: boolean) {
+  const inner = Math.max(r.radius - SPAN * r.width, 0);
+  const outer = r.radius + SPAN * r.width;
+  const g = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+  for (let i = 0; i <= STOPS; i++) {
+    const t = i / STOPS;
+    const x = (inner + (outer - inner) * t - r.radius) / r.width;
+    const f = rippleProfile(x);
+    const a = light ? Math.max(f, 0) * LIGHT_ALPHA : Math.max(-f, 0) * SHADE_ALPHA + Math.max(f, 0) * 0.35 * SHADE_ALPHA;
+    g.addColorStop(t, `rgba(${light ? LIGHT : SHADE}, ${(a * r.strength).toFixed(4)})`);
+  }
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, outer, 0, 2 * Math.PI);
+  if (inner > 0) ctx.arc(cx, cy, inner, 0, 2 * Math.PI, true);
+  ctx.fill();
+}
+
+/** Gambar semua riak; bayangan lebih dulu (bergeser ke bawah), cahaya di atasnya. */
+export function drawRipples(ctx: CanvasRenderingContext2D, cx: number, cy: number, ripples: Ripple[]) {
+  for (const r of ripples) {
+    if (r.strength <= 0.002) continue;
+    fillLayer(ctx, cx, cy + LIGHT_SHIFT * r.width, r, false);
+  }
+  for (const r of ripples) {
+    if (r.strength <= 0.002) continue;
+    fillLayer(ctx, cx, cy - LIGHT_SHIFT * r.width, r, true);
+  }
 }
