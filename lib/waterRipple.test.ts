@@ -61,10 +61,12 @@ describe("medan riak tetesan", () => {
     expect(rebound).toBeGreaterThan(0);
   });
 
-  it("muka riak melebar terus dan tiba di lingkaran dalam ±0,28 detik", () => {
+  // Dorongan selebar kawah mahkota (±4,5 mm) lebih banyak memuat gelombang
+  // panjang yang lambat, jadi muka riak tiba lebih lambat daripada tetesan kecil.
+  it("muka riak melebar terus dan tiba di lingkaran dalam ±0,37 detik", () => {
     const t = crestArrivalTime(field);
-    expect(t).toBeGreaterThan(0.22);
-    expect(t).toBeLessThan(0.34);
+    expect(t).toBeGreaterThan(0.32);
+    expect(t).toBeLessThan(0.42);
     expect(field.crestRadius(t)).toBeGreaterThanOrEqual(RING_RADIUS);
     expect(field.crestRadius(t * 0.5)).toBeLessThan(field.crestRadius(t));
   });

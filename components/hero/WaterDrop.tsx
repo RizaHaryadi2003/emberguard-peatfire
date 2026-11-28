@@ -2,7 +2,8 @@
 
 import { type Ref, type RefObject, useEffect, useImperativeHandle, useRef } from "react";
 import { DROP_RADIUS, fallHeight, RING_RADIUS, sharedRipple } from "@/lib/waterRipple";
-import { craterAt, SECOND_SCALE, splashAt } from "@/lib/waterSplash";
+import { CRATER_MAX, CROWN_PEAK_AT, CROWN_PEAK_HEIGHT, crownStateAt, LEAN_HIGH, LEAN_LOW, MAX_DROPLETS, MAX_FINGERS, SHEET_BASE, SHEET_TOP } from "@/lib/waterCrown";
+import { JET_START, SECOND_SCALE, splashAt } from "@/lib/waterSplash";
 
 /**
  * Ketajaman kanvas mengikuti layar sampai 2× (Retina), agar tepi kolom, butir,
@@ -17,8 +18,8 @@ const MAX_DPR = 2;
 const BACKDROP_TOP = [0x6c / 255, 0x6b / 255, 0x67 / 255] as const;
 const BACKDROP_BOTTOM = [0xb3 / 255, 0xb2 / 255, 0xac / 255] as const;
 
-/** Lama tetesan tenggelam menyatu dengan air (detik). */
-const MERGE_S = 0.006;
+/** Lama tetesan tenggelam menyatu dengan air (detik): ±2R/U pada 3 m/s. */
+const MERGE_S = 0.0012;
 
 /**
  * Kamera mengorbit titik jatuh. Dari depan: rendah dan dekat, menatap sedikit
@@ -26,7 +27,7 @@ const MERGE_S = 0.006;
  * sehingga lingkaran riak 12 cm sama persis dengan lingkaran faktor di layar.
  */
 const CAMERA = {
-  front: { elevation: (14 * Math.PI) / 180, distance: 0.14, targetZ: 0.007 },
+  front: { elevation: (14 * Math.PI) / 180, distance: 0.068, targetZ: 0.0055 },
   top: { elevation: Math.PI / 2, distance: 0.6, targetZ: 0 },
 };
 
@@ -86,7 +87,15 @@ uniform vec4 uJet0;        // tinggi, jari-jari ujung, jari-jari kaki, tinggi ka
 uniform vec4 uJet1;
 uniform vec2 uBulb;        // z dan jari-jari gembung di ujung kolom
 uniform float uZTop;       // batas atas ruang kolom
-uniform vec2 uCrater;      // kedalaman dan jari-jari kawah (m)
+uniform vec2 uCrater;      // kedalaman dan jari-jari mulut kawah (m)
+uniform vec4 uCrown;       // tinggi bibir, jari-jari pangkal, jari-jari bibir, tebal tabung bibir
+uniform vec2 uSheet;       // tebal lembar mahkota di pangkal dan di bibir
+uniform vec4 uFinger[${MAX_FINGERS}]; // sudut, panjang, condong, jari-jari ujung
+uniform int uFingers;
+uniform vec4 uDroplet[${MAX_DROPLETS}]; // butir lepas dari jari: x, y, z, jari-jari
+uniform int uDroplets;
+uniform float uHole;       // riak linear dimatikan di dalam jari-jari ini (kawah)
+uniform float uMerge;      // lebar sambungan mahkota–kolam (m)
 uniform vec3 uBg0;         // warna latar halaman di atas dan di bawah layar,
 uniform vec3 uBg1;         // dilihat lewat pembiasan air
 uniform float uFocusT;     // jarak fokus kamera (m)
@@ -103,7 +112,7 @@ const float DOF = 0.05;
 // Kekuatan pantulan studio di permukaan air (1 = sepenuhnya).
 const float WATER_REFL = 0.6;
 // Ruang dekat titik jatuh yang digambar sebagai benda 3D penuh (m).
-const float CORE = 0.014;
+const float CORE = 0.017;
 const vec3 KEY = vec3(-0.15, 0.55, 0.82); // arah softbox utama (dinormalkan di bawah)
 
 vec3 profileAt(float r) {
@@ -169,30 +178,129 @@ float sdJet(vec3 p, vec4 jet) {
   return (r - rc) * 0.6;
 }
 
-// Kolom tanpa permukaan air, untuk pantulannya. Bagian di bawah permukaan
-// dipotong agar pantulan kaki kolom bertemu garis air dengan rapi.
-float sdObjects(vec3 p) {
-  float d = min(sdJet(p, uJet0), sdJet(p, uJet1));
-  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
-  return max(d, -p.z);
+
+// Jarak bertanda ke elipsoid (pendekatan Inigo Quilez, cukup untuk raymarch).
+float sdEllipsoid(vec3 p, vec3 r) {
+  float k0 = length(p / r);
+  float k1 = length(p / (r * r));
+  return k0 * (k0 - 1.0) / max(k1, 1e-9);
 }
 
-// Kawah berbibir: mangkuk mulus (1 − x²)² dan bibir terangkat di luarnya.
-float craterHeight(float r) {
-  if (uCrater.x <= 0.0) return 0.0;
-  float x = r / uCrater.y;
-  float bowl = x < 1.0 ? (1.0 - x * x) * (1.0 - x * x) : 0.0;
-  float rim = exp(-pow((x - 1.15) / 0.42, 2.0));
-  return uCrater.x * (0.24 * rim - bowl);
+float smax(float a, float b, float k) { return -smin(-a, -b, k); }
+
+// Riak linear tidak berlaku di dalam kawah (gerak di sana tidak linear).
+float rippleHeight(float r) {
+  float h = H_GAIN * profileAt(r).x;
+  if (uHole > 0.0) h *= smoothstep(0.7 * uHole, 1.5 * uHole, r);
+  return h;
+}
+
+// Kolam dengan kawah: bidang air dikurangi rongga elipsoid; bibirnya
+// dibulatkan tegangan permukaan (smax).
+float sdPool(vec3 p, float r) {
+  float surf = (p.z - rippleHeight(r)) * 0.7;
+  if (uCrater.x <= 0.0) return surf;
+  float cav = sdEllipsoid(p, vec3(uCrater.y, uCrater.y, uCrater.x));
+  // Bibir melebar sebanding kawah: saat runtuh kawah menjadi cekungan landai.
+  return smax(surf, -cav, max(1.1e-3, 0.3 * uCrater.y));
+}
+
+// Dinding mahkota pada bidang (jarak ke sumbu, tinggi): dua ruas, bawah
+// hampir tegak dan atas melebar ke luar, menipis ke atas, ditutup tabung
+// bibir. \`top\` = tinggi bibir di sudut ini (turun di antara dua jari).
+const float TAN_LOW = ${Math.tan(LEAN_LOW).toFixed(5)};
+const float TAN_HIGH = ${Math.tan(LEAN_HIGH).toFixed(5)};
+
+float sdSegment(vec2 q, vec2 a, vec2 b, out float h) {
+  vec2 ab = b - a;
+  h = clamp(dot(q - a, ab) / dot(ab, ab), 0.0, 1.0);
+  return length(q - a - ab * h);
+}
+
+float sdSheet(vec2 q, float top) {
+  vec2 a = vec2(uCrown.y, -4e-4);
+  vec2 m = vec2(uCrown.y + 0.5 * top * TAN_LOW, 0.5 * top);
+  vec2 b = vec2(m.x + 0.5 * top * TAN_HIGH, top);
+  float h1;
+  float h2;
+  float d1 = sdSegment(q, a, m, h1);
+  float d2 = sdSegment(q, m, b, h2);
+  float th = d1 < d2 ? mix(uSheet.x, 0.5 * (uSheet.x + uSheet.y), h1) : mix(0.5 * (uSheet.x + uSheet.y), uSheet.y, h2);
+  float sheet = min(d1, d2) - 0.5 * th;
+  float rim = length(q - b) - uCrown.w;
+  return smin(sheet, rim, 2e-4);
+}
+
+// Satu jari: kerucut membulat dari bibir ke luar-atas, ujungnya menggembung
+// menjadi butir yang akan lepas.
+float sdFinger(vec3 p, vec4 f) {
+  vec3 out3 = vec3(cos(f.x), sin(f.x), 0.0);
+  vec3 dir = normalize(out3 * sin(f.z) + vec3(0.0, 0.0, cos(f.z)));
+  vec3 a = out3 * uCrown.z + vec3(0.0, 0.0, uCrown.x);
+  float len = f.y;
+  vec3 pa = p - a;
+  float h = clamp(dot(pa, dir) / max(len, 1e-6), 0.0, 1.0);
+  float neck = mix(uCrown.w * 1.15, max(0.42 * f.w, 0.45 * uCrown.w), sqrt(h));
+  float body = length(pa - dir * len * h) - neck;
+  float tip = length(p - a - dir * len) - f.w;
+  return smin(body, tip, 0.35 * f.w);
+}
+
+float sdCrown(vec3 p) {
+  if (uCrown.x <= 0.0) return 1e3;
+  float r = length(p.xy);
+  float phi = atan(p.y, p.x);
+  if (phi < 0.0) phi += 6.2831853;
+  // Gelombang kapiler halus di lembar: membuat pantulan dan pembiasan
+  // bergaris seperti air sungguhan, bukan kaca licin.
+  float wob = 7e-5 * (sin(7.0 * phi + p.z * 900.0) + 0.6 * sin(13.0 * phi - p.z * 1500.0 + 1.7));
+  vec2 q = vec2(r + wob, p.z);
+  int n = uFingers;
+  if (n == 0) return sdSheet(q, uCrown.x);
+  // Jari diurutkan menurut sudut; cukup periksa yang terdekat dan tetangganya.
+  int i0 = int(floor(phi / 6.2831853 * float(n) + 0.5));
+  float halfGap = 3.14159265 / float(n);
+  float soft = 0.3 * halfGap;
+  float d = 1e3;
+  float wSum = 0.0;
+  float grown = 0.0;
+  for (int k = -2; k <= 2; k++) {
+    int i = (i0 + k + n) % n;
+    vec4 f = uFinger[i];
+    float da = abs(mod(phi - f.x + 3.14159265, 6.2831853) - 3.14159265);
+    // Jarak sudut ke jari terdekat sebagai min halus, agar dinding tidak
+    // berlipat di tengah dua jari yang jaraknya tidak sama.
+    float w = exp(-da / soft);
+    wSum += w;
+    grown += w * clamp(f.y / 1.6e-3, 0.0, 1.0);
+    if (abs(k) <= 1) d = smin(d, sdFinger(p, f), 4e-4);
+  }
+  float gap = -soft * log(max(wSum, 1e-6));
+  grown /= max(wSum, 1e-6);
+  // Bibir melengkung turun di antara dua jari (selaput di antara jari);
+  // lengkungnya tumbuh bersama jari dan mendatar lagi saat jari surut.
+  float dip = smoothstep(0.0, 1.0, clamp(gap / halfGap, 0.0, 1.0));
+  float top = uCrown.x * (1.0 - 0.2 * grown * dip * dip);
+  return smin(sdSheet(q, top), d, 4e-4);
 }
 
 float sdScene(vec3 p) {
   float r = length(p.xy);
-  float surf = (p.z - H_GAIN * profileAt(r).x - craterHeight(r)) * 0.7;
-  float d = smin(surf, sdJet(p, uJet0), 1.8e-3);
+  float d = sdPool(p, r);
+  d = smin(d, sdCrown(p), uMerge);
+  d = smin(d, sdJet(p, uJet0), 1.8e-3);
   d = smin(d, sdJet(p, uJet1), 1.2e-3);
   if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
   return d;
+}
+
+// Kolom dan mahkota tanpa permukaan air, untuk pantulannya. Bagian di bawah
+// permukaan dipotong agar pantulan kaki kolom bertemu garis air dengan rapi.
+float sdObjects(vec3 p) {
+  float d = min(sdJet(p, uJet0), sdJet(p, uJet1));
+  if (uBulb.y > 0.0) d = smin(d, length(p - vec3(0.0, 0.0, uBulb.x)) - uBulb.y, 8e-4);
+  d = min(d, sdCrown(p));
+  return max(d, -p.z);
 }
 
 vec3 sceneNormal(vec3 p) {
@@ -258,8 +366,13 @@ bool reflectedBody(vec3 p, vec3 rr, out vec3 n, out float hitZ) {
     vec2 h = hitEllipsoid(p, rr, c, uDrop.z, 1.0);
     if (h.x > 0.0 && h.x < best) { best = h.x; n = ellipsoidNormal(p + rr * h.x, c, uDrop.z, 1.0); }
   }
-  // Kolom: telusur pendek, hanya bila sinar pantul melewati tabung inti.
-  if (uJet0.x > 0.0 || uJet1.x > 0.0) {
+  for (int i = 0; i < uDroplets; i++) {
+    vec4 b = uDroplet[i];
+    vec2 h = hitEllipsoid(p, rr, b.xyz, b.w, 1.0);
+    if (h.x > 0.0 && h.x < best) { best = h.x; n = normalize(p + rr * h.x - b.xyz); }
+  }
+  // Kolom dan mahkota: telusur pendek, hanya bila sinar pantul melewati tabung inti.
+  if (uJet0.x > 0.0 || uJet1.x > 0.0 || uCrown.x > 0.0) {
     vec2 span = coreSpan(p, rr, 0.0);
     float t = max(span.x, 1e-4);
     for (int i = 0; i < 64; i++) {
@@ -378,11 +491,12 @@ vec4 shadeSample(vec2 sc, out bool fine) {
   float tPlane = rd.z < 0.0 ? -ro.z / rd.z : 1e9;
   if (span.y > span.x && tPlane > span.x) {
     float t = span.x;
-    for (int i = 0; i < 90; i++) {
+    // Lembar mahkota hanya setebal ±0,2 mm, jadi langkahnya diperhalus.
+    for (int i = 0; i < 160; i++) {
       if (t > span.y) break;
       float d = sdScene(ro + rd * t);
-      if (d < 2e-5) { tHit = t; core = true; break; }
-      t += max(d, 1e-5);
+      if (d < 1.2e-5) { tHit = t; core = true; break; }
+      t += max(d * 0.9, 8e-6);
     }
     // Perhalus titik temu agar tepi tidak bertangga.
     if (core) for (int i = 0; i < 3; i++) tHit += sdScene(ro + rd * tHit);
@@ -422,7 +536,7 @@ vec4 shadeSample(vec2 sc, out bool fine) {
     // pantulannya memudar mulus ke garis air, bukan terpotong bersudut.
     float mirrorW = mirrored ? smoothstep(1.0e-3, 5.5e-3, hitZ) : 0.0;
     // Pantulan benda di air (dan sekitarnya) bertepi tajam: perlu sampel tambahan.
-    bool things = uJet0.x > 0.0 || uJet1.x > 0.0 || uBead.w > 0.0 || uDrop.w > 0.0;
+    bool things = uJet0.x > 0.0 || uJet1.x > 0.0 || uBead.w > 0.0 || uDrop.w > 0.0 || uCrown.x > 0.0 || uDroplets > 0;
     if (mirrored || (things && r < 0.06)) fine = true;
     float env = studio(rr) * (1.0 - mirrorW);
     float refl = F * env * WATER_REFL;
@@ -447,6 +561,18 @@ vec4 shadeSample(vec2 sc, out bool fine) {
     float sh = 0.0;
     if (uBead.w > 0.0) sh += shadowAt(p.xy, vec2(0.0), uBead.x, uBead.y, 0.55 * uBead.w);
     if (uDrop.w > 0.0) sh += shadowAt(p.xy, vec2(uDrop.x, 0.0), uDrop.y, uDrop.z, 0.55 * uDrop.w);
+    if (r < 0.08) for (int i = 0; i < uDroplets; i++) {
+      vec4 b = uDroplet[i];
+      if (b.z > 0.0) sh += shadowAt(p.xy, b.xy, b.z, b.w, 0.05);
+    }
+    // Mahkota membayangi dasar air di dekat dindingnya.
+    if (uCrown.x > 0.0) {
+      vec3 k = normalize(KEY);
+      vec2 c = -k.xy * 0.5 * uCrown.x / k.z;
+      float ring = abs(length(p.xy - c) - 0.5 * (uCrown.y + uCrown.z));
+      float w = 0.4 * uCrown.w + 0.25 * uCrown.x;
+      sh += 0.3 * exp(-ring * ring / (2.0 * w * w)) * min(uCrown.x / 0.003, 1.0);
+    }
     float jetH = max(uJet0.x, uJet1.x);
     if (jetH > 0.0) {
       vec3 k = normalize(KEY);
@@ -472,17 +598,29 @@ vec4 shadeSample(vec2 sc, out bool fine) {
 
   // 3. Tetesan jatuh dan butir yang melambung: elipsoid analitik dengan tepi
   //    halus selebar satu piksel.
-  for (int k = 0; k < 2; k++) {
-    vec4 b = k == 0 ? uDrop : vec4(0.0, uBead.x, uBead.y, uBead.w);
-    float s = k == 0 ? 1.0 : uBead.z;
+  for (int k = 0; k < 2 + uDroplets; k++) {
+    vec4 b;
+    vec3 c;
+    float s = 1.0;
+    if (k >= 2) {
+      // Butir dari jari mahkota (bola, posisi 3D penuh).
+      vec4 q = uDroplet[k - 2];
+      c = q.xyz;
+      b = vec4(0.0, 0.0, q.w, uFade);
+    } else {
+      b = k == 0 ? uDrop : vec4(0.0, uBead.x, uBead.y, uBead.w);
+      s = k == 0 ? 1.0 : uBead.z;
+      c = vec3(b.x, 0.0, b.y);
+    }
     if (b.w <= 0.0 || b.z <= 0.0) continue;
-    vec3 c = vec3(b.x, 0.0, b.y);
     vec2 h = hitEllipsoid(ro, rd, c, b.z, s);
     float depth = dot(c - ro, uFwd);
     float edgePx = (1.0 - h.y) * b.z * uFocal / max(depth, 1e-4);
     float cover = clamp(edgePx + 0.5, 0.0, 1.0) * b.w;
     if (edgePx > -2.0 && edgePx < 2.0) fine = true;
     if (cover <= 0.0 || (h.x > 0.0 && h.x > tHit)) continue;
+    // Tepi halus di luar bola juga tidak boleh tampak menembus benda di depannya.
+    if (h.x <= 0.0 && dot(c - ro, rd) - b.z > tHit) continue;
     // Di luar tepi (sinar nyaris lewat), warnai titik tepi terdekat.
     vec3 toC = c - ro;
     vec3 side = toC - rd * dot(toC, rd);
@@ -609,7 +747,7 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
     const names = [
       "uRes", "uDpr", "uFocal", "uCamPos", "uFwd", "uRight", "uUp", "uRingM", "uProfile", "uSamples",
       "uExtent", "uRipple", "uFade", "uDrop", "uBead", "uJet0", "uJet1", "uBulb", "uZTop", "uCrater",
-      "uBg0", "uBg1", "uFocusT",
+      "uBg0", "uBg1", "uFocusT", "uCrown", "uSheet", "uFinger", "uFingers", "uDroplet", "uDroplets", "uHole", "uMerge",
     ] as const;
     const U = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(program, n)])) as Record<
       (typeof names)[number],
@@ -633,6 +771,8 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
     gl.uniform1f(U.uRingM, RING_RADIUS);
     gl.uniform3fv(U.uBg0, BACKDROP_TOP);
     gl.uniform3fv(U.uBg1, BACKDROP_BOTTOM);
+    const fingerBuf = new Float32Array(4 * MAX_FINGERS);
+    const dropletBuf = new Float32Array(4 * MAX_DROPLETS);
 
     let lastTime = -1;
     let frame = 0;
@@ -721,9 +861,30 @@ export default function WaterDrop({ handleRef, wheelRef }: Props) {
       gl.uniform4f(U.uJet0, j0.height, j0.tipRadius, j0.baseRadius, j0.baseHeight);
       gl.uniform4f(U.uJet1, j1.height, j1.tipRadius, j1.baseRadius, j1.baseHeight);
       gl.uniform2f(U.uBulb, bulb[0], bulb[1]);
-      gl.uniform1f(U.uZTop, Math.max(j0.height, j1.height, bulb[0] + bulb[1], 0.002) + 0.002);
-      const crater = craterAt(s.time);
-      gl.uniform2f(U.uCrater, crater.depth, crater.radius);
+      // Kawah, mahkota, jari, dan butir lepas (lib/waterCrown.ts).
+      const crown = crownStateAt(s.time);
+      gl.uniform2f(U.uCrater, crown.crater.depth, crown.crater.mouth);
+      const c = crown.crown;
+      gl.uniform4f(U.uCrown, c.height, c.base, c.rim, c.rimRadius);
+      const nF = Math.min(crown.fingers.length, MAX_FINGERS);
+      crown.fingers.slice(0, nF).forEach((f, i) => fingerBuf.set([f.angle < 0 ? f.angle + 2 * Math.PI : f.angle, f.length, f.bend, f.tip], 4 * i));
+      gl.uniform4fv(U.uFinger, fingerBuf);
+      gl.uniform1i(U.uFingers, nF);
+      const nD = Math.min(crown.droplets.length, MAX_DROPLETS);
+      crown.droplets.slice(0, nD).forEach((d, i) => dropletBuf.set([d.x, d.y, d.z, d.r], 4 * i));
+      gl.uniform4fv(U.uDroplet, dropletBuf);
+      gl.uniform1i(U.uDroplets, nD);
+      // Riak linear baru tampak di tengah sesudah kolom mulai surut.
+      const hole = s.time > 0 ? 1 - Math.min(Math.max((s.time - JET_START) / 0.06, 0), 1) : 0;
+      gl.uniform1f(U.uHole, CRATER_MAX * 1.3 * hole);
+      // Mahkota yang tenggelam menebal dan menyatu dengan kolam sebagai
+      // gundukan landai, bukan dinding tipis yang tertinggal.
+      const sinking = s.time > CROWN_PEAK_AT ? 1 - c.height / CROWN_PEAK_HEIGHT : 0;
+      gl.uniform1f(U.uMerge, 5e-4 + 2.2e-3 * sinking * sinking);
+      // Air lembar mengalir turun ke pangkal: lembar menebal saat tenggelam.
+      gl.uniform2f(U.uSheet, SHEET_BASE * (1 + 5 * sinking), SHEET_TOP * (1 + 2.5 * sinking));
+      const fingerTop = crown.fingers.reduce((m, f) => Math.max(m, f.length + f.tip), 0);
+      gl.uniform1f(U.uZTop, Math.max(j0.height, j1.height, bulb[0] + bulb[1], c.height + c.rimRadius + fingerTop, 0.002) + 0.002);
       // Fokus pada percikan, ±6 mm di atas titik jatuh.
       gl.uniform1f(U.uFocusT, Math.hypot(cam.pos[0], cam.pos[1], cam.pos[2] - 0.006));
 

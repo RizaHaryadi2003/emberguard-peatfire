@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { factorAngle } from "@/lib/factorRing";
 import { sharedRipple } from "@/lib/waterRipple";
-import { SPLASH_END } from "@/lib/waterSplash";
+import { PLAY_SECONDS, playbackTime, SPLASH_END } from "@/lib/waterSplash";
 import type { WaterHandle } from "./WaterDrop";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -63,15 +63,17 @@ type Refs = {
  * 2. Tiap blok teks dipecah per baris (SplitText). Baris masuk dari
  *    kedalaman (kabur, miring ke belakang) menjadi tajam, lalu pergi ke atas.
  * 3. Logo bulat di navigasi menjadi tetesan air, dilihat dari depan. Tetesan
- *    jatuh, kolom air memantul naik dan melepas satu butir yang melambung
- *    lalu jatuh kembali (lib/waterSplash.ts). Kamera lalu naik ke atas dan
+ *    jatuh dan membuka kawah; dinding air (mahkota) terlempar naik dan
+ *    bibirnya pecah menjadi jari dan butir (lib/waterCrown.ts); kawah
+ *    runtuh, kolom air naik dan melepas satu butir (lib/waterSplash.ts). Kamera lalu naik ke atas dan
  *    riaknya (lib/waterRipple.ts) menjadi lingkaran faktor tepat saat muka
  *    riak tiba di jari-jarinya; titik dan nama faktor lalu menyala searah
  *    jarum jam.
  * 4. Roda diperbesar ke satu faktor dan titiknya melebar menjadi layar krem.
  *
  * Semua langkah mengikuti posisi gulir (scrub), jadi menggulir balik
- * memutar urutan mundur. Kabur hanya dipakai pada baris teks yang kecil,
+ * memutar urutan mundur, kecuali percikan: begitu tetesan menyentuh air,
+ * percikan berjalan sendiri dalam gerak lambat seperti rekaman sungguhan. Kabur hanya dipakai pada baris teks yang kecil,
  * tidak pada lapisan layar penuh, agar ringan di laptop menengah. Bila
  * pengguna meminta gerak dikurangi, baris hanya memudar.
  */
@@ -175,11 +177,11 @@ export function useHeroScroll({ pin, hero, blocks, wheel, spread }: Refs) {
 }
 
 /**
- * Panjang tiap babak air pada linimasa (satuan waktu linimasa). Waktu nyata
- * di dalamnya tetap linear, jadi gerak lambatnya merata seperti rekaman
- * kamera kecepatan tinggi.
+ * Panjang tiap babak air pada linimasa (satuan waktu linimasa). Babak
+ * percikan hanyalah jarak gulir selama percikan diputar sendiri
+ * (PLAY_SECONDS); kamera dan riak sesudahnya kembali mengikuti gulir.
  */
-const SPLASH_UNITS = 6;
+const SPLASH_UNITS = 4;
 const CAMERA_UNITS = 3.5;
 const SETTLE_UNITS = 1.6;
 /** Riak dibiarkan berjalan sampai kelipatan ini dari waktu tibanya. */
@@ -253,16 +255,72 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
     tl.to(ghost, { autoAlpha: 0, scale: () => (0.5 * logoRect().width) / ghostSize(), duration: 0.7, ease: "power2.in" });
     tl.to(water.state, { morph: 1, duration: 0.7, ease: "power2.out", onUpdate: redraw }, "<");
 
-    // 3. Jatuh bebas ke titik jatuh (percepatannya ada di fallHeight).
-    tl.to(water.state, { fall: 1, duration: 2.2, ease: "none", onUpdate: redraw });
+    // 4. Percikan diputar sendiri oleh waktu, bukan oleh gulir: kawah,
+    //    mahkota yang pecah menjadi jari dan butir, lalu kolom tengah. Gulir
+    //    hanya memicunya; menggulir balik sebelum tetesan menyentuh air
+    //    mengembalikan semuanya ke awal.
+    const clock = { u: 0 };
+    let play: gsap.core.Tween | null = null;
+    const stopPlay = () => {
+      play?.kill();
+      play = null;
+    };
+    const startPlay = () => {
+      if (play) return;
+      play = gsap.to(clock, {
+        u: 1,
+        duration: PLAY_SECONDS * (1 - clock.u),
+        ease: "none",
+        onUpdate: () => {
+          water.state.time = playbackTime(clock.u);
+          redraw();
+        },
+      });
+    };
 
-    // 4. Dari depan, dalam gerak lambat: kawah, kolom air naik, butir lepas,
-    //    melambung, jatuh kembali, dan kolom kecil kedua.
-    tl.to(water.state, { time: SPLASH_END, duration: SPLASH_UNITS, ease: "none", onUpdate: redraw });
+    // 3. Jatuh bebas ke titik jatuh (percepatannya ada di fallHeight).
+    tl.to(water.state, {
+      fall: 1,
+      duration: 2.2,
+      ease: "none",
+      onUpdate: () => {
+        if (water.state.fall < 1 && clock.u > 0) {
+          stopPlay();
+          clock.u = 0;
+          water.state.time = 0;
+        }
+        redraw();
+      },
+    });
+
+    const gate = { on: 0 };
+    tl.to(gate, {
+      on: 1,
+      duration: SPLASH_UNITS,
+      ease: "none",
+      onUpdate: () => {
+        if (gate.on > 0 && clock.u < 1) startPlay();
+      },
+    });
 
     // 5. Kamera naik ke atas sementara riak terus melebar, sampai muka riak
-    //    tepat di lingkaran faktor; lalu air memudar.
-    tl.to(water.state, { time: crest, duration: CAMERA_UNITS, ease: "none", onUpdate: redraw });
+    //    tepat di lingkaran faktor; lalu air memudar. Bila pembaca menggulir
+    //    lebih cepat dari pemutaran, percikan langsung ke akhirnya.
+    tl.fromTo(
+      water.state,
+      { time: SPLASH_END },
+      {
+        time: crest,
+        duration: CAMERA_UNITS,
+        ease: "none",
+        immediateRender: false,
+        onStart: () => {
+          stopPlay();
+          clock.u = 1;
+        },
+        onUpdate: redraw,
+      },
+    );
     tl.to(water.state, { camera: 1, duration: CAMERA_UNITS, ease: "power2.inOut", onUpdate: redraw }, "<");
     ringAt = tl.duration();
     tl.to(water.state, { time: crest * RIPPLE_END_FACTOR, duration: SETTLE_UNITS, ease: "none", onUpdate: redraw });

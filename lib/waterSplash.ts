@@ -1,35 +1,35 @@
-// Gerak percikan "plong" sesudah tetesan menyentuh air, untuk animasi beranda.
+// Kolom air di tengah sesudah kawah runtuh (jet Worthington), untuk animasi
+// beranda. Mahkota dan kawah sebelumnya ada di lib/waterCrown.ts.
 //
-// Urutan yang tampak pada rekaman gerak lambat tetesan milimeter yang jatuh
-// ke kolam dalam (jet Worthington):
-//   1. Tetesan menyatu dan membuat kawah (dihitung lib/waterRipple.ts).
-//   2. Kawah runtuh; gelombang kapiler memusat di dasarnya dan mendorong
-//      kolam air naik dari tengah.
-//   3. Ujung kolom menggembung lalu melepaskan satu butir air.
-//   4. Butir melambung (jatuh bebas), kolom surut ke permukaan.
-//   5. Butir jatuh kembali dan membuat percikan kedua yang lebih kecil.
+// Urutan sesudah mahkota tenggelam:
+//   1. Kawah runtuh; aliran yang memusat mendorong air naik dari tengah.
+//   2. Ujung kolom menggembung lalu melepaskan satu butir air.
+//   3. Butir melambung (jatuh bebas), kolom surut ke permukaan.
+//   4. Butir jatuh kembali dan membuat percikan kedua yang lebih kecil.
 //
-// Gerak kolom memakai perlambatan tetap (gravitasi ditambah tarikan tegangan
-// permukaan), butir memakai gravitasi murni. Angkanya disetel agar sesuai
-// rekaman tetesan ±3,6 mm yang jatuh dari ±6 cm: kolom ±1,5 cm, butir
-// ±1,5 mm, seluruh percikan ±0,2 detik.
+// Pada Froude besar (±500) kolom yang terbentuk tebal dan lambat (Michon,
+// Josserand & Séon 2017), dan mulai tumbuh ketika t/t_maks kawah ±1,5
+// (Lherm & Deguen 2023). Gerak kolom memakai perlambatan tetap (gravitasi
+// ditambah tarikan tegangan permukaan), butir memakai gravitasi murni.
+// Ukuran kolom disetel, bukan diukur.
 
 import { GRAVITY } from "./waterRipple";
+import { CRATER_PEAK, CROWN_END } from "./waterCrown";
 
-/** Kolom mulai muncul sesudah kawah runtuh (detik sejak menyentuh air). */
-export const JET_START = 0.028;
+/** Kolom mulai muncul saat kawah runtuh (detik sejak menyentuh air). */
+export const JET_START = CRATER_PEAK * 1.5;
 /** Laju awal ujung kolom (m/s). */
-const JET_SPEED = 0.8;
+const JET_SPEED = 0.75;
 /** Perlambatan ujung kolom: gravitasi + tarikan tegangan permukaan (m/s²). */
 const JET_DECEL = 20;
 /** Lama sejak kolom muncul sampai butir di ujungnya lepas (detik). */
 const PINCH_AFTER = 0.025;
 /** Jari-jari butir yang lepas, jari-jari ujung kolom, dan jari-jari kakinya (m). */
-export const BEAD_RADIUS = 1.5e-3;
-const TIP_RADIUS = 1.1e-3;
-const BASE_RADIUS = 3.6e-3;
+export const BEAD_RADIUS = 1.8e-3;
+const TIP_RADIUS = 1.4e-3;
+const BASE_RADIUS = 4.8e-3;
 /** Tinggi pelebaran kaki kolom (m). */
-const BASE_HEIGHT = 2.4e-3;
+const BASE_HEIGHT = 3.0e-3;
 /** Laju dan perlambatan kolom yang surut sesudah butir lepas. */
 const RETRACT_SPEED = 0.1;
 const RETRACT_DECEL = 15;
@@ -117,28 +117,51 @@ export function splashAt(t: number): Splash {
 }
 
 /** Sesudah waktu ini (detik) semua kolom dan butir sudah kembali ke air. */
-export const SPLASH_END = 0.21;
+export const SPLASH_END = JET_START + 0.19;
 
-/**
- * Kawah sesaat sesudah tetesan menyatu. Literatur memodelkannya sebagai
- * rongga setengah bola dengan bibir terangkat (Engel 1966; Bisighini dkk.
- * 2010). Ukuran dari neraca energi: ±35% energi gerak tetesan 3,6 mm pada
- * ±1 m/s menjadi energi permukaan dan potensial kawah → jari-jari ±3 mm,
- * didominasi tegangan permukaan (Froude ±28), dengan skala waktu
- * √(ρR³/σ) ≈ 12–19 ms. Kawah terdalam pada 12 ms lalu runtuh tepat saat
- * kolom muncul (JET_START).
- */
-export const CRATER = { depth: 2.6e-3, radius: 3.0e-3, peakAt: 0.012 };
+// --- Pemutaran -------------------------------------------------------------
+// Percikan diputar sendiri dalam gerak lambat begitu tetesan menyentuh air.
+// Seperti rekaman kamera kecepatan tinggi, kecepatannya dinaikkan (speed
+// ramp): mahkota yang hanya ±28 ms diperlambat paling banyak, kolom dan butir
+// sesudahnya lebih cepat.
 
-/** Kedalaman (m, positif ke bawah) dan jari-jari kawah pada t detik. */
-export function craterAt(t: number): { depth: number; radius: number } {
-  if (t <= 0 || t >= JET_START) return { depth: 0, radius: CRATER.radius };
-  const grow = Math.min(t / CRATER.peakAt, 1);
-  const depth =
-    t < CRATER.peakAt
-      ? CRATER.depth * Math.sin((Math.PI / 2) * grow)
-      : CRATER.depth * Math.cos(((Math.PI / 2) * (t - CRATER.peakAt)) / (JET_START - CRATER.peakAt));
-  // Mulut kawah melebar cepat lalu bertahan sampai runtuh.
-  const radius = CRATER.radius * (0.55 + 0.45 * Math.sin((Math.PI / 2) * grow));
-  return { depth, radius };
+/** Lama pemutaran percikan (detik nyata). */
+export const PLAY_SECONDS = 5;
+/** Bagian pemutaran untuk mahkota, dan waktu fisik yang dicakupnya. */
+const SLOW_SHARE = 0.5;
+const SLOW_UNTIL = CROWN_END + 0.004;
+
+const PLAY_STEPS = 1000;
+
+function buildPlayback() {
+  const rate = (u: number, k: number) => {
+    const x = Math.min(1, Math.max(0, (u - (SLOW_SHARE - 0.08)) / 0.16));
+    return 1 + (k - 1) * x * x * (3 - 2 * x);
+  };
+  const integrate = (k: number) => {
+    const acc = new Float64Array(PLAY_STEPS + 1);
+    for (let i = 1; i <= PLAY_STEPS; i++) acc[i] = acc[i - 1] + rate((i - 0.5) / PLAY_STEPS, k);
+    return acc;
+  };
+  // Cari perbandingan cepat/lambat agar separuh pertama tepat mencakup mahkota.
+  let lo = 1;
+  let hi = 200;
+  for (let n = 0; n < 50; n++) {
+    const k = (lo + hi) / 2;
+    const acc = integrate(k);
+    const share = acc[Math.round(SLOW_SHARE * PLAY_STEPS)] / acc[PLAY_STEPS];
+    if (share * SPLASH_END > SLOW_UNTIL) lo = k;
+    else hi = k;
+  }
+  const acc = integrate((lo + hi) / 2);
+  return acc.map((a) => (a / acc[PLAY_STEPS]) * SPLASH_END);
+}
+
+const PLAYBACK = buildPlayback();
+
+/** Waktu fisik percikan (detik) pada kemajuan pemutaran u (0..1). */
+export function playbackTime(u: number): number {
+  const x = Math.min(1, Math.max(0, u)) * PLAY_STEPS;
+  const i = Math.min(Math.floor(x), PLAY_STEPS - 1);
+  return PLAYBACK[i] + (PLAYBACK[i + 1] - PLAYBACK[i]) * (x - i);
 }

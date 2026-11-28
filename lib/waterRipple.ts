@@ -10,8 +10,10 @@
 // Φ(k) adalah dorongan awal tetesan (Gaussian selebar tetesan), J₀ fungsi
 // Bessel orde nol. Karena gelombang pendek (kapiler) lebih cepat dari
 // gelombang panjang, riak terluar lebih rapat dan riak di dalam lebih
-// renggang, persis seperti pada foto tetesan sungguhan. Tetesan kecil yang
-// jatuh pelan menyatu dengan air tanpa percikan, jadi model linear ini cukup.
+// renggang, persis seperti pada foto tetesan sungguhan. Di dekat titik jatuh
+// (kawah, mahkota, kolom) gerak air tidak linear, jadi bagian itu digambar
+// dari lib/waterCrown.ts dan lib/waterSplash.ts; model linear ini dipakai
+// untuk riak yang sudah menjauh.
 //
 // Semua besaran dalam satuan SI (meter, detik). Gambar di layar hanya
 // mengalikan jarak dengan skala piksel per meter.
@@ -24,10 +26,10 @@ export const SURFACE_TENSION = 7.2e-5;
 export const VISCOSITY = 1.0e-6;
 /** Jari-jari tetesan (m): tetesan kecil dari ujung pipet. */
 export const DROP_RADIUS = 1.8e-3;
-/** Lebar dorongan awal di permukaan, sedikit lebih lebar dari tetesan (m). */
-export const IMPACT_WIDTH = 2.6e-3;
-/** Kedalaman kawah terdalam tepat sesudah tetesan menyatu (m). */
-export const CRATER_DEPTH = 1.2e-3;
+/** Lebar dorongan awal di permukaan, sebanding kawah mahkota (lib/waterCrown.ts) (m). */
+export const IMPACT_WIDTH = 4.5e-3;
+/** Simpangan pusat terdalam pada riak (m); kawah sesungguhnya digambar dari lib/waterCrown.ts. */
+export const CRATER_DEPTH = 2.0e-3;
 /** Jari-jari lingkaran faktor dalam ukuran nyata (m). */
 export const RING_RADIUS = 0.12;
 /** Jangkauan riak yang dihitung, kelipatan jari-jari lingkaran. */
