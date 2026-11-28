@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { HERO_POSTER, HERO_VIDEOS } from "@/config/assets";
 import { EYEBROW, FACTOR_WHEEL, HEADING, HERO_ACTIONS, SCROLL_STORY } from "@/config/hero-content";
@@ -11,8 +10,6 @@ import FactorWheel from "./FactorWheel";
 import HeroLines from "./HeroLines";
 import HeroVideo from "./HeroVideo";
 import { useHeroScroll } from "./useHeroScroll";
-
-const noopSubscribe = () => () => {};
 
 /** Video muncul setelah garis selesai melebar (lihat HeroLines: jeda 0,5 s + 1,9 s). */
 const VIDEO_REVEAL_MS = 2100;
@@ -39,15 +36,6 @@ export default function HeroSection() {
   const wheelRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGPathElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
-  const wavesRef = useRef<HTMLCanvasElement>(null);
-  const linesRef = useRef<HTMLDivElement>(null);
-  // Salinan logo dipasang lewat portal ke body (di depan navigasi), jadi baru
-  // ada sesudah komponen terpasang di peramban.
-  const mounted = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
   // Pengali lebar garis kiri-kanan; diubah urutan gulir, dibaca HeroLines.
   const spreadRef = useRef(1);
   const markersRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -61,14 +49,12 @@ export default function HeroSection() {
       markers: markersRef,
       focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
       ghost: ghostRef,
-      waves: wavesRef,
-      lines: linesRef,
       cover: coverRef,
       coverTitle: coverTitleRef,
     }),
     [],
   );
-  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef, wheel, spread: spreadRef, ready: mounted });
+  useHeroScroll({ pin: pinRef, hero: heroRef, blocks: blocksRef, wheel, spread: spreadRef });
 
   return (
     // Pembungkus yang ditahan; transform pembuka (#beranda) tetap di section.
@@ -95,14 +81,7 @@ export default function HeroSection() {
           </>
         )}
 
-        {/* Riak bulat bertimbul di latar saat logo turun dan lingkaran faktor
-            terbentuk (useHeroScroll, lib/heroWaves.ts). */}
-        <canvas ref={wavesRef} aria-hidden className="pointer-events-none absolute inset-0 z-[15] h-full w-full" />
-
-        {/* Garis lingkaran kiri-kanan; memudar saat lingkaran faktor dimulai. */}
-        <div ref={linesRef} className="pointer-events-none absolute inset-0 z-20">
-          <HeroLines light={videoShown} spread={spreadRef} />
-        </div>
+        <HeroLines light={videoShown} spread={spreadRef} />
 
         {/* Label, judul, dan tombol di tengah layar */}
         <div
@@ -184,16 +163,10 @@ export default function HeroSection() {
           />
         </div>
 
-        {/* Salinan logo navigasi yang turun dan menggambar lingkaran faktor.
-            Dipasang di body agar berada di depan kartu navigasi, sehingga
-            yang tampak lepas adalah logo itu sendiri. */}
-        {mounted &&
-          createPortal(
-            <div ref={ghostRef} aria-hidden className="factor-ghost pointer-events-none">
-              <RingLogo className="h-full w-full" />
-            </div>,
-            document.body,
-          )}
+        {/* Salinan logo navigasi yang turun menjadi awal lingkaran faktor. */}
+        <div ref={ghostRef} aria-hidden className="factor-ghost pointer-events-none z-[41]">
+          <RingLogo className="h-full w-full" />
+        </div>
 
         {/* Layar krem hasil pembesaran faktor: jembatan ke bagian berikutnya
             (rancangannya belum ditentukan pengguna). */}

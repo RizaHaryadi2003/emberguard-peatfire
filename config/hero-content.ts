@@ -60,8 +60,8 @@ export const SCROLL_STORY = {
 /**
  * Roda faktor karhutla (pola lingkaran "Frequency" pada acuan
  * frequencybreathwork.com) tanpa judul di tengah: delapan faktor di sekeliling
- * lingkaran yang bersegi halus di tiap faktor, dimulai dari atas searah jarum
- * jam. Setelah semua muncul, gulir berikutnya memperbesar ke faktor `focus`.
+ * lingkaran, dimulai dari atas searah jarum jam. Setelah semua muncul, gulir
+ * berikutnya memperbesar ke faktor `focus`.
  *
  * DRAF — DAFTAR FAKTOR SEMENTARA. Isi dan urutannya boleh diganti; jumlah
  * yang paling rapi tetap delapan. Sumber riset tiap faktor belum dicatat.

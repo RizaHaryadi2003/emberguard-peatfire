@@ -706,7 +706,7 @@ body {
   color: rgb(241 241 241 / 0.92);
   text-wrap: pretty;
 }
-/* Roda faktor (components/hero/FactorWheel.tsx), lingkaran bersegi halus. */
+/* Roda faktor (components/hero/FactorWheel.tsx), pola lingkaran acuan. */
 .factor-wheel {
   --size: min(32rem, 58vh, 64vw);
   --radius: calc(var(--size) / 2);
@@ -735,11 +735,9 @@ body {
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
 }
-/* Salinan logo navigasi yang turun lalu menggambar lingkaran faktor; di
-   depan navigasi (z 110) supaya tampak sebagai logo itu sendiri. */
+/* Salinan logo navigasi yang turun menjadi awal lingkaran faktor. */
 .factor-ghost {
-  position: fixed;
-  z-index: 120;
+  position: absolute;
   left: 0;
   top: 0;
   width: 30px;
