@@ -61,6 +61,14 @@ lingkaran faktor. Kode: `lib/waterRipple.ts`, `lib/waterCrown.ts`,
   gelap alami.
 - Pantulan Fresnel (F₀ = 0,02); softbox bertepi lembut seperti difuser besar.
 - Fokus lensa makro: riak dekat percikan tajam, riak jauh melembut.
+- Rona biru tipis (keputusan pengguna 28 Nov 2026, mengikuti foto acuan):
+  ruang studio di tepi air biru-baja gelap, bayang di permukaan biru-gelap,
+  dan penyerapan Beer–Lambert di badan air (merah diserap paling banyak).
+  Penyerapannya dibesarkan demi gaya; air setebal beberapa milimeter
+  sesungguhnya hampir tak berwarna.
+- Lingkungan studio diperkaya (softbox kecil kiri-depan, pita cakrawala).
+  Pelajaran dari demo air WebGL (Evan Wallace, ditinjau 28 Nov 2026): air
+  tampak nyata bila ada lingkungan berdetail untuk dibiaskan dan dipantulkan.
 
 ## 4. Penyederhanaan yang disengaja
 

@@ -138,9 +138,13 @@ float panel(vec3 d, vec3 c, vec2 h, float soft) {
   return softRect(vec2(dot(d, u), dot(d, v)) / k, h, soft);
 }
 
-// Studio hitam-putih: softbox besar di atas-belakang, dua lampu jalur tegak di
-// kiri dan kanan belakang (garis tepi terang pada air yang melengkung), cahaya
-// isi lembut dari depan, dan ruang redup. Nilai HDR agar kilau tampak nyata.
+// Studio: softbox besar di atas-belakang, dua lampu jalur tegak di kiri dan
+// kanan belakang (garis tepi terang pada air yang melengkung), softbox kecil
+// di kiri-depan, pita cakrawala (sambungan meja dan latar studio), cahaya isi
+// lembut dari depan, dan ruang redup. Lingkungan yang berdetail inilah yang
+// membuat air tampak nyata: lembar dan butir memantulkan serta membiaskannya
+// menjadi garis dan bercak, seperti ubin kolam pada demo air WebGL. Nilai HDR
+// agar kilau tampak nyata.
 float studio(vec3 d) {
   // Tepi softbox dilembutkan (difuser besar, di luar fokus lensa makro).
   float key = panel(d, normalize(KEY), vec2(0.3, 0.18), 0.2) * 30.0;
@@ -148,8 +152,10 @@ float studio(vec3 d) {
   float stripR = panel(d, normalize(vec3(0.85, 0.3, 0.42)), vec2(0.05, 0.5), 0.04) * 9.0;
   vec3 f = normalize(vec3(0.0, -0.75, 0.66));
   float fill = 1.4 * pow(max(dot(d, f), 0.0), 6.0);
+  float side = panel(d, normalize(vec3(-0.55, -0.6, 0.58)), vec2(0.09, 0.07), 0.05) * 7.0;
+  float horizon = 1.6 * exp(-pow((d.z - 0.04) / 0.035, 2.0)) * (0.6 + 0.4 * max(d.y, 0.0));
   float room = 0.12 + 0.35 * max(d.z, 0.0);
-  return key + stripL + stripR + fill + room;
+  return key + stripL + stripR + side + fill + horizon + room;
 }
 
 float fresnel(float c) { return 0.02 + 0.98 * pow(1.0 - clamp(c, 0.0, 1.0), 5.0); }
@@ -411,8 +417,18 @@ float shadowAt(vec2 xy, vec2 at, float z, float r, float strength) {
 // melihat ruang studio yang gelap, sehingga tepi air tampak gelap alami.
 const float IOR = 1.333;
 const float BACKDROP = 0.09;          // jarak latar di belakang benda (m)
-const vec3 ROOM = vec3(0.14, 0.14, 0.135);
+// Rona biru tipis seperti foto acuan (keputusan pengguna 28 Nov 2026). Ruang
+// studio yang terlihat lewat tepi air berwarna biru-baja gelap; badan air
+// menyerap merah sedikit lebih banyak daripada biru (Beer–Lambert). Air
+// sungguhan setebal beberapa milimeter hampir tidak berwarna, jadi
+// penyerapannya dibesarkan demi gaya; arah warnanya tetap sesuai air.
+const vec3 ROOM = vec3(0.07, 0.115, 0.165);
 const vec3 WHITE = vec3(0.957, 0.953, 0.945);
+const vec3 DEEP = vec3(0.10, 0.165, 0.23);
+const vec3 ABSORB = vec3(32.0, 13.0, 4.0); // per meter lintasan di dalam air
+const vec3 TINT = vec3(0.93, 0.97, 1.0);
+
+vec3 absorb(vec3 c, float path) { return c * TINT * exp(-ABSORB * path); }
 
 vec3 backdropAt(vec3 q) {
   vec3 d = q - uCamPos;
@@ -445,7 +461,7 @@ vec3 ellipsoidColor(vec3 rd, vec3 q, vec3 n, vec3 c, float r, float s) {
   float h = max(b * b - a * (dot(o, o) - 1.0), 0.0);
   vec3 q2 = q + r1 * ((-b + sqrt(h)) / a);
   vec3 n2 = ellipsoidNormal(q2, c, r, s);
-  return waterBody(rd, n, seen(q2, refract(r1, -n2, IOR), rd));
+  return waterBody(rd, n, absorb(seen(q2, refract(r1, -n2, IOR), rd), length(q2 - q)));
 }
 
 // Kolom dan dinding kawah: telusuri sinar di dalam air sampai keluar.
@@ -455,11 +471,11 @@ vec3 sceneBodyColor(vec3 p, vec3 n, vec3 rd) {
   for (int i = 0; i < 24; i++) {
     vec3 q = p + r1 * t;
     float d = sdScene(q);
-    if (d > -1e-5 && t > 5e-4) return waterBody(rd, n, seen(q, refract(r1, -sceneNormal(q), IOR), rd));
+    if (d > -1e-5 && t > 5e-4) return waterBody(rd, n, absorb(seen(q, refract(r1, -sceneNormal(q), IOR), rd), t));
     t += max(-d, 1.5e-4);
   }
   // Sinar masuk ke kolam: tampak latar di baliknya, sedikit redup.
-  return waterBody(rd, n, backdropAt(p + r1 * 0.03) * 0.86);
+  return waterBody(rd, n, absorb(backdropAt(p + r1 * 0.03) * 0.86, 0.008));
 }
 
 // Profil riak yang dikaburkan sesuai jarak dari bidang fokus, seperti foto
@@ -593,7 +609,8 @@ vec4 shadeSample(vec2 sc, out bool fine) {
 
   float L = 1.0 - exp(-light);
   float D = clamp(dark, 0.0, 0.85);
-  vec4 col = vec4(WHITE * L, L + D * (1.0 - L));
+  // Kilau putih di atas bayang biru-gelap (premultiplied alpha).
+  vec4 col = vec4(WHITE * L + DEEP * D * (1.0 - L), L + D * (1.0 - L));
   if (bodyCover > 0.0) col = mix(col, vec4(body, 1.0), bodyCover);
 
   // 3. Tetesan jatuh dan butir yang melambung: elipsoid analitik dengan tepi
