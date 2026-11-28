@@ -48,6 +48,6 @@ export function waveAt(p: number, from: number, to: number): { radius: number; o
     radius: from + (to - from) * ease,
     opacity: Math.sin(Math.PI * c) ** 1.5,
     // Riak muda lebih bergelombang, lalu merata saat melebar.
-    wobble: 0.009 * (1 - 0.5 * c),
+    wobble: 0.012 * (1 - 0.5 * c),
   };
 }

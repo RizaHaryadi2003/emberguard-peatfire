@@ -183,7 +183,7 @@ const RING_CORNER = 0.022;
 /** Gelombang latar: lama satu cincin, jarak antarcincin, dan kekuatannya. */
 const WAVE_UNITS = 4.6;
 const WAVE_GAP = 1.15;
-const WAVE_OPACITY = 0.2;
+const WAVE_OPACITY = 0.4;
 
 /**
  * Langkah roda faktor: logo navigasi turun ke puncak roda, lalu berjalan

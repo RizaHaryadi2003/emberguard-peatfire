@@ -710,7 +710,7 @@ body {
 .hero-waves path {
   fill: none;
   stroke: #f2efe9;
-  stroke-width: 1;
+  stroke-width: 1.3;
   visibility: hidden;
 }
 /* Roda faktor (components/hero/FactorWheel.tsx), lingkaran bersegi halus. */
