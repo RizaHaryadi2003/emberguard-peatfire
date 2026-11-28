@@ -20,13 +20,18 @@
  * Video latar beranda. Biarkan kosong bila belum ada: beranda memakai latar
  * abu-abu bergradasi dengan garis gelap.
  */
-export const HERO_VIDEOS: string[] = [];
+export const HERO_VIDEOS: string[] = [
+  // Tampak atas sungai di hutan rawa lebat — Tom Fisk, Pexels (sumber: data/SUMBER.md).
+  "/videos/hutan-rawa-sungai.mp4",
+  // Hutan hujan berkabut tebal — Vũ Ngọc Long, Pexels.
+  "/videos/hutan-kabut.mp4",
+];
 
 /**
  * Gambar diam yang tampil selagi video pertama dimuat (opsional),
  * mis. "/images/hero/poster.webp".
  */
-export const HERO_POSTER: string = "";
+export const HERO_POSTER: string = "/images/hero/poster-hutan-rawa.jpg";
 
 /**
  * Suara latar untuk tombol "Suara" di navigasi (MP3/OGG, diputar berulang).

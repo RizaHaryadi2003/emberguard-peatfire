@@ -47,3 +47,19 @@ non-komersial; turunan citra ini tunduk pada lisensi yang sama. Diunduh
 
 Karena proyeksi peta ekuirektangular, citra EPSG:4326 cukup ditempel
 sebagai persegi panjang pada koordinat yang sama.
+
+## public/videos/*.mp4 dan public/images/hero/poster-hutan-rawa.jpg
+
+Video latar beranda dari **Pexels**, di bawah Lisensi Pexels (bebas dipakai
+untuk keperluan pribadi maupun komersial tanpa wajib mencantumkan nama;
+tidak boleh dijual ulang apa adanya; lihat
+https://help.pexels.com/hc/en-us/articles/360042295174). Nama pembuat tetap
+dicantumkan di sini sebagai etika. Diunduh 28 November 2026 dalam 4K
+(3840 × 2160, 30 fps), lalu dipotong 15 detik, diperkecil ke 1920 × 1080, dan
+dikompres ulang (H.264, tanpa suara) agar ringan di web.
+
+| Berkas | Video asli | Pembuat | Potongan |
+|---|---|---|---|
+| hutan-rawa-sungai.mp4 | "A Big River Swamp In A Dense Forest", https://www.pexels.com/video/2736469/ | Tom Fisk | detik 3–18, ±3,8 Mbps |
+| hutan-kabut.mp4 | "Misty Rainforest Aerial View in Dense Fog", https://www.pexels.com/video/30770305/ | Vũ Ngọc Long | detik 2–17, ±3,2 Mbps |
+| poster-hutan-rawa.jpg | bingkai pertama hutan-rawa-sungai.mp4 | Tom Fisk | 1280 × 720 |
