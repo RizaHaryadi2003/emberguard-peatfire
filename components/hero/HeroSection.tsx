@@ -9,7 +9,6 @@ import RingLogo from "@/components/layout/RingLogo";
 import FactorWheel from "./FactorWheel";
 import HeroLines from "./HeroLines";
 import HeroVideo from "./HeroVideo";
-import WaterDrop, { type WaterHandle } from "./WaterDrop";
 import { useHeroScroll } from "./useHeroScroll";
 
 /** Video muncul setelah garis selesai melebar (lihat HeroLines: jeda 0,5 s + 1,9 s). */
@@ -37,7 +36,6 @@ export default function HeroSection() {
   const wheelRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGPathElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
-  const waterRef = useRef<WaterHandle | null>(null);
   // Pengali lebar garis kiri-kanan; diubah urutan gulir, dibaca HeroLines.
   const spreadRef = useRef(1);
   const markersRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -51,7 +49,6 @@ export default function HeroSection() {
       markers: markersRef,
       focusIndex: Math.max(0, FACTOR_WHEEL.factors.indexOf(FACTOR_WHEEL.focus)),
       ghost: ghostRef,
-      water: waterRef,
       cover: coverRef,
       coverTitle: coverTitleRef,
     }),
@@ -166,10 +163,7 @@ export default function HeroSection() {
           />
         </div>
 
-        {/* Air tempat tetesan jatuh; riaknya menjadi lingkaran faktor. */}
-        <WaterDrop handleRef={waterRef} wheelRef={wheelRef} />
-
-        {/* Salinan logo navigasi yang berubah menjadi tetesan. */}
+        {/* Salinan logo navigasi yang turun dan menggambar persegi faktor. */}
         <div ref={ghostRef} aria-hidden className="factor-ghost pointer-events-none z-[41]">
           <RingLogo className="h-full w-full" />
         </div>

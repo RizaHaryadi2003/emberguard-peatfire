@@ -706,7 +706,7 @@ body {
   color: rgb(241 241 241 / 0.92);
   text-wrap: pretty;
 }
-/* Roda faktor (components/hero/FactorWheel.tsx), pola lingkaran acuan. */
+/* Roda faktor (components/hero/FactorWheel.tsx): persegi garis rambut. */
 .factor-wheel {
   --size: min(32rem, 58vh, 64vw);
   --radius: calc(var(--size) / 2);
@@ -735,7 +735,7 @@ body {
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
 }
-/* Salinan logo navigasi yang turun menjadi awal lingkaran faktor. */
+/* Salinan logo navigasi yang turun lalu menggambar persegi faktor. */
 .factor-ghost {
   position: absolute;
   left: 0;

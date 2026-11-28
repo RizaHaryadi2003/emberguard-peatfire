@@ -1,6 +1,12 @@
 # Acuan Animasi Tetesan Beranda
 
-Status: **draf** (diperbarui 28 November 2026: percikan mahkota). Animasi
+Status: **DIBATALKAN** (28 November 2026). Pengguna memutuskan animasi air
+tidak dipakai: realisme yang diinginkan tidak tercapai dalam batas web. Roda
+faktor kini dibentuk logo yang turun lalu menggambar persegi searah jarum jam
+(`lib/factorSquare.ts`). Kode air terakhir tersimpan di riwayat git, commit
+8b10137. Dokumen ini disimpan sebagai catatan riset.
+
+Status sebelumnya: draf (diperbarui 28 November 2026: percikan mahkota). Animasi
 pembuka roda faktor: logo navigasi jatuh sebagai tetesan air, dilihat dari
 depan, membuat percikan mahkota, lalu kamera naik ke atas dan riaknya menjadi
 lingkaran faktor. Kode: `lib/waterRipple.ts`, `lib/waterCrown.ts`,
