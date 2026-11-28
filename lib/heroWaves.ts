@@ -40,11 +40,11 @@ export type Ripple = { radius: number; strength: number; width: number };
 const LIGHT = "242, 239, 233";
 const SHADE = "38, 36, 33";
 /** Kekuatan puncak terang dan lembah gelap (alfa maksimum). */
-const LIGHT_ALPHA = 0.3;
-const SHADE_ALPHA = 0.16;
+const LIGHT_ALPHA = 0.2;
+const SHADE_ALPHA = 0.1;
 /** Pergeseran cahaya/bayangan per lebar riak (arah cahaya: atas). */
-const LIGHT_SHIFT = 0.28;
-const STOPS = 48;
+const LIGHT_SHIFT = 0.2;
+const STOPS = 72;
 const SPAN = 6;
 
 /** Satu lapisan (terang atau gelap) dari sebuah riak, berpusat di (cx, cy). */
