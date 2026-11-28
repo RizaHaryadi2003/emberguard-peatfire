@@ -10,21 +10,30 @@
  *                   jalurnya diawali "/", mis. "/videos/gambut-pagi.mp4".
  *  - Berkas daring: tempel URL lengkap.
  *
- *  Saran video: 2–3 klip pendek (8–15 detik), MP4 (H.264) tanpa suara,
- *  1920×1080 atau lebih kecil, masing-masing di bawah ±5 MB. Klip diputar
- *  bergiliran; bila hanya satu, klip itu diulang.
+ *  Saran video: 2–3 klip pendek (8–15 detik), MP4 (H.264) tanpa suara, tiap
+ *  klip dalam dua ukuran: 2560×1440 untuk laptop (±13–16 MB) dan 1280×720
+ *  untuk ponsel (±3–5 MB). Klip diputar bergiliran; bila hanya satu, klip
+ *  itu diulang.
  * ============================================================================
  */
 
+/** Satu klip video latar dalam dua ukuran. */
+export type HeroClip = {
+  /** Untuk layar lebar (laptop): 2560 × 1440, tajam di layar Retina. */
+  large: string;
+  /** Untuk ponsel dan tablet: 1280 × 720, ringan dimuat. */
+  small: string;
+};
+
 /**
- * Video latar beranda. Biarkan kosong bila belum ada: beranda memakai latar
- * abu-abu bergradasi dengan garis gelap.
+ * Video latar beranda, diputar bergiliran. Biarkan kosong bila belum ada:
+ * beranda memakai latar abu-abu bergradasi dengan garis gelap.
  */
-export const HERO_VIDEOS: string[] = [
+export const HERO_VIDEOS: HeroClip[] = [
   // Tampak atas sungai di hutan rawa lebat — Tom Fisk, Pexels (sumber: data/SUMBER.md).
-  "/videos/hutan-rawa-sungai.mp4",
+  { large: "/videos/hutan-rawa-sungai-1440.mp4", small: "/videos/hutan-rawa-sungai-720.mp4" },
   // Hutan hujan berkabut tebal — Vũ Ngọc Long, Pexels.
-  "/videos/hutan-kabut.mp4",
+  { large: "/videos/hutan-kabut-1440.mp4", small: "/videos/hutan-kabut-720.mp4" },
 ];
 
 /**

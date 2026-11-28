@@ -810,3 +810,16 @@ html.intro-playing {
     will-change: opacity;
   }
 }
+
+/* Video latar beranda (components/hero/HeroVideo.tsx): tanpa tombol putar
+   dan kendali bawaan peramban, termasuk tombol besar Safari saat putar
+   otomatis tertahan. */
+.hero-video::-webkit-media-controls,
+.hero-video::-webkit-media-controls-panel,
+.hero-video::-webkit-media-controls-play-button,
+.hero-video::-webkit-media-controls-start-playback-button,
+.hero-video::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  -webkit-appearance: none;
+  opacity: 0 !important;
+}

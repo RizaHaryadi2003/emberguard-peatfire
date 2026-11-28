@@ -80,7 +80,7 @@ export default function HeroSection() {
         {hasVideo && (
           <>
             <HeroVideo
-              sources={HERO_VIDEOS}
+              clips={HERO_VIDEOS}
               poster={HERO_POSTER}
               revealDelayMs={VIDEO_REVEAL_MS}
               onShown={() => setVideoShown(true)}
