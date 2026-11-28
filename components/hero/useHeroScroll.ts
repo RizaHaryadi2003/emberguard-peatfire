@@ -313,7 +313,8 @@ function addWheel(tl: gsap.core.Timeline, wheel: WheelRefs, reduce: boolean) {
       }
       waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       waveCtx.clearRect(0, 0, w, h);
-      const far = Math.hypot(w, h) * 0.55;
+      // Riak kecil di sekitar roda saja, tidak memenuhi layar.
+      const far = root.offsetWidth * 0.85;
       const ripples: Ripple[] = progress.map((s) => waveAt(s.p, root.offsetWidth * 0.1, far));
       drawRipples(waveCtx, w / 2, h / 2, ripples);
     };

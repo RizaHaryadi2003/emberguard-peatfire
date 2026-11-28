@@ -10,12 +10,13 @@
 // kabur, masker, atau WebGL, sehingga ringan di laptop menengah.
 
 /**
- * Profil satu riak terhadap jarak dari puncaknya, dalam satuan lebar riak:
- * positif = puncak (terang), negatif = lembah (gelap). Puncak utama di 0,
- * lembah di kedua sisinya, lalu mendatar.
+ * Profil satu riak terhadap jarak dari puncak utamanya, dalam satuan lebar
+ * riak: positif = puncak (terang), negatif = lembah (gelap). Seperti riak
+ * tetesan sungguhan, satu riak adalah rangkaian beberapa puncak kecil yang
+ * makin rapat ke arah luar (gelombang kapiler lebih cepat), lalu mendatar.
  */
 export function rippleProfile(x: number): number {
-  return Math.exp(-((x / 1.5) ** 2)) * Math.cos(2.3 * x);
+  return Math.exp(-((x / 2.8) ** 2)) * Math.cos(2.3 * x + 0.12 * x * x);
 }
 
 /**
@@ -30,7 +31,7 @@ export function waveAt(p: number, from: number, to: number): { radius: number; s
   return {
     radius,
     strength: Math.sin(Math.PI * c) ** 1.5,
-    width: 9 + 0.025 * radius,
+    width: 3.2 + 0.006 * radius,
   };
 }
 
@@ -39,12 +40,12 @@ export type Ripple = { radius: number; strength: number; width: number };
 const LIGHT = "242, 239, 233";
 const SHADE = "38, 36, 33";
 /** Kekuatan puncak terang dan lembah gelap (alfa maksimum). */
-const LIGHT_ALPHA = 0.24;
-const SHADE_ALPHA = 0.13;
+const LIGHT_ALPHA = 0.3;
+const SHADE_ALPHA = 0.16;
 /** Pergeseran cahaya/bayangan per lebar riak (arah cahaya: atas). */
 const LIGHT_SHIFT = 0.28;
-const STOPS = 14;
-const SPAN = 3;
+const STOPS = 48;
+const SPAN = 6;
 
 /** Satu lapisan (terang atau gelap) dari sebuah riak, berpusat di (cx, cy). */
 function fillLayer(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: Ripple, light: boolean) {

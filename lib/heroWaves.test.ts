@@ -22,10 +22,15 @@ describe("riak latar beranda", () => {
     expect(waveAt(0.9, 50, 500).width).toBeGreaterThan(waveAt(0.1, 50, 500).width);
   });
 
-  it("puncak terang diapit lembah gelap, lalu mendatar", () => {
+  it("puncak terang diapit lembah gelap, beberapa puncak kecil, lalu mendatar", () => {
     expect(rippleProfile(0)).toBeCloseTo(1);
     expect(rippleProfile(1.3)).toBeLessThan(0);
-    expect(rippleProfile(-1.3)).toBeLessThan(0);
-    expect(Math.abs(rippleProfile(4))).toBeLessThan(0.01);
+    expect(rippleProfile(-1.4)).toBeLessThan(0);
+    let crests = 0;
+    for (let x = -8; x < 8; x += 0.01) {
+      if (rippleProfile(x) > 0.05 && rippleProfile(x) > rippleProfile(x - 0.01) && rippleProfile(x) >= rippleProfile(x + 0.01)) crests++;
+    }
+    expect(crests).toBeGreaterThanOrEqual(3);
+    expect(Math.abs(rippleProfile(9))).toBeLessThan(0.01);
   });
 });
