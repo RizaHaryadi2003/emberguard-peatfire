@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { HeroClip } from "@/config/assets";
+import { afterIntro, INTRO_DONE } from "@/lib/introGate";
 
 /** Lama saling memudar antarklip (milidetik); sama dengan kelas duration di bawah. */
 const FADE_MS = 1200;
 /** Layar selebar ini atau lebih memakai video besar; di bawahnya 720p. */
 const LARGE_QUERY = "(min-width: 1024px)";
+/** Selang penjaga pemutaran (milidetik). */
+const WATCH_MS = 700;
 /** Jenis HEVC (H.265) Main yang dipakai berkas 2160p. */
 const HEVC_TYPE = 'video/mp4; codecs="hvc1.1.6.L153.B0"';
 
@@ -61,6 +64,9 @@ export default function HeroVideo({ clips, poster, revealDelayMs, onShown }: Pro
   // supaya latar abu-abu tidak tembus di tengah peralihan.
   const [holding, setHolding] = useState<0 | 1 | null>(null);
   const [revealed, setRevealed] = useState(false);
+  // Video baru diputar setelah pembuka situs selesai; selama pembuka tayang
+  // video menunggu di detik 0 supaya klip pertama tidak habis tersembunyi.
+  const [started, setStarted] = useState(false);
   const slotARef = useRef<HTMLVideoElement>(null);
   const slotBRef = useRef<HTMLVideoElement>(null);
   const switching = useRef(false);
@@ -73,37 +79,63 @@ export default function HeroVideo({ clips, poster, revealDelayMs, onShown }: Pro
   // null di server: video baru dipasang di peramban, setelah ukuran layar diketahui.
   const size = useSyncExternalStore<Size | null>(subscribeLarge, pickSize, () => null);
 
-  // Tampilkan video pertama setelah jeda pembuka.
+  // Tampilkan video pertama setelah pembuka situs selesai (bila sedang
+  // tayang) ditambah jeda pembuka beranda.
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      setRevealed(true);
-      if (!shownRef.current) {
-        shownRef.current = true;
-        onShownRef.current();
-      }
-    }, revealDelayMs);
-    return () => window.clearTimeout(t);
+    let t = 0;
+    const cancel = afterIntro(() => {
+      setStarted(true);
+      t = window.setTimeout(() => {
+        setRevealed(true);
+        if (!shownRef.current) {
+          shownRef.current = true;
+          onShownRef.current();
+        }
+      }, revealDelayMs);
+    });
+    return () => {
+      cancel();
+      window.clearTimeout(t);
+    };
   }, [revealDelayMs]);
 
-  // Putar slot yang tampil. Bila peramban menolak (mis. mode hemat daya),
-  // coba lagi pada sentuhan/klik pertama.
+  // Jaga agar slot yang tampil selalu berputar, tanpa perlu klik. Safari
+  // menahan atau menghentikan video bisu yang belum terlihat (mis. selama
+  // pembuka situs menutupi beranda) dan tidak selalu memulainya lagi
+  // sendiri; maka video diputar saat pembuka selesai, saat halaman kembali
+  // terlihat, saat data siap, dan oleh penjaga ringan tiap 0,7 detik.
+  // Atribut autoplay sengaja tidak dipakai: pemutaran diatur penuh di sini.
+  // Klik/sentuhan pertama tetap dipakai sebagai cadangan terakhir.
   useEffect(() => {
     const v = (active === 0 ? slotARef : slotBRef).current;
-    if (!v || !size) return;
-    playMuted(v);
-    const retry = () => playMuted(v);
-    window.addEventListener("pointerdown", retry, { once: true });
-    window.addEventListener("keydown", retry, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", retry);
-      window.removeEventListener("keydown", retry);
+    if (!v || !size || !started) return;
+    const kick = () => {
+      if (document.visibilityState !== "visible") return;
+      if (v.paused && !(v.ended && clipsLoopless())) playMuted(v);
     };
-  }, [active, size]);
+    // Klip yang sudah habis dan menunggu pergantian tidak perlu diputar ulang.
+    const clipsLoopless = () => clips.length > 1;
+    playMuted(v);
+    const timer = window.setInterval(kick, WATCH_MS);
+    window.addEventListener(INTRO_DONE, kick);
+    document.addEventListener("visibilitychange", kick);
+    v.addEventListener("canplay", kick);
+    window.addEventListener("pointerdown", kick, { once: true });
+    window.addEventListener("keydown", kick, { once: true });
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(INTRO_DONE, kick);
+      document.removeEventListener("visibilitychange", kick);
+      v.removeEventListener("canplay", kick);
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+    };
+  }, [active, size, started, clips.length]);
 
   // Menjelang klip habis: putar klip berikutnya di slot lain dan saling
   // memudar; sesudahnya slot lama dihentikan dan memuat klip berikutnya lagi.
   const handleTime = (slot: 0 | 1) => {
-    if (clips.length < 2 || slot !== active || switching.current) return;
+    if (!started || clips.length < 2 || slot !== active || switching.current) return;
     const v = (slot === 0 ? slotARef : slotBRef).current;
     const next = (slot === 0 ? slotBRef : slotARef).current;
     if (!v || !next || !v.duration || v.duration - v.currentTime > FADE_MS / 1000 + 0.15) return;
@@ -137,7 +169,6 @@ export default function HeroVideo({ clips, poster, revealDelayMs, onShown }: Pro
             ref={slot === 0 ? slotARef : slotBRef}
             src={clip[size]}
             poster={slot === 0 && slotClip[0] === 0 ? poster || undefined : undefined}
-            autoPlay={slot === 0}
             muted
             playsInline
             disablePictureInPicture
@@ -146,6 +177,7 @@ export default function HeroVideo({ clips, poster, revealDelayMs, onShown }: Pro
             loop={clips.length < 2}
             preload="auto"
             onTimeUpdate={() => handleTime(slot as 0 | 1)}
+            onEnded={() => handleTime(slot as 0 | 1)}
             aria-hidden
             tabIndex={-1}
             className={`hero-video pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
